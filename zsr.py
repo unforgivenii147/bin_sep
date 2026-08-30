@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Final
 
 import zstandard as zstd
+from dh import fsz
 
 CHUNK_SIZE = 1024 * 1024
 SKIP_DIRS: Final[frozenset[str]] = frozenset(
@@ -29,14 +30,6 @@ logging.basicConfig(
     handlers=[logging.StreamHandler(sys.stdout)],
 )
 logger = logging.getLogger(__name__)
-
-
-def fsz(size: float) -> str:
-    for unit in ["B", "KiB", "MiB", "GiB", "TiB"]:
-        if abs(size) < 1024.0:
-            return f"{size:3.1f} {unit}"
-        size /= 1024.0
-    return f"{size:.1f} PiB"
 
 
 def compress_chunk(data: bytes) -> bytes:

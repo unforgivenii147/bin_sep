@@ -11,6 +11,7 @@ import zipfile
 from collections.abc import Callable
 from pathlib import Path
 from typing import Final
+from dh import fsz
 
 SKIP_DIRS: Final[frozenset[str]] = frozenset(
     {"lazy", ".git", "__pycache__", ".mypy_cache", ".ruff_cache", ".pytest_cache"}
@@ -30,17 +31,6 @@ zstd = _try_import("zstandard")
 lz4f = _try_import("lz4.frame")
 brotli = _try_import("brotli")
 py7zr = _try_import("py7zr")
-
-
-def fsz(size_bytes: int | None) -> str:
-    if size_bytes is None:
-        return "Unknown"
-    size = float(size_bytes)
-    for unit in ["B", "KB", "MB", "GB", "TB"]:
-        if size < 1024.0:
-            return f"{size:.2f} {unit}"
-        size /= 1024.0
-    return f"{size:.2f} PB"
 
 
 def _stream_size(readable, chunk=1 << 20) -> int:

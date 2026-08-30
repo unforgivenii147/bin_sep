@@ -8,6 +8,7 @@ import shutil
 import tarfile
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
+from dh import fsz
 
 
 def iter_target_dirs(paths, recursive=True):
@@ -165,15 +166,6 @@ def decompress_archive(archive_path):
         }
     except Exception as e:
         return {"success": False, "name": archive_path.name, "error": str(e)}
-
-
-def fsz(size_bytes):
-    size_bytes = float(size_bytes)
-    for unit in ["B", "KB", "MB", "GB", "TB"]:
-        if size_bytes < 1024.0:
-            return f"{size_bytes:.2f} {unit}"
-        size_bytes /= 1024.0
-    return f"{size_bytes:.2f} PB"
 
 
 def main():

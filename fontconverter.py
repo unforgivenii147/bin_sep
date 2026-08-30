@@ -193,7 +193,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
-    raw_inputs = [p.resolve() for p in (args.inputs or [Path(".")])]
+    raw_inputs = [p.resolve() for p in args.inputs or [Path(".")]]
     missing = [p for p in raw_inputs if not p.exists()]
     if missing:
         for p in missing:

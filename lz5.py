@@ -10,6 +10,7 @@ from multiprocessing import Pool, cpu_count
 from pathlib import Path
 
 import lz4.frame
+from dh import fsz
 
 
 def get_folder_size(folder_path):
@@ -20,14 +21,6 @@ def get_folder_size(folder_path):
             if os.path.exists(fp):
                 total += os.path.getsize(fp)
     return total
-
-
-def fsz(bytes_size):
-    for unit in ["B", "KB", "MB", "GB", "TB"]:
-        if bytes_size < 1024.0:
-            return f"{bytes_size:.2f} {unit}"
-        bytes_size /= 1024.0
-    return f"{bytes_size:.2f} PB"
 
 
 def compress_folder(folder_path):

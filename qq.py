@@ -6,24 +6,12 @@ import os
 import sys
 
 import matplotlib.pyplot as plt
+from dh import fsz
 
 MAX_DIRS = 25
 MIN_SIZE_KB = 100
 OUTPUT_FILENAME = "dirinfo.png"
 CHART_TYPE = "bar"
-
-
-def fsz(size_bytes) -> str:
-    if size_bytes < 1024:
-        return f"{size_bytes} B"
-    size_kb = size_bytes / 1024
-    if size_kb < 1024:
-        return f"{size_kb:.2f} KB"
-    size_mb = size_kb / 1024
-    if size_mb < 1024:
-        return f"{size_mb:.2f} MB"
-    size_gb = size_mb / 1024
-    return f"{size_gb:.2f} GB"
 
 
 def get_dir_size(start_path: str) -> int:

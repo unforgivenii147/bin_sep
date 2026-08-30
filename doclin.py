@@ -6,6 +6,7 @@ import sys
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
+from dh import fsz
 
 
 @dataclass
@@ -207,14 +208,6 @@ def collect_files(directories: list[Path]) -> list[Path]:
         for ext in ["*.rst", "*.md"]:
             files.extend(directory.rglob(ext))
     return sorted(set(files))
-
-
-def fsz(size_bytes: int) -> str:
-    for unit in ["B", "KB", "MB", "GB"]:
-        if size_bytes < 1024.0:
-            return f"{size_bytes:.1f} {unit}"
-        size_bytes /= 1024.0
-    return f"{size_bytes:.1f} TB"
 
 
 def print_stats(all_stats: list[FileStats], base_path: Path):

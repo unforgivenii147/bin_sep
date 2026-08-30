@@ -14,7 +14,6 @@ from urllib.parse import urljoin, urlparse, urldefrag, unquote
 import requests
 from bs4 import BeautifulSoup
 
-
 WORKERS = 8
 REMOTE_SIZE_LIMIT = 5 * 1024 * 1024
 
@@ -226,10 +225,7 @@ CSS_URL_RE = re.compile(
 )
 
 CSS_IMPORT_RE = re.compile(
-    r"@import\s+"
-    r"(?:url\(\s*)?"
-    r"[\"']?([^\"')\s;]+)"
-    r"[\"']?\s*\)?",
+    r"@import\s+" r"(?:url\(\s*)?" r"[\"']?([^\"')\s;]+)" r"[\"']?\s*\)?",
     flags=re.IGNORECASE,
 )
 

@@ -9,8 +9,7 @@ from pathlib import Path
 TARGET_NAMES = {"PKGINFO", "METADATA", "PKG-INFO"}
 TARGET_EXTENSIONS = {".md", ".txt", ".html"}
 PY_CODE_BLOCK = re.compile(
-    r"```python\s*\n(.*?)```"
-    r"\"\"\"(.*?)\"\"\"",
+    r"```python\s*\n(.*?)```" r"\"\"\"(.*?)\"\"\"",
     re.DOTALL | re.IGNORECASE,
 )
 INLINE_PY = re.compile(

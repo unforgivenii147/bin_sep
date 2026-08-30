@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import argparse
 import multiprocessing as mp
-import os
 import re
 import sys
 import unicodedata
@@ -12,7 +11,6 @@ from dataclasses import dataclass
 from html.parser import HTMLParser
 from pathlib import Path
 from typing import Iterable, Sequence
-
 
 WORKERS = 8
 

@@ -5,17 +5,7 @@ import sys
 from pathlib import Path
 
 from dh import cprint, get_files, mpf3, runcmd
-
-
-def gsz(path: str | Path) -> int:
-    path = Path(path)
-    total = 0
-    if path.is_file():
-        return path.stat().st_size
-    for file in path.rglob("*"):
-        if file.is_file():
-            total += file.stat().st_size
-    return total
+from dh import gsz
 
 
 START_DIR = Path.cwd()

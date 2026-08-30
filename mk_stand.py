@@ -32,7 +32,7 @@ IMAGE_EXTENSIONS = {
     ".tiff",
 }
 CSS_URL_PATTERN = re.compile(r'url\((["\']?)([^)"\']+)\1\)')
-TIMEOUT = 50
+TIMEOUT = 20
 
 
 def is_remote(url: str) -> bool:

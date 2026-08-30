@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import sys
-from multiprocessing import Pool, cpu_count
+from multiprocessing import Pool
 from pathlib import Path
-from typing import Iterable, Iterator, List, Optional, Union
-from dh import BIN_EXT, should_skip, is_binary
+from typing import List, Optional
+from dh import should_skip, is_binary
 
 WORKERS = 8
 CHUNK_SIZE = 64

@@ -9,17 +9,7 @@ from collections import deque
 from pathlib import Path
 
 from dh import cprint, fsz, get_files
-
-
-def gsz(path: str | Path) -> int:
-    path = Path(path)
-    total = 0
-    if path.is_file():
-        return path.stat().st_size
-    for file in path.rglob("*"):
-        if file.is_file():
-            total += file.stat().st_size
-    return total
+from dh import gsz
 
 
 def rm_doc(content: str) -> tuple[str, int]:

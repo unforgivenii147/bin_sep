@@ -15,7 +15,6 @@ from typing import Iterator
 from tree_sitter import Language, Parser
 import tree_sitter_css
 
-
 DEFAULT_WORKERS = 8
 CSS_SUFFIXES = {".css"}
 

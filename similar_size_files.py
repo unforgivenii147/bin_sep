@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from dh import cprint
+from dh import cprint, gsz
 
 
 def main() -> None:
@@ -32,10 +32,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
-
-def gsz(path):
-    try:
-        return Path(path).stat().st_size
-    except Exception:
-        return 0

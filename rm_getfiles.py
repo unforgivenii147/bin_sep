@@ -8,6 +8,7 @@ import textwrap
 import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
+from dh import fsz
 
 SKIP_DIRS = {
     ".git",
@@ -139,14 +140,6 @@ def process_file(file_path: Path) -> tuple[Path, float, tuple[int, int, float] |
         return (file_path, elapsed_time, (original_size, new_size, ratio))
     else:
         return (file_path, elapsed_time, None)
-
-
-def fsz(size: int) -> str:
-    for unit in ["B", "KB", "MB", "GB"]:
-        if size < 1024:
-            return f"{size:.1f}{unit}"
-        size /= 1024
-    return f"{size:.1f}TB"
 
 
 def main():

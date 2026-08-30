@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import re
 import subprocess
+from dh import fsz
 
 
 def get_packages_with_size():
@@ -34,14 +35,6 @@ def get_packages_with_size():
     except Exception as e:
         print(f"Error: {e}")
         return []
-
-
-def fsz(bytes_size):
-    for unit in ["B", "KB", "MB", "GB"]:
-        if bytes_size < 1024.0:
-            return f"{bytes_size:.1f} {unit}"
-        bytes_size /= 1024.0
-    return f"{bytes_size:.1f} TB"
 
 
 def main():

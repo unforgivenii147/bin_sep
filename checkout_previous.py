@@ -4,7 +4,6 @@ from pathlib import Path
 import subprocess
 import sys
 
-
 TARGET_PREFIX = "2026-08-29"
 
 

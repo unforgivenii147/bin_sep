@@ -10,6 +10,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 import zstandard as zstd
+from dh import fsz
 
 SKIP_EXTENSIONS_COMPRESS = {
     ".xz",
@@ -336,14 +337,6 @@ def decompress_file(
         except Exception:
             pass
         return False, input_path, str(e), 0, 0
-
-
-def fsz(bytes_size: float) -> str:
-    for unit in ["B", "KB", "MB", "GB", "TB"]:
-        if bytes_size < 1024.0:
-            return f"{bytes_size:.2f} {unit}"
-        bytes_size /= 1024.0
-    return f"{bytes_size:.2f} PB"
 
 
 def process_stream(

@@ -5,7 +5,7 @@ import ast
 import sys
 from pathlib import Path
 
-from dh import CODEXT, cprint, fsz, get_nobinary, mpf3, remove_blank_lines, gsz
+from dh import cprint, fsz, get_nobinary, mpf3, remove_blank_lines, gsz
 
 
 def process_file(path: Path) -> None:

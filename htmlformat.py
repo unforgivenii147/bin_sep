@@ -6,17 +6,7 @@ from pathlib import Path
 
 from bs4 import BeautifulSoup
 from dh import get_files, mpf3, rrs
-
-
-def gsz(path: str | Path) -> int:
-    path = Path(path)
-    total = 0
-    if path.is_file():
-        return path.stat().st_size
-    for file in path.rglob("*"):
-        if file.is_file():
-            total += file.stat().st_size
-    return total
+from dh import gsz
 
 
 def process_file(path) -> None:

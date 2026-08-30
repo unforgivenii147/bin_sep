@@ -5,8 +5,7 @@ import re
 from pathlib import Path
 
 from dh import cprint, fsz, get_nobinary
-from dh import is_binary, gsz
-
+from dh import gsz
 
 LIC_FILE = Path("/sdcard/lic")
 MIN_BLANK_LINES = 3

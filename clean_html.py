@@ -6,551 +6,440 @@ import argparse
 import multiprocessing as mp
 import os
 import sys
-import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Final
+from typing import Iterable
 
 from tree_sitter import Language, Parser
+
 import tree_sitter_css
 import tree_sitter_html
 import tree_sitter_javascript
+import tree_sitter_typescript
+
+SUPPORTED_SUFFIXES: dict[str, str] = {
+    ".html": "html",
+    ".htm": "html",
+    ".css": "css",
+    ".js": "javascript",
+    ".mjs": "javascript",
+    ".cjs": "javascript",
+    ".jsx": "javascript",
+    ".ts": "typescript",
+    ".tsx": "tsx",
+}
+
+DEFAULT_WORKERS = 8
+CHUNK_SIZE = 32
 
 
-WORKERS: Final = 4
-
-HTML_LANGUAGE = Language(tree_sitter_html.language())
-JS_LANGUAGE = Language(tree_sitter_javascript.language())
-CSS_LANGUAGE = Language(tree_sitter_css.language())
-
-HTML_SUFFIXES: Final = frozenset(
-    {
-        ".html",
-        ".htm",
-        ".xhtml",
-        ".shtml",
-    }
-)
-
-JS_TYPES: Final = frozenset(
-    {
-        "",
-        "text/javascript",
-        "application/javascript",
-        "application/ecmascript",
-        "text/ecmascript",
-        "module",
-    }
-)
-
-CSS_TYPES: Final = frozenset(
-    {
-        "",
-        "text/css",
-    }
-)
-
-
-@dataclass(slots=True, frozen=True)
+@dataclass(frozen=True, slots=True)
 class FileResult:
-    path: Path
+    path: str
     changed: bool
-    comments: int
+    comments_removed: int
     error: str | None = None
 
 
-@dataclass(slots=True, frozen=True)
-class ByteRange:
-    start: int
-    end: int
+def build_parser(language_name: str) -> Parser:
+    language_factories = {
+        "html": tree_sitter_html.language,
+        "css": tree_sitter_css.language,
+        "javascript": tree_sitter_javascript.language,
+        "typescript": tree_sitter_typescript.language_typescript,
+        "tsx": tree_sitter_typescript.language_tsx,
+    }
 
-    def __post_init__(self) -> None:
-        if self.start < 0:
-            raise ValueError("range start cannot be negative")
-        if self.end < self.start:
-            raise ValueError("range end cannot precede start")
+    language = Language(language_factories[language_name]())
 
-
-def make_parser(language: Language) -> Parser:
-    return Parser(language)
-
-
-def is_html_file(path: Path) -> bool:
-    return path.suffix.lower() in HTML_SUFFIXES
-
-
-def discover_files(inputs: list[str]) -> list[Path]:
-    if not inputs:
-        roots = [Path.cwd()]
-    else:
-        roots = [Path(item).expanduser() for item in inputs]
-
-    found: set[Path] = set()
-
-    for root in roots:
-        try:
-            root = root.resolve()
-        except OSError:
-            root = root.absolute()
-
-        if root.is_file():
-            if is_html_file(root):
-                found.add(root)
-            continue
-
-        if not root.is_dir():
-            print(f"warning: not found: {root}", file=sys.stderr)
-            continue
-
-        try:
-            for path in root.rglob("*"):
-                try:
-                    if path.is_file() and not path.is_symlink() and is_html_file(path):
-                        found.add(path)
-                except OSError as exc:
-                    print(
-                        f"warning: cannot inspect {path}: {exc}",
-                        file=sys.stderr,
-                    )
-        except OSError as exc:
-            print(
-                f"warning: cannot scan {root}: {exc}",
-                file=sys.stderr,
-            )
-
-    return sorted(found)
+    try:
+        return Parser(language)
+    except TypeError:
+        parser = Parser()
+        parser.language = language
+        return parser
 
 
-def decode_html(data: bytes) -> tuple[str, str]:
-    if data.startswith(b"\xef\xbb\xbf"):
-        return data[3:].decode("utf-8"), "utf-8-sig"
-
-    if data.startswith(b"\xff\xfe"):
-        return data[2:].decode("utf-16-le"), "utf-16-le"
-
-    if data.startswith(b"\xfe\xff"):
-        return data[2:].decode("utf-16-be"), "utf-16-be"
-
-    return data.decode("utf-8"), "utf-8"
-
-
-def node_text(source: bytes, node: object) -> bytes:
-    return source[node.start_byte : node.end_byte]
-
-
-def walk_tree(root: object):
-    stack = [root]
+def iter_nodes(node):
+    stack = [node]
 
     while stack:
-        node = stack.pop()
-        yield node
+        current = stack.pop()
+        yield current
 
-        children = node.children
+        children = current.children
+        if children:
+            stack.extend(reversed(children))
 
-        stack.extend(reversed(children))
 
+def comment_ranges(source: bytes, parser: Parser) -> list[tuple[int, int]]:
+    tree = parser.parse(source)
+    ranges: list[tuple[int, int]] = []
 
-def collect_html_comments(root: object) -> list[ByteRange]:
-    ranges: list[ByteRange] = []
-
-    for node in walk_tree(root):
+    for node in iter_nodes(tree.root_node):
         if node.type == "comment":
-            ranges.append(ByteRange(node.start_byte, node.end_byte))
+            ranges.append((node.start_byte, node.end_byte))
 
     return ranges
 
 
-def find_embedded_ranges(
-    root: object,
-) -> tuple[list[ByteRange], list[ByteRange]]:
-    js_ranges: list[ByteRange] = []
-    css_ranges: list[ByteRange] = []
-
-    for node in walk_tree(root):
-        if node.type not in {"script_element", "style_element"}:
-            continue
-
-        raw_nodes = [child for child in node.children if child.type == "raw_text"]
-
-        if not raw_nodes:
-            continue
-
-        if node.type == "script_element":
-            js_ranges.extend(
-                ByteRange(child.start_byte, child.end_byte)
-                for child in raw_nodes
-                if child.end_byte > child.start_byte
-            )
-        else:
-            css_ranges.extend(
-                ByteRange(child.start_byte, child.end_byte)
-                for child in raw_nodes
-                if child.end_byte > child.start_byte
-            )
-
-    return js_ranges, css_ranges
-
-
-def parse_comments(
+def remove_ranges(
     source: bytes,
-    ranges: list[ByteRange],
-    language: Language,
-) -> list[ByteRange]:
-    if not ranges:
-        return []
+    ranges: Iterable[tuple[int, int]],
+) -> tuple[bytes, int]:
+    unique_ranges = sorted(set(ranges), reverse=True)
 
-    parser = make_parser(language)
-    comments: list[ByteRange] = []
-
-    for byte_range in ranges:
-        content = source[byte_range.start : byte_range.end]
-
-        if not content:
-            continue
-
-        tree = parser.parse(content)
-
-        for node in walk_tree(tree.root_node):
-            if node.type != "comment":
-                continue
-
-            comments.append(
-                ByteRange(
-                    byte_range.start + node.start_byte,
-                    byte_range.start + node.end_byte,
-                )
-            )
-
-    return comments
-
-
-def merge_ranges(ranges: list[ByteRange]) -> list[ByteRange]:
-    if not ranges:
-        return []
-
-    ranges.sort(key=lambda item: (item.start, item.end))
-
-    merged: list[ByteRange] = [ranges[0]]
-
-    for current in ranges[1:]:
-        previous = merged[-1]
-
-        if current.start <= previous.end:
-            merged[-1] = ByteRange(
-                previous.start,
-                max(previous.end, current.end),
-            )
-        else:
-            merged.append(current)
-
-    return merged
-
-
-def replace_range_with_whitespace(
-    output: bytearray,
-    source: bytes,
-    byte_range: ByteRange,
-) -> None:
-    start = byte_range.start
-    end = byte_range.end
-
-    i = start
-
-    while i < end:
-        byte = source[i]
-
-        if byte == 0x0A:
-            i += 1
-            continue
-
-        if byte == 0x0D:
-            i += 1
-            continue
-
-        output[i] = 0x20
-        i += 1
-
-
-def strip_comments(source: bytes) -> tuple[bytes, int]:
-    html_parser = make_parser(HTML_LANGUAGE)
-    html_tree = html_parser.parse(source)
-
-    ranges = collect_html_comments(html_tree)
-
-    js_ranges, css_ranges = find_embedded_ranges(html_tree)
-
-    ranges.extend(
-        parse_comments(
-            source,
-            js_ranges,
-            JS_LANGUAGE,
-        )
-    )
-
-    ranges.extend(
-        parse_comments(
-            source,
-            css_ranges,
-            CSS_LANGUAGE,
-        )
-    )
-
-    ranges = merge_ranges(ranges)
-
-    if not ranges:
+    if not unique_ranges:
         return source, 0
 
-    output = bytearray(source)
+    output = source
+    removed = 0
 
-    for byte_range in ranges:
-        replace_range_with_whitespace(
-            output,
-            source,
-            byte_range,
-        )
+    for start, end in unique_ranges:
+        if start < 0 or end < start or end > len(output):
+            continue
 
-    return bytes(output), len(ranges)
+        output = output[:start] + output[end:]
+        removed += 1
+
+    return output, removed
 
 
-def atomic_write(path: Path, data: bytes, original_stat: os.stat_result) -> None:
-    directory = path.parent
+def script_language_from_attributes(tag_bytes: bytes) -> str | None:
+    normalized = tag_bytes.lower()
 
-    fd: int | None = None
-    temporary: Path | None = None
+    if b"type=" not in normalized and b"language=" not in normalized:
+        return "javascript"
+
+    for marker in (b"text/typescript", b"application/typescript", b"typescript"):
+        if marker in normalized:
+            return "typescript"
+
+    for marker in (b"text/tsx", b"application/tsx"):
+        if marker in normalized:
+            return "tsx"
+
+    unsupported_markers = (
+        b"application/json",
+        b"application/ld+json",
+        b"importmap",
+        b"speculationrules",
+        b"text/template",
+        b"text/x-template",
+        b"text/plain",
+        b"application/xml",
+    )
+
+    if any(marker in normalized for marker in unsupported_markers):
+        return None
+
+    javascript_markers = (
+        b"javascript",
+        b"ecmascript",
+        b"module",
+        b"text/jsx",
+        b"application/jsx",
+    )
+
+    if any(marker in normalized for marker in javascript_markers):
+        return "javascript"
+
+    return None
+
+
+def style_language_from_attributes(tag_bytes: bytes) -> str | None:
+    normalized = tag_bytes.lower()
+
+    unsupported_markers = (
+        b"text/less",
+        b"text/scss",
+        b"text/sass",
+        b"text/stylus",
+        b"text/x-scss",
+        b"text/x-sass",
+    )
+
+    if any(marker in normalized for marker in unsupported_markers):
+        return None
+
+    return "css"
+
+
+def inline_content_ranges(
+    html_source: bytes,
+    html_parser: Parser,
+) -> list[tuple[int, int, str]]:
+    tree = html_parser.parse(html_source)
+    ranges: list[tuple[int, int, str]] = []
+
+    for node in iter_nodes(tree.root_node):
+        if node.type != "element":
+            continue
+
+        start_tag = None
+        raw_text = None
+
+        for child in node.children:
+            if child.type == "start_tag":
+                start_tag = child
+            elif child.type == "raw_text":
+                raw_text = child
+
+        if start_tag is None or raw_text is None:
+            continue
+
+        opening_tag = html_source[start_tag.start_byte : start_tag.end_byte].lower()
+
+        if opening_tag.startswith(b"<script"):
+            language = script_language_from_attributes(opening_tag)
+        elif opening_tag.startswith(b"<style"):
+            language = style_language_from_attributes(opening_tag)
+        else:
+            continue
+
+        if language is not None and raw_text.start_byte < raw_text.end_byte:
+            ranges.append((raw_text.start_byte, raw_text.end_byte, language))
+
+    return ranges
+
+
+def strip_html_comments(source: bytes, parsers: dict[str, Parser]) -> tuple[bytes, int]:
+    html_parser = parsers["html"]
+    html_ranges = comment_ranges(source, html_parser)
+    embedded = inline_content_ranges(source, html_parser)
+
+    replacements: list[tuple[int, int, bytes, int]] = []
+
+    for start, end, language_name in embedded:
+        content = source[start:end]
+        embedded_ranges = comment_ranges(content, parsers[language_name])
+        cleaned_content, removed_count = remove_ranges(content, embedded_ranges)
+
+        if removed_count:
+            replacements.append((start, end, cleaned_content, removed_count))
+
+    result = source
+    removed_total = 0
+
+    for start, end, replacement, removed_count in sorted(
+        replacements,
+        key=lambda item: item[0],
+        reverse=True,
+    ):
+        result = result[:start] + replacement + result[end:]
+        removed_total += removed_count
+
+    html_ranges_after_embedded = comment_ranges(result, html_parser)
+    result, html_removed = remove_ranges(result, html_ranges_after_embedded)
+
+    return result, removed_total + html_removed
+
+
+def detect_newline(data: bytes) -> bytes:
+    return b"\r\n" if b"\r\n" in data else b"\n"
+
+
+def atomic_write(path: Path, data: bytes) -> None:
+    parent = path.parent
+    temp_path = parent / f".{path.name}.strip-comments-{os.getpid()}.tmp"
 
     try:
-        fd, temporary_name = tempfile.mkstemp(
-            prefix=f".{path.name}.",
-            suffix=".tmp",
-            dir=directory,
-        )
-        temporary = Path(temporary_name)
+        original_mode = path.stat().st_mode
+    except OSError:
+        original_mode = None
 
-        with os.fdopen(fd, "wb") as file:
-            fd = None
-
+    try:
+        with temp_path.open("wb") as file:
             file.write(data)
             file.flush()
             os.fsync(file.fileno())
 
-        os.chmod(temporary, original_stat.st_mode & 0o7777)
+        if original_mode is not None:
+            os.chmod(temp_path, original_mode)
 
-        try:
-            os.chown(
-                temporary,
-                original_stat.st_uid,
-                original_stat.st_gid,
-            )
-        except (AttributeError, PermissionError, OSError):
-            pass
-
-        os.replace(temporary, path)
-        temporary = None
+        os.replace(temp_path, path)
 
     finally:
-        if fd is not None:
-            os.close(fd)
-
-        if temporary is not None:
-            try:
-                temporary.unlink()
-            except FileNotFoundError:
-                pass
-            except OSError:
-                pass
+        try:
+            temp_path.unlink(missing_ok=True)
+        except OSError:
+            pass
 
 
-def process_file(path: Path) -> FileResult:
+def process_file(path_string: str, dry_run: bool) -> FileResult:
+    path = Path(path_string)
+
     try:
-        original_stat = path.stat()
-
         if not path.is_file():
-            return FileResult(
-                path=path,
-                changed=False,
-                comments=0,
-                error="not a regular file",
-            )
+            return FileResult(path_string, False, 0, "Not a regular file")
+
+        suffix = path.suffix.lower()
+        language_name = SUPPORTED_SUFFIXES.get(suffix)
+
+        if language_name is None:
+            return FileResult(path_string, False, 0, "Unsupported file extension")
 
         source = path.read_bytes()
 
         if not source:
-            return FileResult(
-                path=path,
-                changed=False,
-                comments=0,
-            )
+            return FileResult(path_string, False, 0)
 
-        text, encoding = decode_html(source)
+        parsers = {
+            "html": build_parser("html"),
+            "css": build_parser("css"),
+            "javascript": build_parser("javascript"),
+            "typescript": build_parser("typescript"),
+            "tsx": build_parser("tsx"),
+        }
 
-        if encoding != "utf-8":
-            source = text.encode("utf-8")
+        if language_name == "html":
+            cleaned, comments_removed = strip_html_comments(source, parsers)
+        else:
+            ranges = comment_ranges(source, parsers[language_name])
+            cleaned, comments_removed = remove_ranges(source, ranges)
 
-        modified, comments = strip_comments(source)
+        if comments_removed == 0 or cleaned == source:
+            return FileResult(path_string, False, 0)
 
-        if comments == 0:
-            return FileResult(
-                path=path,
-                changed=False,
-                comments=0,
-            )
+        if not dry_run:
+            atomic_write(path, cleaned)
 
-        if encoding == "utf-16-le":
-            modified = b"\xff\xfe" + modified.decode("utf-8").encode("utf-16-le")
-        elif encoding == "utf-16-be":
-            modified = b"\xfe\xff" + modified.decode("utf-8").encode("utf-16-be")
-        elif encoding == "utf-8-sig":
-            modified = b"\xef\xbb\xbf" + modified
+        return FileResult(path_string, True, comments_removed)
 
-        atomic_write(
-            path,
-            modified,
-            original_stat,
-        )
-
-        return FileResult(
-            path=path,
-            changed=True,
-            comments=comments,
-        )
-
-    except UnicodeDecodeError as exc:
-        return FileResult(
-            path=path,
-            changed=False,
-            comments=0,
-            error=f"decode error: {exc}",
-        )
     except PermissionError as exc:
-        return FileResult(
-            path=path,
-            changed=False,
-            comments=0,
-            error=f"permission denied: {exc}",
-        )
+        return FileResult(path_string, False, 0, f"Permission denied: {exc}")
+
+    except UnicodeError as exc:
+        return FileResult(path_string, False, 0, f"Encoding error: {exc}")
+
     except OSError as exc:
-        return FileResult(
-            path=path,
-            changed=False,
-            comments=0,
-            error=f"I/O error: {exc}",
-        )
+        return FileResult(path_string, False, 0, f"Filesystem error: {exc}")
+
     except Exception as exc:
         return FileResult(
-            path=path,
-            changed=False,
-            comments=0,
-            error=f"{type(exc).__name__}: {exc}",
+            path_string,
+            False,
+            0,
+            f"{type(exc).__name__}: {exc}",
         )
 
 
-def print_result(result: FileResult) -> None:
-    if result.error:
-        print(
-            f"ERROR   {result.path}: {result.error}",
-            file=sys.stderr,
-        )
-        return
-
-    if result.changed:
-        print(
-            f"STRIPPED {result.path} "
-            f"({result.comments} comment"
-            f"{'' if result.comments == 1 else 's'})"
-        )
-    else:
-        print(f"OK      {result.path} (no comments)")
+def is_supported_file(path: Path) -> bool:
+    return path.is_file() and path.suffix.lower() in SUPPORTED_SUFFIXES
 
 
-def parse_args() -> argparse.Namespace:
+def collect_files(inputs: list[Path]) -> list[Path]:
+    found: set[Path] = set()
+
+    for input_path in inputs:
+        try:
+            if input_path.is_file():
+                if is_supported_file(input_path):
+                    found.add(input_path.resolve())
+
+            elif input_path.is_dir():
+                for candidate in input_path.rglob("*"):
+                    try:
+                        if is_supported_file(candidate):
+                            found.add(candidate.resolve())
+                    except OSError:
+                        continue
+
+            else:
+                print(f"Warning: path does not exist: {input_path}", file=sys.stderr)
+
+        except OSError as exc:
+            print(f"Warning: unable to scan {input_path}: {exc}", file=sys.stderr)
+
+    return sorted(found, key=lambda path: str(path))
+
+
+def parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description=(
-            "Strip HTML, inline JavaScript, and inline CSS comments using Tree-sitter."
-        ),
+        description="Strip comments from HTML, CSS, JavaScript, and TypeScript files."
     )
 
     parser.add_argument(
         "paths",
         nargs="*",
-        metavar="PATH",
-        help=(
-            "HTML files and/or directories. Directories are searched "
-            "recursively. If omitted, the current directory is searched."
-        ),
+        type=Path,
+        help="Files or directories to process. Defaults to the current directory.",
     )
 
     parser.add_argument(
-        "-w",
+        "-j",
         "--workers",
         type=int,
-        default=WORKERS,
-        metavar="N",
-        help=f"number of worker processes (default: {WORKERS})",
+        default=DEFAULT_WORKERS,
+        help=f"Worker process count (default: {DEFAULT_WORKERS}).",
+    )
+
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Report proposed changes without modifying files.",
     )
 
     return parser.parse_args()
 
 
 def main() -> int:
-    args = parse_args()
+    args = parse_arguments()
 
     if args.workers < 1:
-        print(
-            "error: --workers must be >= 1",
-            file=sys.stderr,
-        )
+        print("Error: --workers must be at least 1.", file=sys.stderr)
         return 2
 
-    files = discover_files(args.paths)
+    inputs = args.paths if args.paths else [Path.cwd()]
+    files = collect_files(inputs)
 
     if not files:
-        print("No HTML files found.", file=sys.stderr)
+        print("No supported files found.")
         return 0
 
-    print(
-        f"Processing {len(files)} HTML file"
-        f"{'' if len(files) == 1 else 's'} "
-        f"with {args.workers} workers..."
-    )
+    action = "Would process" if args.dry_run else "Processing"
+    print(f"{action} {len(files)} file(s) with {args.workers} worker(s)...")
 
-    ctx = mp.get_context("spawn")
-
-    processed = 0
-    changed = 0
-    comment_count = 0
+    changed_files = 0
+    removed_total = 0
     errors = 0
 
-    with ctx.Pool(processes=args.workers) as pool:
-        pending = [pool.apply_async(process_file, (path,)) for path in files]
+    context = mp.get_context("spawn")
 
-        for job in pending:
+    with context.Pool(processes=args.workers) as pool:
+        pending = [
+            pool.apply_async(process_file, (str(path), args.dry_run)) for path in files
+        ]
+
+        for result_handle in pending:
             try:
-                result = job.get()
+                result = result_handle.get()
             except Exception as exc:
+                errors += 1
                 print(
-                    f"ERROR   worker failure: {type(exc).__name__}: {exc}",
+                    f"ERROR: Worker failed: {type(exc).__name__}: {exc}",
                     file=sys.stderr,
                 )
-                errors += 1
                 continue
-
-            processed += 1
-            comment_count += result.comments
-
-            if result.changed:
-                changed += 1
 
             if result.error:
                 errors += 1
+                print(f"ERROR: {result.path}: {result.error}", file=sys.stderr)
+                continue
 
-            print_result(result)
+            if result.changed:
+                changed_files += 1
+                removed_total += result.comments_removed
+                prefix = "WOULD UPDATE" if args.dry_run else "UPDATED"
+                print(
+                    f"{prefix}: {result.path} "
+                    f"({result.comments_removed} comment(s) removed)"
+                )
 
+    print()
     print(
-        "\nSummary:"
-        f"\n  files processed : {processed}"
-        f"\n  files changed   : {changed}"
-        f"\n  comments stripped: {comment_count}"
-        f"\n  errors          : {errors}"
+        f"Done. Changed files: {changed_files}; "
+        f"comments removed: {removed_total}; errors: {errors}."
     )
 
     return 1 if errors else 0

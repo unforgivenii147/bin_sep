@@ -3,12 +3,10 @@
 from __future__ import annotations
 
 import argparse
-import json
 import re
 import sys
 from pathlib import Path
 from typing import Any
-
 
 try:
     import tomllib
@@ -61,8 +59,7 @@ def get_backend(data: dict[str, Any]) -> str:
         return data["build-system"]["build-backend"]
     except KeyError as error:
         raise ValueError(
-            "pyproject.toml does not define "
-            "[build-system].build-backend"
+            "pyproject.toml does not define [build-system].build-backend"
         ) from error
 
 
@@ -179,8 +176,7 @@ def pep621_metadata(project: dict[str, Any]) -> dict[str, Any]:
     if scripts:
         metadata["entry_points"] = {
             "console_scripts": [
-                f"{name} = {target}"
-                for name, target in scripts.items()
+                f"{name} = {target}" for name, target in scripts.items()
             ]
         }
 
@@ -227,8 +223,7 @@ def poetry_metadata(poetry: dict[str, Any]) -> dict[str, Any]:
     if scripts:
         metadata["entry_points"] = {
             "console_scripts": [
-                f"{name} = {target}"
-                for name, target in scripts.items()
+                f"{name} = {target}" for name, target in scripts.items()
             ]
         }
 
@@ -306,19 +301,12 @@ def setup_keyword_arguments(metadata: dict[str, Any]) -> str:
         lines.append(f"    {setup_key}={literal(value)},")
 
     if "entry_points" in metadata:
-        lines.append(
-            f"    entry_points={literal(metadata['entry_points'])},"
-        )
+        lines.append(f"    entry_points={literal(metadata['entry_points'])},")
 
     optional = metadata.get("optional-dependencies", {})
     if optional:
-        extras_require = {
-            group: values
-            for group, values in optional.items()
-        }
-        lines.append(
-            f"    extras_require={literal(extras_require)},"
-        )
+        extras_require = {group: values for group, values in optional.items()}
+        lines.append(f"    extras_require={literal(extras_require)},")
 
     return "\n".join(lines)
 
@@ -338,17 +326,14 @@ def generate_setup_py(
         metadata = poetry_metadata(poetry)
 
         if isinstance(poetry.get("dependencies"), dict):
-            metadata["install_requires"] = (
-                normalize_poetry_dependencies(
-                    poetry["dependencies"]
-                )
+            metadata["install_requires"] = normalize_poetry_dependencies(
+                poetry["dependencies"]
             )
 
         package_name = canonical_package_name(poetry["name"])
     else:
         raise ValueError(
-            "This script requires either [project] or [tool.poetry] "
-            "metadata."
+            "This script requires either [project] or [tool.poetry] metadata."
         )
 
     package_code = package_discovery_code(

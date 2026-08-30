@@ -10,6 +10,7 @@ import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
+from dh import fsz
 
 
 class Colors:
@@ -45,14 +46,6 @@ def check_ffmpeg():
             f"{Colors.RED}✗ ffmpeg/ffprobe is required but not installed.{Colors.END}"
         )
         sys.exit(1)
-
-
-def fsz(size_bytes: int) -> str:
-    for unit in ["B", "KB", "MB", "GB"]:
-        if size_bytes < 1024:
-            return f"{size_bytes:.1f} {unit}"
-        size_bytes /= 1024
-    return f"{size_bytes:.1f} TB"
 
 
 def format_duration(seconds: float) -> str:

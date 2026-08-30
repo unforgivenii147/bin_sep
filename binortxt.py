@@ -6,7 +6,6 @@ from pathlib import Path
 from dh import get_files, mpf3
 from dh import is_binary
 
-
 cwd = Path.cwd()
 bin_dir = Path(f"{cwd}/binary")
 bin_dir.mkdir(exist_ok=True)

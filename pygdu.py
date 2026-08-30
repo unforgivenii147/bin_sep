@@ -7,6 +7,7 @@ import tty
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from pathlib import Path
+from dh import fsz
 
 
 @dataclass
@@ -64,14 +65,6 @@ class DiskAnalyzer:
             dir_item.flag = "e"
         dir_item.children.sort(key=lambda x: x.size, reverse=True)
         return dir_item
-
-
-def fsz(num_bytes: int) -> str:
-    for unit in ["B", "KiB", "MiB", "GiB", "TiB"]:
-        if num_bytes < 1024.0:
-            return f"{num_bytes:5.1f} {unit}"
-        num_bytes /= 1024.0
-    return f"{num_bytes:5.1f} PiB"
 
 
 def get_progress_bar(item_size: int, max_size: int) -> str:

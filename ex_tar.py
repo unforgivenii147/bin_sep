@@ -8,14 +8,11 @@ import time
 from pathlib import Path
 
 import zstandard as zstd
+from dh import gsz
 
 
 def get_dir_size(path: Path) -> int:
     return sum(f.stat().st_size for f in path.rglob("*") if f.is_file())
-
-
-def gsz(path):
-    return path.stat().st_size if path.exists() else 0
 
 
 def extract_zst_file(archive_path, extract_path):

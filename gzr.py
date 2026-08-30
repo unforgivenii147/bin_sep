@@ -11,6 +11,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 from dh import get_files
+from dh import fsz
 
 MAX_WORKERS = 4
 CHUNK_SIZE = 524288
@@ -88,14 +89,6 @@ def compress_chunked(in_path: Path, out_path: Path, file_size: int) -> bool:
     except (OSError, MemoryError) as e:
         print(f"Chunked compression failed for {in_path.name}: {e}")
         return False
-
-
-def fsz(size: float) -> str:
-    for unit in ["B", "KiB", "MiB", "GiB", "TiB"]:
-        if abs(size) < 1024.0:
-            return f"{size:3.1f} {unit}"
-        size /= 1024.0
-    return f"{size:.1f} PiB"
 
 
 def create_tar_archive(source_dir: Path, output_path: Path) -> bool:

@@ -152,14 +152,16 @@ class ScanConfig:
 
 class WordlistLoader:
     BUILTIN_WORDLISTS = {
-        "common": "admin\nadministrator\nlogin\nwp-admin\ndashboard\nconfig\nbackup\ntest\ndebug\napi\n"
-        "old\nnew\ntmp\ntemp\nprivate\nsecret\nhidden\n.git\n.svn\n.env\nrobots.txt\nsitemap.xml\n"
-        "server-status\nphpinfo.php\ninfo.php\nindex.html\nindex.php\ndefault.html\n"
-        "uploads\nfiles\ndownload\nimages\ncss\njs\nassets\nstatic\nmedia\n"
-        "backup.zip\nbackup.sql\ndatabase.sql\ndb.sql\ndump.sql\n"
-        "wp-config.php\nconfiguration.php\nsettings.php\nconfig.php\n"
-        ".htaccess\n.htpasswd\nweb.config\ncrossdomain.xml\nclientaccesspolicy.xml\n"
-        "readme\nreadme.txt\nreadme.md\nchangelog\nlicense\n",
+        "common": (
+            "admin\nadministrator\nlogin\nwp-admin\ndashboard\nconfig\nbackup\ntest\ndebug\napi\n"
+            "old\nnew\ntmp\ntemp\nprivate\nsecret\nhidden\n.git\n.svn\n.env\nrobots.txt\nsitemap.xml\n"
+            "server-status\nphpinfo.php\ninfo.php\nindex.html\nindex.php\ndefault.html\n"
+            "uploads\nfiles\ndownload\nimages\ncss\njs\nassets\nstatic\nmedia\n"
+            "backup.zip\nbackup.sql\ndatabase.sql\ndb.sql\ndump.sql\n"
+            "wp-config.php\nconfiguration.php\nsettings.php\nconfig.php\n"
+            ".htaccess\n.htpasswd\nweb.config\ncrossdomain.xml\nclientaccesspolicy.xml\n"
+            "readme\nreadme.txt\nreadme.md\nchangelog\nlicense\n"
+        ),
     }
 
     @staticmethod

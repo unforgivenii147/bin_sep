@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
-from dh import is_binary
 
 
 def split_file_into_parts(file_path: Path, n: int) -> None:

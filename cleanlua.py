@@ -5,6 +5,7 @@ import sys
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
+from dh import fsz
 
 
 @dataclass
@@ -141,14 +142,6 @@ def find_lua_files(directories: list[Path]) -> list[Path]:
         elif directory.suffix == ".lua":
             lua_files.append(directory)
     return sorted(set(lua_files))
-
-
-def fsz(size_bytes: int) -> str:
-    for unit in ["B", "kB", "MB", "GB"]:
-        if size_bytes < 1024.0:
-            return f"{size_bytes:.2f} {unit}"
-        size_bytes /= 1024.0
-    return f"{size_bytes:.2f} TB"
 
 
 def main():

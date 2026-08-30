@@ -29,8 +29,7 @@ def extract_filename(url: str, headers: dict[str, str] | None = None) -> str:
         cd = headers.get("Content-Disposition", "")
         if cd:
             match = re.search(
-                r"filename\*?=(?:UTF-8"
-                ')?"?([^";]+)"?',
+                r"filename\*?=(?:UTF-8" ')?"?([^";]+)"?',
                 cd,
                 re.IGNORECASE,
             )

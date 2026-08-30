@@ -4,7 +4,6 @@ import re
 import sys
 from pathlib import Path
 
-
 NODE_MARKERS = ("\u251c\u2500\u2500", "\u2514\u2500\u2500", "|--", "`--")
 FOOTER_RE = re.compile(
     r"^\d+\s+(directories|files|dirs|items)(,\s*\d+\s+(directories|files|dirs|items))?$"

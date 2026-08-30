@@ -5,8 +5,7 @@ import sys
 from pathlib import Path
 
 from dh import get_nobinary
-from dh import is_binary
-
+from dh import gsz
 
 STRTOFIND = ["dist-info", ".so", ".py", ".pth", "__", ".zip"]
 
@@ -47,10 +46,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
-
-def gsz(path):
-    try:
-        return Path(path).stat().st_size
-    except Exception:
-        return 0

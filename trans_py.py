@@ -12,7 +12,6 @@ from typing import Any, Final
 from deep_translator import GoogleTranslator
 from dh import get_pyfiles
 
-
 CHUNK_SIZE = 1024 * 1024
 SKIP_DIRS: Final[frozenset[str]] = frozenset(
     {"lazy", ".git", "__pycache__", ".mypy_cache", ".ruff_cache", ".pytest_cache"}

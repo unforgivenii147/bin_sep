@@ -8,17 +8,7 @@ from multiprocessing import get_context
 from pathlib import Path
 
 from dh import fsz, get_files
-
-
-def gsz(path: str | Path) -> int:
-    path = Path(path)
-    total = 0
-    if path.is_file():
-        return path.stat().st_size
-    for file in path.rglob("*"):
-        if file.is_file():
-            total += file.stat().st_size
-    return total
+from dh import gsz
 
 
 MAX_QUEUE = 4

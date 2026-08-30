@@ -1,6 +1,7 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
 
+import json
 import sys
 import threading
 import time
@@ -61,35 +62,47 @@ def main() -> None:
     if len(sys.argv) < 2:
         print("Usage: script.py <username>")
         sys.exit(1)
+
     env_path = Path("~/.env").expanduser()
     load_dotenv(env_path)
     token = getenv("GITHUB_TOKEN")
     username = sys.argv[1]
+
     if token:
         print("Using authenticated access (rate limit: 5000 requests/hour)")
     else:
         print(
             "No token found in .env, using unauthenticated access (rate limit: 60 requests/hour)"
         )
+
     repos = get_repos(username, token=token, timeout=60)
-    print(f"\nRepositories of '{username}':")
+
+    repos.sort(key=lambda r: r.stargazers_count, reverse=True)
+
+    print(f"\nRepositories of '{username}' (sorted by stars):")
     for repo in repos:
         stars = repo.stargazers_count
         language = repo.language or "N/A"
         description = repo.description or "No description"
         print(f"- {repo.name}")
         print(f"  ⭐ {stars} | 🔤 {language} | {description[:80]}")
-    with Path(f"{username}.txt").open("w", encoding="utf-8") as f:
-        f.write(f"Repositories of '{username}':\n")
-        f.write("=" * 42 + "\n\n")
-        for repo in repos:
-            stars = repo.stargazers_count
-            language = repo.language or "N/A"
-            description = repo.description or "No description"
-            f.write(f"- {repo.name}\n")
-            f.write(f"  Stars: {stars} | Language: {language}\n")
-            f.write(f"  {description}\n")
-            f.write(f"  {repo.html_url}\n\n")
+
+    json_data = [
+        {
+            "name": repo.name,
+            "stars": repo.stargazers_count,
+            "language": repo.language or "N/A",
+            "description": repo.description or "No description",
+            "url": repo.html_url,
+        }
+        for repo in repos
+    ]
+
+    json_filename = f"{username}.json"
+    with Path(json_filename).open("w", encoding="utf-8") as f:
+        json.dump(json_data, f, indent=4, ensure_ascii=False)
+
+    print(f"\nData successfully saved to {json_filename}")
 
 
 if __name__ == "__main__":

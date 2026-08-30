@@ -12,7 +12,6 @@ from datetime import datetime
 from multiprocessing import Pool
 from pathlib import Path
 
-
 XZ_PRESET = 9
 DEFAULT_WORKERS = 8
 

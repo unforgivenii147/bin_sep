@@ -7,6 +7,8 @@ import sys
 import time
 from multiprocessing import Pool, cpu_count
 from pathlib import Path
+from dh import is_binary
+
 
 DIR_PERM = 0o755
 FILE_PERM = 0o664
@@ -17,15 +19,6 @@ EXECUTABLE_DIRS = {"bin", "sbin", ".bin", "libexec", "scripts", "tools"}
 
 def is_executable(mode: int) -> bool:
     return bool(mode & (stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH))
-
-
-def is_binary(file_path: Path) -> bool:
-    try:
-        with file_path.open("rb") as f:
-            chunk = f.read(1024)
-        return b"\x00" in chunk
-    except OSError:
-        return False
 
 
 def has_shebang(file_path: Path) -> bool:

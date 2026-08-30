@@ -5,6 +5,7 @@ import sys
 import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
+from dh import fsz
 
 
 def remove_toml_comments(content: str) -> str:
@@ -97,15 +98,6 @@ def collect_toml_files(paths: list[Path]) -> list[Path]:
         elif path.is_dir():
             toml_files.extend(path.rglob("*.toml"))
     return toml_files
-
-
-def fsz(size_bytes: int) -> str:
-    if size_bytes < 1024:
-        return f"{size_bytes} B"
-    elif size_bytes < 1024 * 1024:
-        return f"{size_bytes / 1024:.1f} KB"
-    else:
-        return f"{size_bytes / (1024 * 1024):.1f} MB"
 
 
 def main():

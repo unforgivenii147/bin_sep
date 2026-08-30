@@ -193,9 +193,11 @@ Examples:
             delayed(
                 lambda f: (
                     f,
-                    pattern in f.read_text(encoding="utf-8", errors="ignore")
-                    if f.stat().st_size < 10 * 1024 * 1024
-                    else False,
+                    (
+                        pattern in f.read_text(encoding="utf-8", errors="ignore")
+                        if f.stat().st_size < 10 * 1024 * 1024
+                        else False
+                    ),
                 )
             )(path)
             for path in files

@@ -10,7 +10,6 @@ import tempfile
 from pathlib import Path
 
 import libcst as cst
-from libcst import RemovalSentinel
 from libcst.metadata import MetadataWrapper
 
 
@@ -43,7 +42,6 @@ class TypeAnnotationTransformer(cst.CSTTransformer):
 
         body = list(updated_node.body)
 
-        # Keep module docstrings first.
         insert_at = 0
         if body and isinstance(body[0], cst.SimpleStatementLine):
             first_statement = body[0].body[0]

@@ -27,6 +27,8 @@ from rich.table import Table
 from rich.text import Text
 
 RICH_AVAILABLE = True
+
+
 # fmt: off
 EXCLUDED_EXTENSIONS = {
     ".xz", ".lzma", ".7z", ".gz", ".bz2", ".zip", ".rar", ".tar", ".tgz", ".tbz2", ".txz", ".tlz",

@@ -100,6 +100,7 @@ def main() -> None:
             "contributing.md",
             "contributing.rst",
             "contributing.txt",
+            "contributing.markdown",
             "contributors",
             "contributors.md",
             "contributors.rst",

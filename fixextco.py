@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import os
-import subprocess
 import sys
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import dataclass

@@ -12,6 +12,7 @@ from pathlib import Path
 
 import py7zr
 from dh import get_files
+from dh import fsz
 
 MAX_WORKERS = 2
 CHUNK_SIZE = 524288
@@ -143,14 +144,6 @@ def compress_chunked(in_path: Path, out_path: Path, file_size: int) -> bool:
     finally:
         if temp_dir.exists():
             shutil.rmtree(temp_dir, ignore_errors=True)
-
-
-def fsz(size: float) -> str:
-    for unit in ["B", "KiB", "MiB", "GiB", "TiB"]:
-        if abs(size) < 1024.0:
-            return f"{size:3.1f} {unit}"
-        size /= 1024.0
-    return f"{size:.1f} PiB"
 
 
 async def compress_folder_async(folder_path: Path, output_path: Path) -> bool:

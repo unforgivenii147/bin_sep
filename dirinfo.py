@@ -8,6 +8,7 @@ from collections import defaultdict
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+from dh import fsz
 
 
 def scan_directory(path: str = "."):
@@ -31,16 +32,6 @@ def scan_directory(path: str = "."):
             extensions.add(ext)
             size_by_ext[ext] += size
     return total_size, file_count, folder_count, extensions, size_by_ext
-
-
-def fsz(size_in_bytes: int) -> str:
-    if size_in_bytes < 1024:
-        return f"{size_in_bytes} bytes"
-    if size_in_bytes < 1024**2:
-        return f"{size_in_bytes / 1024:.2f} KB"
-    if size_in_bytes < 1024**3:
-        return f"{size_in_bytes / 1024**2:.2f} MB"
-    return f"{size_in_bytes / 1024**3:.2f} GB"
 
 
 def write_summary(filename: Path | None = None) -> None:

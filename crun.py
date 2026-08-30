@@ -4,6 +4,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from dh import fsz, mpf3, should_skip
+from dh import gsz
 
 
 def get_filez(root_dir: str | Path):
@@ -26,17 +27,6 @@ def get_filez(root_dir: str | Path):
                     yield filepath
     else:
         yield root_dir
-
-
-def gsz(path: str | Path) -> int:
-    path = Path(path)
-    total = 0
-    if path.is_file():
-        return path.stat().st_size
-    for file in path.rglob("*"):
-        if file.is_file():
-            total += file.stat().st_size
-    return total
 
 
 def process_file(path):

@@ -6,7 +6,6 @@ from pathlib import Path
 
 from dh import get_files, mpf3, runcmd, is_binary
 
-
 cwd = Path.cwd()
 outfile = cwd / "all_strings.txt"
 all_files = 0

@@ -7,7 +7,7 @@ from collections import deque
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
-from dh import cprint, mpf3, runcmd
+from dh import cprint, mpf_async, runcmd
 
 
 def get_files(path: str | Path, ext: list[str] | None = None) -> list[Path]:
@@ -106,10 +106,11 @@ def main() -> None:
         ".5",
         ".7",
         ".8",
+        ".n",
     ]
     all_exts = base_exts + [f"{ext}.gz" for ext in base_exts]
     files = [Path(p) for p in args] if args else get_files(cwd, ext=all_exts)
-    mpf3(process_file, files)
+    mpf_async(process_file, files)
 
 
 if __name__ == "__main__":
