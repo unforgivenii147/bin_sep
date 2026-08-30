@@ -1,5 +1,4 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-"""Minimal markdown viewer - no external dependencies."""
 
 import sys
 import re
@@ -12,37 +11,29 @@ def render_markdown(text: str) -> str:
     in_code = False
 
     for line in lines:
-        # Code blocks
         if line.strip().startswith("```"):
             in_code = not in_code
-            output.append("\033[90m" + line + "\033[0m")  # gray
+            output.append("\033[90m" + line + "\033[0m")
             continue
         if in_code:
             output.append("\033[90m" + line + "\033[0m")
             continue
 
-        # Headings
         heading_match = re.match(r"^(#{1,6})\s+(.*)", line)
         if heading_match:
             level = len(heading_match.group(1))
             text = heading_match.group(2)
-            # Bold + underline for headings
             output.append(f"\033[1;4m{'#' * level} {text}\033[0m")
             continue
 
-        # Bold
         line = re.sub(r"\*\*(.+?)\*\*", r"\033[1m\1\033[0m", line)
-        # Italic
         line = re.sub(r"\*(.+?)\*", r"\033[3m\1\033[0m", line)
-        # Inline code
         line = re.sub(r"`(.+?)`", r"\033[36m\1\033[0m", line)
 
-        # Unordered list
         if re.match(r"^\s*[-*]\s+", line):
             output.append("\033[33m•\033[0m " + re.sub(r"^\s*[-*]\s+", "", line))
             continue
 
-        # Ordered list
         if re.match(r"^\s*\d+\.\s+", line):
             output.append("\033[33m" + line + "\033[0m")
             continue

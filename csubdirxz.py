@@ -1,16 +1,5 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 
-"""
-Compress top-level subdirectories into .tar.xz archives.
-
-Each archive uses maximum xz compression. Originals are removed only after
-successful archive creation and verification.
-
-Usage:
-    python compress_subdirs.py
-    python compress_subdirs.py /path/to/directory
-    python compress_subdirs.py /path/to/directory --workers 4
-"""
 
 from __future__ import annotations
 
@@ -29,7 +18,6 @@ DEFAULT_WORKERS = 8
 
 
 def dir_size(path: Path) -> int:
-    """Return the total size of regular files under path."""
     total = 0
 
     for item in path.rglob("*"):
@@ -37,24 +25,16 @@ def dir_size(path: Path) -> int:
             if item.is_file():
                 total += item.stat().st_size
         except OSError:
-            # Ignore files that disappear or become inaccessible while scanning.
             continue
 
     return total
 
 
 def make_archive_path(subdir: Path) -> Path:
-    """Return the archive path for a source directory."""
     return subdir.parent / f"{subdir.name}.tar.xz"
 
 
 def compress_subdir(subdir: Path) -> dict:
-    """
-    Compress one directory and remove it after successful verification.
-
-    This function runs in a worker process, so it returns data to the parent
-    process instead of printing directly.
-    """
     archive_path = make_archive_path(subdir)
     start_monotonic = time.monotonic()
     start_dt = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -72,7 +52,6 @@ def compress_subdir(subdir: Path) -> dict:
 
         original_size = dir_size(subdir)
 
-        # Create an xz-compressed tar archive.
         with lzma.open(
             archive_path,
             mode="wb",
@@ -90,7 +69,6 @@ def compress_subdir(subdir: Path) -> dict:
                     recursive=True,
                 )
 
-        # Verify the archive can be opened and read.
         with tarfile.open(archive_path, mode="r:xz") as tar:
             for member in tar:
                 if member.isfile():
@@ -104,7 +82,6 @@ def compress_subdir(subdir: Path) -> dict:
         if compressed_size <= 0:
             raise OSError("Created archive is empty")
 
-        # Delete the original only after successful archive verification.
         shutil.rmtree(subdir)
 
         end_dt = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -127,8 +104,6 @@ def compress_subdir(subdir: Path) -> dict:
         end_dt = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         elapsed = time.monotonic() - start_monotonic
 
-        # Remove an incomplete archive, but never remove an existing archive
-        # that was present before this function started.
         if archive_path.exists():
             try:
                 archive_path.unlink()
@@ -149,7 +124,6 @@ def compress_subdir(subdir: Path) -> dict:
 
 
 def fmt_size(size: int) -> str:
-    """Format a byte count as a human-readable size."""
     value = float(size)
 
     for unit in ("B", "KB", "MB", "GB", "TB", "PB"):
@@ -164,7 +138,6 @@ def fmt_size(size: int) -> str:
 
 
 def print_report(result: dict) -> None:
-    """Print one completed-directory report."""
     status = "✅" if result["success"] else "❌"
     elapsed = f"{result['elapsed']:.1f}s"
 
@@ -192,7 +165,6 @@ def print_report(result: dict) -> None:
 
 
 def parse_args() -> argparse.Namespace:
-    """Parse command-line arguments."""
     parser = argparse.ArgumentParser(
         description="Compress top-level subdirectories into .tar.xz archives."
     )
@@ -252,7 +224,6 @@ def main() -> int:
     successful = 0
     failed = 0
 
-    # imap_unordered reports each result as soon as that worker finishes.
     with Pool(processes=worker_count) as pool:
         for result in pool.imap_unordered(compress_subdir, subdirs):
             print_report(result)

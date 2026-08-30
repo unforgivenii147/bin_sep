@@ -9,7 +9,7 @@ BIN: Path = Path.home() / "bin"
 
 def process_dir(cwd: Path, ext: str) -> None:
 
-    for path in cwd.rglob(f"*.{ext}"):
+    for path in cwd.glob(f"*.{ext}"):
         symlink_path = path.with_name(path.stem)
         if symlink_path.exists() and not symlink_path.is_symlink():
             symlink_path.unlink()
@@ -25,4 +25,4 @@ def process_dir(cwd: Path, ext: str) -> None:
 
 if __name__ == "__main__":
     process_dir(BASHBIN, "sh")
-#    process_dir(BIN, "py")
+    process_dir(BIN, "py")

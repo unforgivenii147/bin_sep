@@ -7,7 +7,6 @@ from pathlib import Path
 
 
 def load_user_info() -> dict[str, str]:
-    """Load user metadata from ~/.myinfo (key=value lines, # comments)."""
     info_path = Path.home() / ".myinfo"
     info = {}
     if not info_path.exists():
@@ -22,7 +21,6 @@ def load_user_info() -> dict[str, str]:
 
 
 def write_file_if_missing(path: Path, content: str = "") -> None:
-    """Create a file only if it doesn't already exist."""
     if not path.exists():
         path.write_text(content)
 
@@ -37,8 +35,6 @@ def create_pyproject(
     simple_cli: bool,
     python_requires: str = ">=3.11",
 ) -> str:
-    """Generate the full pyproject.toml content as a string."""
-    # Sanitize package name for import (replace hyphens with underscores)
     import_name = pkg.replace("-", "_")
 
     lines = [
@@ -97,11 +93,9 @@ def create_project_structure(
     simple_cli: bool,
     version: str = "0.1.0",
 ) -> None:
-    """Initialize a complete project skeleton in the current directory."""
     cwd = Path.cwd()
     import_name = pkg.replace("-", "_")
 
-    # --- Root files ---
     write_file_if_missing(cwd / "README.md", f"# {pkg}\n")
     write_file_if_missing(cwd / ".gitignore", _GITIGNORE_CONTENT)
     write_file_if_missing(cwd / "LICENSE", "")
@@ -109,7 +103,6 @@ def create_project_structure(
         create_pyproject(pkg, version, author, email, url, description, simple_cli)
     )
 
-    # --- Source package ---
     src_pkg = cwd / "src" / import_name
     src_pkg.mkdir(parents=True, exist_ok=True)
     write_file_if_missing(src_pkg / "__init__.py", f'__version__ = "{version}"\n')
@@ -133,7 +126,6 @@ if __name__ == "__main__":
 '''.format(pkg=pkg),
         )
 
-    # --- Tests ---
     tests = cwd / "tests"
     tests.mkdir(exist_ok=True)
     write_file_if_missing(tests / "__init__.py")

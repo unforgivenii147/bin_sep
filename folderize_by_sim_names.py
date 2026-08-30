@@ -10,28 +10,14 @@ from pathlib import Path
 
 
 def normalize_name(path: Path) -> str:
-    """
-    Convert a filename into a folder/group name.
-
-    Examples:
-        zen.lua                 -> zen
-        zen_1.lua               -> zen
-        blink.cmp.lua.lua      -> blink.cmp
-        nvim-dap-ui.lua.lua    -> nvim-dap-ui
-        Comment.lua            -> comment
-    """
     name = path.name
 
-    # Remove every trailing ".lua" extension.
     name = re.sub(r"(?:\.lua)+$", "", name, flags=re.IGNORECASE)
 
-    # Remove duplicate numeric suffixes: _1, _2, _10, etc.
     name = re.sub(r"_\d+$", "", name)
 
-    # Make folder names consistent across case differences.
     name = name.strip().lower()
 
-    # Replace characters that are inconvenient in directory names.
     name = re.sub(r"\s+", "-", name)
     name = re.sub(r"[^\w.-]+", "-", name)
     name = re.sub(r"-+", "-", name)
@@ -40,9 +26,6 @@ def normalize_name(path: Path) -> str:
 
 
 def unique_destination(destination: Path) -> Path:
-    """
-    Return a non-existing destination path if the original path exists.
-    """
     if not destination.exists():
         return destination
 
@@ -59,9 +42,6 @@ def unique_destination(destination: Path) -> Path:
 
 
 def find_lua_files(root: Path, script_path: Path) -> list[Path]:
-    """
-    Recursively find Lua files, excluding directories and this script.
-    """
     files = []
 
     for path in root.rglob("*.lua"):

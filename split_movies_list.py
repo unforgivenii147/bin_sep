@@ -7,18 +7,14 @@ import sys
 
 
 def safe_filename(name: str) -> str:
-    """Convert a movie title into a filesystem-safe filename."""
     name = unquote(name).strip()
 
-    # Replace characters that are unsafe in filenames
     name = re.sub(r'[<>:"/\\|?*\x00-\x1F]', "_", name)
 
-    # Avoid empty or problematic filenames
     return name.strip(" .") or "unknown_movie"
 
 
 def extract_movie_name(url: str) -> str | None:
-    """Extract the movie/series name from a URL."""
     parts = url.split("/")
 
     try:

@@ -1,5 +1,4 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-"""Terminal markdown viewer - renders a .md file with rich formatting."""
 
 import sys
 from pathlib import Path

@@ -10,7 +10,7 @@ from concurrent.futures import FIRST_COMPLETED, ProcessPoolExecutor, wait
 from pathlib import Path
 
 import tree_sitter_python as tsp
-from dh import cprint, gsz, has_doc, rrs
+from dh import cprint, gsz, rrs
 from tree_sitter import Language, Parser
 
 PY_EXTS = {".py"}
@@ -283,13 +283,6 @@ def _walker(root_dir):
                 yield path
 
 
-def check_remained_doc():
-    cwd = Path.cwd()
-    for filepath in _walker(cwd):
-        if has_doc(filepath):
-            cprint(f"{filepath.name} stile has doc")
-
-
 def main() -> int:
     cwd = Path.cwd()
     before = gsz(cwd)
@@ -302,16 +295,7 @@ def main() -> int:
         type=Path,
         help="Files or directories. Defaults to the current directory recursively.",
     )
-    parser.add_argument(
-        "-j",
-        "--jobs",
-        type=int,
-        default=min(8, os.cpu_count() or 1),
-        help="Number of worker processes (default: min(8, CPU count)).",
-    )
     args = parser.parse_args()
-    if args.jobs < 1:
-        parser.error("--jobs must be at least 1")
     inputs = args.paths or [Path(".")]
     base = Path.cwd()
     file_iterator = iter_py_files(inputs)
@@ -319,8 +303,8 @@ def main() -> int:
     changed_files = 0
     total_removed = 0
     errors = 0
-    max_pending = max(args.jobs * 4, args.jobs)
-    with ProcessPoolExecutor(max_workers=args.jobs) as executor:
+    max_pending = 32
+    with ProcessPoolExecutor(max_workers=8) as executor:
         pending: dict = {}
         exhausted = submit_until_full(
             executor,
@@ -362,7 +346,6 @@ def main() -> int:
         f"{errors} error(s)."
     )
     return 1 if errors else 0
-    check_remained_doc()
     after = gsz(cwd)
     rrs(cwd, before, after)
 

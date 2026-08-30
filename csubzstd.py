@@ -1,11 +1,4 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-"""
-Compress top-level subdirectories into .tar.zst with zstd level 9,
-remove originals, and print a live report per subdir:
-start time, end time, time taken, compression ratio.
-
-Uses multiprocessing.Pool.apply_async with 8 workers, pathlib, zstandard library.
-"""
 
 import zstandard as zstd
 import tarfile
@@ -15,12 +8,11 @@ from pathlib import Path
 from multiprocessing import Pool
 from datetime import datetime
 
-ZSTD_LEVEL = 9  # zstd compression level (1-19, default 3)
+ZSTD_LEVEL = 9
 WORKERS = 8
 
 
 def dir_size(path: Path) -> int:
-    """Total size in bytes of all files under path (recursive)."""
     total = 0
     for p in path.rglob("*"):
         if p.is_file():
@@ -29,9 +21,6 @@ def dir_size(path: Path) -> int:
 
 
 def compress_subdir(subdir: Path) -> dict:
-    """
-    Compress one subdir, return a dict with timing and ratio info.
-    """
     archive_path = subdir.with_suffix(subdir.suffix + ".tar.zst")
     start_time = time.monotonic()
     start_dt = datetime.now().strftime("%H:%M:%S")
@@ -39,7 +28,6 @@ def compress_subdir(subdir: Path) -> dict:
     try:
         original_size = dir_size(subdir)
 
-        # Compress with zstd level 9
         cctx = zstd.ZstdCompressor(level=ZSTD_LEVEL)
         with open(archive_path, "wb") as f:
             with cctx.stream_writer(f) as compressor:
@@ -50,7 +38,6 @@ def compress_subdir(subdir: Path) -> dict:
         end_dt = datetime.now().strftime("%H:%M:%S")
         elapsed = end_time - start_time
 
-        # Verify archive
         if not archive_path.is_file() or archive_path.stat().st_size == 0:
             return {
                 "subdir": subdir.name,
@@ -67,7 +54,6 @@ def compress_subdir(subdir: Path) -> dict:
         compressed_size = archive_path.stat().st_size
         ratio = compressed_size / original_size if original_size > 0 else 0.0
 
-        # Remove original
         shutil.rmtree(subdir)
 
         return {
@@ -102,7 +88,6 @@ def compress_subdir(subdir: Path) -> dict:
 
 
 def fmt_size(n: int) -> str:
-    """Human-readable size."""
     for unit in ["B", "KB", "MB", "GB", "TB"]:
         if n < 1024 or unit == "TB":
             return f"{n:.1f} {unit}" if unit != "B" else f"{n} B"
@@ -111,7 +96,6 @@ def fmt_size(n: int) -> str:
 
 
 def print_report(r: dict) -> None:
-    """Print a single live report line."""
     status = "✅" if r["success"] else "❌"
     elapsed_s = f"{r['elapsed']:.1f}s"
     if r["success"]:
@@ -146,18 +130,15 @@ def main() -> None:
 
     results = []
     with Pool(processes=WORKERS) as pool:
-        # Submit all tasks asynchronously
         async_results = [
             pool.apply_async(compress_subdir, (subdir,)) for subdir in subdirs
         ]
 
-        # Collect results in submission order, printing each as it arrives
         for async_result in async_results:
             r = async_result.get()
             print_report(r)
             results.append(r)
 
-    # Summary
     ok = sum(1 for r in results if r["success"])
     fail = len(results) - ok
     total_orig = sum(r["original_size"] for r in results if r["success"])

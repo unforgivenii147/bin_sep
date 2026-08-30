@@ -6,7 +6,6 @@ import sys
 from pathlib import Path
 from typing import List, Tuple, Optional, Dict, Any
 
-# Optional OCR imports
 try:
     import cv2
     import pytesseract
@@ -18,8 +17,6 @@ except ImportError:
 
 
 class TreeParser:
-    """Parse various tree text formats and extract paths."""
-
     TREE_SYMBOLS = ["├", "└", "│", "┌", "─", "┐"]
 
     def __init__(self, base_path: Path = Path.cwd()):
@@ -27,16 +24,11 @@ class TreeParser:
         self.entries: List[Dict[str, Any]] = []
 
     def parse(self, text: str) -> List[Dict[str, Any]]:
-        """
-        Parse text and return list of entries.
-        Auto-detects the format.
-        """
         lines = [line.rstrip() for line in text.split("\n") if line.strip()]
 
         if not lines:
             return []
 
-        # Detect format
         format_type = self._detect_format(lines)
 
         if format_type == "tree":
@@ -46,13 +38,11 @@ class TreeParser:
         else:
             self._parse_simple_format(lines)
 
-        # Post-process to determine if entries are files or directories
         self._determine_file_types()
 
         return self.entries
 
     def _detect_format(self, lines: List[str]) -> str:
-        """Detect the format of the input."""
         has_tree_symbols = any(
             any(sym in line for sym in self.TREE_SYMBOLS) for line in lines
         )
@@ -71,46 +61,34 @@ class TreeParser:
             return "simple"
 
     def _parse_tree_format(self, lines: List[str]) -> None:
-        """
-        Parse standard tree command output format.
-        Optimized for speed and accuracy.
-        """
-        stack: List[Tuple[int, Path]] = []  # (depth, path)
+        stack: List[Tuple[int, Path]] = []
 
         for line in lines:
-            # Skip empty lines and comments
             if not line.strip() or line.strip().startswith("#"):
                 continue
 
-            # Find tree symbols
             tree_matches = []
             for sym in ["├── ", "└── ", "│   ", "    "]:
                 if line.startswith(sym):
                     tree_matches.append((len(sym), sym))
 
             if tree_matches:
-                # Found tree format
                 depth = len(tree_matches) // 4
                 name = line[len(tree_matches[0][1]) :].strip()
             else:
-                # Try to find any tree symbol
                 match = re.match(r"^([\s\|┌└├─]+)([^\s]+)(.*)$", line)
                 if match:
                     prefix, name, _ = match.groups()
-                    # Count the number of 4-char blocks
                     depth = len(prefix) // 4
                 else:
-                    # Root or simple entry
                     name = line.strip()
                     depth = 0
 
-            # Clean name
             name = self._clean_name(name)
 
             if not name:
                 continue
 
-            # Handle root
             if name in (".", "./", ".\\"):
                 self.entries.append(
                     {
@@ -124,18 +102,15 @@ class TreeParser:
                 stack = [(0, self.base_path)]
                 continue
 
-            # Pop stack to find parent
             while stack and stack[-1][0] >= depth:
                 stack.pop()
 
-            # Build path
             if stack:
                 parent_path = stack[-1][1]
                 current_path = parent_path / name
             else:
                 current_path = self.base_path / name
 
-            # Determine if it's explicitly a directory
             explicit_dir = name.endswith("/") or name.endswith("\\")
 
             self.entries.append(
@@ -153,18 +128,15 @@ class TreeParser:
                 stack.append((depth, current_path))
 
     def _parse_indented_format(self, lines: List[str]) -> None:
-        """Parse indented format (spaces or tabs)."""
         stack: List[Tuple[int, Path]] = []
 
         for line in lines:
             if not line.strip() or line.strip().startswith("#"):
                 continue
 
-            # Calculate indent
             stripped = line.lstrip()
             indent_len = len(line) - len(stripped)
 
-            # Normalize indent (tab = 4 spaces)
             indent = indent_len // 4
 
             name = stripped.strip()
@@ -173,11 +145,9 @@ class TreeParser:
             if not name:
                 continue
 
-            # Pop stack
             while stack and stack[-1][0] >= indent:
                 stack.pop()
 
-            # Build path
             if stack:
                 parent_path = stack[-1][1]
                 current_path = parent_path / name
@@ -201,7 +171,6 @@ class TreeParser:
                 stack.append((indent, current_path))
 
     def _parse_simple_format(self, lines: List[str]) -> None:
-        """Parse simple path format (one path per line)."""
         for line in lines:
             if not line.strip() or line.strip().startswith("#"):
                 continue
@@ -227,84 +196,57 @@ class TreeParser:
             )
 
     def _clean_name(self, name: str) -> str:
-        """Clean entry name by removing comments and whitespace."""
-        # Remove inline comments
         name = re.sub(r"\s+#.*$", "", name)
         name = name.strip()
 
-        # Remove trailing slashes for comparison
-        # But keep them for explicit_dir detection
         return name
 
     def _determine_file_types(self) -> None:
-        """
-        Determine which entries are files vs directories.
-        Uses heuristics: explicit /, has extension, or has children.
-        """
-        # First pass: mark explicit directories
         for entry in self.entries:
             if entry["explicit_dir"] or entry["name"] in (".", "./", ".\\"):
                 entry["is_dir"] = True
 
-        # Second pass: mark entries with children as directories
         depths = [e["depth"] for e in self.entries]
         for i, entry in enumerate(self.entries):
             if entry["is_dir"]:
                 continue
 
-            # Check if next entry is a child
             if i + 1 < len(self.entries):
                 next_entry = self.entries[i + 1]
                 if next_entry["depth"] > entry["depth"]:
                     entry["is_dir"] = True
 
-        # Third pass: mark entries with extensions as files
         for entry in self.entries:
             if not entry["is_dir"]:
-                # Check if it looks like a file (has extension)
                 if "." in entry["name"].split("/")[-1].split("\\")[-1]:
                     entry["is_dir"] = False
 
 
 class ImageProcessor:
-    """Process images for OCR to extract tree structure."""
-
     @staticmethod
     def is_image_file(path: Path) -> bool:
-        """Check if file is an image."""
         image_extensions = [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".tiff", ".webp"]
         return path.suffix.lower() in image_extensions
 
     @staticmethod
     def preprocess_image(image_path: Path) -> Optional[Image.Image]:
-        """
-        Preprocess image for better OCR results.
-        Converts to grayscale, applies thresholding, and enhances contrast.
-        """
         try:
-            # Open image
             img = Image.open(image_path)
 
-            # Convert to RGB if needed
             if img.mode != "RGB":
                 img = img.convert("RGB")
 
-            # Convert to numpy array for OpenCV processing
             img_cv = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
 
-            # Convert to grayscale
             gray = cv2.cvtColor(img_cv, cv2.COLOR_BGR2GRAY)
 
-            # Apply adaptive thresholding
             thresh = cv2.adaptiveThreshold(
                 gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2
             )
 
-            # Apply morphological operations to clean up
             kernel = np.ones((2, 2), np.uint8)
             cleaned = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
 
-            # Convert back to PIL Image
             result = Image.fromarray(cv2.cvtColor(cleaned, cv2.COLOR_BGR2RGB))
 
             return result
@@ -315,23 +257,19 @@ class ImageProcessor:
 
     @staticmethod
     def extract_text_from_image(image_path: Path) -> str:
-        """Extract text from image using OCR."""
         if not HAS_OCR:
             raise ImportError(
                 "OCR libraries not installed. "
                 "Install with: pip install pytesseract opencv-python pillow"
             )
 
-        # Try to preprocess
         processed_img = ImageProcessor.preprocess_image(image_path)
         if processed_img:
             img_to_ocr = processed_img
         else:
             img_to_ocr = Image.open(image_path)
 
-        # Use pytesseract to extract text
         try:
-            # Configure tesseract for better tree structure recognition
             custom_config = r"--oem 3 --psm 6 -c tessedit_char_whitelist=./\abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-\|"
             text = pytesseract.image_to_string(img_to_ocr, config=custom_config)
             return text
@@ -340,17 +278,14 @@ class ImageProcessor:
 
 
 def read_input(source: str) -> str:
-    """Read input from file, stdin, or image."""
     path = Path(source)
 
     if source == "-":
-        # Read from stdin
         return sys.stdin.read()
 
     if not path.exists():
         raise FileNotFoundError(f"Input not found: {source}")
 
-    # Check if it's an image
     if ImageProcessor.is_image_file(path):
         if not HAS_OCR:
             raise ImportError(
@@ -360,7 +295,6 @@ def read_input(source: str) -> str:
         text = ImageProcessor.extract_text_from_image(path)
         return text
 
-    # Read as text file
     return path.read_text(encoding="utf-8", errors="replace")
 
 
@@ -370,14 +304,9 @@ def create_tree(
     dry_run: bool = False,
     verbose: bool = False,
 ) -> Tuple[int, int]:
-    """
-    Create the folder tree from parsed entries.
-    Returns (created_dirs, created_files).
-    """
     created_dirs = 0
     created_files = 0
 
-    # Sort entries by depth and path for proper ordering
     sorted_entries = sorted(entries, key=lambda x: (x["depth"], str(x["path"])))
 
     for entry in sorted_entries:
@@ -385,11 +314,9 @@ def create_tree(
         path = entry["path"]
         is_dir = entry["is_dir"]
 
-        # Skip root
         if name == ".":
             continue
 
-        # Make path relative to base
         try:
             relative_path = path.relative_to(base_path)
         except ValueError:
@@ -404,14 +331,12 @@ def create_tree(
                 created_files += 1
             continue
 
-        # Ensure parent directories exist
         parent = path.parent
         if not parent.exists():
             parent.mkdir(parents=True, exist_ok=True)
             if verbose:
                 print(f"  Created parent dir: {parent.relative_to(base_path)}/")
 
-        # Create file or directory
         if is_dir:
             if not path.exists():
                 path.mkdir(exist_ok=True)
@@ -436,15 +361,12 @@ def create_tree(
 
 
 def validate_entries(entries: List[Dict[str, Any]]) -> bool:
-    """Validate parsed entries."""
     if not entries:
         print("Warning: No valid entries found in input.")
         return False
 
-    # Check for root
     has_root = any(e["name"] == "." for e in entries)
 
-    # Check if all entries have required fields
     for entry in entries:
         if "path" not in entry:
             print(f"Warning: Entry missing path: {entry}")
@@ -454,7 +376,6 @@ def validate_entries(entries: List[Dict[str, Any]]) -> bool:
 
 
 def main():
-    """Main entry point."""
     parser = argparse.ArgumentParser(
         description="Create folder tree from text file or image",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -515,7 +436,6 @@ Examples:
 
     args = parser.parse_args()
 
-    # Read input
     try:
         text = read_input(args.input)
     except Exception as e:
@@ -529,7 +449,6 @@ Examples:
         print(f"Text length: {len(text)} characters")
         print()
 
-    # Parse
     base_path = Path(args.output).resolve()
 
     parser = TreeParser(base_path)
@@ -547,7 +466,6 @@ Examples:
                 print(f"  [{item_type}] depth={entry['depth']} {entry['name']}")
         print()
 
-    # Create tree
     created_dirs, created_files = create_tree(
         entries, base_path, dry_run=args.dry_run, verbose=args.verbose
     )
@@ -563,7 +481,6 @@ Examples:
 
 
 if __name__ == "__main__":
-    # Import numpy for image processing
     try:
         import numpy as np
     except ImportError:

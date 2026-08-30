@@ -1,5 +1,3 @@
-# define remove orig as -r cli arg, -o to optimize level , -l for legacy modd
-# right now this this script creates subdir inside __pycache__ and its not ok
 import compileall
 import os
 import sys

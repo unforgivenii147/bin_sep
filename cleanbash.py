@@ -126,7 +126,6 @@ def main() -> int:
     files_touched = 0
     errors = 0
 
-    # Using 8 workers as requested
     with mp.Pool(processes=8) as pool:
         results = [pool.apply_async(process_file, (f,)) for f in files]
 
@@ -148,6 +147,5 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    # Ensure spawn method for safety on different OSs
     mp.set_start_method("spawn", force=True)
     raise SystemExit(main())

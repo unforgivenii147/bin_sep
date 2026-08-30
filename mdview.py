@@ -11,7 +11,6 @@ from rich.markdown import Markdown
 
 
 def read_markdown(file_path: str) -> str:
-    """Read a Markdown file as UTF-8 text."""
     path = Path(file_path).expanduser()
 
     if not path.is_file():

@@ -23,8 +23,6 @@ def check_py_files(
             tree = parse(source)
 
             if allow_all:
-                # In -a mode, only comments outside the shebang and the
-                # module docstring are considered violations.
                 allowed_lines = _get_allowed_lines_in_all_mode(tree, lines)
                 has_violation = any(
                     "#" in line
@@ -73,11 +71,9 @@ def _get_allowed_lines_in_all_mode(
 ) -> set[int]:
     allowed_lines: set[int] = set()
 
-    # Allow the shebang only when it is the first line.
     if lines and lines[0].startswith("#!"):
         allowed_lines.add(1)
 
-    # Allow every line belonging to the module docstring.
     module_docstring = _get_module_docstring_node(tree)
 
     if module_docstring is not None:

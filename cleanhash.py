@@ -1,18 +1,4 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-"""
-**File extensions using "#" as comment character:**
-".py", ".rb", ".pl", ".pm", ".sh", ".bash", ".zsh", ".fish", ".csh", ".ksh", ".yaml", ".yml", ".toml", ".jl", ".ps1", ".psm1", ".awk", ".sed", ".gnuplot", ".cfg", ".conf", ".ini", ".gitignore", ".dockerignore", ".editorconfig", ".env", ".flake8", ".pylintrc", "Makefile" (no extension), "Dockerfile".
-
-**Other common comment characters and example extensions:**
-
-- "//" (line) / "/* */" (block): ".c", ".cpp", ".h", ".java", ".js", ".ts", ".cs", ".go", ".swift", ".kt", ".rs", ".scala", ".dart", ".php" (also "#" and "//").
-- "--" (line): ".lua", ".sql", ".ada", ".hs" (Haskell), ".vhd" (VHDL), ".sql" (also "/* */").
-- ";" (line): ".asm", ".lisp", ".cl", ".ini" (also "#"), ".s" (assembly).
-- "%" (line): ".tex", ".sty", ".cls", ".m" (MATLAB), ".erl" (Erlang), ".prolog".
-- "'" (line): ".vb", ".vbs", ".bas" (Visual Basic / BASIC).
-- "REM" (keyword): ".bat", ".cmd" (batch files).
-- "#" (line) also used in: ".perl", ".python", ".ruby" (already listed).
-"""
 
 from __future__ import annotations
 

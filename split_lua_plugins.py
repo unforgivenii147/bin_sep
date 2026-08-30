@@ -1,8 +1,4 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-"""
-Split Lua plugin specs into separate files with LazyVim compatibility.
-Validates Lua syntax, handles numbered backups, and extracts balanced {} blocks.
-"""
 
 import re
 import sys
@@ -11,8 +7,6 @@ from pathlib import Path
 
 
 def validate_lua_syntax(code: str) -> bool:
-    """Validate Lua code using luac or lua interpreter."""
-    # Try luac first (faster, no execution)
     try:
         result = subprocess.run(
             ["luac", "-p", "-"], input=code.encode(), capture_output=True, timeout=5
@@ -21,9 +15,7 @@ def validate_lua_syntax(code: str) -> bool:
     except (FileNotFoundError, subprocess.TimeoutExpired):
         pass
 
-    # Fallback to lua -e (slower but more available)
     try:
-        # Wrap in return statement for expression validation
         test_code = f"return (function() {code} end)()"
         result = subprocess.run(
             ["lua", "-e", test_code], capture_output=True, timeout=5
@@ -32,13 +24,10 @@ def validate_lua_syntax(code: str) -> bool:
     except (FileNotFoundError, subprocess.TimeoutExpired):
         pass
 
-    # Final fallback: basic structural validation
     return basic_lua_validation(code)
 
 
 def basic_lua_validation(code: str) -> bool:
-    """Basic structural validation when no Lua interpreter available."""
-    # Check balanced brackets/braces/parens
     pairs = {"(": ")", "[": "]", "{": "}"}
     stack = []
     in_string = False
@@ -78,7 +67,6 @@ def basic_lua_validation(code: str) -> bool:
 
 
 def get_unique_path(path: Path) -> Path:
-    """Get unique path with _number suffix if exists."""
     if not path.exists():
         return path
 
@@ -95,7 +83,6 @@ def get_unique_path(path: Path) -> Path:
 
 
 def extract_balanced_braces(text: str, start: int) -> tuple[int, int] | None:
-    """Extract content between matching braces starting at start."""
     if start >= len(text) or text[start] != "{":
         return None
 
@@ -133,17 +120,15 @@ def extract_balanced_braces(text: str, start: int) -> tuple[int, int] | None:
             if depth == 0:
                 return (start, i + 1)
 
-    return None  # Unbalanced
+    return None
 
 
 def parse_plugin_name(block: str) -> str | None:
-    """Extract plugin name from spec block."""
-    # Match "username/repo" or 'username/repo'
     patterns = [
-        r'"([^"]+/[^"]+)"',  # "user/repo"
-        r"'([^']+/[^']+)'",  # 'user/repo'
-        r'\[\s*"([^"]+/[^"]+)"\s*\]',  # { "user/repo" }
-        r"\[\s*'([^']+/[^']+)'\s*\]",  # { 'user/repo' }
+        r'"([^"]+/[^"]+)"',
+        r"'([^']+/[^']+)'",
+        r'\[\s*"([^"]+/[^"]+)"\s*\]',
+        r"\[\s*'([^']+/[^']+)'\s*\]",
     ]
 
     for pattern in patterns:
@@ -151,7 +136,6 @@ def parse_plugin_name(block: str) -> str | None:
         if match:
             return match.group(1)
 
-    # Try to find any string that looks like a plugin name
     match = re.search(r'["\']([a-zA-Z0-9_-]+/[a-zA-Z0-9._-]+)["\']', block)
     if match:
         return match.group(1)
@@ -160,15 +144,11 @@ def parse_plugin_name(block: str) -> str | None:
 
 
 def to_valid_filename(name: str) -> str:
-    """Convert plugin name to valid filename."""
-    # user/repo -> repo.lua, with special cases
     if "/" in name:
         name = name.split("/")[-1]
 
-    # Remove .nvim suffix
     name = name.removesuffix(".nvim")
 
-    # LazyVim special naming
     special_cases = {
         "nvim-lspconfig": "lsp",
         "nvim-treesitter": "treesitter",
@@ -190,41 +170,25 @@ def to_valid_filename(name: str) -> str:
 
 
 def format_lazyvim_spec(block: str, plugin_name: str) -> str:
-    """Format block as LazyVim-compatible plugin spec."""
     lines = block.strip().split("\n")
 
-    # Clean up the block
     cleaned = []
     for line in lines:
         stripped = line.strip()
-        # Remove trailing commas from last element
         cleaned.append(line)
 
     content = "\n".join(cleaned).strip()
 
-    # Ensure it starts with return
     if not content.startswith("return"):
-        # Check if it's already a table expression
         if content.startswith("{"):
             content = f"return {content}"
         else:
             content = f"return {{\n  {content}\n}}"
 
-    # Validate the wrapped version
     return content
 
 
 def split_lua_plugins(input_path: str, move: bool = False) -> list[Path]:
-    """
-    Split Lua plugin specs into separate files.
-
-    Args:
-        input_path: Path to input Lua file
-        move: If True, replace input with empty return {} after successful extraction
-
-    Returns:
-        List of created file paths
-    """
     input_file = Path(input_path)
     if not input_file.exists():
         print(f"Error: File not found: {input_path}", file=sys.stderr)
@@ -232,18 +196,15 @@ def split_lua_plugins(input_path: str, move: bool = False) -> list[Path]:
 
     content = input_file.read_text()
 
-    # Find outermost table
     start_idx = content.find("return")
     if start_idx == -1:
         start_idx = 0
 
-    # Find first { after return
     brace_start = content.find("{", start_idx)
     if brace_start == -1:
         print("Error: No table found in file", file=sys.stderr)
         sys.exit(1)
 
-    # Extract outer table bounds
     bounds = extract_balanced_braces(content, brace_start)
     if not bounds:
         print("Error: Unbalanced braces in file", file=sys.stderr)
@@ -251,23 +212,19 @@ def split_lua_plugins(input_path: str, move: bool = False) -> list[Path]:
 
     _, outer_end = bounds
 
-    # Get content inside outer braces
     inner_start = brace_start + 1
     inner_end = outer_end - 1
     inner_content = content[inner_start:inner_end]
 
-    # Extract plugin specs (elements separated by commas at depth 1)
     blocks = []
     i = 0
     while i < len(inner_content):
         char = inner_content[i]
 
-        # Skip whitespace and commas between specs
         if char in " \t\n\r,":
             i += 1
             continue
 
-        # Found start of a spec
         if char == "{":
             bounds = extract_balanced_braces(inner_content, i)
             if bounds:
@@ -277,8 +234,6 @@ def split_lua_plugins(input_path: str, move: bool = False) -> list[Path]:
                 i = end
                 continue
 
-        # Skip non-table values (strings, booleans, etc. at top level)
-        # Find next comma or end at depth 0
         depth = 0
         j = i
         in_string = False
@@ -322,16 +277,13 @@ def split_lua_plugins(input_path: str, move: bool = False) -> list[Path]:
 
         i = j + 1 if j < len(inner_content) else len(inner_content)
 
-    # Process each block
     created_files = []
     valid_blocks = []
 
     for block in blocks:
-        # Skip empty blocks
         if not block.strip() or block.strip() == "{}":
             continue
 
-        # Parse plugin name
         plugin_full = parse_plugin_name(block)
         if not plugin_full:
             print(
@@ -340,14 +292,11 @@ def split_lua_plugins(input_path: str, move: bool = False) -> list[Path]:
             )
             continue
 
-        # Generate filename
         filename = to_valid_filename(plugin_full)
         target = Path(f"{filename}.lua")
 
-        # Format for LazyVim
         formatted = format_lazyvim_spec(block, plugin_full)
 
-        # Validate Lua syntax
         if not validate_lua_syntax(formatted):
             print(
                 f"Error: Invalid Lua syntax for {plugin_full}, skipping",
@@ -356,17 +305,14 @@ def split_lua_plugins(input_path: str, move: bool = False) -> list[Path]:
             print(f"Content:\n{formatted[:200]}...", file=sys.stderr)
             continue
 
-        # Get unique path
         unique_target = get_unique_path(target)
 
-        # Write file
         unique_target.write_text(formatted, encoding="utf-8")
         created_files.append(unique_target)
         valid_blocks.append(block)
 
         print(f"Created: {unique_target} <- {plugin_full}")
 
-    # Move/replace original if requested and successful
     if move and valid_blocks:
         backup = get_unique_path(input_file.with_suffix(input_file.suffix + ".bak"))
         input_file.rename(backup)
