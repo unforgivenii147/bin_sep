@@ -1,33 +1,37 @@
-#!/data/data/com.termux/files/usr/bin/bash
-Here is the fully automated Python script. It dynamically scans your current directory for all 5 specific font files, converts them into individual Base64 payloads, and compiles them cleanly into the precise CSS rules we mapped out above.
-## 1. The Automation Script (compile_precise_css.py)
-Create this file in the directory where your .ttf files live, then run it.
+#!/data/data/com.termux/files/home/.local/bin/python
 
-import base64from pathlib import Path
+import base64
+from pathlib import Path
+
+
 def get_font_b64_or_fallback(filename):
     """Attempts to find and read a TTF file, returning its Base64 string."""
     path = Path(filename)
     if not path.exists():
         print(f"⚠️  Warning: '{filename}' not found in current directory.")
-        print(f"   WeasyPrint will fall back to default system typography for this style.")
+        print(
+            f"   WeasyPrint will fall back to default system typography for this style."
+        )
         return ""
-    
+
     binary_data = path.read_bytes()
-    b64_encoded = base64.b64encode(binary_data).decode('utf-8')
+    b64_encoded = base64.b64encode(binary_data).decode("utf-8")
     return b64_encoded
+
+
 def build_precise_css():
     print("Parsing typography file tree...")
-    
+
     # 1. Fetch data for each precise styling variant
     reg_b64 = get_font_b64_or_fallback("Inter-Regular.ttf")
     bold_b64 = get_font_b64_or_fallback("Inter-Bold.ttf")
     italic_b64 = get_font_b64_or_fallback("Inter-Italic.ttf")
     bi_b64 = get_font_b64_or_fallback("Inter-BoldItalic.ttf")
     mono_b64 = get_font_b64_or_fallback("JetBrainsMono-Regular.ttf")
-    
+
     # 2. Build font-face blocks only if the source file was actually present
     font_face_blocks = []
-    
+
     if reg_b64:
         font_face_blocks.append(f"""@font-face {{
     font-family: 'Inter';
@@ -256,22 +260,16 @@ td {{
 }}"""
 
     output_name = "print-style.css"
-    Path(output_name).write_text(css_template, encoding='utf-8')
+    Path(output_name).write_text(css_template, encoding="utf-8")
     print(f"\n🎉 Process Complete! Output saved to: {output_name}")
+
+
 if __name__ == "__main__":
     build_precise_css()
 
-## 2. File Naming Rule Checklist
-Before running the script, make sure your .ttf files in the current folder are named exactly as follows:
 
-* Inter-Regular.ttf
-* Inter-Bold.ttf
-* Inter-Italic.ttf
-* Inter-BoldItalic.ttf
-* JetBrainsMono-Regular.ttf
-
-Now that the CSS generation is fully dynamic, would you like me to:
-
-* Provide a sample HTML layout block demonstrating the custom tables, headers, and code highlights?
-* Show you how to implement dynamic page numbering or total page counts inside the document itself (outside the running footer)?
-
+# * Inter-Regular.ttf
+# * Inter-Bold.ttf
+# * Inter-Italic.ttf
+# * Inter-BoldItalic.ttf
+# * JetBrainsMono-Regular.ttf
