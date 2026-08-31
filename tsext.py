@@ -89,7 +89,7 @@ def process_directory(start_dir: str, output_dir: str) -> None:
         if functions:
             all_functions["relative_path"] = functions
         if classes:
-            all_classes[relative_path] = classes
+            all_classes["relative_path"] = classes
         if constants:
             all_constants[relative_path] = constants
         all_imports.update(imports)

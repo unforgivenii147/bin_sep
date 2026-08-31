@@ -11,6 +11,7 @@ import sys
 import tempfile
 from pathlib import Path
 
+from dh import fsz
 from joblib import Parallel, delayed
 from loguru import logger
 
@@ -61,15 +62,6 @@ DATA_URI_RE = re.compile(
     r";base64,"
     r"(?P<data>[A-Za-z0-9+/=]+)",
 )
-
-
-def format_size(n: int) -> str:
-    size = float(n)
-    for unit in ("B", "KB", "MB", "GB", "TB"):
-        if size < 1024:
-            return f"{size:.2f} {unit}"
-        size /= 1024
-    return f"{size:.2f} PB"
 
 
 def run_tool(cmd: list[str], desc: str) -> bool:
@@ -247,7 +239,7 @@ def print_file_stats(stats: dict) -> None:
     elif opt == 0:
         print(f"  · {name} — {found} resource(s), none optimized")
     else:
-        print(f"  ✓ {name} — {opt}/{found} optimized, freed {format_size(freed)}")
+        print(f"  ✓ {name} — {opt}/{found} optimized, freed {fsz(freed)}")
 
 
 def print_summary(all_stats: list[dict]) -> None:
@@ -263,7 +255,7 @@ def print_summary(all_stats: list[dict]) -> None:
     print(f"  Errors               : {errors}")
     print(f"  Resources found      : {total_found}")
     print(f"  Resources optimized  : {total_opt}")
-    print(f"  Total space freed    : {format_size(total_freed)}")
+    print(f"  Total space freed    : {fsz(total_freed)}")
     print("=" * 60)
 
 

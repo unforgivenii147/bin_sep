@@ -1,8 +1,10 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 
+from __future__ import annotations
+
 import re
-import sys
 import subprocess
+import sys
 from pathlib import Path
 
 
@@ -34,7 +36,7 @@ def basic_lua_validation(code: str) -> bool:
     string_char = None
     escape = False
 
-    for i, char in enumerate(code):
+    for _i, char in enumerate(code):
         if escape:
             escape = False
             continue

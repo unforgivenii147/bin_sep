@@ -10,6 +10,8 @@ import tarfile
 import zipfile
 from pathlib import Path
 
+from dh import fsz
+
 try:
     import py7zr
 
@@ -100,14 +102,6 @@ ARCHIVE_TYPES = {
     ".br": "Brotli Stream (.br)",
     ".lz4": "LZ4 Frame (.lz4)",
 }
-
-
-def format_size(bytes_val):
-    for unit in ["B", "KB", "MB", "GB", "TB"]:
-        if abs(bytes_val) < 1024.0:
-            return f"{bytes_val:3.2f} {unit}"
-        bytes_val /= 1024.0
-    return f"{bytes_val:.2f} PB"
 
 
 def get_archive_type_info(filepath):
@@ -318,8 +312,8 @@ def scan_directory(target_dir, auto_extract=False, test_integrity=False, verbose
                     )
                     print(
                         f" -> Found: {res['filename']} | Type: {res['archive_type']} | "
-                        f"Comp: {format_size(res['compressed_size'])} -> "
-                        f"Ext: {format_size(res['extracted_size'])} | {status_str}"
+                        f"Comp: {fsz(res['compressed_size'])} -> "
+                        f"Ext: {fsz(res['extracted_size'])} | {status_str}"
                     )
     print("-" * 90)
     print(
@@ -340,16 +334,16 @@ def scan_directory(target_dir, auto_extract=False, test_integrity=False, verbose
             status = "\033[90mSKIP\033[0m"
         print(
             f"{item['filename'][:31]:<32} {item['archive_type'][:25]:<26} "
-            f"{format_size(item['compressed_size']):<12} {format_size(item['extracted_size']):<12} {status}"
+            f"{fsz(item['compressed_size']):<12} {fsz(item['extracted_size']):<12} {status}"
         )
     print("=" * 90)
     print(f"\033[1;36mSUMMARY:\033[0m Found {len(found_archives)} archive files.")
-    print(f"Total Compressed Size : {format_size(total_compressed)}")
-    print(f"Total Extracted Size  : \033[1;32m{format_size(total_extracted)}\033[0m")
+    print(f"Total Compressed Size : {fsz(total_compressed)}")
+    print(f"Total Extracted Size  : \033[1;32m{fsz(total_extracted)}\033[0m")
     if total_compressed > 0:
         ratio = total_extracted / total_compressed
         print(
-            f"Overall Expansion     : {ratio:.2f}x ({format_size(total_extracted - total_compressed)} saved)"
+            f"Overall Expansion     : {ratio:.2f}x ({fsz(total_extracted - total_compressed)} saved)"
         )
     if auto_extract and found_archives:
         out_subdir = target / "extracted_archives"

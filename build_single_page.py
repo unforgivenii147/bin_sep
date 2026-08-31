@@ -5,8 +5,10 @@ import base64
 import hashlib
 import mimetypes
 import re
+from io import BytesIO
 from pathlib import Path
 
+import pycurl
 import requests
 from bs4 import BeautifulSoup
 from bs4.element import AttributeValueList
@@ -16,6 +18,7 @@ OUTPUT_DIR = cwd / "output"
 ASSETS_DIR = cwd / "output" / "assets"
 DOWNLOAD_REMOTE = True
 TIMEOUT = 10
+
 if not OUTPUT_DIR.exists():
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 if not ASSETS_DIR.exists():
@@ -48,7 +51,57 @@ def extract_base64(data_url: AttributeValueList | str | None):
     return save_hashed_asset(content, mime_type)
 
 
-def download_external(url: AttributeValueList | str):
+def download_external(url: str):
+    if not isinstance(url, str):
+        return None
+
+    buffer = BytesIO()
+    headers_buffer = BytesIO()
+    c = pycurl.Curl()
+
+    try:
+        c.setopt(c.URL, url)
+        c.setopt(c.WRITEDATA, buffer)
+        c.setopt(c.HEADERDATA, headers_buffer)
+
+        c.setopt(c.TIMEOUT, TIMEOUT)
+        c.setopt(c.FOLLOWLOCATION, True)
+
+        user_agent = (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "Anonymously/1.0 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+        )
+        c.setopt(c.USERAGENT, user_agent)
+
+        c.setopt(c.SSL_VERIFYPEER, 1)
+        c.setopt(c.SSL_VERIFYHOST, 2)
+
+        c.perform()
+
+        status_code = c.getinfo(c.RESPONSE_CODE)
+        if status_code != 200:
+            c.close()
+            return None
+
+        raw_headers = headers_buffer.getvalue().decode("iso-8859-1").lower()
+        mime = "application/octet-stream"
+
+        for line in raw_headers.split("\r\n"):
+            if line.startswith("content-type:"):
+                mime = line.split(":", 1)[1].strip()
+                break
+
+        content = buffer.getvalue()
+        c.close()
+
+        return save_hashed_asset(content, mime.split(";")[0])
+
+    except Exception:
+        c.close()
+        return None
+
+
+def download_external_with_requests(url: AttributeValueList | str):
     try:
         r = requests.get(url, timeout=TIMEOUT)
         if r.status_code != 200:

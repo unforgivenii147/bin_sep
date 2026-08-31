@@ -6,7 +6,8 @@ import sys
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
-from dh import runcmd, is_binary
+
+from dh import is_binary, runcmd, unique_path
 
 
 class Color:
@@ -438,20 +439,6 @@ def get_file_mime(path: Path) -> MimeResult:
         return MimeResult(None, "No MIME type detected")
     except Exception as e:
         return MimeResult(None, f"Exception: {e}")
-
-
-def unique_path(path: Path) -> Path:
-    if not path.exists():
-        return path
-    stem = path.stem
-    suffix = "".join(path.suffixes)
-    counter = 1
-    while True:
-        new_name = f"{stem}_{counter}{suffix}"
-        new_path = path.parent / new_name
-        if not new_path.exists():
-            return new_path
-        counter += 1
 
 
 def safe_rename(old_path: Path, new_path: Path) -> bool:

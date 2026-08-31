@@ -34,52 +34,52 @@ def hash_content(content: str) -> str:
     return hashlib.sha256(content.encode("utf-8")).hexdigest()
 
 
-def extract_archive(file_path, extract_to) -> None:
+def extract_archive(path, extract_to) -> None:
     try:
-        if file_path.suffix == ".zip":
-            with zipfile.ZipFile(file_path, "r") as z:
+        if path.suffix == ".zip":
+            with zipfile.ZipFile(path, "r") as z:
                 z.extractall(extract_to)
-        elif file_path.suffix == ".tar":
-            with tarfile.open(file_path, "r") as t:
+        elif path.suffix == ".tar":
+            with tarfile.open(path, "r") as t:
                 t.extractall(extract_to)
-        elif file_path.suffix == ".gz":
+        elif path.suffix == ".gz":
             with (
-                gzip.open(file_path, "rb") as g,
-                open(extract_to / file_path.stem, "wb") as f,
+                gzip.open(path, "rb") as g,
+                open(extract_to / path.stem, "wb") as f,
             ):
                 copy_chunks(g, f)
-        elif file_path.suffix == ".bz2":
+        elif path.suffix == ".bz2":
             with (
-                bz2.open(file_path, "rb") as b,
-                open(extract_to / file_path.stem, "wb") as f,
+                bz2.open(path, "rb") as b,
+                open(extract_to / path.stem, "wb") as f,
             ):
                 copy_chunks(b, f)
-        elif file_path.suffix == ".xz":
+        elif path.suffix == ".xz":
             with (
-                lzma.open(file_path, "rb") as x,
-                open(extract_to / file_path.stem, "wb") as f,
+                lzma.open(path, "rb") as x,
+                open(extract_to / path.stem, "wb") as f,
             ):
                 copy_chunks(x, f)
-        elif file_path.suffix == ".zst":
-            with open(file_path, "rb") as z:
+        elif path.suffix == ".zst":
+            with open(path, "rb") as z:
                 dctx = zstd.ZstdDecompressor()
-                with open(extract_to / file_path.stem, "wb") as f:
+                with open(extract_to / path.stem, "wb") as f:
                     f.write(dctx.decompress(z.read()))
-        elif file_path.suffix == ".br":
-            with open(file_path, "rb") as b:
+        elif path.suffix == ".br":
+            with open(path, "rb") as b:
                 decompressed_data = brotli.decompress(b.read())
-                with open(extract_to / file_path.stem, "wb") as f:
+                with open(extract_to / path.stem, "wb") as f:
                     f.write(decompressed_data)
     except Exception as e:
-        logger.error(f"Error extracting {file_path}: {e}")
+        logger.error(f"Error extracting {path}: {e}")
 
 
-def parse_python_file(file_path) -> Module | None:
+def parse_python_file(path) -> Module | None:
     try:
-        with open(file_path, encoding="utf-8") as f:
-            return ast.parse(f.read(), filename=str(file_path))
+        with open(path, encoding="utf-8") as f:
+            return ast.parse(f.read(), filename=str(path))
     except Exception as e:
-        logger.error(f"Error parsing {file_path}: {e}")
+        logger.error(f"Error parsing {path}: {e}")
         return None
 
 
@@ -105,9 +105,9 @@ def find_repeated_definitions(ast_tree: Module):
     return definitions
 
 
-def process_file(file_path):
-    Path(path)
-    ast_tree = parse_python_file(file_path)
+def process_file(path):
+    path = Path(path)
+    ast_tree = parse_python_file(path)
     if ast_tree:
         return find_repeated_definitions(ast_tree)
     return None
@@ -117,10 +117,10 @@ def process_directory(directory):
     repeated_definitions = {"functions": {}, "classes": {}, "constants": {}}
     for root, _, files in os.walk(directory):
         for file in files:
-            file_path = Path(root) / file
-            if file_path.suffix == ".py":
-                print(f"processing ... {file_path.name}")
-                result = process_file(file_path)
+            path = Path(root) / file
+            if path.suffix == ".py":
+                print(f"processing ... {path.name}")
+                result = process_file(path)
                 if result:
                     for key in repeated_definitions:
                         for content_hash, nodes in result[key].items():

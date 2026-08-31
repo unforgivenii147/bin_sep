@@ -4,7 +4,7 @@ from __future__ import annotations
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-from dh import fsz, is_image, gsz
+from dh import fsz, gsz, is_image
 
 try:
     import cv2

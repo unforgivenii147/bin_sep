@@ -8,6 +8,8 @@ import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 
+from dh import fsz
+
 try:
     from fontTools.ttLib import TTFont
 except ImportError:
@@ -50,15 +52,6 @@ def generate_output_path(
     if output_dir is not None:
         return output_dir / f"{stem}.{output_format}"
     return input_path.with_suffix(f".{output_format}")
-
-
-def format_size(size_bytes: int) -> str:
-    size = float(size_bytes)
-    for unit in ("B", "KB", "MB", "GB", "TB"):
-        if size < 1024.0:
-            return f"{size:.2f} {unit}"
-        size /= 1024.0
-    return f"{size:.2f} PB"
 
 
 def convert_font(
@@ -163,7 +156,7 @@ def print_file_stats(stats: dict) -> None:
         saved = (1 - out_sz / in_sz) * 100 if in_sz else 0
         print(f"  {status} {name}")
         print(
-            f"      {format_size(in_sz)} → {format_size(out_sz)}  ({ratio:.1f}% of original, {saved:+.1f}% change)"
+            f"      {fsz(in_sz)} → {fsz(out_sz)}  ({ratio:.1f}% of original, {saved:+.1f}% change)"
         )
         print(f"      Time: {stats['time']:.3f}s")
         if stats["warning"]:
@@ -188,8 +181,8 @@ def print_summary(all_stats: list[dict]) -> None:
         total_in = sum(s["input_size"] for s in all_stats if s["success"])
         total_out = sum(s["output_size"] for s in all_stats if s["success"])
         total_time = sum(s["time"] for s in all_stats if s["success"])
-        print(f"  Input size      : {format_size(total_in)}")
-        print(f"  Output size     : {format_size(total_out)}")
+        print(f"  Input size      : {fsz(total_in)}")
+        print(f"  Output size     : {fsz(total_out)}")
         if total_in:
             print(f"  Ratio           : {total_out / total_in * 100:.1f}% of original")
         print(f"  Total time      : {total_time:.3f}s")

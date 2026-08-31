@@ -104,19 +104,18 @@ class TypeAnnotationTransformer(cst.CSTTransformer):
                 continue
 
             for small_statement in statement.body:
-                if isinstance(small_statement, cst.ImportFrom):
-                    if (
-                        isinstance(small_statement.module, cst.Name)
-                        and small_statement.module.value == "typing"
-                        and small_statement.names
-                        and any(
-                            isinstance(alias, cst.ImportAlias)
-                            and isinstance(alias.name, cst.Name)
-                            and alias.name.value == "Any"
-                            for alias in small_statement.names
-                        )
-                    ):
-                        return False
+                if isinstance(small_statement, cst.ImportFrom) and (
+                    isinstance(small_statement.module, cst.Name)
+                    and small_statement.module.value == "typing"
+                    and small_statement.names
+                    and any(
+                        isinstance(alias, cst.ImportAlias)
+                        and isinstance(alias.name, cst.Name)
+                        and alias.name.value == "Any"
+                        for alias in small_statement.names
+                    )
+                ):
+                    return False
 
         return True
 

@@ -1,10 +1,12 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 
+from __future__ import annotations
+
 import argparse
 import re
 import sys
 from pathlib import Path
-from typing import List, Tuple, Optional, Dict, Any
+from typing import Any, Dict, List, Optional, Tuple
 
 try:
     import cv2
@@ -217,9 +219,11 @@ class TreeParser:
                     entry["is_dir"] = True
 
         for entry in self.entries:
-            if not entry["is_dir"]:
-                if "." in entry["name"].split("/")[-1].split("\\")[-1]:
-                    entry["is_dir"] = False
+            if (
+                not entry["is_dir"]
+                and "." in entry["name"].split("/")[-1].split("\\")[-1]
+            ):
+                entry["is_dir"] = False
 
 
 class ImageProcessor:
@@ -383,16 +387,16 @@ def main():
 Examples:
   # From text file
   python create_tree.py tree.txt
-  
+
   # From image (screenshot)
   python create_tree.py folder_tree.png
-  
+
   # With output directory
   python create_tree.py tree.txt --output ./my_project
-  
+
   # Dry run
   python create_tree.py tree.txt --dry-run
-  
+
   # Verbose mode
   python create_tree.py tree.txt -v
         """,

@@ -3,8 +3,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from dh import get_fast, rrs, runcmd
-from dh import gsz
+from dh import get_fast, gsz, rrs, runcmd
 
 
 def process_file(path) -> None:

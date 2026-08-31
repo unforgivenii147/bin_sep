@@ -7,7 +7,7 @@ import shutil
 import sys
 from pathlib import Path
 
-from dh import unique_path, should_skip
+from dh import fsz, should_skip, unique_path
 
 
 def get_all_files(cwd: Path):
@@ -43,15 +43,6 @@ def create_range_folders(cwd: Path, files, num_folders: int):
         folder_files = sizes[start_idx:end_idx]
         if folder_files:
             min_size, max_size = (min(folder_files), max(folder_files))
-
-            def fsz(size) -> str:
-                if size < 1000:
-                    return f"{size}B"
-                if size < 1000000:
-                    return f"{size // 1000}k"
-                if size < 1000000000:
-                    return f"{size // 1000000}M"
-                return f"{size // 1000000000}G"
 
             folder_name = f"{fsz(min_size)}-{fsz(max_size)}"
             folder_ranges.append((min_size, max_size, folder_name))

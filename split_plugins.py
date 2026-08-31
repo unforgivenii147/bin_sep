@@ -1,7 +1,9 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 
-import re
+from __future__ import annotations
+
 import os
+import re
 import sys
 from pathlib import Path
 

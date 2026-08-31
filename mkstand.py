@@ -9,7 +9,7 @@ import re
 import sys
 from pathlib import Path
 from typing import Iterable
-from urllib.parse import urljoin, urlparse, urldefrag, unquote
+from urllib.parse import unquote, urldefrag, urljoin, urlparse
 
 import requests
 from bs4 import BeautifulSoup
@@ -178,10 +178,13 @@ def download_remote_assets(
             print(f"  ⊘ skipped remote image: {url}")
             continue
 
-        if size is not None and size >= REMOTE_SIZE_LIMIT:
-            if not ask_download_confirmation(url, size):
-                print(f"  ⊘ skipped by user: {url}")
-                continue
+        if (
+            size is not None
+            and size >= REMOTE_SIZE_LIMIT
+            and not ask_download_confirmation(url, size)
+        ):
+            print(f"  ⊘ skipped by user: {url}")
+            continue
 
         try:
             response = session.get(
@@ -350,7 +353,7 @@ def collect_remote_assets(
     session = make_session()
 
     while css_to_scan:
-        css_identifier, css_base = css_to_scan.pop()
+        css_identifier, _css_base = css_to_scan.pop()
 
         if css_identifier in scanned_css:
             continue

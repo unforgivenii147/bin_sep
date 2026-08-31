@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import contextlib
 import lzma
 import shutil
 import tarfile
@@ -51,22 +52,24 @@ def compress_subdir(subdir: Path) -> dict:
 
         original_size = dir_size(subdir)
 
-        with lzma.open(
-            archive_path,
-            mode="wb",
-            preset=XZ_PRESET,
-            check=lzma.CHECK_CRC64,
-        ) as compressed_file:
-            with tarfile.open(
+        with (
+            lzma.open(
+                archive_path,
+                mode="wb",
+                preset=XZ_PRESET,
+                check=lzma.CHECK_CRC64,
+            ) as compressed_file,
+            tarfile.open(
                 fileobj=compressed_file,
                 mode="w",
                 dereference=False,
-            ) as tar:
-                tar.add(
-                    subdir,
-                    arcname=subdir.name,
-                    recursive=True,
-                )
+            ) as tar,
+        ):
+            tar.add(
+                subdir,
+                arcname=subdir.name,
+                recursive=True,
+            )
 
         with tarfile.open(archive_path, mode="r:xz") as tar:
             for member in tar:
@@ -104,10 +107,8 @@ def compress_subdir(subdir: Path) -> dict:
         elapsed = time.monotonic() - start_monotonic
 
         if archive_path.exists():
-            try:
+            with contextlib.suppress(OSError):
                 archive_path.unlink()
-            except OSError:
-                pass
 
         return {
             "subdir": subdir.name,

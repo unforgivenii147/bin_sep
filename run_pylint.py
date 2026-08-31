@@ -4,7 +4,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-from dh import runcmd, get_pyfiles
+from dh import get_pyfiles, runcmd
 
 CHUNK_SIZE = 1024 * 1024
 

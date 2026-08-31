@@ -6,7 +6,8 @@ import sys
 from multiprocessing import Pool
 from pathlib import Path
 from typing import List, Optional
-from dh import should_skip, is_binary
+
+from dh import is_binary, should_skip
 
 WORKERS = 8
 CHUNK_SIZE = 64

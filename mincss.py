@@ -4,8 +4,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-from dh import cprint, fsz, get_files, mpf3, runcmd
-from dh import gsz
+from dh import cprint, fsz, get_files, gsz, mpf3, runcmd
 
 
 def process_file(path) -> bool:

@@ -75,14 +75,17 @@ def process_archive(archive_path: Path) -> TaskResult:
         if archive_path.suffix == ".tar":
             target_dir = tar_extract_dir_for(archive_path)
             if target_dir.exists():
+                msg = "error: target dir exists"
                 raise FileExistsError(msg)
             safe_extract_tar(archive_path, target_dir)
         elif archive_path.suffix == ".7z":
             target_dir = seven_zip_extract_dir_for(archive_path)
             if target_dir.exists():
+                msg = "error: target exists"
                 raise FileExistsError(msg)
             safe_extract_7z(archive_path, target_dir)
         else:
+            msg = "error ."
             raise ValueError(msg)
         remove_path(archive_path)
         return TaskResult(str(archive_path), str(target_dir), True)

@@ -48,8 +48,6 @@ if __name__ == "__main__":
         if args
         else get_files(cwd, ext=[".webp", ".jpg", ".jpeg", ".png"])
     )
-    c = 0
-    for f in files:
-        c += 1
+    for c, f in enumerate(files):
         print(f"{c}/{len(files)}")
         process_file(f)

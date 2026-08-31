@@ -6,9 +6,7 @@ from collections import deque
 from multiprocessing import get_context
 from pathlib import Path
 
-from dh import fsz, get_files
-from dh import gsz
-
+from dh import fsz, get_files, gsz
 
 MAX_QUEUE = 16
 

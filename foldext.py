@@ -1,20 +1,11 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
+
 import contextlib
 import shutil
 from pathlib import Path
 
-SKIP_DIRS = frozenset(
-    {"lazy", ".git", "__pycache__", ".mypy_cache", ".ruff_cache", ".pytest_cache"}
-)
-
-
-def get_size_str(size_bytes) -> str:
-    for unit in ["B", "KB", "MB", "GB"]:
-        if size_bytes < 1024.0:
-            return f"{size_bytes:.1f}{unit}"
-        size_bytes /= 1024.0
-    return f"{size_bytes:.1f}TB"
+from dh import gsz
 
 
 def folderize_by_extension(cwd: Path):
@@ -61,12 +52,12 @@ def folderize_by_extension(cwd: Path):
         total_files += stats["count"]
         total_size += stats["total_size"]
         ext_display = ext if ext else "no_extension"
-        size_str = get_size_str(stats["total_size"])
+        size_str = gsz(stats["total_size"])
         print(
             f"{ext_display:<15} : {stats['count']:4} file{'s' if stats['count'] != 1 else ' '}  {size_str:>8}"
         )
     print("-" * 50)
-    print(f"{'TOTAL':<15} : {total_files:4} files  {get_size_str(total_size):>8}")
+    print(f"{'TOTAL':<15} : {total_files:4} files  {gsz(total_size):>8}")
     print("=" * 50)
     return created_dirs, extension_stats
 

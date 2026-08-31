@@ -5,8 +5,7 @@ import sys
 from pathlib import Path
 
 from bs4 import BeautifulSoup
-from dh import get_files, mpf3, rrs
-from dh import gsz
+from dh import get_files, gsz, mpf3, rrs
 
 
 def process_file(path) -> None:

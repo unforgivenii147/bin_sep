@@ -4,7 +4,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from dh import cprint, should_skip, is_binary
+from dh import cprint, is_binary, should_skip
 
 
 def get_filez(root_dir: str | Path):

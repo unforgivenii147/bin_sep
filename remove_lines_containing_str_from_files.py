@@ -4,8 +4,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-from dh import get_nobinary
-from dh import gsz
+from dh import get_nobinary, gsz
 
 STRTOFIND = ["dist-info", ".so", ".py", ".pth", "__", ".zip"]
 

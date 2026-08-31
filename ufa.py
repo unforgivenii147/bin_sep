@@ -4,9 +4,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-from dh import get_nobinary
-
-CHUNK_SIZE = 1024 * 1024
+from dh import get_nobinary, is_binary
 
 
 def unicode_unescape(text: str) -> str:

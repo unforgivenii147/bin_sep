@@ -7,6 +7,8 @@ import os
 import shutil
 from pathlib import Path
 
+from dh import fsz
+
 
 def get_all_files_in_root_only(root_path: Path):
     files_info = []
@@ -21,16 +23,6 @@ def get_all_files_in_root_only(root_path: Path):
     except Exception as e:
         print(f"Error scanning directory: {e}")
     return files_info
-
-
-def fsz1(size_bytes) -> str:
-    if size_bytes == 0:
-        return "0B"
-    units = ["B", "KB", "MB", "GB", "TB"]
-    i = math.floor(math.log(size_bytes, 1024))
-    p = math.pow(1024, i)
-    s = round(size_bytes / p, 2)
-    return f"{s}{units[i]}"
 
 
 def calculate_optimal_files_per_folder(total_files, target_folders=None):

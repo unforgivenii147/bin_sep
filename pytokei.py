@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
+
 from dh import is_binary
 
 LANG_EXTENSIONS = {

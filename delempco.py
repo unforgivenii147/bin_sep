@@ -9,7 +9,8 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
-from dh import is_binary, TXT_EXT
+
+from dh import TXT_EXT, is_binary
 
 
 class ANSI:

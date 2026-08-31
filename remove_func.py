@@ -8,17 +8,17 @@ from pathlib import Path
 
 from dh import cprint
 
-
-TARGET_NAME = "fsz"
+TARGET_NAME = "format_size"
 TARGET_ARG_COUNT = 1
 
 TARGET_SRC = """
-def fsz(num_bytes: int) -> str:
-    for unit in ["B", "KiB", "MiB", "GiB", "TiB"]:
-        if num_bytes < 1024.0:
-            return f"{num_bytes:5.1f} {unit}"
-        num_bytes /= 1024.0
-    return f"{num_bytes:5.1f} PiB"
+def format_size(size_bytes: int) -> str:
+    size = float(size_bytes)
+    for unit in ("B", "KB", "MB", "GB", "TB"):
+        if size < 1024.0:
+            return f"{size:.2f} {unit}"
+        size /= 1024.0
+    return f"{size:.2f} PB"
 """
 
 TARGET_AST_DUMP = ast.dump(ast.parse(TARGET_SRC).body[0])
@@ -96,14 +96,14 @@ def process_file(args: tuple[Path, bool]) -> tuple[Path, bool, str]:
             continue
 
         if last_import_idx != -1 and index == last_import_idx:
-            new_lines.append("from dh import fsz\n")
+            new_lines.append("from dh import format_size\n")
             inserted = True
         elif last_import_idx == -1 and index == insert_idx - 1:
-            new_lines.append("from dh import fsz\n")
+            new_lines.append("from dh import format_size\n")
             inserted = True
 
     if not inserted:
-        new_lines.insert(0, "from dh import fsz\n")
+        new_lines.insert(0, "from dh import format_size\n")
 
     new_source = "".join(new_lines)
 
@@ -134,7 +134,7 @@ def main() -> None:
         "--inspect",
         action="store_true",
         help=(
-            "Match only a function named 'fsz' with exactly one argument. "
+            "Match only a function named 'format_size' with exactly one argument. "
             "Changes are applied immediately."
         ),
     )

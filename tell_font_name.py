@@ -5,7 +5,7 @@ import re
 import sys
 from pathlib import Path
 
-from dh import get_files, mpf_async, unique_path, cprint
+from dh import cprint, get_files, mpf_async, unique_path
 from fontTools.ttLib import TTFont
 from fontTools.ttLib.ttFont import TTFont
 

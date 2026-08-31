@@ -6,8 +6,8 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
-from tree_sitter import Node, Parser, Language
 import tree_sitter_python as tsp
+from tree_sitter import Language, Node, Parser
 
 OUTPUT_FILE = "utils.py"
 

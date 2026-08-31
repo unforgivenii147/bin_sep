@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import contextlib
 import multiprocessing as mp
 import os
 import shutil
@@ -12,8 +13,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterator
 
-from tree_sitter import Language, Parser
 import tree_sitter_css
+from tree_sitter import Language, Parser
 
 DEFAULT_WORKERS = 8
 CSS_SUFFIXES = {".css"}
@@ -178,18 +179,14 @@ def atomic_replace(path: Path, data: bytes) -> None:
             tmp.flush()
             os.fsync(tmp.fileno())
 
-        try:
+        with contextlib.suppress(OSError):
             shutil.copymode(path, tmp_path)
-        except OSError:
-            pass
 
         os.replace(tmp_path, path)
 
     except BaseException:
-        try:
+        with contextlib.suppress(OSError):
             tmp_path.unlink(missing_ok=True)
-        except OSError:
-            pass
         raise
 
 

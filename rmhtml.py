@@ -5,9 +5,7 @@ import re
 import sys
 from pathlib import Path
 
-from dh import cprint, fsz, get_files, mpf3
-from dh import gsz
-
+from dh import cprint, fsz, get_files, gsz, mpf3
 
 MAX_QUEUE = 8
 

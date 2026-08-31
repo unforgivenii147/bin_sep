@@ -9,7 +9,7 @@ from ast import AsyncFunctionDef, ClassDef, FunctionDef
 from dataclasses import dataclass
 from pathlib import Path
 
-from dh import mpf3, gsz, get_pyfiles
+from dh import get_pyfiles, gsz, mpf3
 
 
 @dataclass

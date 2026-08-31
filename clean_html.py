@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import contextlib
 import multiprocessing as mp
 import os
 import sys
@@ -10,12 +11,11 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
 
-from tree_sitter import Language, Parser
-
 import tree_sitter_css
 import tree_sitter_html
 import tree_sitter_javascript
 import tree_sitter_typescript
+from tree_sitter import Language, Parser
 
 SUPPORTED_SUFFIXES: dict[str, str] = {
     ".html": "html",
@@ -260,10 +260,8 @@ def atomic_write(path: Path, data: bytes) -> None:
         os.replace(temp_path, path)
 
     finally:
-        try:
+        with contextlib.suppress(OSError):
             temp_path.unlink(missing_ok=True)
-        except OSError:
-            pass
 
 
 def process_file(path_string: str, dry_run: bool) -> FileResult:

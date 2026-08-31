@@ -4,7 +4,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-from dh import get_files, mpf3, runcmd, is_binary
+from dh import get_files, is_binary, mpf3, runcmd
 
 cwd = Path.cwd()
 outfile = cwd / "all_strings.txt"

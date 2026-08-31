@@ -7,8 +7,7 @@ import sys
 from multiprocessing import get_context
 from pathlib import Path
 
-from dh import fsz, get_nobinary
-from dh import is_binary, gsz
+from dh import fsz, get_nobinary, gsz, is_binary
 
 
 def process_file(file_path: Path) -> None:

@@ -65,9 +65,12 @@ class OptimizedWalker:
                 if dir_inode in self.visited_inodes:
                     return
                 self.visited_inodes.add(dir_inode)
-                if self.skip_mount_points and self.root_dev is not None:
-                    if dir_stat.st_dev != self.root_dev:
-                        return
+                if (
+                    self.skip_mount_points
+                    and self.root_dev is not None
+                    and (dir_stat.st_dev != self.root_dev)
+                ):
+                    return
             except (OSError, FileNotFoundError):
                 return
         try:
@@ -140,10 +143,10 @@ class SpinnerProgressReporter:
 def check_file(file_path: Path) -> tuple[Path, str, bool | None, str]:
     try:
         extension = file_path.suffix.lower()
-        is_binary = is_binary(file_path)
+        is_bin = is_binary(file_path)
         mime_type, _ = mimetypes.guess_type(str(file_path))
         mime_type = mime_type or "unknown"
-        return (file_path, extension, is_binary, mime_type)
+        return (file_path, extension, is_bin, mime_type)
     except Exception as e:
         logger.error(f"Error processing {file_path}: {e}")
         return (file_path, file_path.suffix.lower(), None, "error")
@@ -190,16 +193,16 @@ def validate_extensions(
     error_count = 0
     mismatches = []
     by_extension = {}
-    for file_path, ext, is_binary, mime_type in results:
+    for file_path, ext, is_bin, mime_type in results:
         if ext not in by_extension:
             by_extension[ext] = {"binary": 0, "text": 0, "error": 0, "files": []}
         by_extension[ext]["files"].append(
-            {"path": str(file_path), "is_binary": is_binary, "mime_type": mime_type}
+            {"path": str(file_path), "is_binary": is_bin, "mime_type": mime_type}
         )
-        if is_binary is True:
+        if is_bin is True:
             binary_count += 1
             by_extension[ext]["binary"] += 1
-        elif is_binary is False:
+        elif is_bin is False:
             text_count += 1
             by_extension[ext]["text"] += 1
             mismatches.append(

@@ -12,6 +12,7 @@ def speak_text(text: str) -> None:
 def read_text_file(file_path: str) -> str:
     path = Path(file_path)
     if not path.exists():
+        msg = "error: file not found"
         raise FileNotFoundError(msg)
     return path.read_text(encoding="utf-8")
 

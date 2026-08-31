@@ -4,8 +4,8 @@ from __future__ import annotations
 from pathlib import Path
 
 import pillow_heif as ph
-from fastwalk import walk_files
 from dh import gsz
+from fastwalk import walk_files
 
 
 def process_file(path) -> bool:

@@ -1,8 +1,10 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 
-import sys
+from __future__ import annotations
+
 import os
 import subprocess
+import sys
 
 
 def main():

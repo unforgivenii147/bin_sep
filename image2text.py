@@ -4,10 +4,9 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-from dh import fsz, get_files, mpf3
+from dh import fsz, get_files, gsz, mpf3
 from PIL import Image
 from PIL.Image import Image
-from dh import gsz
 
 try:
     import cv2

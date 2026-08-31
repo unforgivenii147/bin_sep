@@ -7,7 +7,6 @@ from dh import get_nobinary, mpf3
 from langdetect import DetectorFactory, detect
 from langdetect.lang_detect_exception import LangDetectException
 
-
 DetectorFactory.seed = 0
 MAX_CHARS = 5000
 

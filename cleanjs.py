@@ -7,6 +7,7 @@ import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 
+from dh import fsz
 from tree_sitter import Language, Parser
 from tree_sitter_javascript import language as js_language
 
@@ -131,14 +132,6 @@ def collect_files(paths: list[Path]) -> list[tuple[Path, Path]]:
     return files
 
 
-def format_size(n: int) -> str:
-    if n < 1024:
-        return f"{n} B"
-    if n < 1024 * 1024:
-        return f"{n / 1024:.1f} KiB"
-    return f"{n / (1024 * 1024):.2f} MiB"
-
-
 def main() -> int:
     ap = argparse.ArgumentParser(
         description="Remove comments from JavaScript files using tree-sitter."
@@ -188,13 +181,13 @@ def main() -> int:
                 saved = s["before"] - s["after"]
                 pct = (saved / s["before"] * 100) if s["before"] else 0.0
                 print(
-                    f"  ✓ {rel}  {s['comments']} comment(s) removed · {format_size(saved)} (-{pct:.1f}%)"
+                    f"  ✓ {rel}  {s['comments']} comment(s) removed · {fsz(saved)} (-{pct:.1f}%)"
                 )
     elapsed = time.monotonic() - t0
     print("\n" + "─" * 42)
     print(f"  Files processed  : {total_files}")
     print(f"  Comments removed : {total_comments}")
-    print(f"  Bytes removed    : {format_size(total_removed)}")
+    print(f"  Bytes removed    : {fsz(total_removed)}")
     print(f"  Errors           : {errors}")
     print(f"  Elapsed          : {elapsed:.2f}s")
     return 1 if errors else 0

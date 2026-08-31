@@ -10,6 +10,8 @@ import tarfile
 import zipfile
 from pathlib import Path
 
+from dh import fsz
+
 try:
     import py7zr
 
@@ -70,14 +72,6 @@ ARCHIVE_TYPES = {
     ".lz4": "LZ4 Frame (.lz4)",
 }
 SUPPORTED_EXTENSIONS = tuple(ARCHIVE_TYPES.keys())
-
-
-def format_size(bytes_val):
-    for unit in ["B", "KB", "MB", "GB", "TB"]:
-        if abs(bytes_val) < 1024.0:
-            return f"{bytes_val:3.2f} {unit}"
-        bytes_val /= 1024.0
-    return f"{bytes_val:.2f} PB"
 
 
 def get_archive_type_info(filepath):
@@ -252,7 +246,7 @@ def scan_directory(target_dir, auto_extract=False, test_integrity=False, verbose
                         else "\033[31m[FAIL]\033[0m"
                     )
                     print(
-                        f" -> Found: {res['filename']} | Type: {res['archive_type']} | Comp: {format_size(res['compressed_size'])} -> Ext: {format_size(res['extracted_size'])} | {status}"
+                        f" -> Found: {res['filename']} | Type: {res['archive_type']} | Comp: {fsz(res['compressed_size'])} -> Ext: {fsz(res['extracted_size'])} | {status}"
                     )
     print("-" * 90)
     print(
@@ -270,15 +264,15 @@ def scan_directory(target_dir, auto_extract=False, test_integrity=False, verbose
             else "\033[90mSKIP\033[0m"
         )
         print(
-            f"{item['filename'][:31]:<32} {item['archive_type'][:25]:<26} {format_size(item['compressed_size']):<12} {format_size(item['extracted_size']):<12} {status}"
+            f"{item['filename'][:31]:<32} {item['archive_type'][:25]:<26} {fsz(item['compressed_size']):<12} {fsz(item['extracted_size']):<12} {status}"
         )
     print("=" * 90)
     print(f"\033[1;36mSUMMARY:\033[0m Found {len(found_archives)} archive files.")
-    print(f"Total Compressed Size : {format_size(total_comp)}")
-    print(f"Total Extracted Size  : \033[1;32m{format_size(total_ext)}\033[0m")
+    print(f"Total Compressed Size : {fsz(total_comp)}")
+    print(f"Total Extracted Size  : \033[1;32m{fsz(total_ext)}\033[0m")
     if total_comp > 0:
         print(
-            f"Overall Expansion     : {total_ext / total_comp:.2f}x ({format_size(total_ext - total_comp)} saved)"
+            f"Overall Expansion     : {total_ext / total_comp:.2f}x ({fsz(total_ext - total_comp)} saved)"
         )
     if auto_extract and found_archives:
         out_subdir = target / "extracted_archives"

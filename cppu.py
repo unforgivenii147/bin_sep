@@ -4,9 +4,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-from dh import cprint, fsz, get_files, mpf3, rrs, runcmd
-from dh import gsz
-
+from dh import cprint, fsz, get_files, gsz, mpf3, rrs, runcmd
 
 EXT = [
     ".java",

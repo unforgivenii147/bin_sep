@@ -1,17 +1,19 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 
-import sys
+from __future__ import annotations
+
 import argparse
-from pathlib import Path
+import sys
 from multiprocessing import Pool
-from typing import List, Tuple, Dict, Any
+from pathlib import Path
+from typing import Any, Dict, List, Tuple
 
 try:
-    from tree_sitter import Language, Parser
-    import tree_sitter_html
     import tree_sitter_css
+    import tree_sitter_html
     import tree_sitter_javascript
     import tree_sitter_typescript
+    from tree_sitter import Language, Parser
 except ImportError as e:
     print(f"Error: Missing tree-sitter dependencies. {e}")
     print("Please install required packages:")

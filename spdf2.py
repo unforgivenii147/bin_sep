@@ -4,7 +4,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-from dh import fsz, get_files, mpf_async, runcmd, gsz
+from dh import fsz, get_files, gsz, mpf_async, runcmd
 
 MAX_WORKERS = 4
 

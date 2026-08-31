@@ -5,8 +5,7 @@ import sys
 from pathlib import Path
 
 import cairosvg
-from dh import cprint, fsz, get_files
-from dh import gsz
+from dh import cprint, fsz, get_files, gsz
 
 
 def process_file(path: Path) -> None:

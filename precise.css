@@ -1,0 +1,139 @@
+#!/data/data/com.termux/files/usr/bin/bash
+/* ==========================================================================
+   PRECISION FONT REGISTRATION
+   ========================================================================== */
+
+/* 1. Regular Body Font */
+@font-face {
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 400;
+    src: url(data:font/truetype;charset=utf-8;base64,REPLACE_WITH_REGULAR_B64) format('truetype');
+}
+
+/* 2. Bold Variant (Used automatically by h1-h6, strong, b) */
+@font-face {
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 700;
+    src: url(data:font/truetype;charset=utf-8;base64,REPLACE_WITH_BOLD_B64) format('truetype');
+}
+
+/* 3. Italic Variant (Used automatically by em, i) */
+@font-face {
+    font-family: 'Inter';
+    font-style: italic;
+    font-weight: 400;
+    src: url(data:font/truetype;charset=utf-8;base64,REPLACE_WITH_ITALIC_B64) format('truetype');
+}
+
+/* 4. Bold Italic Variant (Used automatically when combining strong and em) */
+@font-face {
+    font-family: 'Inter';
+    font-style: italic;
+    font-weight: 700;
+    src: url(data:font/truetype;charset=utf-8;base64,REPLACE_WITH_BOLD_ITALIC_B64) format('truetype');
+}
+
+/* 5. Monospace Font (Used for code/pre tokens) */
+@font-face {
+    font-family: 'JetBrains Mono';
+    font-style: normal;
+    font-weight: 400;
+    src: url(data:font/truetype;charset=utf-8;base64,REPLACE_WITH_MONO_B64) format('truetype');
+}
+
+/* ==========================================================================
+   TYPOGRAPHIC SPECIFICATIONS
+   ========================================================================== */
+
+/* Global Default (Matches Variant 1) */
+html, body {
+    font-family: 'Inter', sans-serif;
+    font-size: 10.5pt;
+    font-weight: 400;
+    font-style: normal;
+    line-height: 1.6;
+    color: #1e293b;
+}
+
+/* Headlines: Bold and Bigger (Matches Variant 2) */
+h1, h2, h3, h4 {
+    font-family: 'Inter', sans-serif;
+    font-weight: 700; /* Forces Weasyprint to use the Bold file */
+    font-style: normal;
+    color: #0f172a;
+    page-break-after: avoid;
+    break-after: avoid;
+}
+
+h1 { 
+    font-size: 26pt; 
+    line-height: 1.15; 
+    margin-bottom: 20pt; 
+    letter-spacing: -0.02em; /* Tightens large headers beautifully */
+}
+
+h2 { 
+    font-size: 18pt; 
+    line-height: 1.25; 
+    margin-top: 24pt;
+    margin-bottom: 12pt; 
+    border-bottom: 0.75pt solid #cbd5e1; 
+    padding-bottom: 6pt; 
+}
+
+h3 { 
+    font-size: 14pt; 
+    line-height: 1.35; 
+    margin-top: 18pt;
+    margin-bottom: 8pt; 
+}
+
+/* Code Snippets: Monospace (Matches Variant 5) */
+code, pre, kbd, samp {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9pt;
+    direction: ltr;
+    text-align: left;
+    white-space: pre-wrap;
+    word-spacing: normal;
+    word-break: normal;
+}
+
+/* Block code wrappers */
+pre {
+    background-color: #f8fafc;
+    border: 0.5pt solid #e2e8f0;
+    border-radius: 4px;
+    padding: 10pt 12pt;
+    margin: 12pt 0;
+    page-break-inside: avoid;
+    break-inside: avoid;
+}
+
+/* Inline code tokens */
+p code {
+    background-color: #f1f5f9;
+    padding: 2pt 4pt;
+    border-radius: 3px;
+    color: #0f172a;
+}
+
+/* Emphasis: Italics (Matches Variant 3) */
+em, i, blockquote cite {
+    font-style: italic; /* Forces Weasyprint to use the Italic file */
+    font-weight: 400;
+}
+
+/* Strong Emphasis: Bold (Matches Variant 2) */
+strong, b {
+    font-weight: 700;
+    font-style: normal;
+}
+
+/* Combined Emphasis: Bold Italic (Matches Variant 4) */
+strong em, em strong, b i, i b {
+    font-weight: 700;
+    font-style: italic;
+}

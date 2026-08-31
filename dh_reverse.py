@@ -164,7 +164,7 @@ def main():
         help="Show function matching details",
     )
     args = parser.parse_args()
-    dh_path = Path.home() / "isaac" / "pkgs" / "dh" / "src" / "dh"
+    dh_path = Path.home() / "projects" / "py" / "dh" / "src" / "dh"
     if not dh_path.exists():
         print(f"Error: dh package not found at {dh_path}")
         return 1

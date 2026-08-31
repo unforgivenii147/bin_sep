@@ -7,7 +7,7 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any
 
-from dh import fsz, cprint, gsz
+from dh import cprint, fsz, gsz
 
 
 class PathlibTransformer(ast.NodeTransformer):

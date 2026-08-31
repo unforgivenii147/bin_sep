@@ -4,8 +4,8 @@ from __future__ import annotations
 import datetime
 from os import scandir as _scandir
 from pathlib import Path
-from dh import gsz, fsz
 
+from dh import fsz, gsz
 
 if __name__ == "__main__":
     cwd = Path.cwd()

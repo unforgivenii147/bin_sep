@@ -9,8 +9,8 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
 
-from fontTools.ttLib import TTFont, TTLibError
 from dh import fsz
+from fontTools.ttLib import TTFont, TTLibError
 
 SUPPORTED_EXTS = {".ttf", ".otf", ".woff", ".woff2"}
 VALID_TARGETS = {"ttf", "otf", "woff", "woff2"}

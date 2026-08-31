@@ -1,8 +1,10 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 
-from pathlib import Path
+from __future__ import annotations
+
 import subprocess
 import sys
+from pathlib import Path
 
 TARGET_PREFIX = "2026-08-29"
 

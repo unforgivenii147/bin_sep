@@ -66,10 +66,9 @@ def process_file(file_path: Path, tools: list[str]) -> str:
         tools == ["ty"]
         and outputs.get("ty")
         and ("all checks passed" in outputs["ty"].lower())
-        or (
-            "error[unresolved-import]: Cannot resolve imported module `dh`"
-            in outputs["ty"].lower()
-        )
+    ) or (
+        "error[unresolved-import]: Cannot resolve imported module `dh`"
+        in outputs["ty"].lower()
     ):
         return f"✓ Skipped (ty: all checks passed): {file_path}"
     append_tool_outputs(file_path, outputs)

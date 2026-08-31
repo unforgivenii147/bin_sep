@@ -5,6 +5,7 @@ import re
 import stat
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
+
 from dh import is_binary
 
 

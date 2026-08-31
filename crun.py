@@ -3,8 +3,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from dh import fsz, mpf3, should_skip
-from dh import gsz
+from dh import fsz, gsz, mpf3, should_skip
 
 
 def get_filez(root_dir: str | Path):

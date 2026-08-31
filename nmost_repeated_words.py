@@ -1,14 +1,16 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 
-import sys
+from __future__ import annotations
+
 import re
-from pathlib import Path
+import sys
 from collections import Counter
+from pathlib import Path
 
 try:
     import nltk
-    from nltk.tokenize import word_tokenize
     from nltk.corpus import stopwords
+    from nltk.tokenize import word_tokenize
 
     NLTK_AVAILABLE = True
 except ImportError:

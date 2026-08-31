@@ -5,10 +5,8 @@ from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
-from dh import cprint, fsz
+from dh import cprint, fsz, gsz
 from xxhash import xxh64
-from dh import gsz
-
 
 CHUNKSIZE = 32768
 

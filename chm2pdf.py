@@ -1,12 +1,15 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 
-import sys
-import os
-import tempfile
+from __future__ import annotations
+
 import html
+import os
 import re
-from pathlib import Path
+import sys
+import tempfile
 from html.parser import HTMLParser
+from pathlib import Path
+
 import chm.chm as pychm
 from weasyprint import HTML
 

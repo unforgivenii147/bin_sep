@@ -4,7 +4,8 @@ from __future__ import annotations
 import datetime
 from os import scandir as _scandir
 from pathlib import Path
-from dh import gsz, fsz
+
+from dh import fsz, gsz
 
 EXCLUDED = {".mypy_cache", ".ruff_cache", ".git", "__pycache__"}
 if __name__ == "__main__":

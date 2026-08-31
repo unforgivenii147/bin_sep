@@ -7,10 +7,6 @@ from markdown2 import markdown, markdown_path
 from weasyprint import CSS, HTML
 
 
-class ValidationError(Exception):
-    pass
-
-
 def md2pdf(
     pdf_file_path,
     md_content=None,

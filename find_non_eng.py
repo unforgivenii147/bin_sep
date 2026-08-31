@@ -6,8 +6,9 @@ import os
 import sys
 from collections import Counter
 from pathlib import Path
-from dh import is_binary
+
 import pycld2
+from dh import is_binary
 
 
 class LanguageDetector:

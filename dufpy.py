@@ -4,7 +4,7 @@ from __future__ import annotations
 import ast
 from pathlib import Path
 
-from dh import cprint, mpf3, get_pyfiles
+from dh import cprint, get_pyfiles, mpf3
 from xxhash import xxh64_hexdigest
 
 

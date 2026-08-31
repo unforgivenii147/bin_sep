@@ -1,5 +1,8 @@
 #!/data/data/com.termux/files/home/.local/bin/python
+from __future__ import annotations
+
 import argparse
+import itertools
 import re
 import sys
 from pathlib import Path
@@ -64,7 +67,7 @@ def cluster_means(values, min_gap=None):
     if len(values) <= 1:
         return [float(v) for v in values]
     if min_gap is None:
-        diffs = [b - a for a, b in zip(values, values[1:])]
+        diffs = [b - a for a, b in itertools.pairwise(values)]
         min_gap = max(4.0, 0.3 * max(diffs))
     clusters, cur = [], [values[0]]
     for v in values[1:]:
@@ -299,7 +302,7 @@ def image_to_entries(path, keep_suffix=False, engine="auto"):
 
     tokens.sort(key=lambda t: (t[1], t[0]))
     tops = [t[1] for t in tokens]
-    top_diffs = [b - a for a, b in zip(tops, tops[1:]) if b - a > 0]
+    top_diffs = [b - a for a, b in itertools.pairwise(tops) if b - a > 0]
     pitch = median(top_diffs) if top_diffs else 40.0
     row_thresh = max(6.0, 0.45 * pitch)
 
@@ -340,7 +343,7 @@ def image_to_entries(path, keep_suffix=False, engine="auto"):
 
     entries = []
     for i, (top, left, raw) in enumerate(
-        zip((r[0] for r in rows), row_lefts, row_names)
+        zip((r[0] for r in rows), row_lefts, row_names, strict=False)
     ):
         name, explicit = clean_name(raw, keep_suffix=keep_suffix)
         if name is None:

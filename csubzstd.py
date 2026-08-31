@@ -1,12 +1,15 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 
-import zstandard as zstd
-import tarfile
+from __future__ import annotations
+
 import shutil
+import tarfile
 import time
-from pathlib import Path
-from multiprocessing import Pool
 from datetime import datetime
+from multiprocessing import Pool
+from pathlib import Path
+
+import zstandard as zstd
 
 ZSTD_LEVEL = 9
 WORKERS = 8
@@ -29,10 +32,9 @@ def compress_subdir(subdir: Path) -> dict:
         original_size = dir_size(subdir)
 
         cctx = zstd.ZstdCompressor(level=ZSTD_LEVEL)
-        with open(archive_path, "wb") as f:
-            with cctx.stream_writer(f) as compressor:
-                with tarfile.open(fileobj=compressor, mode="w") as tar:
-                    tar.add(subdir, arcname=subdir.name)
+        with open(archive_path, "wb") as f, cctx.stream_writer(f) as compressor:
+            with tarfile.open(fileobj=compressor, mode="w") as tar:
+                tar.add(subdir, arcname=subdir.name)
 
         end_time = time.monotonic()
         end_dt = datetime.now().strftime("%H:%M:%S")

@@ -7,7 +7,7 @@ import sys
 import tokenize
 from pathlib import Path
 
-from dh import mpf3, get_pyfiles
+from dh import get_pyfiles, mpf3
 
 
 def remove_comments_and_docstrings(source_code: str) -> str:

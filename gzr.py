@@ -10,8 +10,7 @@ import tarfile
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
-from dh import get_files
-from dh import fsz
+from dh import fsz, get_files
 
 MAX_WORKERS = 4
 CHUNK_SIZE = 524288

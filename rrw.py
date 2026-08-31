@@ -7,8 +7,7 @@ import unicodedata
 from pathlib import Path
 
 import astor
-from dh import get_files
-from dh import is_binary
+from dh import get_files, is_binary
 
 BACKUP = False
 

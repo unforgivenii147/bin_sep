@@ -10,7 +10,6 @@ from pathlib import Path
 
 from dh import get_nobinary
 
-
 OUTPUT_DIR = Path("extracted_base64")
 DATA_URL_RE = re.compile(
     "data:(?P<mime>[-\\w.+/]+);base64,(?P<data>[A-Za-z0-9+/=\\s]+)", re.IGNORECASE
