@@ -8,7 +8,7 @@ from collections import deque
 from mmap import mmap
 from pathlib import Path
 
-from dh import mpf3
+from dh import mpf_joblib
 
 
 def get_files(path: str | Path, ext: list[str] | None = None) -> list[Path]:
@@ -197,7 +197,7 @@ def main() -> None:
     if not files:
         print("No Python files found.")
         return
-    results = mpf3(process_file, files, autofix=args.autofix)
+    results = mpf_joblib(process_file, files, autofix=args.autofix)
     found_issues = False
     for result in results:
         if result:

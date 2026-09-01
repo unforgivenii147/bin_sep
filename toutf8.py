@@ -8,7 +8,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 import chardet
-from binaryornot import is_binary
+from dh import is_binary, get_nobinary
 
 
 def detect_encoding(file_path: Path) -> str:
@@ -77,11 +77,8 @@ def main():
     )
     args = parser.parse_args()
     input_paths = args.paths if args.paths else ["."]
-    files = list(collect_files(input_paths))
-    files = [f for f in files if f.is_file()]
-    if not files:
-        print("No files found to process.", file=sys.stderr)
-        return 1
+    cwd = Path.cwd()
+    files = get_nobinary(cwd)
     print(f"Processing {len(files)} file(s) with {args.workers} worker(s)...\n")
     converted = 0
     skipped = 0

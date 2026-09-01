@@ -6,6 +6,14 @@ from pathlib import Path
 from dh import is_binary, is_python_file, should_skip, get_filez
 
 
+def has_shebang(path):
+    with path.open("rb") as f:
+        first_two = f.read(2)
+        if first_two == b"#!":
+            return True
+    return False
+
+
 def find_scripts_without_extension(directory: Path):
     swe = []
     for item in get_filez(directory):
@@ -14,8 +22,9 @@ def find_scripts_without_extension(directory: Path):
         if item.is_file() and (not item.suffix):
             if is_binary(item):
                 continue
-            if is_python_file(item):
-                swe.append(item)
+            if has_shebang(item):
+                if is_python_file(item):
+                    swe.append(item)
     return swe
 
 

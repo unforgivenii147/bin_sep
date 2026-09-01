@@ -10,7 +10,7 @@ from pathlib import Path
 from loguru import logger
 
 logger.remove()
-log_path = Path.home() / "tmp" / "log" / "apps" / "orphan_files.log"
+log_path = Path.home() / "tmp" / "apps" / "orphan_files.log"
 logger.add(log_path)
 
 

@@ -34,9 +34,9 @@ def shift_content(text: str, shift_ms: int) -> str:
 
 def process_file(path: Path, shift_ms: int) -> None:
     path = Path(path)
-    path.write_text(
-        shift_content(path.read_text(encoding="utf-8"), shift_ms), encoding="utf-8"
-    )
+    data = path.read_text(encoding="utf-8")
+    result = shift_content(data, shift_ms)
+    path.write_text(result, encoding="utf-8")
     print(f"✔ {path}")
 
 
@@ -51,9 +51,9 @@ def main() -> None:
     )
     ap.add_argument("path", nargs="?", default=".")
     ap.add_argument("-r", "--recursive", action="store_true")
-    ap.add_argument("-s", "--shift", type=float, default=0.0)
-    ap.add_argument("--plus", action="store_true", help="Shift +1s")
-    ap.add_argument("--minus", action="store_true", help="Shift -1s")
+    ap.add_argument("-s", "--shift", type=float, default=5.0)
+    ap.add_argument("-p", "--plus", default=True, action="store_true", help="Shift +1s")
+    ap.add_argument("-m", "--minus", action="store_true", help="Shift -1s")
     args = ap.parse_args(raw)
     if force_shift is not None:
         shift_ms = force_shift
@@ -67,9 +67,11 @@ def main() -> None:
     if path.is_file():
         process_file(path, shift_ms)
         return
-    glob = "**/*.srt" if args.recursive else "*.srt"
-    for f in sorted(path.glob(glob)):
-        process_file(f, shift_ms)
+
+
+#    glob = "**/*.srt" if args.recursive else "*.srt"
+#    for f in sorted(path.glob(glob)):
+#        process_file(f, shift_ms)
 
 
 if __name__ == "__main__":

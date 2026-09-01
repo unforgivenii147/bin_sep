@@ -2,21 +2,18 @@
 from __future__ import annotations
 
 import argparse
-import sys
 from pathlib import Path
 
 
 def load_user_info() -> dict[str, str]:
+    import json
+
     info_path = Path.home() / ".myinfo"
     info = {}
     if not info_path.exists():
         return info
-    for line in info_path.read_text().splitlines():
-        line = line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        key, val = line.split("=", 1)
-        info[key.strip()] = val.strip()
+    with info_path.open(encoding="utf-8") as f:
+        info = json.load(f)
     return info
 
 
@@ -78,7 +75,7 @@ def create_pyproject(
             [
                 "",
                 "[project.scripts]",
-                f'{pkg} = "{import_name}.__main__:main"',
+                f'{pkg} = "{import_name}:main"',
             ]
         )
     return "\n".join(lines) + "\n"
@@ -93,7 +90,8 @@ def create_project_structure(
     simple_cli: bool,
     version: str = "0.1.0",
 ) -> None:
-    cwd = Path.cwd()
+    cwd = Path.cwd() / pkg
+    cwd.mkdir(exist_ok=True)
     import_name = pkg.replace("-", "_")
 
     write_file_if_missing(cwd / "README.md", f"# {pkg}\n")

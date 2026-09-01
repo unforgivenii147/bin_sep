@@ -6,11 +6,24 @@ import re
 import subprocess
 import sys
 
-import pkg_resources
+import importlib_metadata
+
+
+def _normalize_name(name: str) -> str:
+    from re import sub as re_sub
+
+    return re_sub(r"[-_.]+", "-", name).lower()
 
 
 def get_installed_python_packages() -> list[tuple[str, str]]:
-    return [(d.project_name, d.version) for d in pkg_resources.working_set]
+    pkgs = []
+    for d in importlib_metadata.distributions():
+        pkgname = d.metadata.get("Name")
+        pkgname = _normalize_name(pkgname)
+        pkgver = d.metadata.get("Version")
+        if pkgname and pkgver:
+            pkgs.append((pkgname, pkgver))
+    return pkgs
 
 
 def check_package_importable(package_name: str) -> tuple[bool, str]:

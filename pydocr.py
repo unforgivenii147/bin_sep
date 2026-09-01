@@ -60,7 +60,7 @@ def extract_from_file(py_path: str) -> tuple[str, str, str, list, list]:
     except Exception:
         return None
     module_doc, functions, classes = extract_ast_docs(src)
-    if not module_doc and (not functions) and (not classes):
+    if not module_doc and not functions and not classes:
         return None
     return (module_doc, functions, classes)
 
@@ -88,10 +88,16 @@ def module_to_md_paths(name: str) -> tuple[str, str]:
 
 
 def file_to_md_paths(py_file: str, root: str) -> tuple[str, str]:
+    #    path=Path(py_file)
+    #    outpath=path.with_suffix('.md')
+    #    out_path=doc_dir /outpath
+    #    print(out_path)
     rel = Path(py_file).relative_to(root)
     parts = list(rel.parts)
     parts[-1] = parts[-1].replace(".py", ".md")
     outfile = BASE_DIR.joinpath(*parts)
+    print(outfile)
+    input("press any key to continue...")
     return (str(outfile.parent), str(outfile))
 
 
@@ -142,11 +148,11 @@ def main() -> None:
         else get_files(cwd, ext=[".py", ".pyi", ".pyx", ".pxd"])
     )
     print(f"processing {len(files)} files")
-    with get_context("spawn").Pool(4) as pool:
+    with get_context("spawn").Pool(8) as pool:
         pending = deque()
         for f in files:
             pending.append(pool.apply_async(process_file_task, (f,)))
-            if len(pending) > 8:
+            if len(pending) > 32:
                 pending.popleft().get()
         while pending:
             pending.popleft().get()

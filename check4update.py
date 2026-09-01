@@ -7,57 +7,15 @@ import sys
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-
-
-def get_installed_packages(site_dir: Path) -> list[dict[str, str]]:
-    packages = []
-    try:
-        result = subprocess.run(
-            [
-                sys.executable,
-                "-m",
-                "pip",
-                "list",
-                "--format=json",
-                "--path",
-                str(site_dir),
-            ],
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-        packages = json.loads(result.stdout)
-    except subprocess.CalledProcessError as e:
-        print(f"Error listing packages: {e.stderr}")
-    except json.JSONDecodeError as e:
-        print(f"Error parsing package list: {e}")
-    return packages
+from dh import get_installed_packages
 
 
 def check_package_update(package_info: dict[str, str]) -> tuple[str, str, str, bool]:
     package_name = package_info["name"]
     current_version = package_info["version"]
     try:
-        result = subprocess.run(
-            [
-                sys.executable,
-                "-m",
-                "pip",
-                "install",
-                "--dry-run",
-                "--quiet",
-                f"{package_name}==latest",
-            ],
-            capture_output=True,
-            text=True,
-            timeout=30,
-        )
-        result = subprocess.run(
-            [sys.executable, "-m", "pip", "index", "versions", package_name],
-            capture_output=True,
-            text=True,
-            timeout=30,
-        )
+        cmd = ["pip", "index", "versions", package_name]
+        result = runcmd(cmd, show_output=True)
         if result.returncode == 0:
             lines = result.stdout.strip().split("\n")
             for line in lines:
@@ -127,31 +85,9 @@ def save_upgradable_packages(upgradable: list[tuple[str, str, str]], output_file
 
 
 def find_site_packages() -> list[Path]:
-    site_dirs = []
-    result = subprocess.run(
-        [
-            sys.executable,
-            "-c",
-            'import site; print("\\n".join(site.getsitepackages()))',
-        ],
-        capture_output=True,
-        text=True,
-        check=True,
-    )
-    for line in result.stdout.strip().split("\n"):
-        path = Path(line.strip())
-        if path.exists():
-            site_dirs.append(path)
-    result = subprocess.run(
-        [sys.executable, "-c", "import site; print(site.getusersitepackages())"],
-        capture_output=True,
-        text=True,
-        check=True,
-    )
-    user_site = Path(result.stdout.strip())
-    if user_site.exists() and user_site not in site_dirs:
-        site_dirs.append(user_site)
-    return site_dirs
+    import site
+
+    return site.getsitepackages()
 
 
 def main():
@@ -167,7 +103,7 @@ def main():
     all_packages = []
     for site_dir in site_dirs:
         print(f"\nScanning {site_dir}...")
-        packages = get_installed_packages(site_dir)
+        packages = get_installed_packages()
         print(f"  Found {len(packages)} packages")
         all_packages.extend(packages)
     if not all_packages:

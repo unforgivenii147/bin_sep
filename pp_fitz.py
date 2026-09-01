@@ -27,6 +27,8 @@ def collect_pdf_files(inputs):
 
 def extract_single_page(page_data):
     page_num, page, output_dir = page_data
+    if page_num % 10 == 0:
+        print(f"processing page {page_num}")
     try:
         text = page.get_text()
         page_file = output_dir / f"page_{page_num:03d}.txt"

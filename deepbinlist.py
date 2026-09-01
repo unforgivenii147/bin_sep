@@ -7,7 +7,7 @@ import site
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 
-import pkg_resources
+import importlib_metadata
 
 logging.basicConfig(
     level=logging.INFO,
@@ -31,11 +31,15 @@ def get_site_packages_paths() -> list[Path]:
 
 def get_installed_packages() -> list[tuple[str, str]]:
     packages = []
-    for dist in pkg_resources.working_set:
+    all_dists = list(importlib_metadata.distributions())
+    for dist in all_dists:
         try:
-            packages.append((dist.project_name, dist.version))
+            name = dist.metadata.get("Name")
+            version = dist.version
+            if name and version:
+                packages.append((name, version))
         except Exception as e:
-            logger.warning(f"Error getting info for {dist.project_name}: {e}")
+            logger.warning(f"Error getting info for package: {e}")
     return packages
 
 

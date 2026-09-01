@@ -17,20 +17,6 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def find_site_packages() -> Path | None:
-    try:
-        dirs = site.getsitepackages()
-    except Exception:
-        logger.exception("Failed to get site-packages directories")
-        return None
-    if not dirs:
-        logger.error("No site-packages directories found")
-        return None
-    path = Path(dirs[0])
-    logger.info("Found site-packages: %s", path)
-    return path
-
-
 def calculate_file_hash(filepath: Path) -> str:
     sha256_hash = hashlib.sha256()
     try:
@@ -139,26 +125,21 @@ def process_dist_info(dist_info_dir: Path) -> bool:
 
 
 def main() -> None:
-    logger.info("Starting multiprocess RECORD updater")
-    site_packages = find_site_packages()
-    if not site_packages:
-        sys.exit(1)
+    site_packages = Path.cwd()
     dist_info_dirs = sorted(site_packages.glob("*.dist-info"))
     if not dist_info_dirs:
-        logger.warning("No .dist-info directories found in %s", site_packages)
+        logger.warning("you should run this script from a site packages folder.")
         sys.exit(0)
     logger.info("Found %d distribution(s)", len(dist_info_dirs))
-    num_workers = max(1, multiprocessing.cpu_count() - 1)
-    logger.info("Using %d worker processes", num_workers)
     updated = 0
     failed = 0
-    with multiprocessing.Pool(processes=num_workers) as pool:
+    with multiprocessing.Pool(processes=8) as pool:
         for success in pool.imap_unordered(process_dist_info, dist_info_dirs):
             if success:
                 updated += 1
             else:
                 failed += 1
-    logger.info("Summary: %d updated, %d failed", updated, failed)
+    logger.info(f"Summary: {updated} updated, {failed} failed")
 
 
 if __name__ == "__main__":

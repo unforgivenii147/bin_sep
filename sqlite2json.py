@@ -28,7 +28,7 @@ def row_to_dict(row):
                     result[k] = {
                         "__blob_base64": base64.b64encode(
                             str(row[k]).encode("utf-8", errors="replace")
-                        ).decode("ascii")
+                        ).decode("asci")
                     }
                 except:
                     result[k] = {"__decode_error": "Could not process value"}
@@ -104,6 +104,8 @@ def fetch_table_data(args):
                                 row_dict[k] = val
                         rows.append(row_dict)
                     conn.close()
+                    with open(str(table_name), "w") as f:
+                        json.dump(rows, f, ensure_ascii=False, indent=2)
                     return (
                         table_name,
                         rows,
@@ -122,7 +124,7 @@ def fetch_table_data(args):
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: python convert_sqlite_to_json.py <sqlite-file>")
+        print("Usage: python sqlite2json.py <sqlite-file>")
         sys.exit(1)
     db_path = Path(sys.argv[1])
     if not db_path.is_file():
@@ -143,8 +145,12 @@ def main():
     if not tables:
         print("No tables found in database")
         sys.exit(1)
-    num_processes = min(cpu_count(), len(tables))
-    print(f"Processing {len(tables)} tables using {num_processes} processes...")
+    num_processes = 4
+
+    print(f"Processing {len(tables)} tables")
+    for tbl in tables:
+        print(tbl)
+    input("press any key to continue...")
     with Pool(processes=num_processes) as pool:
         results = pool.map(fetch_table_data, [(db_path, table) for table in tables])
     output = {}
