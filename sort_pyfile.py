@@ -96,9 +96,10 @@ def sort_python_script(file_path: Path) -> None:
             sorted_lines.append(segment)
     sorted_code = "\n".join(sorted_lines)
     try:
-        with file_path.open("w", encoding="utf-8") as f:
+        tmp_path = file_path.with_name(file_path.stem + "_sorted" + file_path.suffix)
+        with tmp_path.open("w", encoding="utf-8") as f:
             f.write(sorted_code)
-        print(f"Successfully sorted and saved: {file_path}")
+        print(f"Successfully sorted and saved: {tmp_path}")
     except Exception as e:
         print(f"Error writing to {file_path}: {e}")
 

@@ -11,22 +11,7 @@ from typing import Optional
 
 class PythonDevSetup:
     DEV_PACKAGES = [
-        "pyright",
-        "pylsp",
-        "flake8",
-        "mypy",
-        "pylint",
-        "black",
-        "isort",
-        "debugpy",
-        "pytest",
-        "pytest-cov",
-        "pytest-xdist",
-        "types-requests",
-        "types-python-dateutil",
         "pre-commit",
-        "pynvim",
-        "python-lsp-server",
     ]
     PRE_COMMIT_CONFIG = """repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -192,7 +177,6 @@ logs/
         return '''"""Main module for the project."""
 from __future__ import annotations
 def main() -> None:
-    """Entry point for the application."""
     print("Hello, Python!")
 if __name__ == "__main__":
     main()
@@ -203,7 +187,6 @@ if __name__ == "__main__":
 import pytest
 from src.main import main
 def test_main(capsys: pytest.CaptureFixture[str]) -> None:
-    """Test that main() prints the expected message."""
     main()
     captured = capsys.readouterr()
     assert captured.out.strip() == "Hello, Python!"
@@ -250,43 +233,6 @@ jobs:
           file: ./coverage.xml
 """
 
-    def create_virtualenv(self) -> bool:
-        print("\nCreating virtual environment...")
-        try:
-            if self.venv_path.exists():
-                print("  Virtual environment already exists")
-                return True
-            print(f"  Creating venv at: {self.venv_path}")
-            venv.create(self.venv_path, with_pip=True)
-            print("  Virtual environment created")
-            return True
-        except Exception as e:
-            print(f"  Error creating virtual environment: {e}")
-            return False
-
-    def install_packages(self) -> bool:
-        print("\nInstalling development packages...")
-        pip_path = self._get_pip_path()
-        try:
-            for package in self.DEV_PACKAGES:
-                print(f"  Installing: {package}...")
-                subprocess.run(
-                    [pip_path, "install", package], check=True, capture_output=True
-                )
-                print(f"    Installed: {package}")
-            return True
-        except subprocess.CalledProcessError as e:
-            print(f"  Error installing packages: {e}")
-            return False
-
-    def _get_pip_path(self) -> str:
-        if self.venv_path.exists():
-            if self.is_windows:
-                return str(self.venv_path / "Scripts" / "pip")
-            else:
-                return str(self.venv_path / "bin" / "pip")
-        return f"{sys.executable} -m pip"
-
     def _get_python_path(self) -> str:
         if self.venv_path.exists():
             if self.is_windows:
@@ -308,10 +254,6 @@ jobs:
             if not gitignore_file.exists():
                 gitignore_file.write_text(self.GITIGNORE_TEMPLATE)
                 print("  Created: .gitignore")
-            pip_path = self._get_pip_path()
-            subprocess.run(
-                [pip_path, "install", "pre-commit"], check=True, capture_output=True
-            )
             subprocess.run(["pre-commit", "install"], cwd=self.project_path, check=True)
             print("  Pre-commit hooks installed")
             subprocess.run(["pre-commit", "run", "--all-files"], cwd=self.project_path)
@@ -404,56 +346,6 @@ exclude_lines = [
             print("  Created: requirements-dev.txt")
         return True
 
-    def generate_vscode_settings(self) -> bool:
-        print("\nCreating VS Code settings...")
-        vscode_dir = self.project_path / ".vscode"
-        vscode_dir.mkdir(exist_ok=True)
-        settings_file = vscode_dir / "settings.json"
-        if not settings_file.exists():
-            content = """{
-    "python.linting.enabled": true,
-    "python.linting.flake8Enabled": true,
-    "python.linting.mypyEnabled": true,
-    "python.linting.pylintEnabled": false,
-    "python.formatting.provider": "none",
-    "python.languageServer": "Pylance",
-    "python.analysis.typeCheckingMode": "basic",
-    "[python]": {
-        "editor.defaultFormatter": "ms-python.black-formatter",
-        "editor.formatOnSave": true,
-        "editor.codeActionsOnSave": {
-            "source.organizeImports": "explicit"
-        }
-    },
-    "editor.rulers": [120],
-    "files.exclude": {
-        "**/__pycache__": true,
-        "**/*.pyc": true,
-        ".pytest_cache": true,
-        ".mypy_cache": true
-    }
-}"""
-            settings_file.write_text(content)
-            print("  Created: .vscode/settings.json")
-        extensions_file = vscode_dir / "extensions.json"
-        if not extensions_file.exists():
-            content = """{
-    "recommendations": [
-        "ms-python.python",
-        "ms-python.vscode-pylance",
-        "ms-python.black-formatter",
-        "ms-python.isort",
-        "ms-python.mypy-type-checker",
-        "ms-python.pytest",
-        "charliermarsh.ruff",
-        "tamasfe.even-better-toml",
-        "redhat.vscode-yaml"
-    ]
-}"""
-            extensions_file.write_text(content)
-            print("  Created: .vscode/extensions.json")
-        return True
-
     def generate_neovim_config_info(self) -> bool:
         print("\nCreating Neovim configuration info...")
         neovim_file = self.project_path / "NEOVIM.md"
@@ -525,18 +417,12 @@ Debugging not working?
         if not self.check_python_version():
             return False
         self.create_project_structure()
-        if not self.create_virtualenv():
-            return False
         if not self.create_pyproject_toml():
             return False
         if not self.create_requirements_files():
             return False
-        if not self.install_packages():
-            return False
         if not self.setup_pre_commit():
             print("  Warning: Pre-commit setup failed, continuing...")
-        if not self.generate_vscode_settings():
-            print("  Warning: VS Code settings generation failed, continuing...")
         if not self.generate_neovim_config_info():
             print("  Warning: Neovim info generation failed, continuing...")
         print("\n" + "=" * 42)

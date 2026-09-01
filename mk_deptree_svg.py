@@ -10,7 +10,7 @@ from pathlib import Path
 
 from joblib import Parallel, delayed
 
-WORKERS = 4
+WORKERS = 8
 
 
 def normalize_name(name: str) -> str:

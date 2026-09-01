@@ -8,7 +8,7 @@ from pathlib import Path
 
 from dh import get_files
 
-DH_SRC_DIR = Path("~/isaac/pkgs/dh/src/dh").expanduser()
+DH_SRC_DIR = Path("~/projects/py/dh/src/dh").expanduser()
 
 
 def build_dh_mapping(dh_path: Path) -> dict:

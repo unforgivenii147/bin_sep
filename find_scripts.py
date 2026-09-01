@@ -3,29 +3,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from dh import is_binary, is_python_file, should_skip
-
-CHUNK_SIZE = 1024 * 1024
-
-
-def get_filez(root_dir: str | Path):
-    visited_dirs: set[Path] = set()
-    root_dir = Path(root_dir)
-    if root_dir.is_dir():
-        for dirpath, dirnames, filenames in root_dir.walk():
-            base_path = Path(dirpath)
-            for dirname in list(dirnames):
-                full_path = base_path / dirname
-                resolved_path = full_path.resolve()
-                if should_skip(full_path) or resolved_path in visited_dirs:
-                    dirnames.remove(dirname)
-                visited_dirs.add(resolved_path)
-            for filename in filenames:
-                filepath = base_path / filename
-                if not should_skip(filepath):
-                    yield filepath
-    else:
-        yield root_dir
+from dh import is_binary, is_python_file, should_skip, get_filez
 
 
 def find_scripts_without_extension(directory: Path):

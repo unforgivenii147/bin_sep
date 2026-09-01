@@ -5,7 +5,6 @@ from pathlib import Path
 
 
 def get_font_b64_or_fallback(filename):
-    """Attempts to find and read a TTF file, returning its Base64 string."""
     path = Path(filename)
     if not path.exists():
         print(f"⚠️  Warning: '{filename}' not found in current directory.")
@@ -22,14 +21,12 @@ def get_font_b64_or_fallback(filename):
 def build_precise_css():
     print("Parsing typography file tree...")
 
-    # 1. Fetch data for each precise styling variant
     reg_b64 = get_font_b64_or_fallback("Inter-Regular.ttf")
     bold_b64 = get_font_b64_or_fallback("Inter-Bold.ttf")
     italic_b64 = get_font_b64_or_fallback("Inter-Italic.ttf")
     bi_b64 = get_font_b64_or_fallback("Inter-BoldItalic.ttf")
     mono_b64 = get_font_b64_or_fallback("JetBrainsMono-Regular.ttf")
 
-    # 2. Build font-face blocks only if the source file was actually present
     font_face_blocks = []
 
     if reg_b64:
@@ -74,7 +71,6 @@ def build_precise_css():
 
     combined_font_faces = "\n\n".join(font_face_blocks)
 
-    # 3. Formulate structural layout styles
     css_template = f"""/* ==========================================================================
    1. PRECISION FONT REGISTRATION (AUTOMATICALLY INLINED)
    ========================================================================== */{combined_font_faces}
@@ -266,10 +262,3 @@ td {{
 
 if __name__ == "__main__":
     build_precise_css()
-
-
-# * Inter-Regular.ttf
-# * Inter-Bold.ttf
-# * Inter-Italic.ttf
-# * Inter-BoldItalic.ttf
-# * JetBrainsMono-Regular.ttf

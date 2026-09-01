@@ -137,7 +137,7 @@ def main():
     parser.add_argument("paths", nargs="*", help="Files or directories to process")
     args = parser.parse_args()
     dry_run = not args.no_dry_run
-    dh_path = Path.home() / "isaac" / "pkgs" / "dh" / "src" / "dh"
+    dh_path = Path.home() / "projects" / "py" / "dh" / "src" / "dh"
     bin_path = Path.cwd()
     target_paths = (
         [Path(p).expanduser() for p in args.paths] if args.paths else [bin_path]

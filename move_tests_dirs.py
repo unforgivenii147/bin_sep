@@ -16,6 +16,10 @@ SRC = Path.home() / ".local" / "lib" / "python3.12" / "site-packages"
 def move_tests_folder(
     tests_path: Path, base_src: Path, base_dst: Path
 ) -> tuple[bool, str]:
+    strp = str(tests_path)
+    if "numpy" in strp or "scipy" in strp or "pandas" in strp or "numba" in strp:
+        return False, f"excluded path"
+
     try:
         relative_path = tests_path.relative_to(base_src)
         parent_relative = relative_path.parent
@@ -32,7 +36,7 @@ def move_tests_folder(
 
 def move_tests_recursive(source_dir: str = SRC, max_workers: int = 4) -> int:
     source = Path(source_dir).resolve()
-    destination = Path.home() / "tmp" / "test"
+    destination = Path.home() / "tmp" / "tests_dirs"
     tests_folders = list(source.rglob("tests"))
     tests_folders = [p for p in tests_folders if p.is_dir()]
     if not tests_folders:

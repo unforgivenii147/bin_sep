@@ -10,7 +10,7 @@ import sys
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 
-DH_DIR = Path.home() / "isaac/pkgs/dh/src/dh"
+DH_DIR = Path.home() / "projects/py/dh/src/dh"
 
 
 def hash_string(s: str) -> str:

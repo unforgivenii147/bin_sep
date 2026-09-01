@@ -9,7 +9,7 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
 
-DH_SOURCE_PATH = Path.home() / "isaac" / "pkgs" / "dh" / "src" / "dh"
+DH_SOURCE_PATH = Path.home() / "projects" / "py" / "dh" / "src" / "dh"
 
 
 @dataclass

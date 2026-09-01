@@ -100,7 +100,7 @@ def sanitize_filename(title: str) -> str:
 
     name = _INVALID_FILENAME_CHARS.sub("_", name)
 
-    name = re.sub(r"\s+", " ", name).strip()
+    name = re.sub(r"\s+", "_", name).strip()
 
     name = name.rstrip(" .")
 
@@ -241,6 +241,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def rename_file(source: Path, target: Path) -> tuple[bool, str | None]:
+
     try:
         if target.exists():
             return False, "target already exists"
@@ -308,7 +309,7 @@ def main() -> int:
             print(f"{source} -> {target}")
 
         print()
-        print("Use --apply to perform these renames.")
+        print("Use -a to perform these renames.")
         return 0
 
     print("Applying renames:")
