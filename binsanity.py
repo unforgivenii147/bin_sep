@@ -153,7 +153,9 @@ def main() -> None:
         new_path = out_dir / filepath.name
         filepath.rename(new_path)
     output_file.write_text(
-        f"Binary Analysis Results\nDirectory: {cwd}\nTotal binaries tested: {len(binaries)}\nFailed binaries: {len(failed_binaries)}\n{'=' * 42}\n\n"
+        f"Binary Analysis Results\nDirectory: {cwd}\nTotal binaries tested: {
+            len(binaries)
+        }\nFailed binaries: {len(failed_binaries)}\n{'=' * 42}\n\n"
         + (
             "\n".join(
                 (

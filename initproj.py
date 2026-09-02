@@ -50,7 +50,7 @@ classifiers = [
 ]
 dependencies = [
     "typer>=0.12.0",
-    "rich>=13.0.0",  # Added for beautiful Typer formatting
+    "rich>=13.0.0",  
 ]
 
 [project.optional-dependencies]
@@ -60,7 +60,7 @@ dev = [
     "flake8>=7.0.0",
 ]
 
-# This automatically links your system command to the Typer app functions
+
 [project.scripts]
 {project_name} = "{pkg_name}.cli:app"
 {project_name}-admin = "{pkg_name}.admin:app"
@@ -112,11 +112,11 @@ if __name__ == "__main__":
 """
 
     readme_content = f"""
-# {project_name}
+
 
 A cookiecutter-pypackage styled boilerplate library including dual CLI entrypoints powered by Typer.
 
-## Installation
+
 
 ```bash
 pip install .
@@ -127,19 +127,19 @@ For development installations:
 pip install -e ".[dev]"
 ```
 
-## Usage
 
-### Main CLI
+
+
 ```bash
 {project_name} hello --name Alice
 ```
 
-### Admin CLI
+
 ```bash
 {project_name}-admin setup
 ```
 
-## Development
+
 
 - Run tests: `pytest`
 - Format code: `black .`

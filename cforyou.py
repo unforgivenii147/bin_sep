@@ -104,7 +104,9 @@ if __name__ == "__main__":
                         (pkg_name, installed_version, latest_version_str)
                     )
                     cprint(
-                        f"[{i + 1}/{len(packages_to_check)}] {pkg_name}: {installed_version} -> {latest_version_str} (Updatable!)",
+                        f"[{i + 1}/{len(packages_to_check)}] {pkg_name}: {
+                            installed_version
+                        } -> {latest_version_str} (Updatable!)",
                         "green",
                     )
                 else:
@@ -114,7 +116,11 @@ if __name__ == "__main__":
                     )
             except Exception as ver_err:
                 cprint(
-                    f"[{i + 1}/{len(packages_to_check)}] {pkg_name}: Could not parse versions '{installed_version}' or '{latest_version_str}': {ver_err}",
+                    f"[{i + 1}/{len(packages_to_check)}] {
+                        pkg_name
+                    }: Could not parse versions '{installed_version}' or '{
+                        latest_version_str
+                    }': {ver_err}",
                     "yellow",
                 )
         else:

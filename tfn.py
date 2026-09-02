@@ -127,9 +127,9 @@ def main() -> None:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  %(prog)s              # Dry-run (show what would be renamed)
-  %(prog)s -a           # Apply renames
-  %(prog)s --apply      # Apply renames
+  %(prog)s              
+  %(prog)s -a           
+  %(prog)s --apply      
         """,
     )
     parser.add_argument(

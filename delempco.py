@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
-from dh import TXT_EXT, is_binary
+from dh import TXT_EXT, is_binary, should_skip
 
 
 class ANSI:
@@ -29,39 +29,6 @@ class ANSI:
                 setattr(cls, attr, "")
 
 
-BINARY_SIGNATURES = {
-    b"\xff\xd8\xff": "JPEG",
-    b"\x89PNG\r\n": "PNG",
-    b"GIF87a": "GIF",
-    b"GIF89a": "GIF",
-    b"BM": "BMP",
-    b"\x00\x00\x01\x00": "ICO",
-    b"RIFF": "WebP/WAV/AVI",
-    b"ftyp": "HEIF/MP4",
-    b"PK\x03\x04": "ZIP",
-    b"\x1f\x8b\x08": "GZIP",
-    b"BZh": "BZIP2",
-    b"\xfd7zXZ\x00": "XZ",
-    b"7z\xbc\xaf'\x1c": "7z",
-    b"Rar!\x1a\x07": "RAR",
-    b"\xed\xab\xee\xdb": "RPM",
-    b"\x7fELF": "ELF",
-    b"MZ": "PE",
-    b"\xfe\xed\xfa": "Mach-O",
-    b"\xce\xfa\xed\xfe": "Mach-O",
-    b"%PDF": "PDF",
-    b"\xd0\xcf\x11\xe0": "OLE2",
-    b"SQLite format 3": "SQLite",
-    b"%!": "PostScript",
-    b"\x00\x00\x00\x18ftypmp42": "MP4",
-    b"ID3": "MP3",
-    b"OggS": "OGG",
-    b"fLaC": "FLAC",
-    b"FWS": "Flash",
-    b"CWS": "Flash",
-}
-
-
 @dataclass
 class FileResult:
     path: Path
@@ -69,7 +36,7 @@ class FileResult:
     total_lines: int = 0
     removed_lines: int = 0
     error_message: str = ""
-    is_binary: bool = False
+    is_bin: bool = False
 
 
 @dataclass
@@ -81,45 +48,6 @@ class ProcessingStats:
     lines_removed: int = 0
     errors_count: int = 0
     results: list[FileResult] = field(default_factory=list)
-
-
-def is_text_by_extension(path: Path) -> bool:
-    return path.suffix in TXT_EXT
-
-
-def has_null_bytes(data: bytes) -> bool:
-    return b"\x00" in data
-
-
-def matches_binary_signature(data: bytes) -> bool:
-    return any(data.startswith(signature) for signature in BINARY_SIGNATURES)
-
-
-def heuristic_is_binary(data: bytes, threshold: float = 0.3) -> bool:
-    if not data:
-        return False
-    text_bytes = set(range(32, 127))
-    text_bytes.update([9, 10, 13])
-    text_bytes.update(range(128, 256))
-    non_text_count = sum((1 for byte in data if byte not in text_bytes))
-    non_text_ratio = non_text_count / len(data)
-    return non_text_ratio > threshold
-
-
-def is_binary_file(path: Path, first_8kb: Optional[bytes] = None) -> bool:
-    if not is_text_by_extension(path):
-        return True
-    if first_8kb is None:
-        try:
-            with open(path, "rb") as f:
-                first_8kb = f.read(8192)
-        except (OSError, IOError):
-            return True
-    if has_null_bytes(first_8kb):
-        return True
-    if matches_binary_signature(first_8kb):
-        return True
-    return bool(heuristic_is_binary(first_8kb))
 
 
 def remove_blank_lines(file_path: Path, remove_spaces: bool = False) -> tuple[int, int]:
@@ -155,9 +83,9 @@ def process_file_worker(
             result.status = "error"
             result.error_message = "Permission denied"
             return result
-        if is_binary_file(file_path, first_8kb):
+        if is_binary(file_path, first_8kb):
             result.status = "skipped_binary"
-            result.is_binary = True
+            result.is_bin = True
             return result
         total_lines, removed_lines = remove_blank_lines(file_path, remove_spaces)
         result.total_lines = total_lines
@@ -195,7 +123,7 @@ def discover_files(directories: list[str]) -> tuple[list[Path], int]:
             skipped_dirs += 1
             continue
         for file_path in dir_path.rglob("*"):
-            if file_path.is_file() and (not file_path.is_symlink()):
+            if file_path.is_file() and (not should_skip(file_path)):
                 files.append(file_path)
     return (files, skipped_dirs)
 
@@ -384,7 +312,10 @@ def main():
     elapsed = time.time() - start_time
     print("\r" + " " * 50 + "\r", end="")
     print(
-        f"  {ANSI.GREEN}Progress: Complete!{ANSI.RESET} ({ANSI.BOLD}{stats.text_files:,}{ANSI.RESET} text, {ANSI.BOLD}{stats.binary_files:,}{ANSI.RESET} binary)"
+        f"  {ANSI.GREEN}Progress: Complete!{ANSI.RESET} ({ANSI.BOLD}{
+            stats.text_files:,}{ANSI.RESET} text, {ANSI.BOLD}{stats.binary_files:,}{
+            ANSI.RESET
+        } binary)"
     )
     print_separator()
     print_results(stats, base_dirs)

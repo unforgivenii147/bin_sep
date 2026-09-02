@@ -136,10 +136,10 @@ def main() -> int:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  %(prog)s                              # Process current directory recursively
-  %(prog)s file.txt                     # Process single file
-  %(prog)s dir1 dir2 file.txt          # Process multiple paths
-  %(prog)s --workers 8 --chunk-size 2M dir/  # Custom worker count and chunk size
+  %(prog)s                              
+  %(prog)s file.txt                     
+  %(prog)s dir1 dir2 file.txt          
+  %(prog)s --workers 8 --chunk-size 2M dir/  
         """,
     )
     parser.add_argument(

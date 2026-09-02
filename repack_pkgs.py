@@ -193,9 +193,17 @@ class WheelBuilder:
                 dist_info_name = f"{normalized_name}-{package_info.version}.dist-info"
                 dist_info_dir = temp_path / dist_info_name
                 dist_info_dir.mkdir(parents=True, exist_ok=True)
-                wheel_content = f"Wheel-Version: 1.0\nGenerator: repack_venv_packages\nRoot-Is-Purelib: {('true' if package_info.is_pure_python else 'false')}\nTag: {package_info.py_version}-{package_info.abi_tag}-{package_info.platform_tag}\n"
+                wheel_content = f"Wheel-Version: 1.0\nGenerator: repack_venv_packages\nRoot-Is-Purelib: {
+                    ('true' if package_info.is_pure_python else 'false')
+                }\nTag: {package_info.py_version}-{package_info.abi_tag}-{
+                    package_info.platform_tag
+                }\n"
                 (dist_info_dir / "WHEEL").write_text(wheel_content)
-                metadata_content = f"Metadata-Version: {package_info.metadata_version}\nName: {package_info.name}\nVersion: {package_info.version}\nSummary: Repacked wheel from site-packages\nHome-page: UNKNOWN\nAuthor: UNKNOWN\nAuthor-email: UNKNOWN\nLicense: UNKNOWN\nPlatform: UNKNOWN\n"
+                metadata_content = f"Metadata-Version: {
+                    package_info.metadata_version
+                }\nName: {package_info.name}\nVersion: {
+                    package_info.version
+                }\nSummary: Repacked wheel from site-packages\nHome-page: UNKNOWN\nAuthor: UNKNOWN\nAuthor-email: UNKNOWN\nLicense: UNKNOWN\nPlatform: UNKNOWN\n"
                 (dist_info_dir / "METADATA").write_text(metadata_content)
                 top_level = pkg_name.split("-")[0]
                 (dist_info_dir / "top_level.txt").write_text(top_level + "\n")

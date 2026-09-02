@@ -246,7 +246,11 @@ def scan_directory(target_dir, auto_extract=False, test_integrity=False, verbose
                         else "\033[31m[FAIL]\033[0m"
                     )
                     print(
-                        f" -> Found: {res['filename']} | Type: {res['archive_type']} | Comp: {fsz(res['compressed_size'])} -> Ext: {fsz(res['extracted_size'])} | {status}"
+                        f" -> Found: {res['filename']} | Type: {
+                            res['archive_type']
+                        } | Comp: {fsz(res['compressed_size'])} -> Ext: {
+                            fsz(res['extracted_size'])
+                        } | {status}"
                     )
     print("-" * 90)
     print(
@@ -264,7 +268,10 @@ def scan_directory(target_dir, auto_extract=False, test_integrity=False, verbose
             else "\033[90mSKIP\033[0m"
         )
         print(
-            f"{item['filename'][:31]:<32} {item['archive_type'][:25]:<26} {fsz(item['compressed_size']):<12} {fsz(item['extracted_size']):<12} {status}"
+            f"{item['filename'][:31]:<32} {item['archive_type'][:25]:<26} {
+                fsz(item['compressed_size']):<12} {fsz(item['extracted_size']):<12} {
+                status
+            }"
         )
     print("=" * 90)
     print(f"\033[1;36mSUMMARY:\033[0m Found {len(found_archives)} archive files.")

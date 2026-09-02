@@ -78,6 +78,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
-
-# 752 |     def write_text(self, data: str, encoding: str | None = None, errors: str | None = None, newline: str | None = None) -> int:

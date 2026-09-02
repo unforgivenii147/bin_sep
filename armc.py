@@ -291,12 +291,12 @@ def main() -> None:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  %(prog)s -c myfile.py              # Dry run: show what would be removed
-  %(prog)s -c -a myfile.py           # Apply: remove comments
-  %(prog)s -d -a myfile.py           # Apply: remove docstrings
-  %(prog)s -c -d -a myfile.py        # Apply: remove both
-  %(prog)s -c -w 8 /path/to/code     # Dry run with 8 workers
-  %(prog)s -c -a --no-validate file.py  # Apply without validation
+  %(prog)s -c myfile.py              
+  %(prog)s -c -a myfile.py           
+  %(prog)s -d -a myfile.py           
+  %(prog)s -c -d -a myfile.py        
+  %(prog)s -c -w 8 /path/to/code     
+  %(prog)s -c -a --no-validate file.py  
         """,
     )
 

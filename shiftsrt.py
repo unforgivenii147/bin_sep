@@ -16,12 +16,7 @@ from typing import TextIO
 WORKERS = 4
 SUPPORTED_SUFFIX = ".srt"
 
-# Matches a complete SRT timing line, for example:
-#
-# 00:01:02,345 --> 00:01:05,678
-# 1:02:03.400 --> 1:02:05.900
-#
-# Optional settings after the second timestamp are preserved.
+
 TIMING_LINE_RE = re.compile(
     r"""
     ^
@@ -58,11 +53,7 @@ class ProcessResult:
 
 
 def parse_timestamp(timestamp: str) -> int:
-    """
-    Convert an SRT timestamp into milliseconds.
 
-    Supports both comma and period millisecond separators.
-    """
     hours, minutes, seconds_and_ms = timestamp.split(":", maxsplit=2)
     seconds, milliseconds = re.split(r"[,.]", seconds_and_ms, maxsplit=1)
 
@@ -75,25 +66,18 @@ def parse_timestamp(timestamp: str) -> int:
 
 
 def format_timestamp(milliseconds: int, separator: str = ",") -> str:
-    """
-    Convert milliseconds into an SRT timestamp.
 
-    Negative values are clamped to zero.
-    """
     milliseconds = max(0, milliseconds)
 
     hours, remainder = divmod(milliseconds, 3_600_000)
     minutes, remainder = divmod(remainder, 60_000)
     seconds, milliseconds = divmod(remainder, 1_000)
 
-    return (
-        f"{hours:02d}:{minutes:02d}:{seconds:02d}"
-        f"{separator}{milliseconds:03d}"
-    )
+    return f"{hours:02d}:{minutes:02d}:{seconds:02d}{separator}{milliseconds:03d}"
 
 
 def shift_timing_line(line: str, shift_ms: int) -> str:
-    """Shift the two timestamps on an SRT timing line."""
+
     match = TIMING_LINE_RE.match(line)
 
     if match is None:
@@ -102,7 +86,6 @@ def shift_timing_line(line: str, shift_ms: int) -> str:
     start_text = match.group("start")
     end_text = match.group("end")
 
-    # Preserve the separator used by each timestamp.
     start_separator = "," if "," in start_text else "."
     end_separator = "," if "," in end_text else "."
 
@@ -129,21 +112,13 @@ def transform_file(
     destination: TextIO,
     shift_ms: int,
 ) -> None:
-    """
-    Stream an SRT file from source to destination.
 
-    Only timestamp lines are modified. All other content is copied unchanged.
-    """
     for line in source:
         destination.write(shift_timing_line(line, shift_ms))
 
 
 def process_file(path: Path, shift_ms: int) -> ProcessResult:
-    """
-    Shift one file in place using a temporary file and atomic replacement.
 
-    The source file is not replaced unless the complete transformation succeeds.
-    """
     path = path.resolve()
 
     if not path.is_file():
@@ -164,8 +139,9 @@ def process_file(path: Path, shift_ms: int) -> ProcessResult:
 
         try:
             with (
-                path.open("r", encoding=encoding, errors="strict", newline="")
-                as source,
+                path.open(
+                    "r", encoding=encoding, errors="strict", newline=""
+                ) as source,
                 tempfile.NamedTemporaryFile(
                     mode="w",
                     encoding=encoding,
@@ -181,10 +157,8 @@ def process_file(path: Path, shift_ms: int) -> ProcessResult:
                 destination.flush()
                 os.fsync(destination.fileno())
 
-            # Preserve the original permission bits.
             os.chmod(temporary_path, original_mode)
 
-            # Atomic on the same filesystem.
             os.replace(temporary_path, path)
 
             return ProcessResult(
@@ -219,16 +193,12 @@ def process_file(path: Path, shift_ms: int) -> ProcessResult:
 
 
 def process_file_worker(path: str, shift_ms: int) -> ProcessResult:
-    """Multiprocessing-compatible wrapper."""
+
     return process_file(Path(path), shift_ms)
 
 
 def collect_srt_files(inputs: list[str]) -> list[Path]:
-    """
-    Collect unique SRT files from file and directory arguments.
 
-    Directories are searched recursively.
-    """
     files: dict[Path, Path] = {}
 
     for item in inputs:
@@ -241,10 +211,7 @@ def collect_srt_files(inputs: list[str]) -> list[Path]:
 
         elif path.is_dir():
             for candidate in path.rglob("*"):
-                if (
-                    candidate.is_file()
-                    and candidate.suffix.lower() == SUPPORTED_SUFFIX
-                ):
+                if candidate.is_file() and candidate.suffix.lower() == SUPPORTED_SUFFIX:
                     resolved = candidate.resolve()
                     files[resolved] = resolved
 
@@ -255,24 +222,14 @@ def collect_srt_files(inputs: list[str]) -> list[Path]:
 
 
 def parse_arguments(argv: list[str]) -> tuple[list[str], int]:
-    """
-    Parse arguments in this form:
 
-        shiftsrt.py amount
-        shiftsrt.py file.srt amount
-        shiftsrt.py file1.srt dir1/ +12
-    """
     if len(argv) < 1:
-        raise ValueError(
-            "usage: shiftsrt.py [FILE_OR_DIR ...] SECONDS"
-        )
+        raise ValueError("usage: shiftsrt.py [FILE_OR_DIR ...] SECONDS")
 
     try:
         shift_seconds = int(argv[-1])
     except ValueError as error:
-        raise ValueError(
-            "SECONDS must be an integer such as +12, -3, or 0"
-        ) from error
+        raise ValueError("SECONDS must be an integer such as +12, -3, or 0") from error
 
     inputs = argv[:-1]
 
@@ -343,10 +300,7 @@ def main() -> int:
                 file=sys.stderr,
             )
 
-    print(
-        f"Completed: {len(results) - failures} succeeded, "
-        f"{failures} failed."
-    )
+    print(f"Completed: {len(results) - failures} succeeded, {failures} failed.")
 
     return 1 if failures else 0
 

@@ -216,7 +216,9 @@ def main():
                     else file_path
                 )
                 print(
-                    f"{display_path} ({elapsed_time:.2f}ms) {fsz(original_size)} - {fsz(new_size)} (ratio: {ratio:.1f}%)"
+                    f"{display_path} ({elapsed_time:.2f}ms) {fsz(original_size)} - {
+                        fsz(new_size)
+                    } (ratio: {ratio:.1f}%)"
                 )
     else:
         total_original_size = 0
@@ -242,7 +244,9 @@ def main():
                             else result_file
                         )
                         print(
-                            f"{display_path} ({elapsed_time:.2f}ms) {fsz(original_size)} - {fsz(new_size)} (ratio: {ratio:.1f}%)"
+                            f"{display_path} ({elapsed_time:.2f}ms) {
+                                fsz(original_size)
+                            } - {fsz(new_size)} (ratio: {ratio:.1f}%)"
                         )
                     else:
                         display_path = (

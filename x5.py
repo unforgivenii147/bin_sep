@@ -42,6 +42,8 @@ EXCLUDED_EXTENSIONS = {
     ".iso", ".img", ".dmg", ".vdi", ".vmdk", ".qcow2",
 }
 # fmt: on
+
+
 @dataclass
 class CompressionResult:
     file_path: Path
@@ -533,7 +535,9 @@ def print_results_basic(
         )
         type_indicator = "[tar]" if result.was_tarred else ""
         print(
-            f"{file_name:<40} {fsz(result.original_size):>12} {fsz(result.processed_size):>12} {ratio:>7.1f}% {result.duration:>7.2f}s {type_indicator}"
+            f"{file_name:<40} {fsz(result.original_size):>12} {
+                fsz(result.processed_size):>12} {ratio:>7.1f}% {
+                result.duration:>7.2f}s {type_indicator}"
         )
     if len(successful) > 20:
         print(f"... and {len(successful) - 20} more files")
@@ -559,7 +563,10 @@ def print_results_basic(
     if operation == "compress":
         print(f"📈 Average compression: {avg_ratio:.1f}%")
         print(
-            f"🎉 Disk space freed: {fsz(space_saved)} ({(space_saved / total_original * 100 if total_original > 0 else 0):.1f}%)"
+            f"🎉 Disk space freed: {fsz(space_saved)} ({
+                (
+                    space_saved / total_original * 100 if total_original > 0 else 0
+                ):.1f}%)"
         )
     else:
         print(f"📈 Average expansion: {avg_ratio:.1f}%")

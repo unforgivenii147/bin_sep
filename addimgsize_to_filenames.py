@@ -127,7 +127,9 @@ class ImageDimensionRenamer:
             print(f"{status}  {path_str:<50} {message}")
         print("-" * 42)
         print(
-            f"[SUMMARY] Renamed: {successful} | Skipped: {already_processed} | Failed: {failed} | Total: {len(image_paths)}"
+            f"[SUMMARY] Renamed: {successful} | Skipped: {already_processed} | Failed: {
+                failed
+            } | Total: {len(image_paths)}"
         )
 
     def run(self) -> None:

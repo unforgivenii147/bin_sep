@@ -135,7 +135,8 @@ def minify_batch(input_paths: list[Path], max_workers: int | None = None) -> int
     total_time = sum(r.duration for r in results)
     print(f"Files: {len(html_files)} ({errors} error{'s' if errors != 1 else ''})")
     print(
-        f"Original: {total_original:,} B | Minified: {total_minified:,} B | Saved: {total_saved:,} B ({avg_compression:.1f}%)"
+        f"Original: {total_original:,} B | Minified: {total_minified:,} B | Saved: {
+            total_saved:,} B ({avg_compression:.1f}%)"
     )
     print(f"Total time: {total_time:.2f}s")
     return 0 if errors == 0 else 1

@@ -26,6 +26,3 @@ def cleanver(path: Path) -> None:
 if __name__ == "__main__":
     fn = Path(sys.argv[1])
     cleanver(fn)
-
-
-# 377 |         def read_text(self, encoding: str | None = None, errors: str | None = None) -> str:

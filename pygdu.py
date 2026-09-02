@@ -113,7 +113,9 @@ def draw_interface(current_node: FSItem, selected_idx: int):
         if idx == selected_idx:
             line = f"{REVERSE}{size_str}  {bar_str}  {flag_str}  {name_str}{RESET}"
         else:
-            line = f"{GREEN}{size_str}{RESET}  {YELLOW}{bar_str}{RESET}  {MAGENTA}{flag_str}{RESET}  {(CYAN if item.is_dir else RESET)}{name_str}{RESET}"
+            line = f"{GREEN}{size_str}{RESET}  {YELLOW}{bar_str}{RESET}  {MAGENTA}{
+                flag_str
+            }{RESET}  {(CYAN if item.is_dir else RESET)}{name_str}{RESET}"
         lines.append(line)
     clear_screen()
     sys.stdout.write("\n".join(lines) + "\n")

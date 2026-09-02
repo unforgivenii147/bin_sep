@@ -88,10 +88,7 @@ def module_to_md_paths(name: str) -> tuple[str, str]:
 
 
 def file_to_md_paths(py_file: str, root: str) -> tuple[str, str]:
-    #    path=Path(py_file)
-    #    outpath=path.with_suffix('.md')
-    #    out_path=doc_dir /outpath
-    #    print(out_path)
+
     rel = Path(py_file).relative_to(root)
     parts = list(rel.parts)
     parts[-1] = parts[-1].replace(".py", ".md")

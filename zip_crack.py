@@ -135,7 +135,9 @@ def brute_force_zip(
                     elapsed = current_time - result.start_time
                     pps = result.tested_count / elapsed if elapsed > 0 else 0
                     print(
-                        f"Progress: {progress:6.2f}% | Tested: {result.tested_count:10,} | Speed: {pps:8.1f} p/s | Elapsed: {format_duration(elapsed)}",
+                        f"Progress: {progress:6.2f}% | Tested: {
+                            result.tested_count:10,} | Speed: {
+                            pps:8.1f} p/s | Elapsed: {format_duration(elapsed)}",
                         end="\r",
                     )
                     last_update = current_time

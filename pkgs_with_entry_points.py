@@ -440,7 +440,12 @@ def main():
     print(f"  • Subtotal:             {len(unique_pure_ep) + len(unique_nonpure_ep)}")
     print()
     print(
-        f"Grand total: {len(unique_pure_noep) + len(unique_nonpure_noep) + len(unique_pure_ep) + len(unique_nonpure_ep)}"
+        f"Grand total: {
+            len(unique_pure_noep)
+            + len(unique_nonpure_noep)
+            + len(unique_pure_ep)
+            + len(unique_nonpure_ep)
+        }"
     )
     print(f"{'=' * 42}")
     if args.verbose:

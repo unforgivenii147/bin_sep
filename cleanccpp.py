@@ -12,7 +12,7 @@ import tree_sitter_cpp
 from tree_sitter import Language, Parser
 
 C_EXTS = {".c", ".h"}
-CPP_EXTS = {".cpp", ".hpp"}
+CPP_EXTS = {".cpp", ".hpp", "cc", "hh"}
 ALL_EXTS = C_EXTS | CPP_EXTS
 _PARSERS: dict[str, Parser] = {}
 

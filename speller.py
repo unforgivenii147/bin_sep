@@ -9,10 +9,7 @@ from spellchecker import SpellChecker
 
 
 def process_line(line: str, autofix: bool = False) -> tuple:
-    """
-    Process a single line for spelling errors.
-    Returns: (updated_line, misspelled_count, fixed_count)
-    """
+
     spell = SpellChecker()
     misspelled_count = 0
     fixed_count = 0
@@ -20,33 +17,30 @@ def process_line(line: str, autofix: bool = False) -> tuple:
     def check_and_replace(match):
         nonlocal misspelled_count, fixed_count
         word = match.group(0)
-        
-        # Strip leading/trailing apostrophes to handle contractions properly
+
         clean_word = word.strip("'")
         if not clean_word.isalpha():
             return word
-            
+
         if clean_word.lower() not in spell:
             misspelled_count += 1
             if autofix:
                 correction = spell.correction(clean_word.lower())
                 if not correction:
                     return word
-                
-                # Apply original casing
+
                 if clean_word.istitle():
                     corrected_word = correction.capitalize()
                 elif clean_word.isupper():
                     corrected_word = correction.upper()
                 else:
                     corrected_word = correction
-                    
-                # Re-add apostrophes if they were at the edges
+
                 if word.startswith("'"):
                     corrected_word = "'" + corrected_word
                 if word.endswith("'"):
                     corrected_word = corrected_word + "'"
-                    
+
                 fixed_count += 1
                 return corrected_word
             else:
@@ -56,22 +50,13 @@ def process_line(line: str, autofix: bool = False) -> tuple:
                 return word
         return word
 
-    # Updated regex: [a-zA-Z'] ensures we only match letters and apostrophes 
-    # (ignoring numbers and underscores which \w would catch)
     updated_line = re.sub(r"[a-zA-Z']+", check_and_replace, line)
-    
+
     return updated_line, misspelled_count, fixed_count
 
 
 def process_file(filepath: str, autofix: bool = False, num_processes: int = None):
-    """
-    Process a file for spelling errors using multiprocessing.
-    
-    Args:
-        filepath: Path to the text file
-        autofix: Whether to automatically correct misspelled words
-        num_processes: Number of processes to use (defaults to CPU count)
-    """
+
     try:
         with open(filepath, "r", encoding="utf-8") as f:
             lines = f.readlines()
@@ -82,34 +67,29 @@ def process_file(filepath: str, autofix: bool = False, num_processes: int = None
         print(f"Error reading file: {e}")
         return
 
-    # Determine number of processes
     if num_processes is None:
         num_processes = min(cpu_count(), len(lines))
-    
+
     print(f"Processing {len(lines)} lines using {num_processes} processes...")
-    
-    # Prepare arguments for multiprocessing
+
     args = [(line, autofix) for line in lines]
-    
-    # Process lines in parallel
+
     try:
         with Pool(processes=num_processes) as pool:
             results = pool.starmap(process_line, args)
     except Exception as e:
         print(f"Error during multiprocessing: {e}")
         return
-    
-    # Aggregate results
+
     updated_lines = []
     total_misspelled = 0
     total_fixed = 0
-    
+
     for updated_line, misspelled, fixed in results:
         updated_lines.append(updated_line)
         total_misspelled += misspelled
         total_fixed += fixed
-    
-    # Write updated content if autofix mode
+
     if autofix:
         if total_fixed > 0:
             try:
@@ -118,19 +98,25 @@ def process_file(filepath: str, autofix: bool = False, num_processes: int = None
                 print(f"\nAutofixed {total_fixed} misspelled word(s) in '{filepath}'.")
                 if total_misspelled > total_fixed:
                     skipped = total_misspelled - total_fixed
-                    print(f"({skipped} misspelled word(s) had no suggestions and were skipped.)")
+                    print(
+                        f"({skipped} misspelled word(s) had no suggestions and were skipped.)"
+                    )
             except Exception as e:
                 print(f"Error writing to file: {e}")
         else:
             if total_misspelled == 0:
                 print("No misspelled words found to autofix.")
             else:
-                print("Found misspelled words, but no automatic corrections were available.")
+                print(
+                    "Found misspelled words, but no automatic corrections were available."
+                )
     else:
         if total_misspelled == 0:
             print("No misspelled words found.")
         else:
-            print(f"\nFound {total_misspelled} misspelled word(s). Run with -a to autofix.")
+            print(
+                f"\nFound {total_misspelled} misspelled word(s). Run with -a to autofix."
+            )
 
 
 if __name__ == "__main__":

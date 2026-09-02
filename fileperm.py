@@ -169,7 +169,9 @@ def main():
     parser = argparse.ArgumentParser(
         description="Fix file permissions with smart rules using generator-based scanning",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog=f"\nRules:\n  - Files that are already executable: no changes\n  - Files with shebang (#!) or in 'bin' directory: set to 0755\n  - All other files: set to 0644\n\nSkipped directories: {', '.join(sorted(SKIP_DIRS))}\n\nExamples:\n  %(prog)s                    # Process current directory\n  %(prog)s /path/to/project   # Process specific path\n  %(prog)s . --dry-run        # Preview changes\n  %(prog)s . --show-examples  # Show examples of changes\n        ",
+        epilog=f"\nRules:\n  - Files that are already executable: no changes\n  - Files with shebang (#!) or in 'bin' directory: set to 0755\n  - All other files: set to 0644\n\nSkipped directories: {
+            ', '.join(sorted(SKIP_DIRS))
+        }\n\nExamples:\n  %(prog)s                    # Process current directory\n  %(prog)s /path/to/project   # Process specific path\n  %(prog)s . --dry-run        # Preview changes\n  %(prog)s . --show-examples  # Show examples of changes\n        ",
     )
     parser.add_argument(
         "path",

@@ -226,7 +226,10 @@ Examples:
     print(f"   📦 Original size: {fsz(total_original)}")
     print(f"   📦 New size: {fsz(total_new)}")
     print(
-        f"   💰 Change: {fsz(total_change)} ({total_change / total_original * 100:+.1f}% if total_original > 0 else 'N/A')"
+        f"   💰 Change: {fsz(total_change)} ({
+            total_change
+            / total_original
+            * 100:+.1f}% if total_original > 0 else 'N/A')"
     )
     if not args.no_size_report and len(dirs) > 0:
         print("\n📁 Folder size changes:")

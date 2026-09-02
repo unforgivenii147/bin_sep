@@ -101,11 +101,22 @@ def print_compression_report(results):
         total_compressed += r["compressed_size"]
         total_freed += r["space_freed"]
         print(
-            f"{r['folder']:<20} {fsz(r['original_size']):<12} {fsz(r['compressed_size']):<12} {fsz(r['space_freed']):<12} {r['ratio']:>6.2f}x   {r['compression_percent']:>6.1f}%"
+            f"{r['folder']:<20} {fsz(r['original_size']):<12} {
+                fsz(r['compressed_size']):<12} {fsz(r['space_freed']):<12} {
+                r['ratio']:>6.2f}x   {r['compression_percent']:>6.1f}%"
         )
     print("-" * 42)
     print(
-        f"{'TOTAL':<20} {fsz(total_original):<12} {fsz(total_compressed):<12} {fsz(total_freed):<12} {(total_original / total_compressed if total_compressed > 0 else 0):>6.2f}x   {((1 - total_compressed / total_original) * 100 if total_original > 0 else 0):>6.1f}%"
+        f"{'TOTAL':<20} {fsz(total_original):<12} {fsz(total_compressed):<12} {
+            fsz(total_freed):<12} {
+            (
+                total_original / total_compressed if total_compressed > 0 else 0
+            ):>6.2f}x   {
+            (
+                (1 - total_compressed / total_original) * 100
+                if total_original > 0
+                else 0
+            ):>6.1f}%"
     )
     print("-" * 42)
     if errors:

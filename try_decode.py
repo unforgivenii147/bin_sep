@@ -169,6 +169,3 @@ def main():
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
-
-# 1559 |     def decode(self, encoding: str = "utf-8", errors: str = "strict") -> str:

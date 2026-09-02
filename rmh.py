@@ -209,7 +209,9 @@ def print_summary(results: list[ProcessResult], targets: list[Path]) -> None:
         logger.info("Successful files:")
         for result in successful:
             logger.info(
-                f"  {result.path.name}: {result.comments_removed} comments, {result.original_lines - result.final_lines} lines removed, freed {_format_bytes(result.space_freed)}"
+                f"  {result.path.name}: {result.comments_removed} comments, {
+                    result.original_lines - result.final_lines
+                } lines removed, freed {_format_bytes(result.space_freed)}"
             )
     if failed:
         logger.warning("Failed files:")

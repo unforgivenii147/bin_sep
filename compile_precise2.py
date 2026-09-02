@@ -84,7 +84,7 @@ html, body {{
     font-weight: 400;
     font-style: normal;
     line-height: 1.6;
-    color: #1e293b;
+    color: 
     -webkit-print-color-adjust: exact;
 }}
 
@@ -93,33 +93,33 @@ h1, h2, h3, h4 {{
     font-family: 'Inter', sans-serif;
     font-weight: 700;
     font-style: normal;
-    color: #0f172a;
+    color: 
     margin-top: 0;
     page-break-after: avoid;
     break-after: avoid;
 }}
 
-h1 {{ 
-    font-size: 26pt; 
-    line-height: 1.15; 
-    margin-bottom: 20pt; 
-    letter-spacing: -0.02em; 
+h1 {{
+    font-size: 26pt;
+    line-height: 1.15;
+    margin-bottom: 20pt;
+    letter-spacing: -0.02em;
 }}
 
-h2 {{ 
-    font-size: 18pt; 
-    line-height: 1.25; 
+h2 {{
+    font-size: 18pt;
+    line-height: 1.25;
     margin-top: 24pt;
-    margin-bottom: 12pt; 
-    border-bottom: 0.75pt solid #cbd5e1; 
-    padding-bottom: 6pt; 
+    margin-bottom: 12pt;
+    border-bottom: 0.75pt solid 
+    padding-bottom: 6pt;
 }}
 
-h3 {{ 
-    font-size: 14pt; 
-    line-height: 1.35; 
+h3 {{
+    font-size: 14pt;
+    line-height: 1.35;
     margin-top: 18pt;
-    margin-bottom: 8pt; 
+    margin-bottom: 8pt;
 }}
 
 p {{ margin-top: 0; margin-bottom: 10pt; text-align: justify; }}
@@ -135,8 +135,8 @@ code, pre, kbd, samp {{
 }}
 
 pre {{
-    background-color: #f8fafc;
-    border: 0.5pt solid #e2e8f0;
+    background-color: 
+    border: 0.5pt solid 
     border-radius: 4px;
     padding: 10pt 12pt;
     margin: 12pt 0;
@@ -145,10 +145,10 @@ pre {{
 }}
 
 p code {{
-    background-color: #f1f5f9;
+    background-color: 
     padding: 2pt 4pt;
     border-radius: 3px;
-    color: #0f172a;
+    color: 
 }}
 
 /* Variant Styling Rules */
@@ -173,24 +173,24 @@ strong em, em strong, b i, i b {{
 @page {{
     size: A4 portrait;
     margin: 25mm 20mm 20mm 20mm;
-    
+
     @top-left {{
         content: "Official Document Title";
         font-family: 'Inter', sans-serif;
         font-size: 8.5pt;
-        color: #64748b;
-        border-bottom: 0.5pt solid #cbd5e1;
+        color: 
+        border-bottom: 0.5pt solid 
         padding-bottom: 4pt;
         vertical-align: bottom;
     }}
-    
+
     @top-right {{
         content: "Confidential";
         font-family: 'Inter', sans-serif;
         font-weight: 700;
         font-size: 8.5pt;
-        color: #ef4444;
-        border-bottom: 0.5pt solid #cbd5e1;
+        color: 
+        border-bottom: 0.5pt solid 
         padding-bottom: 4pt;
         vertical-align: bottom;
     }}
@@ -199,14 +199,14 @@ strong em, em strong, b i, i b {{
         content: "Generated Document";
         font-family: 'Inter', sans-serif;
         font-size: 8pt;
-        color: #94a3b8;
+        color: 
     }}
 
     @bottom-right {{
         content: "Page " counter(page) " of " counter(pages);
         font-family: 'Inter', sans-serif;
         font-size: 8.5pt;
-        color: #64748b;
+        color: 
     }}
 }}
 
@@ -239,18 +239,18 @@ tr {{
 thead {{ display: table-header-group; }}
 
 th {{
-    background-color: #f1f5f9;
-    color: #334155;
+    background-color: 
+    color: 
     font-weight: 700;
     text-align: left;
     padding: 8pt 10pt;
     font-size: 9.5pt;
-    border-bottom: 2pt solid #cbd5e1;
+    border-bottom: 2pt solid 
 }}
 
 td {{
     padding: 8pt 10pt;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid 
     font-size: 9.5pt;
     vertical-align: top;
 }}"""

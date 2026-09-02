@@ -290,7 +290,9 @@ def main():
                     else:
                         change_str = f"(space freed: {fsz(-space_change)})"
                     print(
-                        f"✓ {result['name']}: {fsz(result['archive_size'])} -> {fsz(result['extracted_size'])} {change_str}"
+                        f"✓ {result['name']}: {fsz(result['archive_size'])} -> {
+                            fsz(result['extracted_size'])
+                        } {change_str}"
                     )
                 else:
                     failed += 1

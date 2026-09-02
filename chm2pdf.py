@@ -220,38 +220,38 @@ def convert_chm_to_pdf(input_path, output_path):
         @bottom-center {{
             content: counter(page);
             font-size: 10px;
-            color: #666;
+            color: 
         }}
     }}
     body {{
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
         line-height: 1.6;
         font-size: 11pt;
-        color: #333;
+        color: 
         max-width: 100%;
     }}
     h1 {{
         font-size: 24pt;
-        color: #2c3e50;
-        border-bottom: 2px solid #3498db;
+        color: 
+        border-bottom: 2px solid 
         padding-bottom: 10px;
         margin-top: 30px;
     }}
     h2 {{
         font-size: 20pt;
-        color: #34495e;
-        border-bottom: 1px solid #bdc3c7;
+        color: 
+        border-bottom: 1px solid 
         padding-bottom: 8px;
         margin-top: 25px;
     }}
     h3 {{
         font-size: 16pt;
-        color: #555;
+        color: 
         margin-top: 20px;
     }}
     h4 {{
         font-size: 14pt;
-        color: #666;
+        color: 
         margin-top: 15px;
     }}
     img {{
@@ -260,8 +260,8 @@ def convert_chm_to_pdf(input_path, output_path):
         margin: 10px 0;
     }}
     pre {{
-        background-color: #f8f9fa;
-        border: 1px solid #dee2e6;
+        background-color: 
+        border: 1px solid 
         border-radius: 4px;
         padding: 15px;
         overflow-x: auto;
@@ -270,7 +270,7 @@ def convert_chm_to_pdf(input_path, output_path):
         line-height: 1.4;
     }}
     code {{
-        background-color: #f8f9fa;
+        background-color: 
         padding: 2px 4px;
         border-radius: 3px;
         font-family: 'Courier New', monospace;
@@ -282,27 +282,27 @@ def convert_chm_to_pdf(input_path, output_path):
         margin: 15px 0;
     }}
     th, td {{
-        border: 1px solid #ddd;
+        border: 1px solid 
         padding: 8px;
         text-align: left;
     }}
     th {{
-        background-color: #f2f2f2;
+        background-color: 
         font-weight: bold;
     }}
     a {{
-        color: #3498db;
+        color: 
         text-decoration: none;
     }}
     blockquote {{
-        border-left: 4px solid #3498db;
+        border-left: 4px solid 
         margin: 15px 0;
         padding: 10px 20px;
-        background-color: #f8f9fa;
+        background-color: 
     }}
     hr {{
         border: none;
-        border-top: 1px solid #ddd;
+        border-top: 1px solid 
         margin: 20px 0;
     }}
 </style>

@@ -517,7 +517,9 @@ def print_summary(results: list[FileResult], elapsed: float) -> None:
     print()
     print(_c("  " + "─" * 42, DIM))
     print(
-        f"  {_c('Summary', BOLD, CYAN)}  {_c(total, BOLD)} files  {_c(changed, BOLD, GREEN)} stripped  {_c(clean, DIM)} clean  "
+        f"  {_c('Summary', BOLD, CYAN)}  {_c(total, BOLD)} files  {
+            _c(changed, BOLD, GREEN)
+        } stripped  {_c(clean, DIM)} clean  "
         + (f"{_c(errors, BOLD, RED)} errors  " if errors else "")
         + f"{_c(f'-{lines_saved} lines', YELLOW)}  {_c(f'-{fsz(bytes_saved)}', MAGENTA)}  {_c(f'{elapsed:.2f}s', DIM)}"
     )

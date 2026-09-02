@@ -40,7 +40,9 @@ def find_fuzzy_duplicates(threshold: int = 70) -> None:
             )
             if comparison_score >= threshold:
                 print(
-                    f"Potential match: {f1_path.relative_to(start_dir)} and {f2_path.relative_to(start_dir)} (Score: {comparison_score})"
+                    f"Potential match: {f1_path.relative_to(start_dir)} and {
+                        f2_path.relative_to(start_dir)
+                    } (Score: {comparison_score})"
                 )
                 duplicates[f1_path].append((f2_path, comparison_score))
     if not duplicates:

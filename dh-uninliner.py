@@ -34,7 +34,9 @@ def extract_function_index(dh_dir: Path) -> dict[str, str]:
                 h = hash_string(func_source)
                 if h in index and index[h] != node.name:
                     print(
-                        f"Warning: duplicate hash in dh package for {node.name} (already mapped to {index[h]}). Skipping.",
+                        f"Warning: duplicate hash in dh package for {
+                            node.name
+                        } (already mapped to {index[h]}). Skipping.",
                         file=sys.stderr,
                     )
                     continue

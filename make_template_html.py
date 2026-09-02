@@ -154,7 +154,14 @@ def create_template_html(
         <div class="toc">
             <h2>Table of Contents</h2>
             <ul>
-        {chr(10).join(f'                <li><a href="#{Path(f).stem}">{Path(f).relative_to(Path.cwd())}</a></li>' for f in html_files)}
+        {
+        chr(10).join(
+            f'                <li><a href="#{Path(f).stem}">{
+                Path(f).relative_to(Path.cwd())
+            }</a></li>'
+            for f in html_files
+        )
+    }
             </ul>
         </div>
 {merged_content}

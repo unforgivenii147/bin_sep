@@ -349,7 +349,9 @@ Examples:
                 size_kb = output_path.stat().st_size / 1024
                 size_info = f" ({size_kb:.1f} KB)"
             print(
-                f"{status} {file_path.name} [{input_type}] → {output_path.name if output_path else 'unknown'} [{output_type}]{size_info}"
+                f"{status} {file_path.name} [{input_type}] → {
+                    output_path.name if output_path else 'unknown'
+                } [{output_type}]{size_info}"
             )
             if args.verbose:
                 print(f"   {message}")

@@ -151,7 +151,9 @@ def process_file(file_path_str: str):
                         logger.debug(f"Extracted from ZIP archive: {file_path}")
                     elif file_extension == ".7z":
                         logger.warning(
-                            f"7z extraction requires external library like 'py7zr'. Treating as binary for now: {file_path}"
+                            f"7z extraction requires external library like 'py7zr'. Treating as binary for now: {
+                                file_path
+                            }"
                         )
                         if is_binary(file_path):
                             content, _ = read_file_with_encodings(file_path)

@@ -189,19 +189,19 @@ def generate_html(fonts: list[FontInfo], cwd: Path) -> str:
 <title>Font Preview</title>
 <style>
 :root {{
-  --bg: #ffffff;
-  --text: #1a1a1a;
-  --border: #e0e0e0;
-  --accent: #0066cc;
-  --input-bg: #f5f5f5;
+  --bg: 
+  --text: 
+  --border: 
+  --accent: 
+  --input-bg: 
 }}
 @media (prefers-color-scheme: dark) {{
   :root {{
-    --bg: #1a1a1a;
-    --text: #e0e0e0;
-    --border: #404040;
-    --accent: #66b3ff;
-    --input-bg: #2d2d2d;
+    --bg: 
+    --text: 
+    --border: 
+    --accent: 
+    --input-bg: 
   }}
 }}
 * {{
@@ -384,13 +384,13 @@ def cli_main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Preview fonts in current directory
+
   fontpreview.py
-  # Preview fonts in specific directory
+
   fontpreview.py ./fonts/
-  # Preview fonts in multiple directories
+
   fontpreview.py ./fonts/ ~/Downloads/ ./local/
-  # Specify output filename
+
   fontpreview.py -o my_preview.html ./fonts/
         """,
     )

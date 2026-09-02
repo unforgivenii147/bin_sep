@@ -519,7 +519,9 @@ class PathlibTransformer(ast.NodeTransformer):
         if not node.args:
             return node
         path_arg = node.args[0]
-        walk_code = f"(\n            (str(root), [d.name for d in root.iterdir() if d.is_dir()], \n             [f.name for f in root.iterdir() if f.is_file()])\n            for root in Path({ast.unparse(path_arg)}).rglob('*') if root.is_dir()\n        )"
+        walk_code = f"(\n            (str(root), [d.name for d in root.iterdir() if d.is_dir()], \n             [f.name for f in root.iterdir() if f.is_file()])\n            for root in Path({
+            ast.unparse(path_arg)
+        }).rglob('*') if root.is_dir()\n        )"
         self.warnings.append(
             "os.walk converted to simplified generator - verify correctness"
         )

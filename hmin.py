@@ -282,10 +282,10 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  %(prog)s                          # Process all HTML files in current directory
-  %(prog)s file1.html file2.html    # Process specific HTML files
-  %(prog)s public/ dist/            # Process all HTML files in directories
-  %(prog)s index.html src/          # Mix files and directories
+  %(prog)s                          
+  %(prog)s file1.html file2.html    
+  %(prog)s public/ dist/            
+  %(prog)s index.html src/          
   %(prog)s --workers 8 src/
         """,
     )

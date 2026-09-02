@@ -125,7 +125,9 @@ def get_files_in_cwd():
                             }
                         )
                         print(
-                            f"    ✓ Compressed {file_data['original_size'] / 1024:.1f}KB to {len(compressed) / 1024:.1f}KB"
+                            f"    ✓ Compressed {
+                                file_data['original_size'] / 1024:.1f}KB to {
+                                len(compressed) / 1024:.1f}KB"
                         )
                     else:
                         files.append(

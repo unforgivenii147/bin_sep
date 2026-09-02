@@ -84,6 +84,3 @@ def main():
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
-
-# 860 | |     encoding: str | None = None,

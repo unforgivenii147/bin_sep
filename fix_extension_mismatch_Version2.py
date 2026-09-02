@@ -369,7 +369,11 @@ def print_summary(results: list[dict], verbose: bool = False) -> None:
 def print_header():
     print("fix_extension_mismatch.py")
     print(
-        f"  Detection: python-magic {'✓ available' if MAGIC_AVAILABLE else '✗ not available (using fallback signatures)'}"
+        f"  Detection: python-magic {
+            '✓ available'
+            if MAGIC_AVAILABLE
+            else '✗ not available (using fallback signatures)'
+        }"
     )
     if not MAGIC_AVAILABLE:
         print(

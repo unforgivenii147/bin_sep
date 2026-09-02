@@ -44,6 +44,3 @@ def get_github_repos(username: str, output_file=None) -> None:
 if __name__ == "__main__":
     username = input("Enter GitHub username: ").strip()
     get_github_repos(username)
-
-
-# 20 |         with Path(output_file).open("w", encoding="utf-8") as f:

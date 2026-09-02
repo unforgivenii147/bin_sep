@@ -8,7 +8,7 @@ from typing import Any
 
 
 def json_safe(value: Any) -> Any:
-    """Convert SQLite values into JSON-compatible values."""
+
     if isinstance(value, bytes):
         return value.hex()
     return value

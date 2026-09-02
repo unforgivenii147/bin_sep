@@ -177,13 +177,15 @@ class CompressionManager:
             if result:
                 results.append(result)
                 print(
-                    f"✓ {result.name:10} | Size: {result.size:12,} | Ratio: {result.ratio:.4f} | Time: {result.time:.3f}s"
+                    f"✓ {result.name:10} | Size: {result.size:12,} | Ratio: {
+                        result.ratio:.4f} | Time: {result.time:.3f}s"
                 )
         result_7z = self.compress_7z(data, base_name)
         if result_7z:
             results.append(result_7z)
             print(
-                f"✓ {result_7z.name:10} | Size: {result_7z.size:12,} | Ratio: {result_7z.ratio:.4f} | Time: {result_7z.time:.3f}s"
+                f"✓ {result_7z.name:10} | Size: {result_7z.size:12,} | Ratio: {
+                    result_7z.ratio:.4f} | Time: {result_7z.time:.3f}s"
             )
         return sorted(results, key=lambda x: x.ratio)
 
@@ -216,7 +218,9 @@ def print_report(results: list[CompressionResult], original_size: int) -> None:
     print("-" * REPORT_WIDTH)
     for i, result in enumerate(results[:3], 1):
         print(
-            f"{i}. {result.name:10} | Size: {result.size:12,} | Ratio: {result.ratio:.4f} | Saved: {result.saved_bytes:12,} bytes | Savings: {result.savings_percent:.1f}%"
+            f"{i}. {result.name:10} | Size: {result.size:12,} | Ratio: {
+                result.ratio:.4f} | Saved: {result.saved_bytes:12,} bytes | Savings: {
+                result.savings_percent:.1f}%"
         )
     print("\nALL RESULTS:")
     print("-" * REPORT_WIDTH)

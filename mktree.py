@@ -385,19 +385,19 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # From text file
+
   python create_tree.py tree.txt
 
-  # From image (screenshot)
+
   python create_tree.py folder_tree.png
 
-  # With output directory
+
   python create_tree.py tree.txt --output ./my_project
 
-  # Dry run
+
   python create_tree.py tree.txt --dry-run
 
-  # Verbose mode
+
   python create_tree.py tree.txt -v
         """,
     )

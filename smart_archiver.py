@@ -240,7 +240,9 @@ def compress_single_file(
         ratio = compressed_size / original_size * 100
         if verbose:
             print(
-                f"✓ {Path(file_path).name}: {algo.upper()}:{level} {original_size:,d} → {compressed_size:,d} bytes ({ratio:.1f}%) in {elapsed:.2f}s"
+                f"✓ {Path(file_path).name}: {algo.upper()}:{level} {
+                    original_size:,d} → {compressed_size:,d} bytes ({ratio:.1f}%) in {
+                    elapsed:.2f}s"
             )
         return {
             "file": str(file_path),

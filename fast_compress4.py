@@ -178,7 +178,9 @@ def main():
         for input_path, output_path in walk_files(root_dir, args.pattern):
             if args.dry_run:
                 print(
-                    f"[DRY RUN] Would compress & {'remove' if remove_original else 'keep'}: {input_path} -> {output_path}"
+                    f"[DRY RUN] Would compress & {
+                        'remove' if remove_original else 'keep'
+                    }: {input_path} -> {output_path}"
                 )
             elif compress_file(
                 input_path,

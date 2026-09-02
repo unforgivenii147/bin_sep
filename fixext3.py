@@ -212,7 +212,9 @@ def detect_and_fix_mismatches(
                     }
                 )
                 print(
-                    f"  MISMATCH FOUND: '{filepath}' detected as '{file_type_desc}' (suggested extension: {detected_ext})."
+                    f"  MISMATCH FOUND: '{filepath}' detected as '{
+                        file_type_desc
+                    }' (suggested extension: {detected_ext})."
                 )
     print("\n--- Analysis Complete ---")
     if not mismatched_files_found:

@@ -447,7 +447,10 @@ def print_report(
         for unused in report.unused_imports:
             total_unused += 1
             print(
-                f"{Colors.BOLD}{report.path}{Colors.RESET}  -->  line {Colors.CYAN}{unused.lineno:>5}{Colors.RESET}  {Colors.YELLOW}{unused.statement}{Colors.RESET}"
+                f"{Colors.BOLD}{report.path}{Colors.RESET}  -->  line {Colors.CYAN}{
+                    unused.lineno:>5}{Colors.RESET}  {Colors.YELLOW}{unused.statement}{
+                    Colors.RESET
+                }"
             )
             if verbose and len(unused.unused_names) > 1:
                 print(f"{'':30}[unused: {', '.join(unused.unused_names)}]")

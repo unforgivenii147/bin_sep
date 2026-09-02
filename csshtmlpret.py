@@ -391,6 +391,3 @@ def main() -> None:
 
 if __name__ in "__main__":
     raise SystemExit(main())
-
-
-# error[invalid-assignment]: Object of type `def prettify(self, encoding=None, formatter: str = "minimal", indent_width: int = 4) -> str` is not assignable to attribute `prettify` on type `<class 'BeautifulSoup'> & ~AlwaysFalsy`

@@ -49,7 +49,11 @@ def main():
         active_branch = local_repo.active_branch
         if not active_branch.tracking_branch():
             print(
-                f"[!] Active branch '{active_branch.name}' has no upstream tracking branch. Setting to origin/{active_branch.name}"
+                f"[!] Active branch '{
+                    active_branch.name
+                }' has no upstream tracking branch. Setting to origin/{
+                    active_branch.name
+                }"
             )
             active_branch.set_tracking_branch(origin.refs[active_branch.name])
         print(f"[*] Pulling latest changes into '{active_branch.name}'...")

@@ -71,7 +71,9 @@ class GoogleDriveSync:
         print("\n" + "=" * 42)
         print("GOOGLE DRIVE AUTHENTICATION")
         print("-" * 42)
-        auth_url = f"https://accounts.google.com/o/oauth2/auth?client_id={self.client_id}&redirect_uri=urn:ietf:wg:oauth:2.0:oob&response_type=code&scope=https://www.googleapis.com/auth/drive.readonly&access_type=offline"
+        auth_url = f"https://accounts.google.com/o/oauth2/auth?client_id={
+            self.client_id
+        }&redirect_uri=urn:ietf:wg:oauth:2.0:oob&response_type=code&scope=https://www.googleapis.com/auth/drive.readonly&access_type=offline"
         print("\n1. Open this URL in your browser:")
         print(f"\n{auth_url}\n")
         print("2. Sign in to your Google account")

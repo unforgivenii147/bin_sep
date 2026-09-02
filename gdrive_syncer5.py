@@ -149,7 +149,11 @@ class GoogleDriveSync:
         print("GOOGLE DRIVE AUTHENTICATION (Manual Flow)")
         print("-" * 42)
         redirect_uri = "http://localhost:8080"
-        auth_url = f"https://accounts.google.com/o/oauth2/auth?client_id={self.client_id}&redirect_uri={redirect_uri}&response_type=code&scope=https://www.googleapis.com/auth/drive.readonly&access_type=offline&prompt=consent"
+        auth_url = f"https://accounts.google.com/o/oauth2/auth?client_id={
+            self.client_id
+        }&redirect_uri={
+            redirect_uri
+        }&response_type=code&scope=https://www.googleapis.com/auth/drive.readonly&access_type=offline&prompt=consent"
         print("\n" + "=" * 42)
         print("OPTION 1 (Recommended): Localhost Redirect")
         print("-" * 42)

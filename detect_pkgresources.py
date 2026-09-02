@@ -140,11 +140,11 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python script.py                    # Scan all .py files in . (report only)
-  python script.py -a                 # Autofix all .py files in .
-  python script.py src/ -a            # Autofix all .py files in src/
-  python script.py file.py            # Report pkg_resources in file.py
-  python script.py file1.py file2.py  # Report in both files
+  python script.py                    
+  python script.py -a                 
+  python script.py src/ -a            
+  python script.py file.py            
+  python script.py file1.py file2.py  
         """,
     )
     parser.add_argument(

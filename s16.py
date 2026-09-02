@@ -8,17 +8,15 @@ CHUNKSIZE = 15_850
 
 
 def split_at_boundary(text: str, max_size: int) -> tuple[str, str]:
-    """Return the next chunk and the remaining text."""
+
     if len(text) <= max_size:
         return text, ""
 
-    # Prefer the last newline within the size limit.
     newline_pos = text.rfind("\n", 0, max_size + 1)
     if newline_pos > 0:
         split_pos = newline_pos + 1
         return text[:split_pos], text[split_pos:]
 
-    # Otherwise prefer the last whitespace character.
     whitespace_pos = -1
     for index in range(max_size, 0, -1):
         if text[index - 1].isspace():
@@ -28,7 +26,6 @@ def split_at_boundary(text: str, max_size: int) -> tuple[str, str]:
     if whitespace_pos > 0:
         return text[:whitespace_pos], text[whitespace_pos:]
 
-    # A single line/word is longer than CHUNKSIZE.
     return text[:max_size], text[max_size:]
 
 
@@ -41,7 +38,6 @@ def process_file(path: Path) -> None:
         if not text:
             return
 
-        # Determine the number of chunks before writing files.
         remaining = text
         chunk_count = 0
 
@@ -68,7 +64,7 @@ def process_file(path: Path) -> None:
 
 
 def get_files(path: Path) -> list[Path]:
-    """Return regular files recursively, excluding generated chunks."""
+
     return [
         file
         for file in path.rglob("*")

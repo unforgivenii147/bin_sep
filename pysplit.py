@@ -3,12 +3,13 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
+from dh import is_binary
 
 
 def split_file_into_parts(file_path: Path, n: int) -> None:
     if n <= 0:
         raise ValueError("n must be a positive integer")
-    if is_binary_file(file_path):
+    if is_binary(file_path):
         print(f"Error: binary file '{file_path}' detected. Aborting.", file=sys.stderr)
         sys.exit(1)
     lines = file_path.read_text(encoding="utf-8").splitlines(keepends=True)

@@ -302,6 +302,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
-
-# 55 |         with module.open(path, "rt", encoding="utf-8", errors="replace") as fh:

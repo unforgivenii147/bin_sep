@@ -53,7 +53,10 @@ class ProgressDisplay:
             if len(filename) > 30:
                 filename = filename[:27] + "..."
             print(
-                f"\r{status_color}{status.upper():10}{RESET} [{bar}] {percent:5.1f}% {self.processed_files}/{self.total_files} files ({savings:5.1f}% saved, {speed:5.1f} MB/s) - {filename:<30}",
+                f"\r{status_color}{status.upper():10}{RESET} [{bar}] {percent:5.1f}% {
+                    self.processed_files
+                }/{self.total_files} files ({savings:5.1f}% saved, {
+                    speed:5.1f} MB/s) - {filename:<30}",
                 end="",
                 flush=True,
             )

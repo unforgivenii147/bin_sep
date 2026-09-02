@@ -112,11 +112,11 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  %(prog)s                    # Process current directory recursively
-  %(prog)s /path/to/dir      # Process specific directory
-  %(prog)s file1.txt file2.txt  # Process specific files
-  %(prog)s -a /path/to/dir   # Auto-remove pattern from files
-  %(prog)s --auto-remove      # Same as -a
+  %(prog)s                    
+  %(prog)s /path/to/dir      
+  %(prog)s file1.txt file2.txt  
+  %(prog)s -a /path/to/dir   
+  %(prog)s --auto-remove      
         """,
     )
     parser.add_argument(

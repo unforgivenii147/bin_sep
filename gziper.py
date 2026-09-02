@@ -159,7 +159,8 @@ Examples:
                 stats.add_success(orig_size, comp_size)
                 status_symbol = "✅"
                 print(
-                    f"{display_path:<50} {fsz(orig_size):>10} {fsz(comp_size):>10} {format_ratio(orig_size, comp_size):>8} {status_symbol:>10}"
+                    f"{display_path:<50} {fsz(orig_size):>10} {fsz(comp_size):>10} {
+                        format_ratio(orig_size, comp_size):>8} {status_symbol:>10}"
                 )
             else:
                 stats.add_failure()

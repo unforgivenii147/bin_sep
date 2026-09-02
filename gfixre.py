@@ -1,11 +1,11 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
-import argparse
 import ast
-from concurrent.futures import ThreadPoolExecutor
+import sys
 from difflib import unified_diff
+from multiprocessing.pool import Pool as mp_pool
 from pathlib import Path
+
+from dh import get_pyfiles
 
 
 class RegexRawConverter(ast.NodeTransformer):
@@ -95,20 +95,34 @@ def process_file(file_path: Path, autofix: bool = False) -> dict:
         return {"status": "error", "path": file_path, "error": str(e)}
 
 
+def process_file_wrapper(args):
+
+    return process_file(*args)
+
+
 def main():
-    parser = argparse.ArgumentParser(description="Convert regex strings to raw strings")
-    parser.add_argument("-a", "--autofix", action="store_true", help="Apply changes")
-    args = parser.parse_args()
-    py_files = [
-        f
-        for f in Path(".").rglob("*.py")
-        if f.is_file() and f.name != Path(__file__).name
-    ]
+    cwd = Path.cwd()
+    args = sys.argv[1:]
+
+    autofix = False
+    file_args = []
+    for arg in args:
+        if arg in ("-a", "--autofix"):
+            autofix = True
+        else:
+            file_args.append(arg)
+
+    files = [Path(p) for p in file_args] if file_args else get_pyfiles(cwd)
+
+    if len(files) == 1:
+        process_file(files[0], autofix)
+        sys.exit(0)
+
     results = {"fixed": 0, "diff": 0, "unchanged": 0, "error": 0}
-    with ThreadPoolExecutor(max_workers=4) as executor:
-        tasks = [executor.submit(process_file, f, args.autofix) for f in py_files]
-        for future in tasks:
-            result = future.result()
+
+    with mp_pool(processes=8) as pool:
+        tasks = [(f, autofix) for f in files]
+        for result in pool.starmap(process_file, tasks):
             status = result["status"]
             results[status] += 1
             if status == "fixed":
@@ -118,10 +132,13 @@ def main():
                 print("".join(result["diff"]))
             elif status == "error":
                 print(f"❌ {result['path'].name}: {result['error']}")
+
     print(
-        f"\n📊 Fixed: {results['fixed']}, Changed: {results['diff']}, Unchanged: {results['unchanged']}, Errors: {results['error']}"
+        f"\n📊 Fixed: {results['fixed']}, Changed: {results['diff']}, Unchanged: {
+            results['unchanged']
+        }, Errors: {results['error']}"
     )
-    if results["diff"] > 0 and not args.autofix:
+    if results["diff"] > 0 and not autofix:
         print("\n💡 Run with -a/--autofix to apply changes")
 
 

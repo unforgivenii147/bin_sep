@@ -51,9 +51,9 @@ class PythonDevSetup:
 __pycache__/
 *.py[cod]
 *$py.class
-# C extensions
+
 *.so
-# Distribution / packaging
+
 .Python
 build/
 develop-eggs/
@@ -70,13 +70,13 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-# PyInstaller
+
 *.manifest
 *.spec
-# Installer logs
+
 pip-log.txt
 pip-delete-this-directory.txt
-# Unit test / coverage reports
+
 htmlcov/
 .tox/
 .nox/
@@ -89,10 +89,10 @@ coverage.xml
 *.py,cover
 .hypothesis/
 .pytest_cache/
-# Translations
+
 *.mo
 *.pot
-# Environments
+
 .env
 .venv
 env/
@@ -100,19 +100,19 @@ venv/
 ENV/
 env.bak/
 venv.bak/
-# IDE
+
 .idea/
 .vscode/
 *.swp
 *.swo
 *~
-# OS
+
 .DS_Store
 Thumbs.db
-# Logs
+
 *.log
 logs/
-# Local configuration
+
 .env.local
 .env.*.local
 """
@@ -352,7 +352,7 @@ exclude_lines = [
         if not neovim_file.exists():
             content = f"""# Neovim Configuration for Python Development
 This project uses **LazyVim** with a custom Python configuration.
-## Quick Setup
+
 1. **Install Neovim** (v0.9+ recommended):
    Linux/macOS:
    brew install neovim  (macOS)
@@ -367,7 +367,7 @@ This project uses **LazyVim** with a custom Python configuration.
    Create ~/.config/nvim/lua/plugins/python.lua with the configuration.
 4. **Install Python LSP Tools**:
    pip install pyright black isort debugpy pynvim
-## Key Mappings
+
 | Key | Action |
 |-----|--------|
 | <leader>rp | Run current Python file |
@@ -383,12 +383,12 @@ This project uses **LazyVim** with a custom Python configuration.
 | <leader>tt | Run all tests |
 | <leader>td | Debug tests |
 | <leader>cv | Create virtualenv |
-## Virtual Environment
+
 The configuration automatically detects and uses virtual environments.
 To create a virtual environment:
 python -m venv .venv
 source .venv/bin/activate
-## Recommended Plugins
+
 The Python configuration includes:
 - LSP: Pyright + Ruff LSP
 - Formatting: Black + isort (via Conform.nvim)
@@ -397,7 +397,7 @@ The Python configuration includes:
 - Testing: neotest with pytest
 - Snippets: Python docstring and code snippets
 - Virtualenv: Automatic venv detection and creation
-## Troubleshooting
+
 LSP not working?
 :LspInfo
 :Mason

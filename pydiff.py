@@ -77,7 +77,9 @@ def report_diff_lines(path1: Path, path2: Path, num_workers: int = 2) -> None:
         for line in only_in_second:
             cprint(f"  - {line}", "yellow")
     cprint(
-        f"common lines: {common_count}\nonly in {path1.name}: {len(only_in_first)}\nonly in {path2.name}: {len(only_in_second)}",
+        f"common lines: {common_count}\nonly in {path1.name}: {
+            len(only_in_first)
+        }\nonly in {path2.name}: {len(only_in_second)}",
         "blue",
     )
 

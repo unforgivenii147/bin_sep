@@ -90,11 +90,11 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python script.py file.py                    # Run all tools on file.py
-  python script.py . -a                       # Run all tools on all .py in .
-  python script.py . -g -p                    # Run pyright & pylint on all .py in .
-  python script.py dir/ -r                    # Run ruff on all .py in dir/
-  python script.py file1.py file2.py -g -p   # Run pyright & pylint on both files
+  python script.py file.py                    
+  python script.py . -a                       
+  python script.py . -g -p                    
+  python script.py dir/ -r                    
+  python script.py file1.py file2.py -g -p   
         """,
     )
     parser.add_argument(

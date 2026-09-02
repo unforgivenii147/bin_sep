@@ -8,6 +8,8 @@ from pathlib import Path
 
 from rich.console import Console
 from rich.markdown import Markdown
+from rich.panel import Panel
+from rich.text import Text
 
 
 def read_markdown(file_path: str) -> str:
@@ -22,7 +24,7 @@ def read_markdown(file_path: str) -> str:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="mdview",
-        description="View a Markdown file in the terminal.",
+        description="View a Markdown file in the terminal, page by page.",
     )
     parser.add_argument(
         "file",
@@ -59,7 +61,64 @@ def main() -> int:
         console.print(f"[red]Error:[/red] {error}", file=sys.stderr)
         return 1
 
-    console.print(Markdown(markdown_text))
+    md = Markdown(markdown_text)
+
+    segments = list(console.render(md, console.options))
+
+    full_text = Text()
+    for seg in segments:
+        if isinstance(seg, Text):
+            full_text.append(seg)
+        else:
+            full_text.append(Text(str(seg)))
+
+    lines = full_text.split("\n")
+
+    height = console.height - 1
+    page_count = (len(lines) + height - 1) // height or 1
+    current_page = 0
+
+    while True:
+        console.clear()
+
+        start = current_page * height
+        end = start + height
+        page_lines = lines[start:end]
+
+        page_text = Text()
+        for i, line in enumerate(page_lines):
+            page_text.append(line)
+            if i != len(page_lines) - 1:
+                page_text.append("\n")
+
+        console.print(page_text)
+
+        help_text = (
+            f"[dim]Page {current_page + 1}/{page_count} | "
+            "PgUp/PgDown or ↑/↓ to scroll | q to quit[/dim]"
+        )
+        console.print(help_text)
+
+        try:
+            key = console.input("")
+        except EOFError:
+            break
+
+        if key in ("q", "Q"):
+            break
+        elif key == "":
+            current_page = min(current_page + 1, page_count - 1)
+        elif key in ("\x1b[A", "k"):
+            current_page = max(current_page - 1, 0)
+        elif key in ("\x1b[B", "j"):
+            current_page = min(current_page + 1, page_count - 1)
+        elif key == "\x1b[6~":
+            current_page = min(current_page + 1, page_count - 1)
+        elif key == "\x1b[5~":
+            current_page = max(current_page - 1, 0)
+        else:
+            pass
+
     return 0
 
 
