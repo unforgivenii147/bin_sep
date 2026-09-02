@@ -7,8 +7,8 @@ from io import StringIO
 from pathlib import Path
 
 import pdfminer
-from joblib import Parallel, delayed
 
+# Suppress pdfminer logs
 for logger_name in [
     "pdfminer",
     "pdfminer.pdfinterp",
@@ -37,14 +37,16 @@ def collect_pdf_files(inputs):
     return pdf_files
 
 
-def extract_single_page(page_data):
-    page_num, page, output_dir = page_data
+def extract_single_page(page_num, page, output_dir):
     if page_num % 10 == 0:
-        print(f"procrssing ... pagr {page_num}")
+        print(f"processing ... page {page_num}")
     try:
         output_string = StringIO()
         rsrcmgr = pdfminer.pdfinterp.PDFResourceManager()
-        laparams = pdfminer.convas.LAParams()
+        
+        # FIX 1: Changed 'convas' to 'layout'
+        laparams = pdfminer.layout.LAParams() 
+        
         device = pdfminer.converter.TextConverter(
             rsrcmgr, output_string, laparams=laparams
         )
@@ -53,6 +55,7 @@ def extract_single_page(page_data):
         text = output_string.getvalue()
         device.close()
         output_string.close()
+        
         page_file = output_dir / f"page_{page_num:03d}.txt"
         page_file.write_text(text, encoding="utf-8")
         return page_num, page_file
@@ -61,7 +64,7 @@ def extract_single_page(page_data):
         return None
 
 
-def extract_pages_from_pdf(pdf_path, n_jobs=4):
+def extract_pages_from_pdf(pdf_path):
     pdf_path = Path(pdf_path)
     output_dir = pdf_path.parent / pdf_path.stem
     output_dir.mkdir(exist_ok=True)
@@ -73,16 +76,17 @@ def extract_pages_from_pdf(pdf_path, n_jobs=4):
             if not document.is_extractable:
                 print(f"Warning: {pdf_path} is not extractable", file=sys.stderr)
                 return results
-            pages_data = [
-                (page_num, page, output_dir)
-                for page_num, page in enumerate(
-                    pdfminer.pdfpage.PDFPage.create_pages(document), start=1
-                )
-            ]
-            page_results = Parallel(n_jobs=n_jobs, backend="threading")(
-                delayed(extract_single_page)(page_data) for page_data in pages_data
-            )
-            results = [result for result in page_results if result is not None]
+            
+            # FIX 2: Process sequentially. 
+            # pdfminer is not thread-safe with a shared file handle, and 
+            # multiprocessing fails because PDFPage objects can't be pickled.
+            for page_num, page in enumerate(
+                pdfminer.pdfpage.PDFPage.create_pages(document), start=1
+            ):
+                result = extract_single_page(page_num, page, output_dir)
+                if result is not None:
+                    results.append(result)
+                    
     except Exception as e:
         print(f"Error processing {pdf_path}: {e}", file=sys.stderr)
     return results
@@ -94,6 +98,7 @@ def main():
     if not pdf_files:
         print("No PDF files found.", file=sys.stderr)
         return
+    
     print(f"Found {len(pdf_files)} PDF file(s) to process.")
     for i, pdf_file in enumerate(pdf_files, 1):
         print(f"Processing file {i}/{len(pdf_files)}: {pdf_file.name}")

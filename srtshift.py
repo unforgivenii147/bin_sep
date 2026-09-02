@@ -1,13 +1,188 @@
 #!/data/data/com.termux/files/home/.local/bin/python
+"""
+shiftsrt.py - A robust, high-performance, memory-efficient SRT timestamp shifter.
+
+Usage:
+    python shiftsrt.py [files/dirs...] <shift_amount>
+    
+Examples:
+    python shiftsrt.py file1.srt +12
+    python shiftsrt.py file1.srt dir1 -3.5
+    python shiftsrt.py +12  # Processes all .srt files in current dir recursively
+"""
+
 import sys
+import re
+import multiprocessing as mp
+from pathlib import Path
+from typing import Generator
 
-import pysrt
+# --- Constants & Compiled Regex ---
+# Supports 2 or 3 digit hours to prevent edge-case failures on long movies
+TIMESTAMP_RE = re.compile(r'(\d{2,3}:\d{2}:\d{2},\d{3})\s*-->\s*(\d{2,3}:\d{2}:\d{2},\d{3})')
+TIME_PART_RE = re.compile(r'(\d{2,3}):(\d{2}):(\d{2}),(\d{3})')
 
-if __name__ == "__main__":
-    fn = sys.argv[1]
-    amount = int(sys.argv[2].strip())
-    srt = pysrt.SubRipFile(fn)
-    sub = srt.open(fn, encoding="utf-8")
-    sub.shift(amount)
-    srt.save(fn, encoding="utf-8")
-    print("done")
+# Encoding fallback chain: utf-8 (with/without BOM) -> windows-1252 -> latin1
+ENCODINGS = ['utf-8-sig', 'utf-8', 'cp1252', 'latin1']
+
+
+# --- Core Logic ---
+
+def ms_to_time(total_ms: int) -> str:
+    """Converts milliseconds to SRT timestamp format (HH:MM:SS,mmm). Clamps to 0 if negative."""
+    if total_ms < 0:
+        total_ms = 0
+    
+    h = total_ms // 3600000
+    total_ms %= 3600000
+    m = total_ms // 60000
+    total_ms %= 60000
+    s = total_ms // 1000
+    ms = total_ms % 1000
+    
+    return f"{h:02d}:{m:02d}:{s:02d},{ms:03d}"
+
+
+def process_timestamp_line(line: str, shift_ms: int) -> str:
+    """Parses, shifts, and formats timestamps in a single line using regex substitution."""
+    def replacer(match: re.Match) -> str:
+        start_str, end_str = match.group(1), match.group(2)
+
+        # Parse start time
+        m_start = TIME_PART_RE.fullmatch(start_str)
+        h1, m1, s1, ms1 = int(m_start.group(1)), int(m_start.group(2)), int(m_start.group(3)), int(m_start.group(4))
+        start_ms = (h1 * 3600000) + (m1 * 60000) + (s1 * 1000) + ms1 + shift_ms
+
+        # Parse end time
+        m_end = TIME_PART_RE.fullmatch(end_str)
+        h2, m2, s2, ms2 = int(m_end.group(1)), int(m_end.group(2)), int(m_end.group(3)), int(m_end.group(4))
+        end_ms = (h2 * 3600000) + (m2 * 60000) + (s2 * 1000) + ms2 + shift_ms
+
+        return f"{ms_to_time(start_ms)} --> {ms_to_time(end_ms)}"
+
+    return TIMESTAMP_RE.sub(replacer, line)
+
+
+def detect_encoding(file_path: Path) -> str:
+    """Reads a small chunk to detect the file's encoding without loading it entirely into memory."""
+    with open(file_path, 'rb') as f:
+        chunk = f.read(8192)
+        
+    for enc in ENCODINGS:
+        try:
+            chunk.decode(enc)
+            return enc
+        except UnicodeDecodeError:
+            continue
+            
+    return 'utf-8'  # Ultimate fallback
+
+
+def process_file(file_path: Path, shift_ms: int) -> None:
+    """
+    Streams the SRT file line-by-line, shifts timestamps, and writes to a temp file.
+    Uses atomic replacement to ensure safe in-place updates.
+    """
+    enc = detect_encoding(file_path)
+    temp_path = file_path.with_suffix('.srt.tmp')
+
+    try:
+        # newline='' preserves original line endings (\r\n vs \n)
+        with open(file_path, 'r', encoding=enc, errors='replace', newline='') as fin, \
+             open(temp_path, 'w', encoding=enc, newline='') as fout:
+            
+            for line in fin:
+                # Optimization: Only run regex on lines that actually contain timestamps
+                if '-->' in line:
+                    line = process_timestamp_line(line, shift_ms)
+                fout.write(line)
+
+        # Atomic in-place replacement
+        temp_path.replace(file_path)
+        
+    except Exception as e:
+        # Clean up temp file if processing fails
+        if temp_path.exists():
+            temp_path.unlink()
+        raise RuntimeError(f"Failed to process {file_path}: {e}") from e
+
+
+def process_file_wrapper(file_path: Path, shift_ms: int) -> str:
+    """Wrapper for multiprocessing to catch and format exceptions gracefully."""
+    try:
+        process_file(file_path, shift_ms)
+        return f"[OK]   {file_path}"
+    except Exception as e:
+        return f"[FAIL] {file_path} -> {e}"
+
+
+# --- File Discovery & Argument Parsing ---
+
+def discover_srt_files(paths: list[Path]) -> list[Path]:
+    """Resolves input paths to a flat list of .srt files."""
+    if not paths:
+        return list(Path.cwd().rglob('*.srt'))
+
+    srt_files = []
+    for p in paths:
+        if p.is_dir():
+            srt_files.extend(p.rglob('*.srt'))
+        elif p.is_file() and p.suffix.lower() == '.srt':
+            srt_files.append(p)
+        else:
+            print(f"Warning: Skipping invalid or non-SRT path '{p}'")
+            
+    return srt_files
+
+
+def parse_arguments() -> tuple[list[Path], int]:
+    """Parses sys.argv. The last argument is always the shift amount."""
+    if len(sys.argv) < 2:
+        print("Usage: python shiftsrt.py [files/dirs...] <shift_amount>")
+        print("Example: python shiftsrt.py file1.srt dir1 +12")
+        sys.exit(1)
+
+    shift_str = sys.argv[-1]
+    try:
+        shift_sec = float(shift_str)
+    except ValueError:
+        print(f"Error: Invalid shift amount '{shift_str}'. Must be a number (e.g., +12, -3.5).")
+        sys.exit(1)
+
+    shift_ms = round(shift_sec * 1000)
+    input_paths = [Path(p) for p in sys.argv[1:-1]]
+    
+    return input_paths, shift_ms
+
+
+# --- Main Execution ---
+
+def main() -> None:
+    input_paths, shift_ms = parse_arguments()
+    files = discover_srt_files(input_paths)
+    
+    if not files:
+        print("No .srt files found in the specified paths or current directory.")
+        return
+
+    shift_sec = shift_ms / 1000
+    print(f"Found {len(files)} file(s). Shifting timestamps by {shift_sec} seconds ({shift_ms} ms)...")
+
+    # Using exactly 4 workers and apply_async as requested
+    with mp.Pool(processes=4) as pool:
+        async_results = []
+        for f in files:
+            res = pool.apply_async(process_file_wrapper, (f, shift_ms))
+            async_results.append(res)
+
+        # Collect and print results
+        for res in async_results:
+            print(res.get())
+            
+    print("Processing complete.")
+
+
+if __name__ == '__main__':
+    # Required for multiprocessing compatibility on Windows
+    mp.freeze_support()
+    main()
