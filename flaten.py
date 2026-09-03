@@ -1,8 +1,4 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-"""
-Flatten current directory: move all files from subdirectories to current directory
-and remove empty folders.
-"""
 
 from pathlib import Path
 import shutil
@@ -10,12 +6,6 @@ import sys
 
 
 def flatten_directory(directory="."):
-    """
-    Move all files from subdirectories to the current directory and remove empty folders.
-
-    Args:
-        directory: Path to the directory to flatten (default: current directory)
-    """
     root = Path(directory).resolve()
 
     if not root.is_dir():
@@ -24,7 +14,6 @@ def flatten_directory(directory="."):
 
     print(f"Flattening directory: {root}")
 
-    # Collect all files in subdirectories (non-recursive walk)
     files_to_move = []
     for subdir in root.iterdir():
         if subdir.is_dir():
@@ -38,14 +27,12 @@ def flatten_directory(directory="."):
 
     print(f"Found {len(files_to_move)} file(s) to move")
 
-    # Move files to root
     moved_count = 0
     skipped_count = 0
 
     for file_path in files_to_move:
         target_path = root / file_path.name
 
-        # Check if file already exists
         if target_path.exists():
             print(f"Skipping: {file_path} -> {target_path} (file already exists)")
             skipped_count += 1
@@ -60,12 +47,10 @@ def flatten_directory(directory="."):
 
     print(f"\nMoved {moved_count} file(s), skipped {skipped_count} file(s)")
 
-    # Remove empty subdirectories
     removed_dirs = 0
     for subdir in root.iterdir():
         if subdir.is_dir():
             try:
-                # Check if directory is empty
                 if not any(subdir.iterdir()):
                     subdir.rmdir()
                     print(f"Removed empty directory: {subdir}")
@@ -80,7 +65,6 @@ def flatten_directory(directory="."):
 
 
 def main():
-    # Use current directory by default, or accept a path as argument
     target_dir = sys.argv[1] if len(sys.argv) > 1 else "."
     flatten_directory(target_dir)
 
