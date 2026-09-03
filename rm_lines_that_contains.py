@@ -44,11 +44,11 @@ def main():
 
     if removed_count > 0:
         print("\nLines that would be removed:")
-        print("-" * 50)
+        print("-" * 40)
         for line in lines:
             if text_to_remove in line:
                 print(f"  - {line}")
-        print("-" * 50)
+        print("-" * 40)
 
     if apply_changes:
         input_file.write_text("\n".join(filtered_lines) + "\n", encoding="utf-8")

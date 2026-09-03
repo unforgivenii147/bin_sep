@@ -97,12 +97,12 @@ def main():
                     converted += 1
             else:
                 errors += 1
-    print(f"\n{'=' * 42}")
+    print(f"\n{'=' * 40}")
     print("Summary:")
     print(f"  Converted: {converted}")
     print(f"  Skipped:   {skipped}")
     print(f"  Errors:    {errors}")
-    print(f"{'=' * 42}")
+    print(f"{'=' * 40}")
     return 0 if errors == 0 else 1
 
 

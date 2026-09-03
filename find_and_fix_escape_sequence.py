@@ -114,7 +114,7 @@ def main():
         print(
             "🛠️  Auto-fix flag (-a) is active. Offending string literals will be converted to raw strings."
         )
-    print("-" * 42)
+    print("-" * 40)
     total_issues = 0
     total_fixed = 0
     with concurrent.futures.ProcessPoolExecutor() as executor:
@@ -133,7 +133,7 @@ def main():
                 if res["fixed"]:
                     total_fixed += 1
                 print()
-    print("-" * 42)
+    print("-" * 40)
     print("📊 Scan Complete.")
     print(f"   Files with issues: {total_issues}")
     if args.auto_fix:

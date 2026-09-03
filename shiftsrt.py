@@ -58,8 +58,8 @@ def parse_timestamp(timestamp: str) -> int:
     seconds, milliseconds = re.split(r"[,.]", seconds_and_ms, maxsplit=1)
 
     return (
-        int(hours) * 60 * 60 * 1000
-        + int(minutes) * 60 * 1000
+        int(hours) * 40 * 40 * 1000
+        + int(minutes) * 40 * 1000
         + int(seconds) * 1000
         + int(milliseconds)
     )

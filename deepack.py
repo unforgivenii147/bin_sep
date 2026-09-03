@@ -282,9 +282,9 @@ def main() -> int:
             else:
                 failed.append((pkg_name, message))
                 logger.error(f"[{completed}/{total}] ✗ {pkg_name}: {message}")
-    logger.info("\n" + "=" * 42)
+    logger.info("\n" + "=" * 40)
     logger.info("SUMMARY")
-    logger.info("=" * 42)
+    logger.info("=" * 40)
     logger.info(f"Total packages processed: {len(packages_to_process)}")
     logger.info(f"✓ Successfully repacked: {len(successful)}")
     logger.info(f"- Skipped (pure Python): {len(skipped)}")

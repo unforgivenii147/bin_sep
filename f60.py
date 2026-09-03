@@ -23,7 +23,7 @@ def main() -> None:
     ctm = {}
     cwd = Path.cwd()
     max_path_string = 20
-    cutoff = time.time() - minutes * 42
+    cutoff = time.time() - minutes * 40
     for path in cwd.glob("*"):
         if ".git" in path.parts:
             continue

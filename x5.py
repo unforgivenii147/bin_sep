@@ -509,12 +509,12 @@ def print_results_basic(
         )
         operation_name = "Decompression"
         size_label = "Decompressed"
-    print("\n" + "=" * 42)
+    print("\n" + "=" * 40)
     print(f"🗜️  LZMA {operation_name} Results")
     print(f"📁 Directory: {directory}")
-    print("-" * 42)
+    print("-" * 40)
     print(f"\n{'File':<40} {'Original':>12} {size_label:>12} {'Ratio':>8} {'Time':>8}")
-    print("-" * 42)
+    print("-" * 40)
     for result in sorted(successful, key=lambda x: x.original_size, reverse=True)[:20]:
         if operation == "compress":
             ratio = (
@@ -547,9 +547,9 @@ def print_results_basic(
             print(f"  • {result.file_path.name}: {result.error}")
         if len(failed) > 10:
             print(f"  ... and {len(failed) - 10} more failures")
-    print("\n" + "=" * 42)
+    print("\n" + "=" * 40)
     print(f"📊 {operation_name} Summary")
-    print("-" * 42)
+    print("-" * 40)
     print(f"Total files processed: {len(results)}")
     print(f"✅ Successful: {len(successful)}")
     print(f"❌ Failed: {len(failed)}")
@@ -576,7 +576,7 @@ def print_results_basic(
         if results
         else ""
     )
-    print("-" * 42)
+    print("-" * 40)
 
 
 def main():

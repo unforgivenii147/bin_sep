@@ -101,7 +101,7 @@ def run_benchmark(target: Path) -> None:
     original_size = len(data)
     print(f"Original size: {original_size:,} bytes\n")
     print("COMPRESSION PROGRESS:")
-    print("-" * 42)
+    print("-" * 40)
     results = []
     for name, ext, fn in ALGORITHMS:
         output_path = Path(f"{base_name}{ext}")
@@ -146,9 +146,9 @@ def run_benchmark(target: Path) -> None:
     results.sort(key=lambda r: r.ratio)
     top3 = results[:3]
     best = results[0]
-    print("\n" + "=" * 42)
+    print("\n" + "=" * 40)
     print("TOP 3 COMPRESSION RESULTS")
-    print("-" * 42)
+    print("-" * 40)
     for rank, r in enumerate(top3, 1):
         saved = original_size - r.size
         print(

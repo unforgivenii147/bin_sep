@@ -300,7 +300,7 @@ def main() -> None:
             print(
                 f"Processing {len(files_by_dir)} directories with {len(files)} total files..."
             )
-            print("-" * 42)
+            print("-" * 40)
         all_imports = set()
         dir_count = 0
         for subdir, dir_files in sorted(files_by_dir.items()):
@@ -325,7 +325,7 @@ def main() -> None:
                     f"[{dir_count}/{len(files_by_dir)}] {subdir:<30} ({len(dir_files):>4} files, {elapsed:.2f}s)"
                 )
         if show_progress:
-            print("-" * 42)
+            print("-" * 40)
         local_modules = {
             p.stem
             for p in cwd.glob("*.py")
@@ -344,7 +344,7 @@ def main() -> None:
         )
         if modules:
             print(f"\n{'Module':<20} | {'Version':<15}")
-            print("-" * 42)
+            print("-" * 40)
             for mod in modules:
                 if mod.startswith("_"):
                     continue

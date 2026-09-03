@@ -54,7 +54,7 @@ def get_package_info_from_mirror(package_name):
         return None
 
 
-def install_or_download(package_name: str) -> None:
+def download(package_name: str) -> None:
     print(f"Checking for package: {package_name}")
     wheel_url = get_package_info_from_mirror(package_name)
     if wheel_url:
@@ -89,4 +89,4 @@ if __name__ == "__main__":
         )
         sys.exit(1)
     for pkg in packages_to_process:
-        install_or_download(pkg)
+        download(pkg)

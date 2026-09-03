@@ -108,9 +108,9 @@ if __name__ == "__main__":
     print(f"📁 Base URL: {BASE_URL}")
     print(f"📊 Max size: {MAX_SIZE_MB} MB")
     print(f"💾 Output file: {OUTPUT_FILE}")
-    print("-" * 50)
+    print("-" * 40)
     crawl(BASE_URL)
-    print("\n" + "=" * 50)
+    print("\n" + "=" * 40)
     print("✅ Crawling complete!")
     print(f"📈 Total unique movies found: {len(found_movies)}")
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:

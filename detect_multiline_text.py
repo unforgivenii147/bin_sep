@@ -167,9 +167,9 @@ Examples:
         stats_list = Parallel(n_jobs=args.jobs, verbose=1)(
             delayed(process_file)(path, pattern, pattern_fingerprint) for path in files
         )
-        print("\n" + "=" * 42)
+        print("\n" + "=" * 40)
         print("PROCESSING REPORT")
-        print("=" * 42)
+        print("=" * 40)
         total_files = len(stats_list)
         modified_files = sum(1 for s in stats_list if s.modified)
         total_removed = sum(s.removed_count for s in stats_list)
@@ -178,7 +178,7 @@ Examples:
         errors = [s for s in stats_list if s.error]
         for stats in stats_list:
             print(stats)
-        print("\n" + "=" * 42)
+        print("\n" + "=" * 40)
         print(f"Files processed: {total_files}")
         print(f"Files modified: {modified_files}")
         print(f"Pattern removed: {total_removed} occurrence(s)")

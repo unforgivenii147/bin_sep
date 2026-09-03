@@ -193,7 +193,7 @@ def main():
                 processed += 1
             else:
                 failed += 1
-    print(f"\n{'=' * 42}")
+    print(f"\n{'=' * 40}")
     print(
         f"Completed: {processed} files {'decompressed' if args.decompress else 'compressed'}"
     )

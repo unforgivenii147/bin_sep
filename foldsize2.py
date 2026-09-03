@@ -71,13 +71,13 @@ def main() -> None:
             dest = safe_rename(f, dir_path)
             shutil.move(str(f), str(dest))
             file_idx += 1
-    print("-" * 42)
+    print("-" * 40)
     print("✅ Folderization complete:")
     print(f"   Files processed: {total_files:,}")
     print(f"   Directories created: {len(created_dirs)}")
-    print("-" * 42)
+    print("-" * 40)
     print(f"\n{'Dir Name':<20} {'Files':>8}")
-    print("-" * 42)
+    print("-" * 40)
     for name, cnt in created_dirs:
         print(f"{name:<20} {cnt:>8}")
     print(f"\nTotal directories: {len(created_dirs)}")

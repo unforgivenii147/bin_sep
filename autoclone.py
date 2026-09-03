@@ -175,7 +175,7 @@ def main():
         sys.exit(1)
     print(f"\n📚 Found {len(repos)} repositories")
     print("🔍 Checking and cloning in one pass...")
-    print("-" * 42)
+    print("-" * 40)
     size_limit_mb = 1
     cloned_count = 0
     skipped_count = 0
@@ -194,7 +194,7 @@ def main():
             skipped_count += 1
             continue
         print(f"\n[{idx}/{len(repos)}] 📦 Processing {repo}")
-        print("-" * 42)
+        print("-" * 40)
         size_mb = get_repo_size(repo, token, cache_data)
         if size_mb is None:
             no_size_count += 1
@@ -212,9 +212,9 @@ def main():
     if cache_data:
         save_size_cache(cache_data)
         display_cached_stats(cache_data)
-    print("\n" + "=" * 42)
+    print("\n" + "=" * 40)
     print("📊 FINAL SUMMARY")
-    print("-" * 42)
+    print("-" * 40)
     print(f"✅ Successfully cloned: {cloned_count}")
     print(f"❌ Failed to clone: {failed_count}")
     print(f"⏭️  Skipped (too large): {skipped_count}")

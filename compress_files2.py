@@ -205,7 +205,7 @@ def process_files(
                 total_original_size += orig_size
         else:
             total_failed += 1
-    print(f"\n{'─' * 42}")
+    print(f"\n{'─' * 40}")
     print(f"Total successful: {total_success}")
     print(f"Total failed: {total_failed}")
     if compress and total_original_size > 0:

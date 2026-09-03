@@ -989,9 +989,9 @@ def run_tests():
     import os
     import tempfile
 
-    print("\n" + "=" * 60)
+    print("\n" + "=" * 40)
     print("  🧪 pydirb Unit Tests")
-    print("=" * 60)
+    print("=" * 40)
     passed = 0
     failed = 0
 
@@ -1093,13 +1093,13 @@ def run_tests():
     )
     out = OutputHandler(config_no_color)
     assert_eq(out.color("test", "RED"), "test", "No color when disabled")
-    print("\n" + "=" * 60)
+    print("\n" + "=" * 40)
     print(f"  Results: {passed} passed, {failed} failed, {passed + failed} total")
     if failed == 0:
         print("  ✅ All tests passed!")
     else:
         print(f"  ❌ {failed} test(s) failed!")
-    print("=" * 60)
+    print("=" * 40)
     return failed == 0
 
 

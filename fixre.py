@@ -248,7 +248,7 @@ def main():
             results.append(process_file(filepath, create_backup))
     successful = sum((1 for _, success, _ in results if success))
     changed = sum((1 for _, success, msg in results if success and "Converted" in msg))
-    print("\n" + "=" * 42)
+    print("\n" + "=" * 40)
     for filepath, success, message in results:
         status = "✓" if success else "✗"
         try:
@@ -256,7 +256,7 @@ def main():
         except ValueError:
             rel_path = filepath
         print(f"{status} {rel_path}: {message}")
-    print("-" * 42)
+    print("-" * 40)
     print("\nSummary:")
     print(f"  Total files: {len(python_files)}")
     print(f"  Processed successfully: {successful}")

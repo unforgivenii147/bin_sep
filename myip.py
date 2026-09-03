@@ -1,102 +1,65 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-
-from __future__ import annotations
-
+import pycurl
 import json
-import shutil
-import socket
-import subprocess
-import urllib.request
-from typing import Any
+import io
+from datetime import datetime
 
 
-def run_command(*args: str) -> str:
-    if shutil.which(args[0]) is None:
-        return f"{args[0]} is not installed"
-
+def get_ip_and_location():
+    print("=" * 40)
+    print("IP & Location Checker (via VPN) - pycurl")
+    print("=" * 40)
+    print(f"Check time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
     try:
-        result = subprocess.run(
-            args,
-            capture_output=True,
-            text=True,
-            check=False,
+        buffer = io.BytesIO()
+        curl = pycurl.Curl()
+
+        curl.setopt(pycurl.URL, "https://ipnumberia.com/")
+        curl.setopt(pycurl.WRITEDATA, buffer)
+        curl.setopt(pycurl.FOLLOWLOCATION, True)
+        curl.setopt(pycurl.TIMEOUT, 30)
+        curl.setopt(pycurl.SSL_VERIFYPEER, False)
+        curl.setopt(pycurl.SSL_VERIFYHOST, False)
+
+        curl.setopt(pycurl.USERAGENT, "Mozilla/5.0")
+
+        print("⏳ Fetching data...\n")
+
+        curl.perform()
+
+        http_code = curl.getinfo(pycurl.HTTP_CODE)
+        curl.close()
+
+        if http_code != 200:
+            print(f"❌ HTTP Error: {http_code}")
+            return
+
+        response_data = buffer.getvalue().decode("utf-8")
+        data = json.loads(response_data)
+
+        print(f"🌐 IP Address:      {data.get('ip', 'N/A')}")
+        print(f"🏙️  City:            {data.get('city', 'N/A')}")
+        print(f"🗺️  Region:          {data.get('region', 'N/A')}")
+        print(
+            f"🌍 Country:         {data.get('country_name', 'N/A')} ({data.get('country_code', 'N/A')})"
         )
-    except OSError as error:
-        return f"Unable to run {' '.join(args)}: {error}"
-
-    output = result.stdout.strip()
-
-    if result.returncode != 0:
-        error = result.stderr.strip() or "unknown error"
-        return f"Command failed: {error}"
-
-    return output or "(no output)"
-
-
-def get_public_ip() -> str:
-    services = (
-        "https://api.ipify.org?format=json",
-        "https://ifconfig.me/ip",
-    )
-
-    for url in services:
-        try:
-            with urllib.request.urlopen(url, timeout=5) as response:
-                data = response.read().decode().strip()
-
-            if data.startswith("{"):
-                parsed: dict[str, Any] = json.loads(data)
-                return str(parsed.get("ip", "Unknown"))
-
-            return data
-
-        except Exception:
-            continue
-
-    return "Unable to determine public IP"
-
-
-def get_local_ip() -> str:
-    try:
-        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
-            sock.connect(("8.8.8.8", 80))
-            return str(sock.getsockname()[0])
-    except OSError as error:
-        return f"Unable to determine local IP: {error}"
-
-
-def get_dns_info() -> str:
-    try:
-        addresses = socket.getaddrinfo(
-            "example.com",
-            443,
-            type=socket.SOCK_STREAM,
+        print(
+            f"📍 Coordinates:     {data.get('latitude', 'N/A')}, {data.get('longitude', 'N/A')}"
         )
+        print(f"🔌 ISP:             {data.get('org', 'N/A')}")
+        print(f"🌐 ASN:             {data.get('asn', 'N/A')}")
+        print(f"⏰ Timezone:        {data.get('timezone', 'N/A')}")
+        print(f"📮 Postal Code:     {data.get('postal', 'N/A')}")
 
-        unique_addresses = sorted({address[4][0] for address in addresses})
+        print("\n" + "=" * 40)
 
-        return ", ".join(unique_addresses)
-
-    except socket.gaierror as error:
-        return f"DNS lookup failed: {error}"
-
-
-def main() -> None:
-    print("Network information")
-    print("===================")
-    print(f"Public IP:       {get_public_ip()}")
-    print(f"Local IP:        {get_local_ip()}")
-    print(f"Hostname:        {socket.gethostname()}")
-    print(f"DNS resolution:  {get_dns_info()}")
-
-    print("\nNetwork interfaces")
-    print("==================")
-    print(run_command("ip", "-br", "addr"))
-
-    print("\nDefault gateway")
-    print("================")
-    print(run_command("ip", "route", "show", "default"))
+    except pycurl.error as e:
+        print(f"❌ pycurl error: {e}")
+    except json.JSONDecodeError:
+        print("❌ Error parsing JSON response.")
+    except Exception as e:
+        print(f"❌ Error: {str(e)}")
 
 
 if __name__ == "__main__":
-    main()
+    get_ip_and_location()

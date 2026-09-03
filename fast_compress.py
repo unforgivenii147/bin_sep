@@ -344,7 +344,7 @@ def process_stream(
 ):
     print(f"\n{'Compressing' if compress else 'Decompressing'} files (streaming)...")
     print(f"Remove original files: {'Yes' if remove_original else 'No'}")
-    print("-" * 42)
+    print("-" * 40)
     stats = SpaceStats()
     total_submitted = 0
     completed = 0
@@ -394,7 +394,7 @@ def process_stream(
                     done_key = done
                     _, _ = futures.pop(done_key, (None, None))
                     completed += 1
-                    progress = int(completed / max(1, total_submitted + skipped) * 42)
+                    progress = int(completed / max(1, total_submitted + skipped) * 40)
                     bar = "█" * progress + "░" * (50 - progress)
                     print(
                         f"\rProgress: [{bar}] {completed}/{total_submitted + skipped} files",
@@ -407,7 +407,7 @@ def process_stream(
         for future in as_completed(futures):
             result = future.result()
             completed += 1
-            progress = int(completed / max(1, total_submitted + skipped) * 42)
+            progress = int(completed / max(1, total_submitted + skipped) * 40)
             bar = "█" * progress + "░" * (50 - progress)
             print(
                 f"\rProgress: [{bar}] {completed}/{total_submitted + skipped} files",
@@ -417,7 +417,7 @@ def process_stream(
             if not result[0]:
                 failed.append((result[1], result[2]))
         print()
-    print("-" * 42)
+    print("-" * 40)
     if compress and (stats.original_size > 0 or stats.compressed_size > 0):
         saved, ratio, percent_saved = stats.get_savings()
         print("\n📊 Compression Statistics:")

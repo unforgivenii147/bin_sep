@@ -48,7 +48,7 @@ def main():
             f.write(summary)
         print(f"Summary saved to '{output_file}'")
         print(f"\nSummary preview ({sentences_count} sentences):")
-        print("-" * 42)
+        print("-" * 40)
         print(summary[:500] + "..." if len(summary) > 500 else summary)
     except Exception as e:
         print(f"Error: {e}")

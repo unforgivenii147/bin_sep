@@ -135,7 +135,7 @@ def main() -> None:
             print(f"  -> {message}")
         if result["fixed"]:
             fixed_count += 1
-    print("=" * 42)
+    print("=" * 40)
     print("Summary:")
     print(f"  Files with invalid escape sequences: {issues_count}")
     if args.auto_fix:

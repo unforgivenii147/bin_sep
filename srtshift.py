@@ -1,15 +1,4 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-"""
-shiftsrt.py - A robust, high-performance, memory-efficient SRT timestamp shifter.
-
-Usage:
-    python shiftsrt.py [files/dirs...] <shift_amount>
-
-Examples:
-    python shiftsrt.py file1.srt +12
-    python shiftsrt.py file1.srt dir1 -3.5
-    python shiftsrt.py +12
-"""
 
 import sys
 import re
@@ -54,7 +43,7 @@ def process_timestamp_line(line: str, shift_ms: int) -> str:
             int(m_start.group(3)),
             int(m_start.group(4)),
         )
-        start_ms = (h1 * 3600000) + (m1 * 60000) + (s1 * 1000) + ms1 + shift_ms
+        start_ms = (h1 * 3600000) + (m1 * 40000) + (s1 * 1000) + ms1 + shift_ms
 
         m_end = TIME_PART_RE.fullmatch(end_str)
         h2, m2, s2, ms2 = (
@@ -63,7 +52,7 @@ def process_timestamp_line(line: str, shift_ms: int) -> str:
             int(m_end.group(3)),
             int(m_end.group(4)),
         )
-        end_ms = (h2 * 3600000) + (m2 * 60000) + (s2 * 1000) + ms2 + shift_ms
+        end_ms = (h2 * 3600000) + (m2 * 40000) + (s2 * 1000) + ms2 + shift_ms
 
         return f"{ms_to_time(start_ms)} --> {ms_to_time(end_ms)}"
 

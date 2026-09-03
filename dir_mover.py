@@ -27,7 +27,7 @@ def get_top_level_subdirs(directory: Path) -> list[Path]:
 def move_subdirs(source: Path, dest: Path) -> None:
     print(f"📂 Source directory: {source.resolve()}")
     print(f"📂 Destination directory: {dest.resolve()}")
-    print("-" * 60)
+    print("-" * 40)
     source_subdirs = get_top_level_subdirs(source)
     if not source_subdirs:
         print("⚠️  No subdirectories found in source")
@@ -50,7 +50,7 @@ def move_subdirs(source: Path, dest: Path) -> None:
                 print(f"   ✅ Success")
             except Exception as e:
                 print(f"   ❌ Error: {e}")
-    print("-" * 60)
+    print("-" * 40)
     print(f"\n📊 Summary:")
     print(f"✅ Moved: {len(moved)}")
     if moved:

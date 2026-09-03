@@ -78,9 +78,9 @@ def save_to_html(all_bases, output_file="th18_bases.html"):
 
 
 def main():
-    print("-" * 42)
+    print("-" * 40)
     print("Clash of Clans TH18 Base Link Extractor")
-    print("-" * 42)
+    print("-" * 40)
     websites = read_links_from_file("links.txt")
     if not websites:
         return

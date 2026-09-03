@@ -147,7 +147,7 @@ def main() -> None:
     total_comp = sum(r["compressed_size"] for r in results if r["success"])
     total_time = sum(r["elapsed"] for r in results)
 
-    print(f"\n{'=' * 60}")
+    print(f"\n{'=' * 40}")
     print(f"Done: {ok} succeeded, {fail} failed")
     if ok:
         print(

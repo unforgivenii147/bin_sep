@@ -170,9 +170,9 @@ def main() -> int:
     modified = sum(1 for r in results if r.modified)
     skipped = successful - modified
     failed = len(results) - successful
-    logger.info("=" * 60)
+    logger.info("=" * 40)
     logger.info("SUMMARY")
-    logger.info("=" * 60)
+    logger.info("=" * 40)
     logger.info(f"Total files processed: {len(results)}")
     logger.info(f"Successfully processed: {successful}")
     logger.info(f"Files modified: {modified}")

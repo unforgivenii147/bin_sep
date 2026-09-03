@@ -243,7 +243,7 @@ def main() -> int:
     print(f"File type: {file_type}")
     if args.dry_run:
         print("DRY RUN MODE - No files will be deleted")
-    print("-" * 42)
+    print("-" * 40)
     packages = scan_directory(scan_dir, file_type, args.all)
     if not packages:
         print("No matching package files found.")
@@ -258,9 +258,9 @@ def main() -> int:
     else:
         for pkg_name, versions in packages.items():
             print(f"  {pkg_name}: {len(versions)} version(s)")
-    print("\n" + "=" * 42)
+    print("\n" + "=" * 40)
     total_deleted, total_kept = keep_latest_versions(packages, args.dry_run)
-    print("\n" + "=" * 42)
+    print("\n" + "=" * 40)
     if total_deleted == 0:
         print("No files to delete. All packages have only one version.")
     elif args.dry_run:

@@ -80,7 +80,7 @@ def main():
         print(
             "🛠️  Auto-fix mode active (-a). 'is not' operators will be converted to '!='."
         )
-    print("-" * 42)
+    print("-" * 40)
     total_files_with_issues = 0
     total_replacements = 0
     with concurrent.futures.ProcessPoolExecutor(max_workers=cpu_cores) as executor:
@@ -98,7 +98,7 @@ def main():
                 print(
                     f"{status} {res['path']} -> Found {res['found_count']} time(s) on line(s): {lines_str}"
                 )
-    print("-" * 42)
+    print("-" * 40)
     print("📊 Summary:")
     print(f"   Files containing 'is not': {total_files_with_issues}")
     print(f"   Total instances found:     {total_replacements}")

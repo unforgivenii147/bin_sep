@@ -86,13 +86,13 @@ def print_compression_report(results):
     if not successful:
         print("No folders were compressed successfully")
         return
-    print("\n" + "=" * 42)
+    print("\n" + "=" * 40)
     print("COMPRESSION REPORT")
-    print("-" * 42)
+    print("-" * 40)
     print(
         f"{'Folder':<20} {'Original':<12} {'Compressed':<12} {'Freed':<12} {'Ratio':<10} {'Saved %':<10}"
     )
-    print("-" * 42)
+    print("-" * 40)
     total_original = 0
     total_compressed = 0
     total_freed = 0
@@ -105,7 +105,7 @@ def print_compression_report(results):
                 fsz(r['compressed_size']):<12} {fsz(r['space_freed']):<12} {
                 r['ratio']:>6.2f}x   {r['compression_percent']:>6.1f}%"
         )
-    print("-" * 42)
+    print("-" * 40)
     print(
         f"{'TOTAL':<20} {fsz(total_original):<12} {fsz(total_compressed):<12} {
             fsz(total_freed):<12} {
@@ -118,12 +118,12 @@ def print_compression_report(results):
                 else 0
             ):>6.1f}%"
     )
-    print("-" * 42)
+    print("-" * 40)
     if errors:
         print("\nERRORS:")
         for r in errors:
             print(f"  {r['folder']}: {r['error']}")
-        print("-" * 42)
+        print("-" * 40)
     print(f"\nTotal space freed: {fsz(total_freed)}")
     print(
         f"Average compression ratio: {(total_original / total_compressed if total_compressed > 0 else 0):.2f}x"

@@ -92,7 +92,7 @@ for py in cwd.rglob("*.py"):
             folder_path = py.parent
             relative_folder = get_relative_path(folder_path, Path())
             folders_found.add(str(relative_folder))
-            file_header = f"\n# {'=' * 42}\n# File: {py.name}\n# {'=' * 42}\n"
+            file_header = f"\n# {'=' * 40}\n# File: {py.name}\n# {'=' * 40}\n"
             folder_definitions[relative_folder].append(file_header)
             for i, def_text in enumerate(definitions, 1):
                 folder_definitions[relative_folder].append(def_text)

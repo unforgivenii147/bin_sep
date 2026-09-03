@@ -256,7 +256,7 @@ def main():
             else:
                 pass
 
-    print("-" * 50)
+    print("-" * 40)
     print(f"Processing complete.")
     print(f"Files changed: {changed_files}")
     print(f"Total comments removed: {total_comments}")

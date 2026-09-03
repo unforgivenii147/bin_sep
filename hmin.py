@@ -187,7 +187,7 @@ class HTMLMinifier:
         print(
             f"\n{Fore.CYAN}Found {total_files} HTML file(s) to minify{Style.RESET_ALL}"
         )
-        print(f"{Fore.CYAN}{'=' * 42}{Style.RESET_ALL}\n")
+        print(f"{Fore.CYAN}{'=' * 40}{Style.RESET_ALL}\n")
         stats_list: list[MinifyStats] = []
         successful = 0
         failed = 0
@@ -261,9 +261,9 @@ class HTMLMinifier:
         original_mb = total_original / (1024 * 1024)
         minified_mb = total_minified / (1024 * 1024)
         saved_mb = total_saved / (1024 * 1024)
-        print(f"\n{Fore.CYAN}{'=' * 42}{Style.RESET_ALL}")
+        print(f"\n{Fore.CYAN}{'=' * 40}{Style.RESET_ALL}")
         print(f"{Fore.CYAN}Summary{Style.RESET_ALL}")
-        print(f"{Fore.CYAN}{'=' * 42}{Style.RESET_ALL}")
+        print(f"{Fore.CYAN}{'=' * 40}{Style.RESET_ALL}")
         print(f"{Fore.WHITE}Files processed:  {total}{Style.RESET_ALL}")
         print(f"{Fore.GREEN}✓ Successful:     {successful}{Style.RESET_ALL}")
         if failed > 0:
@@ -273,7 +273,7 @@ class HTMLMinifier:
         print(
             f"{Fore.GREEN}Total saved:      {saved_mb:.2f} MB ({overall_ratio:.1f}%){Style.RESET_ALL}"
         )
-        print(f"{Fore.CYAN}{'=' * 42}{Style.RESET_ALL}\n")
+        print(f"{Fore.CYAN}{'=' * 40}{Style.RESET_ALL}\n")
 
 
 def main():

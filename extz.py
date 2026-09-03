@@ -52,9 +52,9 @@ def main():
                     ext_counts_total[ext] += count
             except Exception as e:
                 print(f"Error processing batch: {e}")
-    print("-" * 42)
+    print("-" * 40)
     print("RESULTS:")
-    print("-" * 42)
+    print("-" * 40)
     if not ext_counts_total:
         print("No files with recognized extensions found.")
         return
@@ -68,9 +68,9 @@ def main():
         print(
             f"{display_ext:<{max_ext_len + 2}} {count} file{'s' if count != 1 else ''}"
         )
-    print("-" * 42)
+    print("-" * 40)
     print(f"{'TOTAL':<{max_ext_len + 2}} {len(files)} files")
-    print("-" * 42)
+    print("-" * 40)
 
 
 if __name__ == "__main__":

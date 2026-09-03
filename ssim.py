@@ -102,7 +102,7 @@ class FileSimilarityDetector:
             print(f"\nHash: {h}")
             for p in paths:
                 print(f"  - {p}")
-        print("-" * 42)
+        print("-" * 40)
 
 
 def main() -> None:

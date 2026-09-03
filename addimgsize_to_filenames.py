@@ -22,9 +22,9 @@ class ImageDimensionRenamer:
             ".gif",
             ".webp",
         }
-        print("-" * 42)
+        print("-" * 40)
         print("IMAGE DIMENSION RENAMER")
-        print("-" * 42)
+        print("-" * 40)
         print(f"[INIT] Root directory: {self.root_dir.resolve()}")
         print(f"[INIT] Separator: '{separator}'")
         print(f"[INIT] CPU cores available: {cpu_count()}")
@@ -108,7 +108,7 @@ class ImageDimensionRenamer:
                 )
             )
         print("\n[RESULTS]")
-        print("-" * 42)
+        print("-" * 40)
         for image_path, success, message in results:
             if success:
                 successful += 1
@@ -125,7 +125,7 @@ class ImageDimensionRenamer:
             except ValueError:
                 path_str = str(image_path)
             print(f"{status}  {path_str:<50} {message}")
-        print("-" * 42)
+        print("-" * 40)
         print(
             f"[SUMMARY] Renamed: {successful} | Skipped: {already_processed} | Failed: {
                 failed
@@ -138,9 +138,9 @@ class ImageDimensionRenamer:
             print("\n[WARN] No images found in directory!")
             return
         self.process_images(image_paths)
-        print("\n" + "=" * 42)
+        print("\n" + "=" * 40)
         print("PROCESS COMPLETE - Images renamed with dimensions")
-        print("-" * 42)
+        print("-" * 40)
 
 
 def main():

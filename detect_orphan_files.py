@@ -192,15 +192,15 @@ class OrphanFileDetector:
         return categories
 
     def run(self, verbose: bool = False):
-        logger.info("=" * 60)
+        logger.info("=" * 40)
         logger.info("Orphan File Detector for Python Site-Packages")
-        logger.info("=" * 60)
+        logger.info("=" * 40)
         self.collect_package_files()
         orphan_files = self.scan_site_dirs()
         categories = self.analyze_orphan_files(orphan_files)
-        logger.info("\n" + "=" * 60)
+        logger.info("\n" + "=" * 40)
         logger.info("RESULTS")
-        logger.info("=" * 60)
+        logger.info("=" * 40)
         logger.info(f"\nFound {len(orphan_files)} orphan files/directories:")
         for category, files in categories.items():
             if files:
@@ -215,7 +215,7 @@ class OrphanFileDetector:
                             logger.info(f"  {file_path} (directory)")
                     else:
                         logger.info(f"  {file_path}")
-        logger.info("\n" + "-" * 60)
+        logger.info("\n" + "-" * 40)
         logger.info("SUMMARY:")
         for category, files in categories.items():
             if files:

@@ -79,7 +79,7 @@ def main():
     print(f"Found {len(wheel_files)} wheel(s) in {current_dir}")
     print(f"Python version: {sys.version}")
     print(f"Platform: {platform.platform()}")
-    print("-" * 42)
+    print("-" * 40)
     install_tasks = []
     for wheel in wheel_files:
         is_pure = is_pure_python_wheel(wheel)
@@ -89,9 +89,9 @@ def main():
         print(f"  Type: {wheel_type}")
         print(f"  Target: {install_type}")
         install_tasks.append((wheel, is_pure))
-    print("\n" + "=" * 42)
+    print("\n" + "=" * 40)
     print("Starting parallel installation...")
-    print("-" * 42)
+    print("-" * 40)
     successful = []
     failed = []
     max_workers = min(4, len(wheel_files))
@@ -112,9 +112,9 @@ def main():
             except Exception as e:
                 print(f"✗ Error processing {wheel.name}: {e}")
                 failed.append((wheel, str(e)))
-    print("\n" + "=" * 42)
+    print("\n" + "=" * 40)
     print("INSTALLATION SUMMARY")
-    print("-" * 42)
+    print("-" * 40)
     print(f"Total wheels: {len(wheel_files)}")
     print(f"✓ Successfully installed: {len(successful)}")
     print(f"✗ Failed: {len(failed)}")

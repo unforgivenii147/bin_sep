@@ -115,13 +115,13 @@ def main() -> None:
     )
     args = parser.parse_args()
     skip_blanks = not args.include_blanks
-    print("-" * 42)
+    print("-" * 40)
     if args.dry_run:
         print("🔍 DRY RUN MODE - No files will be modified")
     print(
         f"📝 {'Ignoring' if skip_blanks else 'Including'} blank lines in duplicate detection"
     )
-    print("-" * 42)
+    print("-" * 40)
     cwd = Path.cwd()
     py_files = get_pyfiles(cwd)
     files_with_dups = {}
@@ -141,7 +141,7 @@ def main() -> None:
         )
         if fixed:
             fixed_count += 1
-    print("\n" + "=" * 42)
+    print("\n" + "=" * 40)
     if args.dry_run:
         print("🔍 Dry run complete. Run without --dry-run to apply changes.")
     else:

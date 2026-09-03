@@ -1,134 +1,117 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
 
 import json
-import subprocess
-import sys
-import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
+import multiprocessing as mp
 from pathlib import Path
+from io import BytesIO
+import pycurl
 from dh import get_installed_packages
 
 
-def check_package_update(package_info: dict[str, str]) -> tuple[str, str, str, bool]:
-    package_name = package_info["name"]
-    current_version = package_info["version"]
+def get_latest_version(pkg_info):
+    pkg_name, current_version = pkg_info
+
+    url = f"https://pypi.org/simple/{pkg_name}/json"
+
     try:
-        cmd = ["pip", "index", "versions", package_name]
-        result = runcmd(cmd, show_output=True)
-        if result.returncode == 0:
-            lines = result.stdout.strip().split("\n")
-            for line in lines:
-                if "Available versions:" in line:
-                    versions_str = line.split("Available versions:")[1].strip()
-                    versions = [v.strip() for v in versions_str.split(",")]
-                    if versions:
-                        latest_version = versions[0]
-                        if current_version != latest_version:
-                            return (package_name, current_version, latest_version, True)
-                        break
-    except subprocess.TimeoutExpired:
-        print(f"Timeout checking {package_name}")
+        buffer = BytesIO()
+
+        curl = pycurl.Curl()
+        curl.setopt(curl.URL, url)
+        curl.setopt(curl.WRITEDATA, buffer)
+        curl.setopt(curl.FOLLOWLOCATION, 1)
+        curl.setopt(curl.TIMEOUT, 30)
+        curl.setopt(curl.USERAGENT, "Package-Checker/1.0")
+
+        curl.perform()
+
+        response_code = curl.getinfo(curl.RESPONSE_CODE)
+
+        curl.close()
+
+        if response_code == 200:
+            data = json.loads(buffer.getvalue().decode("utf-8"))
+            latest_version = data.get("info", {}).get("version", "")
+
+            if latest_version:
+                return (pkg_name, current_version, latest_version)
+            else:
+                print(f"Warning: No version info for {pkg_name}")
+                return None
+        else:
+            print(f"Error: HTTP {response_code} for {pkg_name}")
+            return None
+
     except Exception as e:
-        print(f"Error checking {package_name}: {e}")
-    return (package_name, current_version, current_version, False)
+        print(f"Error fetching {pkg_name}: {str(e)}")
+        return None
 
 
-def check_updates_parallel(
-    packages: list[dict[str, str]], max_workers: int = 8
-) -> list[tuple[str, str, str]]:
-    upgradable = []
-    print(
-        f"Checking {len(packages)} packages for updates using {max_workers} workers..."
-    )
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        future_to_package = {
-            executor.submit(check_package_update, pkg): pkg["name"] for pkg in packages
-        }
-        completed = 0
-        for future in as_completed(future_to_package):
-            package_name = future_to_package[future]
-            completed += 1
-            try:
-                result = future.result()
-                name, current_ver, latest_ver, has_update = result
-                if has_update:
-                    upgradable.append((name, current_ver, latest_ver))
-                    print(
-                        f"[{completed}/{len(packages)}] {name}: {current_ver} -> {latest_ver} (UPDATE AVAILABLE)"
-                    )
-                else:
-                    print(
-                        f"[{completed}/{len(packages)}] {name}: {current_ver} (up-to-date)"
-                    )
-            except Exception as e:
-                print(
-                    f"[{completed}/{len(packages)}] Error processing {package_name}: {e}"
-                )
-    return upgradable
+def compare_versions(pkg_version_tuple):
+    if pkg_version_tuple is None:
+        return None
 
+    pkg_name, current_version, latest_version = pkg_version_tuple
 
-def save_upgradable_packages(upgradable: list[tuple[str, str, str]], output_file: Path):
-    try:
-        with open(output_file, "w") as f:
-            f.write("# Packages with available updates\n")
-            f.write(f"# Generated on {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
-            f.write("# Format: package_name current_version -> latest_version\n\n")
-            f.writelines(
-                f"{name}=={current_ver}  # -> {latest_ver}\n"
-                for name, current_ver, latest_ver in upgradable
-            )
-        print(f"\nResults saved to {output_file}")
-        print(f"Found {len(upgradable)} packages with available updates")
-    except OSError as e:
-        print(f"Error saving results to {output_file}: {e}")
+    if current_version != latest_version:
+        return (pkg_name, current_version, latest_version)
 
-
-def find_site_packages() -> list[Path]:
-    import site
-
-    return site.getsitepackages()
+    return None
 
 
 def main():
-    print("Python Package Update Checker")
-    print("-" * 42)
-    site_dirs = find_site_packages()
-    if not site_dirs:
-        print("No site-packages directories found!")
-        sys.exit(1)
-    print(f"Found {len(site_dirs)} site-packages directories:")
-    for site_dir in site_dirs:
-        print(f"  - {site_dir}")
-    all_packages = []
-    for site_dir in site_dirs:
-        print(f"\nScanning {site_dir}...")
-        packages = get_installed_packages()
-        print(f"  Found {len(packages)} packages")
-        all_packages.extend(packages)
-    if not all_packages:
-        print("No packages found!")
-        sys.exit(1)
-    seen = set()
-    unique_packages = []
-    for pkg in all_packages:
-        if pkg["name"] not in seen:
-            seen.add(pkg["name"])
-            unique_packages.append(pkg)
-    print(f"\nTotal unique packages to check: {len(unique_packages)}")
-    upgradable = check_updates_parallel(unique_packages, max_workers=20)
-    output_file = Path.cwd() / "upgradable.txt"
-    save_upgradable_packages(upgradable, output_file)
-    print("\n" + "=" * 42)
-    print("Summary:")
-    print(f"  Total packages checked: {len(unique_packages)}")
-    print(f"  Updates available: {len(upgradable)}")
-    print(f"  Up-to-date: {len(unique_packages) - len(upgradable)}")
-    if upgradable:
-        print("\nPackages with available updates:")
-        for name, current_ver, latest_ver in upgradable:
-            print(f"  {name}: {current_ver} -> {latest_ver}")
+
+    print("Getting installed packages...")
+    installed_packages = get_installed_packages()
+
+    if not installed_packages:
+        print("No packages found in ~/.local/lib/python3.12/site-packages")
+        return
+
+    print(f"Found {len(installed_packages)} installed packages")
+    print("Checking for updates from PyPI...")
+
+    with mp.Pool(processes=8) as pool:
+        latest_versions = pool.map(get_latest_version, installed_packages)
+
+        updatable_packages = pool.map(compare_versions, latest_versions)
+
+    updatable_packages = [pkg for pkg in updatable_packages if pkg is not None]
+
+    if updatable_packages:
+        print("\n" + "=" * 40)
+        print("UPDATABLE PACKAGES:")
+        print("=" * 40)
+
+        requirements_lines = []
+
+        for pkg_name, current_version, latest_version in updatable_packages:
+            print(f"{pkg_name:30s} {current_version:15s} -> {latest_version}")
+            requirements_lines.append(f"{pkg_name}=={latest_version}\n")
+
+        requirements_path = (
+            Path.home()
+            / ".local"
+            / "lib"
+            / "python3.12"
+            / "site-packages"
+            / "requirements.txt"
+        )
+
+        with open(requirements_path, "w") as f:
+            f.writelines(sorted(requirements_lines))
+
+        print(f"\n{len(updatable_packages)} packages can be updated")
+        print(f"Upgradable packages saved to: {requirements_path}")
+    else:
+        print("\nAll packages are up to date!")
+
+    print("\n" + "=" * 40)
+    print("SUMMARY:")
+    print(f"Total packages checked: {len(installed_packages)}")
+    print(f"Updatable packages: {len(updatable_packages)}")
+    print(f"Up to date: {len(installed_packages) - len(updatable_packages)}")
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    main()

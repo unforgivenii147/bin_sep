@@ -155,11 +155,11 @@ def main() -> None:
     output_file.write_text(
         f"Binary Analysis Results\nDirectory: {cwd}\nTotal binaries tested: {
             len(binaries)
-        }\nFailed binaries: {len(failed_binaries)}\n{'=' * 42}\n\n"
+        }\nFailed binaries: {len(failed_binaries)}\n{'=' * 40}\n\n"
         + (
             "\n".join(
                 (
-                    f"Binary: {filepath}\nError:  {error_msg}\n{'-' * 42}"
+                    f"Binary: {filepath}\nError:  {error_msg}\n{'-' * 40}"
                     for filepath, error_msg in failed_binaries
                 )
             )
@@ -177,7 +177,7 @@ def main() -> None:
     else:
         print("\n✅ All binaries are working correctly!")
         print(f"Report written to: {output_file}")
-    print("-" * 42)
+    print("-" * 40)
 
 
 if __name__ == "__main__":

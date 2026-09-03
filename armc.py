@@ -297,19 +297,21 @@ Examples:
   %(prog)s -c -d -a myfile.py        
   %(prog)s -c -w 8 /path/to/code     
   %(prog)s -c -a --no-validate file.py  
+  %(prog)s -c                          # Process current directory recursively
         """,
     )
 
     parser.add_argument(
         "paths",
-        nargs="+",
+        nargs="*",
         type=Path,
-        help="Python files or directories to process",
+        help="Python files or directories to process (default: current directory)",
     )
     parser.add_argument(
         "-c",
         "--comments",
         action="store_true",
+        default=True,
         help="Remove comments",
     )
     parser.add_argument(
@@ -321,6 +323,7 @@ Examples:
     parser.add_argument(
         "-a",
         "--apply",
+        default=True,
         action="store_true",
         help="Apply changes (default is dry run)",
     )
@@ -351,6 +354,10 @@ Examples:
             file=sys.stderr,
         )
         sys.exit(1)
+
+    if not args.paths:
+        args.paths = [Path(".")]
+        print("No path specified. Processing current directory recursively...")
 
     for path in args.paths:
         if not path.exists():

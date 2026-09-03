@@ -171,9 +171,9 @@ def print_summary(all_stats: list[dict]) -> None:
     total = len(all_stats)
     ok = sum(1 for s in all_stats if s["success"])
     fail = total - ok
-    print("\n" + "=" * 60)
+    print("\n" + "=" * 40)
     print("Summary")
-    print("-" * 60)
+    print("-" * 40)
     print(f"  Files processed : {total}")
     print(f"  Successful      : {ok}")
     print(f"  Failed          : {fail}")
@@ -188,7 +188,7 @@ def print_summary(all_stats: list[dict]) -> None:
         print(f"  Total time      : {total_time:.3f}s")
         if total > 1:
             print(f"  Avg per file    : {total_time / total:.3f}s")
-    print("=" * 60)
+    print("=" * 40)
 
 
 def parse_args() -> argparse.Namespace:

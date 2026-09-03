@@ -33,13 +33,13 @@ def minify_assets_in_directory(cwd: Path | str = ".") -> None:
         except Exception as e:
             print(f"Error processing {file_path.name}: {e}")
             errors_count += 1
-    print(f"\n{'=' * 42}")
+    print(f"\n{'=' * 40}")
     print("MINIFICATION SUMMARY")
-    print(f"{'=' * 42}")
+    print(f"{'=' * 40}")
     print(f"Files minified: {minified_count}")
     print(f"Errors: {errors_count}")
     print(f"Total processed: {minified_count + errors_count}")
-    print(f"{'=' * 42}")
+    print(f"{'=' * 40}")
 
 
 def minify_assets_with_extensions(
@@ -73,12 +73,12 @@ def minify_assets_with_extensions(
         except Exception as e:
             print(f"Error processing {file_path.name}: {e}")
             errors_count += 1
-    print(f"\n{'=' * 42}")
+    print(f"\n{'=' * 40}")
     print("MINIFICATION SUMMARY")
-    print(f"{'=' * 42}")
+    print(f"{'=' * 40}")
     print(f"Files minified: {minified_count}")
     print(f"Errors: {errors_count}")
-    print(f"{'=' * 42}")
+    print(f"{'=' * 40}")
 
 
 def minify_asset(file_path: Path, dry_run: bool = False, backup: bool = False) -> bool:
@@ -155,12 +155,12 @@ def minify_assets_parallel(cwd: Path | str = ".", max_workers: int = 4) -> None:
             else:
                 errors_count += 1
                 print(f"✗ {file_path.name}: {error}")
-    print(f"\n{'=' * 42}")
+    print(f"\n{'=' * 40}")
     print("MINIFICATION SUMMARY")
-    print(f"{'=' * 42}")
+    print(f"{'=' * 40}")
     print(f"Files minified: {minified_count}")
     print(f"Errors: {errors_count}")
-    print(f"{'=' * 42}")
+    print(f"{'=' * 40}")
 
 
 if __name__ == "__main__":

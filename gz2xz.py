@@ -46,9 +46,9 @@ def main() -> None:
     failure_count = 0
     total_original = 0
     total_new = 0
-    print("\n" + "=" * 42)
+    print("\n" + "=" * 40)
     print("CONVERSION RESULTS")
-    print("-" * 42)
+    print("-" * 40)
     for file_path, success, message in results:
         if success:
             success_count += 1
@@ -64,7 +64,7 @@ def main() -> None:
         else:
             failure_count += 1
             print(f"✗ {file_path}: {message}", file=sys.stderr)
-    print("-" * 42)
+    print("-" * 40)
     print(f"Summary: {success_count} successful, {failure_count} failed")
     print(f"Total files processed: {len(results)}")
     if success_count > 0 and total_original > 0:

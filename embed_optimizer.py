@@ -248,15 +248,15 @@ def print_summary(all_stats: list[dict]) -> None:
     total_found = sum(s["resources_found"] for s in all_stats)
     total_opt = sum(s["resources_optimized"] for s in all_stats)
     total_freed = sum(s["space_freed"] for s in all_stats)
-    print("\n" + "=" * 60)
+    print("\n" + "=" * 40)
     print("Summary")
-    print("-" * 60)
+    print("-" * 40)
     print(f"  Files processed      : {total}")
     print(f"  Errors               : {errors}")
     print(f"  Resources found      : {total_found}")
     print(f"  Resources optimized  : {total_opt}")
     print(f"  Total space freed    : {fsz(total_freed)}")
-    print("=" * 60)
+    print("=" * 40)
 
 
 def parse_args() -> argparse.Namespace:

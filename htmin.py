@@ -124,7 +124,7 @@ def minify_batch(input_paths: list[Path], max_workers: int | None = None) -> int
             result = future.result()
             results.append(result)
             print(result.report(cwd))
-    print("\n" + "=" * 70)
+    print("\n" + "=" * 40)
     total_original = sum(r.original_size for r in results)
     total_minified = sum(r.minified_size for r in results)
     total_saved = total_original - total_minified

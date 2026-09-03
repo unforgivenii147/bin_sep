@@ -71,7 +71,7 @@ def print_duplicates(dups: dict) -> None:
         print(f"Group {i} (hash={h[:12]}...):")
         for p in paths:
             print(f"   • {p}")
-        print("-" * 42)
+        print("-" * 40)
 
 
 def export_to_json(dups: dict, output_path="duplicates.json") -> None:

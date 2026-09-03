@@ -212,7 +212,7 @@ def main() -> None:
         if total_original > 0:
             total_ratio = (1 - total_compressed / total_original) * 100
             total_freed = total_original - total_compressed
-            print(f"\n{'=' * 42}")
+            print(f"\n{'=' * 40}")
             print("SUMMARY:")
             print(f"  Total original size: {fsz(total_original)}")
             print(f"  Total compressed size: {fsz(total_compressed)}")
@@ -227,7 +227,7 @@ def main() -> None:
                 dst = t.parent / t.name[: -len(".7z")]
             total_decompressed += gsz(dst)
         total_space_used = total_decompressed - total_original
-        print(f"\n{'=' * 42}")
+        print(f"\n{'=' * 40}")
         print("SUMMARY:")
         print(f"  Total compressed size: {fsz(total_original)}")
         print(f"  Total decompressed size: {fsz(total_decompressed)}")

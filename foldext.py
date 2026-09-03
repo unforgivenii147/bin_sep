@@ -56,9 +56,9 @@ def folderize_by_extension(cwd: Path):
         print(
             f"{ext_display:<15} : {stats['count']:4} file{'s' if stats['count'] != 1 else ' '}  {size_str:>8}"
         )
-    print("-" * 50)
+    print("-" * 40)
     print(f"{'TOTAL':<15} : {total_files:4} files  {gsz(total_size):>8}")
-    print("=" * 50)
+    print("=" * 40)
     return created_dirs, extension_stats
 
 

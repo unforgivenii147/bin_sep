@@ -179,7 +179,7 @@ Examples:
     print(f"🔧 Using {max_workers} parallel worker(s)")
     print(f"💾 Backup: {'Yes' if args.backup else 'No'}")
     print(f"📁 Recursive: {'Yes' if recursive else 'No'}")
-    print("-" * 42)
+    print("-" * 40)
     results = []
     processed = 0
     with ProcessPoolExecutor(max_workers=max_workers) as executor:
@@ -213,7 +213,7 @@ Examples:
                         "backup_created": False,
                     }
                 )
-    print("-" * 42)
+    print("-" * 40)
     successful = sum(1 for r in results if r["success"])
     failed = len(results) - successful
     total_original = sum(r["original_size"] for r in results)

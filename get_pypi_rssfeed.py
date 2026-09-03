@@ -53,12 +53,12 @@ def display_packages(packages: list[dict[str, str]], limit: int | None = None):
         print("No packages found in the RSS feed.")
         return
     display_packages = packages[:limit] if limit else packages
-    print(f"\n{'=' * 42}")
+    print(f"\n{'=' * 40}")
     print(
         f"PyPI Latest Packages (Total: {len(packages)}, Showing: {len(display_packages)})"
     )
     print(f"Fetched at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    print(f"{'=' * 42}\n")
+    print(f"{'=' * 40}\n")
     for i, pkg in enumerate(display_packages, 1):
         print(f"Package #{i}:")
         print(f"  Name:        {pkg['package_name']}")
@@ -71,7 +71,7 @@ def display_packages(packages: list[dict[str, str]], limit: int | None = None):
             else f"  Description: {pkg['description']}"
         )
         print(f"  GUID:        {pkg['guid']}")
-        print("-" * 42)
+        print("-" * 40)
 
 
 def save_to_file(packages: list[dict[str, str]], filename: str = "pypi_packages.txt"):
@@ -80,7 +80,7 @@ def save_to_file(packages: list[dict[str, str]], filename: str = "pypi_packages.
             f.write(
                 f"PyPI Latest Packages - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
             )
-            f.write("=" * 42 + "\n\n")
+            f.write("=" * 40 + "\n\n")
             for i, pkg in enumerate(packages, 1):
                 f.write(f"Package #{i}:\n")
                 f.write(f"  Name:        {pkg['package_name']}\n")
@@ -89,7 +89,7 @@ def save_to_file(packages: list[dict[str, str]], filename: str = "pypi_packages.
                 f.write(f"  Published:   {pkg['pub_date']}\n")
                 f.write(f"  Description: {pkg['description']}\n")
                 f.write(f"  GUID:        {pkg['guid']}\n")
-                f.write("-" * 42 + "\n")
+                f.write("-" * 40 + "\n")
         print(f"\nPackages saved to '{filename}'")
     except OSError as e:
         print(f"Error saving to file: {e}", file=sys.stderr)

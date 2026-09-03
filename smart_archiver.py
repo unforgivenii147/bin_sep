@@ -531,7 +531,7 @@ Examples:
             total_compressed = sum(
                 r.get("compressed_size", 0) for r in results if r["success"]
             )
-            print(f"\n{'=' * 42}")
+            print(f"\n{'=' * 40}")
             print("COMPRESSION SUMMARY")
             print(f"  Successful: {successful}/{len(results)} files")
             if failed:

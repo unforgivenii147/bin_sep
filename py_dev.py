@@ -411,9 +411,9 @@ Debugging not working?
         return True
 
     def run(self) -> bool:
-        print("=" * 42)
+        print("=" * 40)
         print("  Python Development Environment Setup")
-        print("=" * 42)
+        print("=" * 40)
         if not self.check_python_version():
             return False
         self.create_project_structure()
@@ -425,9 +425,9 @@ Debugging not working?
             print("  Warning: Pre-commit setup failed, continuing...")
         if not self.generate_neovim_config_info():
             print("  Warning: Neovim info generation failed, continuing...")
-        print("\n" + "=" * 42)
+        print("\n" + "=" * 40)
         print("  Setup Complete!")
-        print("=" * 42)
+        print("=" * 40)
         print(f"\nProject: {self.project_path}")
         print(f"Python: {self._get_python_path()}")
         print(f"Venv: {self.venv_path}")

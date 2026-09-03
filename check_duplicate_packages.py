@@ -139,7 +139,7 @@ def analyze_package_versions(
 
 def main():
     print("Python Package Duplicate Checker")
-    print("-" * 42)
+    print("-" * 40)
     try:
         system_dirs, user_dirs = get_site_directories()
     except Exception as e:
@@ -166,9 +166,9 @@ def main():
     print(f"  User packages found: {len(user_packages)}")
     print(f"  Duplicate packages: {len(duplicates)}")
     if duplicates:
-        print("\n" + "=" * 42)
+        print("\n" + "=" * 40)
         print("Packages installed in BOTH system and user directories:")
-        print("-" * 42)
+        print("-" * 40)
         for pkg_name, (system_loc, user_loc) in duplicates.items():
             versions = analyze_package_versions(pkg_name, system_loc, user_loc)
             print(f"\n📦 {pkg_name}")
@@ -185,7 +185,7 @@ def main():
                 print("   ⚠️  Version mismatch!")
     else:
         print("\n✅ No duplicate packages found.")
-    print("\n" + "=" * 42)
+    print("\n" + "=" * 40)
     print("Note: Having packages in both locations can lead to confusion about")
     print("which version is being used. Consider removing user installations of")
     print("packages that are already available system-wide.")

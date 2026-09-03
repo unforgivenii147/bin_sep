@@ -127,7 +127,7 @@ def apply_changes(stats, dry_run=False):
 
 
 def print_report(stats, success=None, failed=None):
-    print(f"\n{'=' * 42}")
+    print(f"\n{'=' * 40}")
     print("Scan Results:")
     print(f"  Total files scanned: {stats['total']}")
     print(f"  ⊘ Already executable (skipped): {len(stats['skip_executable'])}")
@@ -141,7 +141,7 @@ def print_report(stats, success=None, failed=None):
         print(f"  ✓ Changes successful: {success}")
         if failed:
             print(f"  ✗ Changes failed: {failed}")
-    print(f"{'=' * 42}")
+    print(f"{'=' * 40}")
 
 
 def show_examples(stats, num=5):
@@ -200,12 +200,12 @@ def main():
     if not args.dry_run:
         success, failed = apply_changes(stats, dry_run=False)
         if success is not None:
-            print(f"\n{'=' * 42}")
+            print(f"\n{'=' * 40}")
             print("Final Results:")
             print(f"  ✓ Changes applied successfully: {success}")
             if failed:
                 print(f"  ✗ Failed changes: {failed}")
-            print(f"{'=' * 42}")
+            print(f"{'=' * 40}")
     else:
         total_changes = len(stats["make_executable"]) + len(stats["set_standard"])
         if total_changes > 0:

@@ -483,7 +483,7 @@ def print_header(active_exts: set[str]) -> None:
     exts_str = "  ".join(sorted(active_exts))
     print()
     print(_c("  strip_comments ", BOLD, CYAN) + _c(f"targeting: {exts_str}", DIM))
-    print(_c("  " + "─" * 42, DIM))
+    print(_c("  " + "─" * 40, DIM))
 
 
 def print_file_result(r: FileResult) -> None:
@@ -515,7 +515,7 @@ def print_summary(results: list[FileResult], elapsed: float) -> None:
     lines_saved = sum(r.lines_removed for r in results)
     bytes_saved = sum(r.bytes_saved for r in results)
     print()
-    print(_c("  " + "─" * 42, DIM))
+    print(_c("  " + "─" * 40, DIM))
     print(
         f"  {_c('Summary', BOLD, CYAN)}  {_c(total, BOLD)} files  {
             _c(changed, BOLD, GREEN)

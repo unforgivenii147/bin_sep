@@ -97,11 +97,11 @@ class BatToShConverter:
                     self.error_count += 1
 
     def print_summary(self) -> None:
-        print("=" * 50)
+        print("=" * 40)
         print(f"📊 Conversion Summary")
         print(f"   ✅ Successful: {self.converted_count}")
         print(f"   ❌ Errors: {self.error_count}")
-        print("=" * 50)
+        print("=" * 40)
 
 
 def main():

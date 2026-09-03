@@ -222,9 +222,9 @@ def validate_extensions(
 
 
 def print_report(results: dict):
-    print("\n" + "=" * 42)
+    print("\n" + "=" * 40)
     print("BINARY EXTENSION VALIDATION REPORT")
-    print("-" * 42)
+    print("-" * 40)
     print("\nSummary:")
     print(f"  Total files found:    {results['total_files']}")
     print(f"  Actual binary files:  {results['binary_files']}")
@@ -234,7 +234,7 @@ def print_report(results: dict):
         print(
             f"\n⚠️  MISMATCHES FOUND: {len(results['mismatches'])} files with binary extension are actually TEXT files"
         )
-        print("-" * 42)
+        print("-" * 40)
         for i, mismatch in enumerate(results["mismatches"][:20], 1):
             print(f"  {i}. {mismatch['path']}")
             print(
@@ -245,12 +245,12 @@ def print_report(results: dict):
     else:
         print("\n✓ No mismatches found! All files match their extensions.")
     print("\nBreakdown by extension:")
-    print("-" * 42)
+    print("-" * 40)
     for ext, stats in sorted(results["by_extension"].items()):
         print(
             f"  {ext:12} - Binary: {stats['binary']:6}  Text: {stats['text']:6}  Errors: {stats['error']:6}"
         )
-    print("\n" + "=" * 42)
+    print("\n" + "=" * 40)
 
 
 if __name__ == "__main__":

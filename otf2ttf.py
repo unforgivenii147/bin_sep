@@ -110,7 +110,7 @@ def main():
             summary["skipped_already_ttf"] += 1
         else:
             summary["failed"] += 1
-    print("\n" + "=" * 42)
+    print("\n" + "=" * 40)
     print("Conversion Summary:")
     print(f"  Total OTF files found: {summary['total']}")
     print(f"  Successfully converted & removed: {summary['success']}")

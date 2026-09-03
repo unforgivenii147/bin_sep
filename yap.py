@@ -2,24 +2,25 @@
 from __future__ import annotations
 
 import argparse
-import copy
 from pathlib import Path
 from time import perf_counter as pff
 
 from dh import cprint, format_time, fsz, get_pyfiles, mpf3
+from typing import Any
 
-MODE = "yapf"
-CHUNK_SIZE = 1024 * 1024
+MODE: str = "yapf"
+CHUNK_SIZE: Any = 1024 * 1024
 
 
-def process_file(path: str | Path, mode: str = MODE) -> bool:
+def process_file(path: str | Path, mode: str = MODE):
     stime = pff()
     path = Path(path)
     before: int = path.stat().st_size
-    after: int = copy.copy(before)
+    after: int = before.copy()
+
     try:
         original_code: str = path.read_text(encoding="utf-8")
-        code = copy.copy(original_code)
+        code = original_code.copy()
         match mode:
             case "autoflake":
                 from autoflake import fix_code as fix_with_autoflake
@@ -30,7 +31,9 @@ def process_file(path: str | Path, mode: str = MODE) -> bool:
 
                 code = fix_with_isort(original_code)
             case "black":
-                from black import Mode as _Mode, TargetVersion as _tv, format_str
+                from black import Mode as _Mode
+                from black import TargetVersion as _tv
+                from black import format_str
 
                 code = format_str(
                     original_code,
@@ -45,7 +48,9 @@ def process_file(path: str | Path, mode: str = MODE) -> bool:
 
                 code, _ = fix_with_yapf(original_code)
             case _:
-                from black import Mode as _Mode, TargetVersion as _tv, format_str
+                from black import Mode as _Mode
+                from black import TargetVersion as _tv
+                from black import format_str
 
                 code = format_str(
                     original_code,

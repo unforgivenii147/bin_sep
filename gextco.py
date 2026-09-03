@@ -215,14 +215,14 @@ def main(
         output_path, "const", entities_by_file.get("constants", {}), unique_constants
     )
     save_imports(output_path, imports_by_dir)
-    logger.info("=" * 42)
+    logger.info("=" * 40)
     logger.info("Extraction Summary:")
     logger.info(f"  Files processed: {len(py_files)}")
     logger.info(f"  Unique classes: {len(unique_classes)}")
     logger.info(f"  Unique functions: {len(unique_functions)}")
     logger.info(f"  Unique constants: {len(unique_constants)}")
     logger.info(f"  Total imports: {sum(len(v) for v in imports_by_dir.values())}")
-    logger.info("=" * 42)
+    logger.info("=" * 40)
 
 
 if __name__ == "__main__":

@@ -21,7 +21,7 @@ def process_file_lines(input_path: Path, move_mode: bool):
     english_lines = []
     non_english_lines = []
     print(f"🔍 Analyzing {len(lines)} lines from '{input_path.name}'...")
-    print("-" * 42)
+    print("-" * 40)
     for i, line in enumerate(lines, start=1):
         clean_line = line.strip()
         if not clean_line:
@@ -38,7 +38,7 @@ def process_file_lines(input_path: Path, move_mode: bool):
                 else "[UNKNOWN]"
             )
             print(f"Line {i} {lang_info}: {clean_line}")
-    print("-" * 42)
+    print("-" * 40)
     print(f"📊 Summary: Found {len(non_english_lines)} non-English lines.")
     if move_mode:
         if not non_english_lines:

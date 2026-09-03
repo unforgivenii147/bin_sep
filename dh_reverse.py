@@ -196,7 +196,7 @@ def main():
                 print(message)
             if updated:
                 updated_count += 1
-    print(f"\n{'=' * 42}")
+    print(f"\n{'=' * 40}")
     if args.apply:
         print(f"Updated {updated_count} files")
     else:

@@ -449,9 +449,9 @@ def main():
     )
     parser.add_argument("-v", "--verbose", action="store_true", help="Verbose output")
     args = parser.parse_args()
-    print("-" * 42)
+    print("-" * 40)
     print("📦 Requirements.txt Generator")
-    print("-" * 42)
+    print("-" * 40)
     print("\n📋 Loading pip packages database...")
     pip_cache = PIPPackageCache(args.pip_list)
     print("📚 Loading stdlib modules...")
@@ -485,9 +485,9 @@ def main():
     with open(args.output, "w") as f:
         f.write("\n".join(sorted_packages) + "\n")
     print(f"✓ Successfully wrote {len(sorted_packages)} packages to {args.output}")
-    print("\n" + "=" * 42)
+    print("\n" + "=" * 40)
     print("📋 Top packages found:")
-    print("-" * 42)
+    print("-" * 40)
     for pkg in sorted_packages[:20]:
         print(f"  • {pkg}")
     if len(sorted_packages) > 20:

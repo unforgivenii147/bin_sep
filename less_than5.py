@@ -5,7 +5,7 @@ import shutil
 import time
 from pathlib import Path
 
-TIME_THRESHOLD = 8 * 42
+TIME_THRESHOLD = 8 * 40
 
 
 def get_file_age(filepath: Path) -> float:
@@ -58,14 +58,14 @@ def move_recent_files(start_dir: Path | str = ".") -> None:
         except Exception as e:
             print(f"Unexpected error processing {file_path.name}: {e}")
             error_count += 1
-    print("\n" + "=" * 42)
+    print("\n" + "=" * 40)
     print("SUMMARY")
-    print("-" * 42)
+    print("-" * 40)
     print(f"Files moved: {moved_count}")
     print(f"Files skipped: {skipped_count}")
     print(f"Errors: {error_count}")
     print(f"Total processed: {moved_count + skipped_count + error_count}")
-    print("-" * 42)
+    print("-" * 40)
 
 
 def move_recent_files_with_filters(
@@ -177,10 +177,10 @@ def main() -> None:
         print(
             f"Processing files {('older than' if args.old else 'created in the last')} {args.minutes} minutes"
         )
-        print("-" * 42)
+        print("-" * 40)
         if args.old:
             move_recent_files_by_age(
-                start_dir, age_threshold=args.minutes * 42, destination=args.dest
+                start_dir, age_threshold=args.minutes * 40, destination=args.dest
             )
         elif args.ext or args.min_size:
             move_recent_files_with_filters(
@@ -193,7 +193,7 @@ def main() -> None:
             )
         else:
             global TIME_THRESHOLD
-            TIME_THRESHOLD = args.minutes * 42
+            TIME_THRESHOLD = args.minutes * 40
             move_recent_files(start_dir)
     except KeyboardInterrupt:
         print("\nOperation cancelled by user")

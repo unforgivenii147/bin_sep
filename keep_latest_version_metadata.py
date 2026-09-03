@@ -162,13 +162,13 @@ def main():
             print(f"\nPackage: {pkg_name} ({len(versions)} versions)")
             old_files = find_old_versions(versions)
             files_to_delete.extend(old_files)
-    print(f"\n{'=' * 42}")
+    print(f"\n{'=' * 40}")
     print("Summary:")
     print(f"  Total metadata files: {len(all_files)}")
     print(f"  Unique packages: {len(all_packages)}")
     print(f"  Files to remove: {len(files_to_delete)}")
     if files_to_delete:
-        print(f"\n{'=' * 42}")
+        print(f"\n{'=' * 40}")
         print(f"Removing {len(files_to_delete)} old version files...")
         delete_files(files_to_delete, dry_run=args.dry_run, backup_dir=backup_dir)
         if args.dry_run:

@@ -533,7 +533,7 @@ def main():
                         fixed_files += 1
                     else:
                         print("  ✗ Failed to fix")
-    print(f"\n{'─' * 42}")
+    print(f"\n{'─' * 40}")
     print(f"Total missing imports found: {total_missing}")
     if args.autofix:
         print(f"Files fixed: {fixed_files}")

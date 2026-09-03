@@ -44,14 +44,14 @@ def main():
     if not packages:
         print("No packages found or error occurred")
         return
-    print("\n" + "=" * 42)
+    print("\n" + "=" * 40)
     print(f"{'Package':<30} {'Size':>20}")
-    print("-" * 42)
+    print("-" * 40)
     total = 0
     for pkg, size in packages:
         print(f"{pkg:<30} {fsz(size):>20}")
         total += size
-    print("-" * 42)
+    print("-" * 40)
     print(f"{'TOTAL':<30} {fsz(total):>20}")
 
 

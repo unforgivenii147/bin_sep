@@ -522,9 +522,9 @@ def write_global_imports(imports: list[str], output_dir: Path) -> None:
 
 
 def report(entities: list[Entity], all_imports: list[str], saved_count: int) -> None:
-    print("\n" + "=" * 42)
+    print("\n" + "=" * 40)
     print("EXTRACTION SUMMARY")
-    print("-" * 42)
+    print("-" * 40)
     by_type: dict[str, int] = defaultdict(int)
     for e in entities:
         by_type[e.entity_type] += 1
@@ -541,7 +541,7 @@ def report(entities: list[Entity], all_imports: list[str], saved_count: int) -> 
         print("\nTop imported modules:")
         for mod, cnt in sorted(module_counts.items(), key=lambda x: -x[1])[:15]:
             print(f"  {mod:<30} {cnt}")
-    print("-" * 42)
+    print("-" * 40)
 
 
 def main(argv: list[str] | None = None) -> int:

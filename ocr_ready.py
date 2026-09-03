@@ -170,7 +170,7 @@ def process() -> None:
                 print(
                     f"❌ [{processed_count + error_count}/{total_images}] {path.name}: {e}"
                 )
-    print("\n" + "=" * 42)
+    print("\n" + "=" * 40)
     print("📊 Processing Summary:")
     print(f"   ✅ Successfully processed: {processed_count} images")
     print(f"   ❌ Errors: {error_count} images")
@@ -182,7 +182,7 @@ def process() -> None:
         print(f"   📦 Total size before: {total_before / (1024 * 1024):.2f} MB")
         print(f"   📦 Total size after: {total_after / (1024 * 1024):.2f} MB")
         print(f"   📉 Size reduction: {size_reduction:.1f}%")
-    print("-" * 42)
+    print("-" * 40)
 
 
 if __name__ == "__main__":

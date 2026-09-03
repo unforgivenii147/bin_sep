@@ -73,7 +73,7 @@ def main() -> None:
         results = executor.map(process_image, tasks)
     for result in results:
         if result:
-            print(f"\n{'=' * 42}")
+            print(f"\n{'=' * 40}")
             print(f"File: {result['file']}")
             print(f"Tessdata: {result['tessdata']}")
             print(f"Status: {result['status']}")

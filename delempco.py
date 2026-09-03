@@ -158,7 +158,7 @@ def print_progress(current: int, total: int):
 
 
 def print_separator():
-    print(f"\n{ANSI.CYAN}{'─' * 70}{ANSI.RESET}\n")
+    print(f"\n{ANSI.CYAN}{'─' * 40}{ANSI.RESET}\n")
 
 
 def print_results(stats: ProcessingStats, base_dirs: list[Path]):
@@ -310,7 +310,7 @@ def main():
             elif result.status == "error":
                 stats.errors_count += 1
     elapsed = time.time() - start_time
-    print("\r" + " " * 50 + "\r", end="")
+    print("\r" + " " * 40 + "\r", end="")
     print(
         f"  {ANSI.GREEN}Progress: Complete!{ANSI.RESET} ({ANSI.BOLD}{
             stats.text_files:,}{ANSI.RESET} text, {ANSI.BOLD}{stats.binary_files:,}{

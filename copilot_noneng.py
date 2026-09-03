@@ -6,7 +6,7 @@ import json
 import sys
 import threading
 from collections.abc import Iterable, Iterator
-from concurrent.futures import ThreadPoolExecutor, as_completed
+import multiprocessing as mp
 from pathlib import Path
 from typing import Any
 
@@ -148,15 +148,23 @@ def process_file_per_line_parallel(
     lines = list(read_text_lines(file_path))
     if not lines:
         return local
-    with ThreadPoolExecutor(max_workers=workers) as ex:
+    with mp.Pool(processes=8) as ex:
         futures = {
-            ex.submit(detect_line, file_path, lineno, line, max_len): lineno
+            ex.apply_async(
+                detect_line,
+                args=(
+                    file_path,
+                    lineno,
+                    line,
+                    max_len,
+                ),
+            ): lineno
             for lineno, line in enumerate(lines, start=1)
             if line.strip()
         }
         for fut in as_completed(futures):
             try:
-                rec = fut.result()
+                rec = fut.get()
                 if rec:
                     with _print_lock:
                         print(f"{rec['file']}:{rec['line_no']}: {rec['text']}")
@@ -171,11 +179,20 @@ def process_file_per_line_parallel(
 
 
 def run_per_file(files: list[Path], workers: int, max_len: int):
-    with ThreadPoolExecutor(max_workers=workers) as ex:
-        futures = {ex.submit(process_file_sequential, f, max_len): f for f in files}
+    with mp.Pool(processes=8) as ex:
+        futures = {
+            ex.apply_async(
+                process_file_sequential,
+                args=(
+                    f,
+                    max_len,
+                ),
+            ): f
+            for f in files
+        }
         for fut in as_completed(futures):
             try:
-                res = fut.result()
+                res = fut.get()
                 if res:
                     with _results_lock:
                         _results.extend(res)
@@ -184,14 +201,21 @@ def run_per_file(files: list[Path], workers: int, max_len: int):
 
 
 def run_per_line(files: list[Path], workers: int, max_len: int):
-    with ThreadPoolExecutor(max_workers=workers) as ex_files:
+    with mp.Pool(processes=8) as ex_files:
         futures = {
-            ex_files.submit(process_file_per_line_parallel, f, max_len, workers): f
+            ex_files.apply_async(
+                process_file_per_line_parallel,
+                args=(
+                    f,
+                    max_len,
+                    workers,
+                ),
+            ): f
             for f in files
         }
         for fut in as_completed(futures):
             try:
-                res = fut.result()
+                res = fut.get()
                 if res:
                     with _results_lock:
                         _results.extend(res)

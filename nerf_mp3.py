@@ -216,9 +216,9 @@ def print_final_summary(stats: list[ConversionStats], total_duration: float):
     total_original = sum(s.original_size for s in successful)
     total_new = sum(s.new_size for s in successful)
     total_saved = total_original - total_new
-    print(f"\n{'─' * 42}")
+    print(f"\n{'─' * 40}")
     print(f"{Colors.BOLD}Conversion Summary{Colors.END}")
-    print(f"{'─' * 42}")
+    print(f"{'─' * 40}")
     print(f"Total files: {len(stats)}")
     print(f"{Colors.GREEN}Successful:{Colors.END} {len(successful)}")
     print(f"{Colors.RED}Failed:{Colors.END} {len(failed)}")
@@ -230,7 +230,7 @@ def print_final_summary(stats: list[ConversionStats], total_duration: float):
             f"  Saved:  {Colors.GREEN}{fsz(total_saved)} ({total_saved / total_original * 100:.1f}%){Colors.END}"
         )
     print(f"\n{Colors.BOLD}Total time:{Colors.END} {format_duration(total_duration)}")
-    print(f"{'─' * 42}")
+    print(f"{'─' * 40}")
 
 
 def find_mp3_files(directories: list[Path]) -> list[Path]:

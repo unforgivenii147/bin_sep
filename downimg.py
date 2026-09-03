@@ -22,9 +22,9 @@ class ImageDownscaler:
             ".gif",
             ".webp",
         }
-        print("-" * 42)
+        print("-" * 40)
         print("IMAGE DOWNSCALER")
-        print("-" * 42)
+        print("-" * 40)
         print(f"[INIT] Root directory: {self.root_dir.resolve()}")
         print(
             f"[INIT] Scale factor: {scale_factor} (new size = original × {scale_factor})"
@@ -97,7 +97,7 @@ class ImageDownscaler:
                 )
             )
         print("\n[RESULTS]")
-        print("-" * 42)
+        print("-" * 40)
         for image_path, success, message in results:
             if success:
                 successful += 1
@@ -109,7 +109,7 @@ class ImageDownscaler:
                 status = "✗ FAIL"
                 rel_path = image_path.relative_to(self.root_dir)
                 print(f"{status}  {rel_path:<50} {message}")
-        print("-" * 42)
+        print("-" * 40)
         print(
             f"[SUMMARY] Successful: {successful} | Failed: {failed} | Total: {len(image_paths)}"
         )
@@ -120,9 +120,9 @@ class ImageDownscaler:
             print("\n[WARN] No images found in directory!")
             return
         self.process_images(image_paths)
-        print("\n" + "=" * 42)
+        print("\n" + "=" * 40)
         print("PROCESS COMPLETE - Images updated in-place")
-        print("-" * 42)
+        print("-" * 40)
 
 
 def main():

@@ -16,7 +16,7 @@ def compare_and_move_common(source_dir: str, target_dir: str) -> None:
     target = expand_path(target_dir)
     print(f"Source directory (first): {source}")
     print(f"Target directory (second): {target}")
-    print("-" * 42)
+    print("-" * 40)
     if not source.exists():
         print(
             f"Error: Source directory '{source_dir}' (expanded to '{source}') does not exist."
@@ -44,7 +44,7 @@ def compare_and_move_common(source_dir: str, target_dir: str) -> None:
         print(
             f"  {size_match} {filename} (source: {source_size} bytes, target: {target_size} bytes)"
         )
-    print("\n" + "=" * 42)
+    print("\n" + "=" * 40)
     response = input(
         f"Move these {len(common_files)} common file(s) from source to '{common_dir}'? (y/n): "
     ).lower()
@@ -78,7 +78,7 @@ def compare_and_move_common(source_dir: str, target_dir: str) -> None:
         except Exception as e:
             print(f"  ✗ Error moving {filename}: {e}")
             failed_files.append(filename)
-    print("\n" + "=" * 42)
+    print("\n" + "=" * 40)
     print(
         f"Summary: Successfully moved {moved_count} of {len(common_files)} common file(s)"
     )

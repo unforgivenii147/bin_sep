@@ -108,7 +108,7 @@ def brute_force_zip(
     total_passwords = count_lines(wordlist_path)
     print(f"📊 Total passwords to test: {total_passwords:,}")
     print(f"🚀 Starting attack with {num_processes} processes...")
-    print(f"{'=' * 42}")
+    print(f"{'=' * 40}")
     result = CrackResult(start_time=time.time())
     last_update = result.start_time
     try:
@@ -150,7 +150,7 @@ def brute_force_zip(
     finally:
         if not result.end_time:
             result.end_time = time.time()
-    print("\n" + "=" * 42)
+    print("\n" + "=" * 40)
     if result.success:
         print(f"✅ SUCCESS! Password found: {result.password}")
     else:
@@ -158,7 +158,7 @@ def brute_force_zip(
     print(f"⏱️  Total time: {format_duration(result.elapsed)}")
     print(f"🔢 Total tested: {result.tested_count:,}")
     print(f"⚡ Average speed: {result.pps:.1f} passwords/second")
-    print("-" * 42)
+    print("-" * 40)
     return result
 
 

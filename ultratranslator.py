@@ -58,10 +58,10 @@ def process_files_with_retry(files: list[Path]) -> None:
     retry_count = 0
     while files_to_process and (retry_count < MAX_RETRIES):
         if retry_count > 0:
-            logger.info(f"""{("=" * 42)}""")
+            logger.info(f"""{("=" * 40)}""")
             logger.info(f"Retry attempt {retry_count}/{MAX_RETRIES}")
             logger.info(f"Retrying {len(files_to_process)} failed files...")
-            logger.info(f"""{("=" * 42)}""")
+            logger.info(f"""{("=" * 40)}""")
             time.sleep(RETRY_DELAY)
         failed_files = []
         with ProcessPoolExecutor(max_workers=MAX_WORKERS) as executor:

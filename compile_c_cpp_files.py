@@ -49,9 +49,9 @@ def main():
     print(f"Starting compilation with 4 workers...\n")
     with Pool(processes=4) as pool:
         results = pool.map(compile_file, tasks)
-    print("\n" + "=" * 60)
+    print("\n" + "=" * 40)
     print("Compilation Results:")
-    print("=" * 60 + "\n")
+    print("=" * 40 + "\n")
     successful = 0
     failed = 0
     for _file_path, success, message in results:
@@ -60,9 +60,9 @@ def main():
             successful += 1
         else:
             failed += 1
-    print("\n" + "=" * 60)
+    print("\n" + "=" * 40)
     print(f"Summary: {successful} successful, {failed} failed")
-    print("=" * 60)
+    print("=" * 40)
     sys.exit(0 if failed == 0 else 1)
 
 

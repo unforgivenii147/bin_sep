@@ -703,7 +703,7 @@ def main() -> int:
                 cprint(f"  🔍 Would modify: {file_path.name}", "yellow")
     after_size = gsz(cwd)
     size_diff = before_size - after_size
-    cprint("\n" + "=" * 42, "cyan")
+    cprint("\n" + "=" * 40, "cyan")
     cprint("📊 REFACTORING SUMMARY", "cyan", attrs=["bold"])
     cprint(f"  Files processed: {len(python_files)}", "white")
     cprint(

@@ -146,7 +146,7 @@ def print_header(target: str, original_size: int):
     print("\n📦 Compressing: {}\n".format(target))
     print("Original size: {:,} bytes\n".format(original_size))
     print("COMPRESSION PROGRESS:")
-    print("-" * 70)
+    print("-" * 40)
 
 
 def print_result(result: CompressionResult):
@@ -166,9 +166,9 @@ def print_summary(results: list[CompressionResult], original_size: int):
         print("\n✗ All compression attempts failed!")
         return None
     sorted_results = sorted(successful, key=lambda r: r.ratio)
-    print("\n" + "=" * 70)
+    print("\n" + "=" * 40)
     print("TOP 3 COMPRESSION RESULTS")
-    print("=" * 70)
+    print("=" * 40)
     for idx, result in enumerate(sorted_results[:3], 1):
         bytes_saved = original_size - result.compressed_size
         print(
@@ -176,7 +176,7 @@ def print_summary(results: list[CompressionResult], original_size: int):
                 idx, result.algorithm, result.compressed_size, result.ratio, bytes_saved
             )
         )
-    print("=" * 70)
+    print("=" * 40)
     return sorted_results[0]
 
 

@@ -116,7 +116,7 @@ def main():
     print(f"Using {max_workers} parallel workers")
     if dry_run:
         print("DRY RUN MODE - No packages will be installed")
-    print("-" * 42)
+    print("-" * 40)
     pip_cmd = get_pip_command()
     if not pip_cmd:
         print("Error: pip is not installed or not found in PATH")
@@ -127,7 +127,7 @@ def main():
         print("No packages found in file.")
         sys.exit(0)
     print(f"Found {len(packages)} package(s) to reinstall.")
-    print("-" * 42)
+    print("-" * 40)
     if dry_run:
         for pkg in packages:
             install_package(pkg, pip_cmd, dry_run=True)
@@ -152,13 +152,13 @@ def main():
     except Exception as e:
         print(f"\nError during parallel execution: {e}")
         sys.exit(1)
-    print("\n" + "=" * 42)
+    print("\n" + "=" * 40)
     print(f"Summary: {successful} successful, {failed} failed")
     if failed_packages:
         print("\nFailed packages:")
         for pkg in failed_packages:
             print(f"  - {pkg}")
-    print("-" * 42)
+    print("-" * 40)
     sys.exit(0 if failed == 0 else 1)
 
 

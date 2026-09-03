@@ -241,14 +241,14 @@ Repository initialized on {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
                 print("Invalid choice. Please select 1, 2, or 3.")
 
     def run(self) -> None:
-        print("-" * 42)
+        print("-" * 40)
         print("GitHub Repository Manager (with gh CLI)")
-        print("-" * 42)
+        print("-" * 40)
         print(f"Directory: {self.cwd}")
         print(f"Repository:  {self.repo_name}")
         print(f"GitHub User: {self.github_username}")
         print(f"Email: {self.git_email}")
-        print("-" * 42)
+        print("-" * 40)
         if not self._check_gh_cli_installed():
             print("\n❌ Error: GitHub CLI (gh) is not installed.")
             print("Please install it from:  https://cli.github.com")
@@ -273,12 +273,12 @@ Repository initialized on {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
             if self._create_github_repo():
                 self._add_remote()
                 self._push_to_github()
-                print("\n" + "=" * 42)
+                print("\n" + "=" * 40)
                 print("✅ Success! Repository created and pushed to GitHub")
                 print(
                     f"Repository URL: https://github.com/{self.github_username}/{self.repo_name}"
                 )
-                print("-" * 42)
+                print("-" * 40)
             else:
                 print("\n❌ Failed to create repository on GitHub")
                 sys.exit(1)

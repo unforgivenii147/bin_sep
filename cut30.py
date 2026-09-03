@@ -139,7 +139,7 @@ if __name__ == "__main__":
             print(f"Invalid days argument: {sys.argv[1]}")
             print("Using default: 30 days")
     print(f"Git History Cleaner - Remove commits older than {days} days")
-    print("-" * 42)
+    print("-" * 40)
     print("\nOptions:")
     print("1. Safe mode - preserves commits but can specify which to keep")
     print("2. Orphan branch mode - creates new branch with only recent commits")

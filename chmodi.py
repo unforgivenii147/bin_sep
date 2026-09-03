@@ -176,13 +176,13 @@ def merge_results(all_results: list[dict]) -> dict:
 
 
 def print_summary(results: dict, total_items: int, elapsed_time: float) -> None:
-    print("\n" + "=" * 42)
+    print("\n" + "=" * 40)
     print("📊 PERMISSION NORMALIZATION SUMMARY")
-    print("-" * 42)
+    print("-" * 40)
     print(f"⏱️  Time elapsed:          {elapsed_time:.2f} seconds")
     print(f"📁 Total items processed: {total_items}")
     print(f"⏭️  Skipped:              {results['skipped']}")
-    print("-" * 42)
+    print("-" * 40)
     print(f"✓  Directories changed:   {results['dirs_changed']}")
     print(f"✓  Files normalized:      {results['files_changed']}")
     print(f"✓  Files made executable: {results['files_made_exec']}")
@@ -191,7 +191,7 @@ def print_summary(results: dict, total_items: int, elapsed_time: float) -> None:
         print(f"   └─ Permission errors: {results['permission_errors']}")
     if results.get("other_errors", 0) > 0:
         print(f"   └─ Other errors:       {results['other_errors']}")
-    print("-" * 42)
+    print("-" * 40)
     if results.get("permission_errors", 0) > 0:
         print("\n💡 Tip: Permission errors can be fixed by:")
         print("   - Running with appropriate privileges (sudo/root)")
@@ -203,7 +203,7 @@ def print_details(results: dict, verbose: bool = False) -> None:
     if not verbose or not results["messages"]:
         return
     print("\n📝 DETAILED CHANGES:")
-    print("-" * 42)
+    print("-" * 40)
     dir_msgs = [m for m in results["messages"] if m.startswith("[DIR]")]
     exec_msgs = [m for m in results["messages"] if m.startswith("[EXEC]")]
     file_msgs = [m for m in results["messages"] if m.startswith("[FILE]")]

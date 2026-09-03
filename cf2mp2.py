@@ -1,22 +1,4 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-"""
-Convert concurrent.futures ThreadPoolExecutor/ProcessPoolExecutor patterns
-to multiprocessing.Pool.apply_async with fixed 8 workers.
-
-This script processes Python files to replace concurrent.futures executor patterns
-with multiprocessing.Pool.apply_async equivalents using a fixed pool of 8 workers.
-
-Usage:
-    python convert_executors.py [files/dirs...] [-a|--apply]
-
-Features:
-    - Accepts multiple files and directories as input
-    - Recursively processes Python files in directories
-    - Shows diff in dry-run mode (default)
-    - Applies changes in-place with -a/--apply flag
-    - Uses multiprocessing imap_unordered for parallel file processing
-    - Fixed pool size of 8 workers
-"""
 
 import argparse
 import difflib
@@ -454,7 +436,7 @@ def main() -> int:
 
     results.sort(key=lambda r: str(r.path))
 
-    print(f"\n{'=' * 60}")
+    print(f"\n{'=' * 40}")
     print(f"Summary:")
     print(f"  Total files processed: {len(results)}")
     print(f"  Files changed:         {changed_count}")

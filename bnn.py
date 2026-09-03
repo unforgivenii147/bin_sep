@@ -195,9 +195,9 @@ Examples:
     results = Parallel(n_jobs=args.workers, verbose=0)(
         delayed(process_file_chunked)(filepath, chunk_size) for filepath in files
     )
-    print("\n" + "=" * 70)
+    print("\n" + "=" * 40)
     print("PROCESSING RESULTS")
-    print("=" * 70)
+    print("=" * 40)
     successful = 0
     total_replacements = 0
     total_size_change = 0
@@ -208,13 +208,13 @@ Examples:
             total_replacements += stats.replacements
             total_size_change += stats.new_size - stats.original_size
     failed = len(results) - successful
-    print("=" * 70)
+    print("=" * 40)
     print(
         f"Summary: {successful} succeeded, {failed} failed out of {len(results)} files"
     )
     print(f"Total replacements: {total_replacements}")
     print(f"Total size change: {total_size_change:+d} bytes")
-    print("=" * 70 + "\n")
+    print("=" * 40 + "\n")
     return 0 if failed == 0 else 1
 
 

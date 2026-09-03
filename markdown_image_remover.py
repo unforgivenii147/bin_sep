@@ -180,11 +180,11 @@ class Reporter:
     @staticmethod
     def print_header():
         print()
-        print(Styling.style("=" * 80, Color.BRIGHT_CYAN, bold=True))
+        print(Styling.style("=" * 40, Color.BRIGHT_CYAN, bold=True))
         print(
             Styling.style("  Markdown Image Remover v1.0", Color.BRIGHT_CYAN, bold=True)
         )
-        print(Styling.style("=" * 80, Color.BRIGHT_CYAN, bold=True))
+        print(Styling.style("=" * 40, Color.BRIGHT_CYAN, bold=True))
         print()
 
     @staticmethod
@@ -211,7 +211,7 @@ class Reporter:
     @staticmethod
     def print_summary(results: list[ImageStats]):
         print()
-        print(Styling.style("-" * 80, Color.BRIGHT_CYAN))
+        print(Styling.style("-" * 40, Color.BRIGHT_CYAN))
         successful = [r for r in results if not r.error]
         failed = [r for r in results if r.error]
         total_images = sum(r.images_removed for r in successful)

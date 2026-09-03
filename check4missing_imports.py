@@ -140,7 +140,7 @@ def main():
             if args.auto_fix:
                 fix_file(file_path, missing)
                 print("  ✓ Fixed")
-    print(f"\n{'=' * 42}")
+    print(f"\n{'=' * 40}")
     if files_with_issues:
         print(f"Files with missing imports: {len(files_with_issues)}")
         if args.auto_fix:

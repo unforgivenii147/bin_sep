@@ -122,7 +122,7 @@ def get_user_confirmation(
 ) -> str:
     groups = package_data.get("groups", set())
     info = package_data.get("info", {})
-    print("\n" + "=" * 42)
+    print("\n" + "=" * 40)
     print(f"📦 Package: {package_name}")
     print(f"   Version: {info.get('version', 'Unknown')}")
     print(f"   Entry points: {', '.join(groups)}")
@@ -132,7 +132,7 @@ def get_user_confirmation(
         print(f"   Size: {info.get('size')}")
     if include_deps:
         print("   ⚠️  Will reinstall dependencies (may cause conflicts)")
-    print("-" * 42)
+    print("-" * 40)
     while True:
         response = (
             input("Reinstall this package? (y/n/a/?) [y/n/a/?]: ").lower().strip()
@@ -262,9 +262,9 @@ def reinstall_entrypoint_packages(
             except Exception as e:
                 logger.error(f"Unexpected error for {package_name}: {e}")
                 failed.append((package_name, str(e)))
-    logger.info("\n" + "=" * 42)
+    logger.info("\n" + "=" * 40)
     logger.info("REINSTALLATION SUMMARY")
-    logger.info("=" * 42)
+    logger.info("=" * 40)
     logger.info(f"✓ Successfully reinstalled: {len(successful)} packages")
     logger.info(f"✗ Failed to reinstall: {len(failed)} packages")
     if successful:

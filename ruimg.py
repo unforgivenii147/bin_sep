@@ -79,11 +79,11 @@ class TextExtractor:
 class TextExtractionReport:
     @staticmethod
     def print_header(total_files: int) -> None:
-        print("\n" + "=" * 42)
+        print("\n" + "=" * 40)
         print("📄 TEXT EXTRACTION REPORT")
         print(f"⏱  Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         print(f"📊 Total files to process: {total_files}")
-        print("-" * 42)
+        print("-" * 40)
 
     @staticmethod
     def print_file_result(result: ExtractionResult, rel_path: Path) -> None:
@@ -105,14 +105,14 @@ class TextExtractionReport:
         failed = sum(1 for r in results if not r.success)
         total_chars = sum(r.char_count for r in results if r.success)
         total_lines = sum(r.line_count for r in results if r.success)
-        print("-" * 42)
+        print("-" * 40)
         print("📊 SUMMARY")
-        print("-" * 42)
+        print("-" * 40)
         print(f"✓ Successful: {successful}/{len(results)}")
         print(f"✗ Failed:     {failed}/{len(results)}")
         print(f"📝 Total characters extracted: {total_chars:,}")
         print(f"📄 Total lines extracted:      {total_lines:,}")
-        print("-" * 42)
+        print("-" * 40)
 
     @staticmethod
     def save_json_report(results: list[ExtractionResult], output_path: Path) -> None:

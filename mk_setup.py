@@ -176,7 +176,7 @@ def main():
         f.write(setup_content)
     print(f"\n✓ Created {setup_path}")
     print("\nGenerated setup.py content preview:")
-    print("-" * 42)
+    print("-" * 40)
     print(setup_content)
 
 

@@ -43,7 +43,7 @@ def inspect_and_move_wheels(root_dir="."):
                         )
                     shutil.move(str(whl_path), str(dest_path))
                     print(f"   ➡️ Moved to: {dest_path.relative_to(root_path)}")
-                    print("-" * 42)
+                    print("-" * 40)
         except zipfile.BadZipFile:
             print(f"⚠️  Error: {whl_path.name} is a corrupt or invalid zip/wheel file.")
         except Exception as e:

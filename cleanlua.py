@@ -158,7 +158,7 @@ def main():
         print("\n✨ No Lua files found.")
         return
     print(f"\n📝 Found {len(lua_files)} Lua file(s)")
-    print("-" * 42)
+    print("-" * 40)
     stats_list = []
     processed = 0
     errors = 0
@@ -195,7 +195,7 @@ def main():
                 print(f"  error     {'':>8}  {file_path.relative_to(Path.cwd())}")
                 print(f"           {'':9} {'':>8}  ↳ {e}")
                 errors += 1
-    print("-" * 42)
+    print("-" * 40)
     total_original = sum(s.original_size for s in stats_list)
     total_new = sum(s.new_size for s in stats_list)
     total_saved = total_original - total_new

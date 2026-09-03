@@ -149,7 +149,7 @@ def main() -> int:
     print(f"📁 Found {len(files)} Python file(s) to process")
     if args.dry_run:
         print("🔍 DRY RUN MODE - No files will be moved")
-        print("-" * 42)
+        print("-" * 40)
     try:
         if args.parallel == "sequential" or len(files) == 1:
             process_files_sequential(files, args.dry_run)
@@ -170,7 +170,7 @@ def main() -> int:
         print(f"❌ Error processing files: {e}")
         return 1
     if args.dry_run:
-        print("-" * 42)
+        print("-" * 40)
         print("🔍 DRY RUN COMPLETE - No files were moved")
     return 0
 

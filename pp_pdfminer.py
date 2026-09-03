@@ -1,107 +1,162 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
 
 import argparse
-import glob
 import logging
-import os
 import sys
-from io import StringIO
+from collections.abc import Container, Iterable
 from multiprocessing import Pool, cpu_count
 from pathlib import Path
 from typing import Any
 
-from pdfminer.high_level import extract_text_to_fp
-from pdfminer.layout import LAParams
+import pdfminer.high_level
+from pdfminer.layout import LAParams, LTTextBox
 from pdfminer.pdfexceptions import PDFValueError
 
 logging.basicConfig()
 
+OUTPUT_TYPES = ((".htm", "html"), (".html", "html"), (".xml", "xml"), (".tag", "tag"))
 
-def process_page(args: tuple) -> tuple[int, str]:
-    pdf_path, page_num, laparams, password = args
+
+def float_or_disabled(x: str) -> float | None:
+    if x.lower().strip() == "disabled":
+        return None
     try:
-        output = StringIO()
-        extract_text_to_fp(
-            open(pdf_path, "rb"),
-            output,
-            laparams=laparams,
-            page_numbers=[page_num],
-            password=password,
-            codec="utf-8",
-        )
-        return page_num, output.getvalue()
+        return float(x)
+    except ValueError as err:
+        raise argparse.ArgumentTypeError(f"invalid float value: {x}") from err
+
+
+def extract_page_worker(args: tuple) -> str:
+    (
+        pdf_file,
+        page_idx,
+        output_file,
+        laparams,
+        codec,
+        strip_control,
+        password,
+        rotation,
+        disable_caching,
+    ) = args
+
+    try:
+        for current_idx, page_layout in enumerate(
+            pdfminer.high_level.extract_pages(
+                pdf_file,
+                laparams=laparams,
+                maxpages=page_idx + 1,
+                page_numbers={page_idx},
+                password=password,
+                caching=not disable_caching,
+                rotation=rotation,
+            )
+        ):
+            text = ""
+            for element in page_layout:
+                if isinstance(element, LTTextBox):
+                    text += element.get_text()
+
+            if strip_control:
+                text = "".join(c for c in text if ord(c) >= 32 or c in "\n\r\t")
+
+            with open(output_file, "w", encoding=codec) as f:
+                f.write(text)
+
+            return f"✓ {output_file}"
+
     except Exception as e:
-        logging.error(f"Error processing page {page_num + 1} of {pdf_path}: {e}")
-        return page_num, ""
+        return f"✗ {output_file}: {str(e)}"
 
 
-def get_total_pages(pdf_path: str, password: str = "") -> int:
-
-    from pdfminer.pdfdocument import PDFDocument
-    from pdfminer.pdfparser import PDFParser
-
-    with open(pdf_path, "rb") as fp:
-        parser = PDFParser(fp)
-        document = PDFDocument(parser, password)
-        return sum(1 for _ in document.get_pages())
-
-
-def process_pdf(
-    pdf_path: str,
-    laparams: LAParams | None,
-    password: str,
+def extract_text(
+    files: Iterable[str] = [],
+    laparams: LAParams | None = None,
+    codec: str = "utf-8",
+    strip_control: bool = False,
+    maxpages: int = 0,
+    page_numbers: Container[int] | None = None,
+    password: str = "",
+    rotation: int = 0,
+    debug: bool = False,
+    disable_caching: bool = False,
     num_workers: int | None = None,
+    **kwargs: Any,
 ) -> None:
+    if not files:
+        raise PDFValueError("Must provide files to work upon!")
 
-    pdf_path = Path(pdf_path)
+    if num_workers is None:
+        num_workers = cpu_count()
 
-    try:
-        total_pages = get_total_pages(str(pdf_path), password)
-    except Exception as e:
-        logging.error(f"Error reading {pdf_path}: {e}")
-        return
+    tasks = []
 
-    output_dir = Path(pdf_path.stem)
-    output_dir.mkdir(exist_ok=True)
+    for fname in files:
+        input_path = Path(fname)
+        output_directory = input_path.parent / input_path.stem
+        output_directory.mkdir(exist_ok=True)
 
-    padding = len(str(total_pages))
+        page_count = 0
+        for _ in pdfminer.high_level.extract_pages(
+            fname,
+            laparams=laparams,
+            maxpages=maxpages,
+            page_numbers=page_numbers,
+            password=password,
+            caching=not disable_caching,
+        ):
+            page_count += 1
 
-    page_args = [(str(pdf_path), i, laparams, password) for i in range(total_pages)]
+        for page_idx in range(page_count):
+            if page_numbers and page_idx not in page_numbers:
+                continue
+            if page_idx % 10 == 0:
+                print(f"processing {page_idx}")
+            output_file = output_directory / f"page_{page_idx:04d}.txt"
+            if output_file.exists():
+                continue
+            tasks.append(
+                (
+                    fname,
+                    page_idx,
+                    output_file,
+                    laparams,
+                    codec,
+                    strip_control,
+                    password,
+                    rotation,
+                    disable_caching,
+                )
+            )
 
-    workers = num_workers or cpu_count()
-    with Pool(processes=workers) as pool:
-        results = pool.map(process_page, page_args)
+    print(f"Processing {len(tasks)} pages using {num_workers} workers...\n")
 
-    for page_num, text in results:
-        if text:
-            filename = f"{page_num + 1:0{padding}d}.txt"
-            output_path = output_dir / filename
-            output_path.write_text(text, encoding="utf-8")
-            logging.info(f"Saved page {page_num + 1} to {output_path}")
+    with Pool(processes=num_workers) as pool:
+        results = pool.map(extract_page_worker, tasks)
 
-    logging.info(f"Completed processing {pdf_path}. Output saved to {output_dir}/")
+    for result in results:
+        print(result)
+
+    print(
+        f"\n✓ Completed: {sum(1 for r in results if r.startswith('✓'))} pages extracted"
+    )
 
 
 def create_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        description="Extract text from PDF files, one text file per page."
-    )
-
+    parser = argparse.ArgumentParser(description=__doc__, add_help=True)
     parser.add_argument(
         "files",
         type=str,
+        default=None,
         nargs="+",
-        help="One or more paths to PDF files or directories containing PDF files.",
+        help="One or more paths to PDF files.",
     )
 
     parser.add_argument(
         "--version",
         "-v",
         action="version",
-        version="pdf2txt v1.0",
+        version=f"pdfminer.six v{pdfminer.__version__}",
     )
-
     parser.add_argument(
         "--debug",
         "-d",
@@ -109,21 +164,54 @@ def create_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Use debug logging level.",
     )
-
     parser.add_argument(
+        "--disable-caching",
+        "-C",
+        default=False,
+        action="store_true",
+        help="If caching or resources, such as fonts, should be disabled.",
+    )
+
+    parse_params = parser.add_argument_group(
+        "Parser",
+        description="Used during PDF parsing",
+    )
+    parse_params.add_argument(
+        "--page-numbers",
+        type=int,
+        default=None,
+        nargs="+",
+        help="A space-seperated list of page numbers to parse.",
+    )
+    parse_params.add_argument(
+        "--pagenos",
+        "-p",
+        type=str,
+        help="A comma-separated list of page numbers to parse. "
+        "Included for legacy applications, use --page-numbers "
+        "for more idiomatic argument entry.",
+    )
+    parse_params.add_argument(
+        "--maxpages",
+        "-m",
+        type=int,
+        default=0,
+        help="The maximum number of pages to parse.",
+    )
+    parse_params.add_argument(
         "--password",
         "-P",
         type=str,
         default="",
         help="The password to use for decrypting PDF file.",
     )
-
-    parser.add_argument(
-        "--workers",
-        "-w",
+    parse_params.add_argument(
+        "--rotation",
+        "-R",
+        default=0,
         type=int,
-        default=None,
-        help="Number of worker processes (default: CPU count).",
+        help="The number of degrees to rotate the PDF "
+        "before other types of processing.",
     )
 
     la_params = LAParams()
@@ -131,7 +219,6 @@ def create_parser() -> argparse.ArgumentParser:
         "Layout analysis",
         description="Used during layout analysis.",
     )
-
     la_param_group.add_argument(
         "--no-laparams",
         "-n",
@@ -139,7 +226,6 @@ def create_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="If layout analysis parameters should be ignored.",
     )
-
     la_param_group.add_argument(
         "--detect-vertical",
         "-V",
@@ -147,52 +233,88 @@ def create_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="If vertical text should be considered during layout analysis",
     )
-
     la_param_group.add_argument(
         "--line-overlap",
         type=float,
         default=la_params.line_overlap,
-        help="If two characters have more overlap than this they are considered to be on the same line.",
+        help="If two characters have more overlap than this they "
+        "are considered to be on the same line. The overlap is specified "
+        "relative to the minimum height of both characters.",
     )
-
     la_param_group.add_argument(
         "--char-margin",
         "-M",
         type=float,
         default=la_params.char_margin,
-        help="If two characters are closer together than this margin they are considered to be part of the same line.",
+        help="If two characters are closer together than this margin they "
+        "are considered to be part of the same line. The margin is "
+        "specified relative to the width of the character.",
     )
-
     la_param_group.add_argument(
         "--word-margin",
         "-W",
         type=float,
         default=la_params.word_margin,
-        help="If two characters on the same line are further apart than this margin then they are considered to be two separate words.",
+        help="If two characters on the same line are further apart than this "
+        "margin then they are considered to be two separate words, and "
+        "an intermediate space will be added for readability. The margin "
+        "is specified relative to the width of the character.",
     )
-
     la_param_group.add_argument(
         "--line-margin",
         "-L",
         type=float,
         default=la_params.line_margin,
-        help="If two lines are close together they are considered to be part of the same paragraph.",
+        help="If two lines are close together they are considered to "
+        "be part of the same paragraph. The margin is specified "
+        "relative to the height of a line.",
     )
-
     la_param_group.add_argument(
         "--boxes-flow",
         "-F",
-        type=float,
+        type=float_or_disabled,
         default=la_params.boxes_flow,
-        help="Specifies how much horizontal and vertical position matters when determining line order.",
+        help="Specifies how much a horizontal and vertical position of a "
+        "text matters when determining the order of lines. The value "
+        "should be within the range of -1.0 (only horizontal position "
+        "matters) to +1.0 (only vertical position matters). You can also "
+        "pass `disabled` to disable advanced layout analysis, and "
+        "instead return text based on the position of the bottom left "
+        "corner of the text box.",
     )
-
     la_param_group.add_argument(
         "--all-texts",
         "-A",
         default=la_params.all_texts,
         action="store_true",
         help="If layout analysis should be performed on text in figures.",
+    )
+
+    output_params = parser.add_argument_group(
+        "Output",
+        description="Used during output generation.",
+    )
+    output_params.add_argument(
+        "--codec",
+        "-c",
+        type=str,
+        default="utf-8",
+        help="Text encoding to use in output file.",
+    )
+    output_params.add_argument(
+        "--strip-control",
+        "-S",
+        default=False,
+        action="store_true",
+        help="Remove control statement from text.",
+    )
+
+    output_params.add_argument(
+        "--num-workers",
+        "-j",
+        type=int,
+        default=None,
+        help=f"Number of worker processes (default: {cpu_count()})",
     )
 
     return parser
@@ -214,68 +336,18 @@ def parse_args(args: list[str] | None) -> argparse.Namespace:
             all_texts=parsed_args.all_texts,
         )
 
+    if parsed_args.page_numbers:
+        parsed_args.page_numbers = {x - 1 for x in parsed_args.page_numbers}
+
+    if parsed_args.pagenos:
+        parsed_args.page_numbers = {int(x) - 1 for x in parsed_args.pagenos.split(",")}
+
     return parsed_args
-
-
-def expand_file_list(inputs: list[str]) -> list[str]:
-
-    pdf_files = []
-
-    for item in inputs:
-        if "*" in item or "?" in item:
-            pdf_files.extend(glob.glob(item))
-            continue
-
-        path = Path(item)
-
-        if path.is_dir():
-            pdf_files.extend(path.glob("*.pdf"))
-            pdf_files.extend(path.glob("*.PDF"))
-        elif path.is_file() and path.suffix.lower() == ".pdf":
-            pdf_files.append(str(path))
-        else:
-            logging.warning(f"Skipping {item}: not a PDF file or directory")
-
-    seen = set()
-    unique_files = []
-    for f in pdf_files:
-        if f not in seen:
-            seen.add(f)
-            unique_files.append(f)
-
-    return unique_files
 
 
 def main(args: list[str] | None = None) -> int:
     parsed_args = parse_args(args)
-
-    if parsed_args.debug:
-        logging.getLogger().setLevel(logging.DEBUG)
-    else:
-        logging.getLogger().setLevel(logging.INFO)
-
-    pdf_files = expand_file_list(parsed_args.files)
-
-    if not pdf_files:
-        logging.error("No PDF files found to process.")
-        return 1
-
-    logging.info(f"Processing {len(pdf_files)} PDF file(s)...")
-
-    for pdf_file in pdf_files:
-        logging.info(f"Processing: {pdf_file}")
-        try:
-            process_pdf(
-                pdf_file,
-                parsed_args.laparams,
-                parsed_args.password,
-                parsed_args.workers,
-            )
-        except Exception as e:
-            logging.error(f"Failed to process {pdf_file}: {e}")
-            continue
-
-    logging.info("All files processed successfully.")
+    extract_text(**vars(parsed_args))
     return 0
 
 

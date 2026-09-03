@@ -227,7 +227,7 @@ def main():
                 print(f"   - {pkg}")
         else:
             print(f"   - {pkg}")
-    print("-" * 42)
+    print("-" * 40)
     if args.list_only:
         return
     packages_to_extract = []
