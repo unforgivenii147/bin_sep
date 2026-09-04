@@ -38,7 +38,6 @@ def extract_page_worker(args: tuple) -> str:
         rotation,
         disable_caching,
     ) = args
-
     try:
         for current_idx, page_layout in enumerate(
             pdfminer.high_level.extract_pages(
@@ -48,7 +47,6 @@ def extract_page_worker(args: tuple) -> str:
                 page_numbers={page_idx},
                 password=password,
                 caching=not disable_caching,
-                rotation=rotation,
             )
         ):
             text = ""
@@ -113,6 +111,7 @@ def extract_text(
                 print(f"processing {page_idx}")
             output_file = output_directory / f"page_{page_idx:04d}.txt"
             if output_file.exists():
+                print(f"{output_file} exists")
                 continue
             tasks.append(
                 (

@@ -79,9 +79,9 @@ def main():
     updatable_packages = [pkg for pkg in updatable_packages if pkg is not None]
 
     if updatable_packages:
-        print("\n" + "=" * 40)
+        print("\n" + "=" * 60)
         print("UPDATABLE PACKAGES:")
-        print("=" * 40)
+        print("=" * 60)
 
         requirements_lines = []
 
@@ -106,7 +106,7 @@ def main():
     else:
         print("\nAll packages are up to date!")
 
-    print("\n" + "=" * 40)
+    print("\n" + "=" * 60)
     print("SUMMARY:")
     print(f"Total packages checked: {len(installed_packages)}")
     print(f"Updatable packages: {len(updatable_packages)}")

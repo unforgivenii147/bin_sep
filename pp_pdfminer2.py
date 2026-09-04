@@ -83,6 +83,9 @@ def extract_text(
                     text += element.get_text()
 
             output_file = output_directory / f"page_{page_idx:04d}.txt"
+            if output_file.exists():
+                print(f"{output_file.name} exists.")
+                continue
             with open(output_file, "w", encoding=codec) as f:
                 if strip_control:
                     text = "".join(c for c in text if ord(c) >= 32 or c in "\n\r\t")

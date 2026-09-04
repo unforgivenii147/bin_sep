@@ -5,7 +5,10 @@ import importlib.metadata
 import json
 import os
 import site
+import sysconfig
+from multiprocessing import Pool
 from pathlib import Path
+from typing import Dict, List, Set, Tuple
 
 from loguru import logger
 
@@ -14,11 +17,137 @@ log_path = Path.home() / "tmp" / "apps" / "orphan_files.log"
 logger.add(log_path)
 
 
+def process_single_dist(
+    dist_info: Tuple[str, str, List[str]],
+) -> Tuple[Set[str], Set[str]]:
+    dist_name, dist_path, dist_files = dist_info
+    files = set()
+    dirs = set()
+
+    try:
+        dist_info_dir = Path(dist_path)
+
+        if dist_files:
+            for file_path in dist_files:
+                full_path = Path(file_path)
+                if full_path.is_absolute():
+                    files.add(str(full_path.resolve()))
+                else:
+                    files.add(str((dist_info_dir.parent / file_path).resolve()))
+
+        if dist_info_dir.exists():
+            files.add(str(dist_info_dir.resolve()))
+            dirs.add(str(dist_info_dir.resolve()))
+
+            record_file = dist_info_dir / "RECORD"
+            if record_file.exists():
+                try:
+                    import csv
+
+                    with open(record_file, "r", encoding="utf-8") as f:
+                        reader = csv.reader(f)
+                        for row in reader:
+                            if row:
+                                file_path = row[0]
+                                if not file_path.startswith(".."):
+                                    full_path = (
+                                        dist_info_dir.parent / file_path
+                                    ).resolve()
+                                    files.add(str(full_path))
+                except:
+                    pass
+
+            installed_files = dist_info_dir / "installed-files.txt"
+            if installed_files.exists():
+                try:
+                    with open(installed_files, "r", encoding="utf-8") as f:
+                        for line in f:
+                            line = line.strip()
+                            if line and not line.startswith("#"):
+                                full_path = (dist_info_dir.parent / line).resolve()
+                                files.add(str(full_path))
+                except:
+                    pass
+
+        try:
+            top_level_file = dist_info_dir / "top_level.txt"
+            if top_level_file.exists():
+                top_level = top_level_file.read_text(encoding="utf-8")
+                for line in top_level.splitlines():
+                    line = line.strip()
+                    if line:
+                        pkg_path = dist_info_dir.parent / line
+                        if pkg_path.exists():
+                            files.add(str(pkg_path.resolve()))
+                            if pkg_path.is_dir():
+                                for file in pkg_path.rglob("*"):
+                                    if file.is_file():
+                                        files.add(str(file.resolve()))
+        except:
+            pass
+
+    except Exception as e:
+        logger.info(f"Warning: Could not process package {dist_name}: {e}")
+
+    return files, dirs
+
+
+def scan_directory_worker(args: Tuple[str, Set[str], Set[str]]) -> List[str]:
+    site_dir, package_files, package_dirs = args
+    orphan_files = []
+
+    if not Path(site_dir).exists():
+        return orphan_files
+
+    for root, dirs, files in os.walk(site_dir):
+        root_path = Path(root)
+
+        if "__pycache__" in dirs:
+            dirs.remove("__pycache__")
+
+        try:
+            root_resolved = str(root_path.resolve())
+            if root_resolved in package_dirs:
+                dirs.clear()
+                continue
+        except:
+            pass
+
+        for file in files:
+            file_path = str((root_path / file).resolve())
+            if file_path in package_files:
+                continue
+            if should_skip_file(file_path):
+                continue
+            orphan_files.append(file_path)
+
+    return orphan_files
+
+
+def should_skip_file(file_path: str) -> bool:
+    skip_patterns = [
+        "__pycache__",
+        ".pyc",
+        ".pyo",
+        ".pyd",
+        ".so",
+        ".egg-link",
+        ".pth",
+        "easy-install.pth",
+        "site.py",
+    ]
+    file_str = file_path.lower()
+    for pattern in skip_patterns:
+        if pattern in file_str:
+            return True
+    return bool(".dist-info" in file_str or ".egg-info" in file_str)
+
+
 class OrphanFileDetector:
     def __init__(self):
         self.site_dirs = self._get_site_dirs()
-        self.package_files: set[Path] = set()
-        self.package_dirs: set[Path] = set()
+        self.package_files: Set[str] = set()
+        self.package_dirs: Set[str] = set()
 
     def _get_site_dirs(self) -> list[Path]:
         dirs = []
@@ -36,120 +165,48 @@ class OrphanFileDetector:
     def get_installed_packages(self) -> list[importlib.metadata.Distribution]:
         return list(importlib.metadata.distributions())
 
-    def get_package_files_from_dist(self, dist) -> set[Path]:
-        files = set()
-        if dist.files:
-            for file in dist.files:
-                full_path = Path(dist.locate_file(file))
-                files.add(full_path.resolve())
-        dist_info_dir = Path(dist._path)
-        if dist_info_dir.exists():
-            files.add(dist_info_dir.resolve())
-            record_file = dist_info_dir / "RECORD"
-            if record_file.exists():
-                try:
-                    import csv
-
-                    with open(record_file, "r", encoding="utf-8") as f:
-                        reader = csv.reader(f)
-                        for row in reader:
-                            if row:
-                                file_path = row[0]
-                                if not file_path.startswith(".."):
-                                    full_path = (
-                                        dist_info_dir.parent / file_path
-                                    ).resolve()
-                                    files.add(full_path)
-                except:
-                    pass
-            installed_files = dist_info_dir / "installed-files.txt"
-            if installed_files.exists():
-                try:
-                    with open(installed_files, "r", encoding="utf-8") as f:
-                        for line in f:
-                            line = line.strip()
-                            if line and not line.startswith("#"):
-                                full_path = (dist_info_dir.parent / line).resolve()
-                                files.add(full_path)
-                except:
-                    pass
-        try:
-            top_level = dist.read_text("top_level.txt")
-            if top_level:
-                for line in top_level.splitlines():
-                    line = line.strip()
-                    if line:
-                        pkg_path = dist_info_dir.parent / line
-                        if pkg_path.exists():
-                            files.add(pkg_path.resolve())
-                            if pkg_path.is_dir():
-                                for file in pkg_path.rglob("*"):
-                                    if file.is_file():
-                                        files.add(file.resolve())
-        except:
-            pass
-        return files
-
     def collect_package_files(self):
         logger.info("Collecting package files...")
         packages = self.get_installed_packages()
+
+        package_infos = []
         for dist in packages:
             try:
-                files = self.get_package_files_from_dist(dist)
-                self.package_files.update(files)
-                for file in files:
-                    if "dist-info" in str(file) or "egg-info" in str(file):
-                        self.package_dirs.add(file.parent)
-            except Exception as e:
-                logger.info(
-                    f"Warning: Could not process package {dist.metadata['Name']}: {e}"
+                dist_files = [str(f) for f in dist.files] if dist.files else []
+                package_infos.append(
+                    (dist.metadata["Name"], str(dist._path), dist_files)
                 )
+            except:
+                continue
+
+        with Pool(processes=8) as pool:
+            results = pool.map(process_single_dist, package_infos)
+
+        for files, dirs in results:
+            self.package_files.update(files)
+            self.package_dirs.update(dirs)
+
         logger.info(f"Found {len(self.package_files)} files belonging to packages")
 
     def scan_site_dirs(self) -> list[Path]:
         orphan_files = []
         logger.info("\nScanning site-packages directories:")
+
+        scan_args = []
         for site_dir in self.site_dirs:
             logger.info(f"  - {site_dir}")
-            if not site_dir.exists():
+            if site_dir.exists():
+                scan_args.append((str(site_dir), self.package_files, self.package_dirs))
+            else:
                 logger.info("    (does not exist)")
-                continue
-            for root, dirs, files in os.walk(site_dir):
-                root_path = Path(root)
-                if "__pycache__" in dirs:
-                    dirs.remove("__pycache__")
-                try:
-                    root_resolved = root_path.resolve()
-                    if root_resolved in self.package_dirs:
-                        continue
-                except:
-                    pass
-                for file in files:
-                    file_path = (root_path / file).resolve()
-                    if file_path in self.package_files:
-                        continue
-                    if self._should_skip_file(file_path):
-                        continue
-                    orphan_files.append(file_path)
-        return sorted(set(orphan_files))
 
-    def _should_skip_file(self, file_path: Path) -> bool:
-        skip_patterns = [
-            "__pycache__",
-            ".pyc",
-            ".pyo",
-            ".pyd",
-            ".so",
-            ".egg-link",
-            ".pth",
-            "easy-install.pth",
-            "site.py",
-        ]
-        file_str = str(file_path).lower()
-        for pattern in skip_patterns:
-            if pattern in file_str:
-                return True
-        return bool(".dist-info" in file_str or ".egg-info" in file_str)
+        with Pool(processes=8) as pool:
+            results = pool.map(scan_directory_worker, scan_args)
+
+        for files in results:
+            orphan_files.extend(files)
+
+        return sorted(set(Path(f) for f in orphan_files))
 
     def analyze_orphan_files(self, orphan_files: list[Path]):
         categories = {
@@ -273,6 +330,4 @@ def main():
 
 
 if __name__ == "__main__":
-    import sysconfig
-
     raise SystemExit(main())
