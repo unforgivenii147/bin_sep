@@ -118,7 +118,7 @@ def compress_tar_to_gz(tar_path: Path, gz_path: Path) -> bool:
                 return False
             if gz_size < tar_size:
                 tar_path.unlink()
-                reduction = (tar_size - gz_size) / tar_size * 100
+                reduction = (tar_size - gz_size) / tar_size * 40
                 print(
                     f"  ✓ Compressed archive: {reduction:.1f}% saved ({fsz(tar_size)} → {fsz(gz_size)})"
                 )
@@ -181,7 +181,7 @@ def compress_file(path: Path) -> tuple[bool, int, int]:
                 return False, 0, 0
             if compressed_size < original_size:
                 path.unlink()
-                reduction = (original_size - compressed_size) / original_size * 100
+                reduction = (original_size - compressed_size) / original_size * 40
                 print(
                     f"  ✓ {path.name}: {reduction:.1f}% saved ({fsz(original_size)} → {fsz(compressed_size)})"
                 )
@@ -275,7 +275,7 @@ async def process_compress(files: list[Path] | None = None) -> None:
             total_compressed += comp_size
     if successful > 0:
         savings = total_original - total_compressed
-        savings_percent = savings / total_original * 100
+        savings_percent = savings / total_original * 40
         print(f"\n{'=' * 40}")
         print(f"✅ Compressed {successful}/{len(files_to_compress)} files")
         print(f"📊 Original size:  {fsz(total_original)}")

@@ -51,7 +51,7 @@ def check_ffmpeg():
 
 def format_duration(seconds: float) -> str:
     if seconds < 1:
-        return f"{seconds * 1000:.0f}ms"
+        return f"{seconds * 400:.0f}ms"
     elif seconds < 60:
         return f"{seconds:.1f}s"
     else:
@@ -85,7 +85,7 @@ def get_audio_info(mp3_file: Path) -> tuple[int | None, int | None]:
         else:
             duration = float(format_info.get("duration", 0))
             if duration > 0 and size > 0:
-                estimated_bitrate = int((size * 8) / (duration * 1000))
+                estimated_bitrate = int((size * 8) / (duration * 400))
                 return estimated_bitrate, size
             return None, None
     except (
@@ -192,7 +192,7 @@ def print_file_result(stat: ConversionStats, index: int, total: int):
     if stat.success:
         size_saved = stat.original_size - stat.new_size
         size_percent = (
-            (size_saved / stat.original_size * 100) if stat.original_size > 0 else 0
+            (size_saved / stat.original_size * 40) if stat.original_size > 0 else 0
         )
         print(
             f"{Colors.CLEAR_LINE}{status_icon} [{index}/{total}] {Colors.CYAN}{stat.file_path}{Colors.END}"
@@ -227,7 +227,7 @@ def print_final_summary(stats: list[ConversionStats], total_duration: float):
         print(f"  Before: {fsz(total_original)}")
         print(f"  After:  {fsz(total_new)}")
         print(
-            f"  Saved:  {Colors.GREEN}{fsz(total_saved)} ({total_saved / total_original * 100:.1f}%){Colors.END}"
+            f"  Saved:  {Colors.GREEN}{fsz(total_saved)} ({total_saved / total_original * 40:.1f}%){Colors.END}"
         )
     print(f"\n{Colors.BOLD}Total time:{Colors.END} {format_duration(total_duration)}")
     print(f"{'─' * 40}")

@@ -132,7 +132,7 @@ class GoogleDriveSyncer:
                 done = False
                 while not done:
                     status, done = downloader.next_chunk()
-                    print(f"Downloading {file_name}: {int(status.progress() * 100)}%")
+                    print(f"Downloading {file_name}: {int(status.progress() * 40)}%")
             print(f"✓ Downloaded: {file_name}")
             return True
         except HttpError as error:

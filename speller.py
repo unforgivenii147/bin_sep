@@ -55,7 +55,7 @@ def process_line(line: str, autofix: bool = False) -> tuple:
     return updated_line, misspelled_count, fixed_count
 
 
-def process_file(filepath: str, autofix: bool = False, num_processes: int = None):
+def process_file(filepath: str, autofix: bool = False, num_processes: int | None = None):
 
     try:
         with open(filepath, "r", encoding="utf-8") as f:

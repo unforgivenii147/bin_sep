@@ -1,7 +1,9 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-import sys
-import pickle
+from __future__ import annotations
+
 import json
+import pickle
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -54,14 +56,14 @@ def main():
     print(f"  Type: {type(data).__name__}")
     print(f"  Size: {len(str(data))} chars\n")
     print("Content:")
-    print("-" * 60)
+    print("-" * 40)
 
     if isinstance(data, dict):
         print(json.dumps(data, indent=2, default=str))
     else:
         print(json.dumps(data, indent=2, default=str))
 
-    print("-" * 60)
+    print("-" * 40)
 
     json_path = pkl_path.with_suffix(".json")
 

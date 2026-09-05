@@ -17,7 +17,7 @@ def file_to_json(filepath: Path, delimiter: str):
                 line = line.strip()
                 if not line or line.startswith("#"):
                     continue
-                if not delimiter in line:
+                if delimiter not in line:
                     delimiter = "\t"
                     print(line)
                     input("press any key ...")

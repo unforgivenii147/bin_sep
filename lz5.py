@@ -44,7 +44,7 @@ def compress_folder(folder_path):
         ratio = original_size / compressed_size if compressed_size > 0 else 0
         space_freed = original_size - compressed_size
         compression_percent = (
-            (1 - compressed_size / original_size) * 100 if original_size > 0 else 0
+            (1 - compressed_size / original_size) * 40 if original_size > 0 else 0
         )
         return {
             "folder": folder.name,
@@ -113,7 +113,7 @@ def print_compression_report(results):
                 total_original / total_compressed if total_compressed > 0 else 0
             ):>6.2f}x   {
             (
-                (1 - total_compressed / total_original) * 100
+                (1 - total_compressed / total_original) * 40
                 if total_original > 0
                 else 0
             ):>6.1f}%"

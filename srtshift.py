@@ -1,11 +1,12 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 
-import sys
-import re
+from __future__ import annotations
+
 import multiprocessing as mp
+import re
+import sys
 from pathlib import Path
 from typing import Generator
-
 
 TIMESTAMP_RE = re.compile(
     r"(\d{2,3}:\d{2}:\d{2},\d{3})\s*-->\s*(\d{2,3}:\d{2}:\d{2},\d{3})"
@@ -43,7 +44,7 @@ def process_timestamp_line(line: str, shift_ms: int) -> str:
             int(m_start.group(3)),
             int(m_start.group(4)),
         )
-        start_ms = (h1 * 3600000) + (m1 * 40000) + (s1 * 1000) + ms1 + shift_ms
+        start_ms = (h1 * 3600000) + (m1 * 40000) + (s1 * 400) + ms1 + shift_ms
 
         m_end = TIME_PART_RE.fullmatch(end_str)
         h2, m2, s2, ms2 = (
@@ -52,7 +53,7 @@ def process_timestamp_line(line: str, shift_ms: int) -> str:
             int(m_end.group(3)),
             int(m_end.group(4)),
         )
-        end_ms = (h2 * 3600000) + (m2 * 40000) + (s2 * 1000) + ms2 + shift_ms
+        end_ms = (h2 * 3600000) + (m2 * 40000) + (s2 * 400) + ms2 + shift_ms
 
         return f"{ms_to_time(start_ms)} --> {ms_to_time(end_ms)}"
 
@@ -139,7 +140,7 @@ def parse_arguments() -> tuple[list[Path], int]:
         )
         sys.exit(1)
 
-    shift_ms = round(shift_sec * 1000)
+    shift_ms = round(shift_sec * 400)
     input_paths = [Path(p) for p in sys.argv[1:-1]]
 
     return input_paths, shift_ms

@@ -40,14 +40,14 @@ JS_PARSER = _get_parser(JS_LANG)
 TS_PARSER = _get_parser(TS_LANG)
 
 
-def _find_comment_ranges(node, ranges: List[Tuple[int, int]]) -> None:
+def _find_comment_ranges(node, ranges: list[tuple[int, int]]) -> None:
     if node.type == "comment":
         ranges.append((node.start_byte, node.end_byte))
     for child in node.children:
         _find_comment_ranges(child, ranges)
 
 
-def _apply_removals(content: bytes, ranges: List[Tuple[int, int]]) -> bytes:
+def _apply_removals(content: bytes, ranges: list[tuple[int, int]]) -> bytes:
     if not ranges:
         return content
 
@@ -60,7 +60,7 @@ def _apply_removals(content: bytes, ranges: List[Tuple[int, int]]) -> bytes:
     return bytes(result)
 
 
-def strip_comments_standard(content: bytes, parser: Parser) -> Tuple[bytes, int]:
+def strip_comments_standard(content: bytes, parser: Parser) -> tuple[bytes, int]:
     tree = parser.parse(content)
     ranges = []
     _find_comment_ranges(tree.root_node, ranges)
@@ -71,10 +71,10 @@ def strip_comments_standard(content: bytes, parser: Parser) -> Tuple[bytes, int]
     return _apply_removals(content, ranges), len(ranges)
 
 
-def strip_comments_html(content: bytes) -> Tuple[bytes, int]:
+def strip_comments_html(content: bytes) -> tuple[bytes, int]:
     tree = HTML_PARSER.parse(content)
 
-    modifications: List[Tuple[int, int, bytes]] = []
+    modifications: list[tuple[int, int, bytes]] = []
     total_comments = 0
 
     def traverse(node) -> None:
@@ -131,7 +131,7 @@ def strip_comments_html(content: bytes) -> Tuple[bytes, int]:
     return bytes(result), total_comments
 
 
-def process_file(filepath: Path) -> Dict[str, Any]:
+def process_file(filepath: Path) -> dict[str, Any]:
     try:
         content = filepath.read_bytes()
     except Exception as e:
@@ -188,7 +188,7 @@ def process_file(filepath: Path) -> Dict[str, Any]:
     }
 
 
-def collect_files(paths: List[str]) -> List[Path]:
+def collect_files(paths: list[str]) -> list[Path]:
     extensions = {".html", ".css", ".js", ".ts"}
     files = set()
 

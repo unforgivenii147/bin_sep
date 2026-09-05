@@ -1,5 +1,7 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 
+from __future__ import annotations
+
 import base64
 from pathlib import Path
 
@@ -84,7 +86,7 @@ html, body {{
     font-weight: 400;
     font-style: normal;
     line-height: 1.6;
-    color: 
+    color:
     -webkit-print-color-adjust: exact;
 }}
 
@@ -93,7 +95,7 @@ h1, h2, h3, h4 {{
     font-family: 'Inter', sans-serif;
     font-weight: 700;
     font-style: normal;
-    color: 
+    color:
     margin-top: 0;
     page-break-after: avoid;
     break-after: avoid;
@@ -111,7 +113,7 @@ h2 {{
     line-height: 1.25;
     margin-top: 24pt;
     margin-bottom: 12pt;
-    border-bottom: 0.75pt solid 
+    border-bottom: 0.75pt solid
     padding-bottom: 6pt;
 }}
 
@@ -135,8 +137,8 @@ code, pre, kbd, samp {{
 }}
 
 pre {{
-    background-color: 
-    border: 0.5pt solid 
+    background-color:
+    border: 0.5pt solid
     border-radius: 4px;
     padding: 10pt 12pt;
     margin: 12pt 0;
@@ -145,10 +147,10 @@ pre {{
 }}
 
 p code {{
-    background-color: 
+    background-color:
     padding: 2pt 4pt;
     border-radius: 3px;
-    color: 
+    color:
 }}
 
 /* Variant Styling Rules */
@@ -178,8 +180,8 @@ strong em, em strong, b i, i b {{
         content: "Official Document Title";
         font-family: 'Inter', sans-serif;
         font-size: 8.5pt;
-        color: 
-        border-bottom: 0.5pt solid 
+        color:
+        border-bottom: 0.5pt solid
         padding-bottom: 4pt;
         vertical-align: bottom;
     }}
@@ -189,8 +191,8 @@ strong em, em strong, b i, i b {{
         font-family: 'Inter', sans-serif;
         font-weight: 700;
         font-size: 8.5pt;
-        color: 
-        border-bottom: 0.5pt solid 
+        color:
+        border-bottom: 0.5pt solid
         padding-bottom: 4pt;
         vertical-align: bottom;
     }}
@@ -199,14 +201,14 @@ strong em, em strong, b i, i b {{
         content: "Generated Document";
         font-family: 'Inter', sans-serif;
         font-size: 8pt;
-        color: 
+        color:
     }}
 
     @bottom-right {{
         content: "Page " counter(page) " of " counter(pages);
         font-family: 'Inter', sans-serif;
         font-size: 8.5pt;
-        color: 
+        color:
     }}
 }}
 
@@ -239,18 +241,18 @@ tr {{
 thead {{ display: table-header-group; }}
 
 th {{
-    background-color: 
-    color: 
+    background-color:
+    color:
     font-weight: 700;
     text-align: left;
     padding: 8pt 10pt;
     font-size: 9.5pt;
-    border-bottom: 2pt solid 
+    border-bottom: 2pt solid
 }}
 
 td {{
     padding: 8pt 10pt;
-    border-bottom: 1px solid 
+    border-bottom: 1px solid
     font-size: 9.5pt;
     vertical-align: top;
 }}"""

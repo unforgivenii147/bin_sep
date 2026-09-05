@@ -3,10 +3,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import multiprocessing as mp
 import sys
 import threading
 from collections.abc import Iterable, Iterator
-import multiprocessing as mp
 from pathlib import Path
 from typing import Any
 

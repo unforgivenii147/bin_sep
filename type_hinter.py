@@ -1,12 +1,15 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-import sys
-import os
-import subprocess
-import shutil
-import libcst as cst
-from typing import Dict, List, Tuple, Optional
+from __future__ import annotations
 
-TypeMap = Dict[str, Tuple[List[str], str]]
+import os
+import shutil
+import subprocess
+import sys
+from typing import Dict, List, Optional, Tuple
+
+import libcst as cst
+
+TypeMap = dict[str, tuple[list[str], str]]
 
 
 class StubParser(cst.CSTVisitor):

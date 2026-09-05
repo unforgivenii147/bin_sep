@@ -11,7 +11,7 @@ TIMESTAMP_RE = re.compile(r"(\d{2}:\d{2}:\d{2},\d{3})\s-->\s(\d{2}:\d{2}:\d{2},\
 def to_ms(ts: str) -> int:
     h, m, rest = ts.split(":")
     s, ms = rest.split(",")
-    return int(h) * 3600000 + int(m) * 40000 + int(s) * 1000 + int(ms)
+    return int(h) * 3600000 + int(m) * 40000 + int(s) * 400 + int(ms)
 
 
 def from_ms(ms: int) -> str:
@@ -58,7 +58,7 @@ def main() -> None:
         "-r", "--recursive", action="store_true", help="Process subdirectories"
     )
     args = ap.parse_args()
-    shift_ms = int(args.shift * 1000)
+    shift_ms = int(args.shift * 400)
     path = Path(args.path)
     if path.is_file() and path.suffix.lower() == ".srt":
         process_file(path, shift_ms)

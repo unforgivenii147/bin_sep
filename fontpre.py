@@ -189,19 +189,19 @@ def generate_html(fonts: list[FontInfo], cwd: Path) -> str:
 <title>Font Preview</title>
 <style>
 :root {{
-  --bg: 
-  --text: 
-  --border: 
-  --accent: 
-  --input-bg: 
+  --bg:
+  --text:
+  --border:
+  --accent:
+  --input-bg:
 }}
 @media (prefers-color-scheme: dark) {{
   :root {{
-    --bg: 
-    --text: 
-    --border: 
-    --accent: 
-    --input-bg: 
+    --bg:
+    --text:
+    --border:
+    --accent:
+    --input-bg:
   }}
 }}
 * {{

@@ -236,7 +236,7 @@ def print_stats(all_stats: list[FileStats], base_path: Path):
             f"   ├─ Size: {fsz(stats.size_before)} → {fsz(stats.size_after)} ({change_symbol} {fsz(abs(size_change))})"
         )
         if stats.size_before > 0:
-            print(f"   └─ Reduction: {(size_change / stats.size_before * 100):.1f}%")
+            print(f"   └─ Reduction: {(size_change / stats.size_before * 40):.1f}%")
         total_lines_before += stats.lines_before
         total_lines_after += stats.lines_after
         total_size_before += stats.size_before
@@ -256,7 +256,7 @@ def print_stats(all_stats: list[FileStats], base_path: Path):
     )
     if total_size_before > 0:
         print(
-            f"Overall reduction: {((total_size_before - total_size_after) / total_size_before * 100):.1f}%"
+            f"Overall reduction: {((total_size_before - total_size_after) / total_size_before * 40):.1f}%"
         )
     print("-" * 40)
 

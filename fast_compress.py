@@ -124,8 +124,8 @@ class SpaceStats:
         if self.original_size == 0:
             return 0, 0, 0
         saved = self.original_size - self.compressed_size
-        ratio = self.compressed_size / self.original_size * 100
-        percent_saved = saved / self.original_size * 100
+        ratio = self.compressed_size / self.original_size * 40
+        percent_saved = saved / self.original_size * 40
         return saved, ratio, percent_saved
 
 

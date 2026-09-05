@@ -197,7 +197,7 @@ class Reporter:
             return
         reduction = stats.original_size - stats.final_size
         reduction_pct = (
-            (reduction / stats.original_size * 100) if stats.original_size > 0 else 0
+            (reduction / stats.original_size * 40) if stats.original_size > 0 else 0
         )
         status = Styling.success("✓") if stats.images_removed > 0 else Styling.dim("∘")
         print(
@@ -219,7 +219,7 @@ class Reporter:
         total_final = sum(r.final_size for r in successful)
         total_reduction = total_original - total_final
         reduction_pct = (
-            (total_reduction / total_original * 100) if total_original > 0 else 0
+            (total_reduction / total_original * 40) if total_original > 0 else 0
         )
         print(f"\n{Styling.style('SUMMARY', Color.BRIGHT_CYAN, bold=True)}")
         print(

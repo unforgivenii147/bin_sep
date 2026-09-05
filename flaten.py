@@ -1,8 +1,10 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 
-from pathlib import Path
+from __future__ import annotations
+
 import shutil
 import sys
+from pathlib import Path
 
 
 def flatten_directory(directory="."):

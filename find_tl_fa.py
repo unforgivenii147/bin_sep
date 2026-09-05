@@ -1,11 +1,13 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 
+from __future__ import annotations
+
 import json
 import re
 import sys
-from pathlib import Path
-from multiprocessing import Pool
 import unicodedata
+from multiprocessing import Pool
+from pathlib import Path
 
 
 def normalize_persian(text):
@@ -134,63 +136,62 @@ def is_transliteration(persian_word, translation):
 
     persian_chars = set("اآبپتثجچحخدذرزژسشصضطظعغفقکگلمنوهیي ")
     if all(c in persian_chars or c in " -" for c in persian_norm):
-        if all(c not in persian_chars for c in trans_norm):
-            if len(trans_norm) < len(persian_norm) * 2:
-                if re.match(r"^[a-z\s\'-]+$", trans_norm):
-                    common_english = {
-                        "the",
-                        "a",
-                        "an",
-                        "is",
-                        "are",
-                        "was",
-                        "were",
-                        "be",
-                        "been",
-                        "being",
-                        "have",
-                        "has",
-                        "had",
-                        "do",
-                        "does",
-                        "did",
-                        "will",
-                        "would",
-                        "shall",
-                        "should",
-                        "may",
-                        "might",
-                        "must",
-                        "can",
-                        "could",
-                        "of",
-                        "in",
-                        "on",
-                        "at",
-                        "by",
-                        "for",
-                        "with",
-                        "about",
-                        "against",
-                        "between",
-                        "into",
-                        "through",
-                        "during",
-                        "before",
-                        "after",
-                        "above",
-                        "below",
-                        "from",
-                        "up",
-                        "down",
-                        "out",
-                        "off",
-                        "over",
-                        "under",
-                    }
+        if all(c not in persian_chars for c in trans_norm) and len(trans_norm) < len(persian_norm) * 2:
+            if re.match(r"^[a-z\s\'-]+$", trans_norm):
+                common_english = {
+                    "the",
+                    "a",
+                    "an",
+                    "is",
+                    "are",
+                    "was",
+                    "were",
+                    "be",
+                    "been",
+                    "being",
+                    "have",
+                    "has",
+                    "had",
+                    "do",
+                    "does",
+                    "did",
+                    "will",
+                    "would",
+                    "shall",
+                    "should",
+                    "may",
+                    "might",
+                    "must",
+                    "can",
+                    "could",
+                    "of",
+                    "in",
+                    "on",
+                    "at",
+                    "by",
+                    "for",
+                    "with",
+                    "about",
+                    "against",
+                    "between",
+                    "into",
+                    "through",
+                    "during",
+                    "before",
+                    "after",
+                    "above",
+                    "below",
+                    "from",
+                    "up",
+                    "down",
+                    "out",
+                    "off",
+                    "over",
+                    "under",
+                }
 
-                    if trans_norm not in common_english:
-                        return True
+                if trans_norm not in common_english:
+                    return True
 
     return False
 
@@ -280,7 +281,7 @@ def main():
 
     if transliterated:
         print("\nExamples of detected transliterations:")
-        for i, (persian, trans) in enumerate(list(transliterated.items())[:10]):
+        for _i, (persian, trans) in enumerate(list(transliterated.items())[:10]):
             print(f"  {persian} -> {trans}")
         if len(transliterated) > 10:
             print(f"  ... and {len(transliterated) - 10} more")

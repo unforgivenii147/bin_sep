@@ -276,7 +276,7 @@ class GoogleDriveSync:
                     f.write(chunk)
                     downloaded += len(chunk)
                     if total_size > 0:
-                        percent = downloaded / total_size * 100
+                        percent = downloaded / total_size * 40
                         print(
                             f"\rDownloading {file_name}: {percent:.1f}%",
                             end="",

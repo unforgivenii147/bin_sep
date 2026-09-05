@@ -9,8 +9,8 @@ import numbers
 import time
 from collections import defaultdict
 from pathlib import Path
-from dh import STDLIB, get_installed_pkgs
 
+from dh import STDLIB, get_installed_pkgs
 
 try:
     from joblib import Parallel, delayed
@@ -21,17 +21,14 @@ except ImportError:
 SKIP_DIRS = {
     ".git",
     "__pycache__",
-    "venv",
-    ".venv",
+    "tests",
+    "test",
     ".pytest_cache",
     ".mypy_cache",
     ".ruff_cache",
     ".tox",
     ".eggs",
-    "build",
-    "dist",
-    "*.egg-info",
-    "node_modules",
+    "*.dist-info",
 }
 
 
@@ -94,6 +91,10 @@ def find_imports_for_directory(
     files = []
     for py_file in dir_path.rglob("*.py"):
         if py_file.is_file():
+            if pyfile.name.startswith(("test_", "tests_")) or pyfile.name.endswith(
+                ("_test.py", "_tests.py")
+            ):
+                continue
             if any(part in SKIP_DIRS for part in py_file.relative_to(dir_path).parts):
                 continue
             files.append(py_file)

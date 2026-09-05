@@ -44,7 +44,7 @@ def choose_level(path: Path) -> int:
 def ratio_str(before: int, after: int) -> str:
     if before == 0:
         return "0%"
-    return f"{after / before * 100:.1f}%"
+    return f"{after / before * 40:.1f}%"
 
 
 def status_line(ok: bool, name: str, elapsed_ms: float, before: int, after: int) -> str:
@@ -73,7 +73,7 @@ def compress_file(
         data = src.read_bytes()
         compressed = cctx.compress(data)
         dst.write_bytes(compressed)
-        elapsed_ms = (time.perf_counter() - t0) * 1000
+        elapsed_ms = (time.perf_counter() - t0) * 400
         after = len(compressed)
         before = len(data)
         src.unlink()
@@ -84,7 +84,7 @@ def compress_file(
                 f"  → {dst.name} ({fsz(before)} → {fsz(after)}, level {effective_level}, {threads} threads)"
             )
     except Exception as exc:
-        elapsed_ms = (time.perf_counter() - t0) * 1000
+        elapsed_ms = (time.perf_counter() - t0) * 400
         result["line"] = status_line(False, src.name, elapsed_ms, 0, 0)
         result["msg"] = f"  ERROR: {exc}"
     return result
@@ -109,7 +109,7 @@ def decompress_file(src: Path, dry_run: bool, verbose: bool) -> dict:
         data = src.read_bytes()
         decompressed = dctx.decompress(data)
         dst.write_bytes(decompressed)
-        elapsed_ms = (time.perf_counter() - t0) * 1000
+        elapsed_ms = (time.perf_counter() - t0) * 400
         after = len(decompressed)
         before = len(data)
         src.unlink()
@@ -118,7 +118,7 @@ def decompress_file(src: Path, dry_run: bool, verbose: bool) -> dict:
         if verbose:
             result["msg"] = f"  → {dst.name} ({fsz(before)} → {fsz(after)})"
     except Exception as exc:
-        elapsed_ms = (time.perf_counter() - t0) * 1000
+        elapsed_ms = (time.perf_counter() - t0) * 400
         result["line"] = status_line(False, src.name, elapsed_ms, 0, 0)
         result["msg"] = f"  ERROR: {exc}"
     return result

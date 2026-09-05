@@ -1,9 +1,12 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 
+from __future__ import annotations
+
 import json
 import multiprocessing as mp
-from pathlib import Path
 from io import BytesIO
+from pathlib import Path
+
 import pycurl
 from dh import get_installed_packages
 
@@ -43,7 +46,7 @@ def get_latest_version(pkg_info):
             return None
 
     except Exception as e:
-        print(f"Error fetching {pkg_name}: {str(e)}")
+        print(f"Error fetching {pkg_name}: {e!s}")
         return None
 
 
@@ -79,9 +82,9 @@ def main():
     updatable_packages = [pkg for pkg in updatable_packages if pkg is not None]
 
     if updatable_packages:
-        print("\n" + "=" * 60)
+        print("\n" + "=" * 40)
         print("UPDATABLE PACKAGES:")
-        print("=" * 60)
+        print("=" * 40)
 
         requirements_lines = []
 
@@ -106,7 +109,7 @@ def main():
     else:
         print("\nAll packages are up to date!")
 
-    print("\n" + "=" * 60)
+    print("\n" + "=" * 40)
     print("SUMMARY:")
     print(f"Total packages checked: {len(installed_packages)}")
     print(f"Updatable packages: {len(updatable_packages)}")

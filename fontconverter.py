@@ -129,7 +129,7 @@ def print_report(results: list[ConvResult]) -> None:
             ok += 1
             total_in += r.src_size
             total_out += r.dst_size
-            ratio = (r.dst_size / r.src_size * 100) if r.src_size else 0.0
+            ratio = (r.dst_size / r.src_size * 40) if r.src_size else 0.0
             size_str = f"{fsz(r.src_size)}->{fsz(r.dst_size)}"
             status = "OK*" if r.removed_src else "OK"
             note = r.error or ""
@@ -150,7 +150,7 @@ def print_report(results: list[ConvResult]) -> None:
     print(f"Total: {len(results)}  ok={ok}  skipped={skipped}  failed={failed}")
     if total_in:
         print(
-            f"Size:  {fsz(total_in)} -> {fsz(total_out)} ({total_out / total_in * 100:.1f}% of original)"
+            f"Size:  {fsz(total_in)} -> {fsz(total_out)} ({total_out / total_in * 40:.1f}% of original)"
         )
     if any(r.removed_src for r in results):
         print("(* = original file removed)")

@@ -128,7 +128,7 @@ def brute_force_zip(
                     break
                 if current_time - last_update >= update_interval:
                     progress = (
-                        result.tested_count / total_passwords * 100
+                        result.tested_count / total_passwords * 40
                         if total_passwords > 0
                         else 0
                     )

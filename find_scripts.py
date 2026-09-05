@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from dh import is_binary, is_python_file, should_skip, get_filez
+from dh import get_filez, is_binary, is_python_file, should_skip
 
 
 def has_shebang(path):
@@ -22,9 +22,8 @@ def find_scripts_without_extension(directory: Path):
         if item.is_file() and (not item.suffix):
             if is_binary(item):
                 continue
-            if has_shebang(item):
-                if is_python_file(item):
-                    swe.append(item)
+            if has_shebang(item) and is_python_file(item):
+                swe.append(item)
     return swe
 
 

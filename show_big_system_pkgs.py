@@ -89,7 +89,7 @@ def process_packages_parallel(
             results.append(result)
             completed += 1
             if completed % 50 == 0 or completed == total:
-                progress = completed / total * 100
+                progress = completed / total * 40
                 print(f"⏳ Progress: {completed}/{total} ({progress:.1f}%)", end="\r")
         print("\n✅ Processing complete!                    \n")
         large_packages = {}

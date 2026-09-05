@@ -1,4 +1,6 @@
 #!/data/data/com.termux/files/home/.local/bin/python
+from __future__ import annotations
+
 import sys
 import time
 from pathlib import Path
@@ -75,7 +77,7 @@ def main():
         speed = downloaded / elapsed if elapsed > 0 else 0
 
         if total_size and total_size > 0:
-            progress = (downloaded / total_size) * 100
+            progress = (downloaded / total_size) * 40
             remaining = total_size - downloaded
             eta = remaining / speed if speed > 0 else 0
             eta_str = time.strftime("%H:%M:%S", time.gmtime(eta))

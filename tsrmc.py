@@ -227,7 +227,7 @@ def print_results(results: list, total_time: float, method: str):
     total_original = sum(r.original_size for r in successful)
     total_new = sum(r.new_size for r in successful)
     reduction = total_original - total_new if total_original > 0 else 0
-    reduction_pct = reduction / total_original * 100 if total_original > 0 else 0
+    reduction_pct = reduction / total_original * 40 if total_original > 0 else 0
     avg_time = sum(r.processing_time for r in results) / len(results) if results else 0
     print(f"\n{'=' * 40}")
     print(f"Results ({method.upper()})")

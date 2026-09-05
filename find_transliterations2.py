@@ -1,10 +1,12 @@
 #!/data/data/com.termux/files/home/.local/bin/python
+from __future__ import annotations
+
 import json
-import sys
 import mmap
 import multiprocessing as mp
-from pathlib import Path
 import re
+import sys
+from pathlib import Path
 
 
 def is_transliterated(persian_word: str, english_word: str) -> bool:
@@ -223,21 +225,16 @@ def is_transliterated(persian_word: str, english_word: str) -> bool:
         "yellow",
         "white",
         "black",
-        "big",
-        "small",
         "hot",
         "cold",
         "happy",
         "sad",
-        "big",
-        "small",
         "long",
         "short",
         "tall",
         "fat",
         "thin",
         "young",
-        "old",
     }
     if english_word_lower in common_english_words:
         return False
@@ -262,10 +259,9 @@ def worker_task(chunk):
 
 def read_json_with_mmap(filepath: Path):
     try:
-        with filepath.open("r", encoding="utf-8") as f:
-            with mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ) as mm:
-                content = mm.read().decode("utf-8")
-                return json.loads(content)
+        with filepath.open("r", encoding="utf-8") as f, mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ) as mm:
+            content = mm.read().decode("utf-8")
+            return json.loads(content)
     except FileNotFoundError:
         print(f"Error: Input file not found at {filepath}", file=sys.stderr)
         sys.exit(1)

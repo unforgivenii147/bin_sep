@@ -8,7 +8,6 @@ import re
 import sys
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Dict, Tuple
 
 
 class TransliterationDetector:
@@ -318,10 +317,9 @@ def process_chunk(args: Tuple[str, str]) -> Tuple[str, str, bool]:
 
 
 def read_json_mmap(file_path: Path):
-    with open(file_path, "rb") as f:
-        with mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ) as mmapped_file:
-            content = mmapped_file.read().decode("utf-8")
-            return json.loads(content)
+    with open(file_path, "rb") as f, mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ) as mmapped_file:
+        content = mmapped_file.read().decode("utf-8")
+        return json.loads(content)
 
 
 def main():
@@ -373,12 +371,12 @@ def main():
     transliterated_path = output_dir / "transliterated.json"
     cleaned_path = output_dir / "cleaned.json"
 
-    print(f"\nResults:")
+    print("\nResults:")
     print(f"  Total pairs: {len(data)}")
     print(
-        f"  Transliterated: {len(transliterated)} ({len(transliterated) / len(data) * 100:.1f}%)"
+        f"  Transliterated: {len(transliterated)} ({len(transliterated) / len(data) * 40:.1f}%)"
     )
-    print(f"  Cleaned: {len(cleaned)} ({len(cleaned) / len(data) * 100:.1f}%)")
+    print(f"  Cleaned: {len(cleaned)} ({len(cleaned) / len(data) * 40:.1f}%)")
 
     with open(transliterated_path, "w", encoding="utf-8") as f:
         json.dump(transliterated, f, ensure_ascii=False, indent=2)
@@ -390,7 +388,7 @@ def main():
 
     if transliterated:
         print("\nExample transliterated pairs (first 10):")
-        for i, (persian, trans) in enumerate(list(transliterated.items())[:10]):
+        for _i, (persian, trans) in enumerate(list(transliterated.items())[:10]):
             print(f"  {persian} -> {trans}")
 
 

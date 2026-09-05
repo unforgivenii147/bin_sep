@@ -13,7 +13,7 @@ from tree_sitter import Language, Node, Parser
 
 BASH_LANGUAGE: Language = Language(tree_sitter_bash.language())
 PARSER: Parser = Parser(BASH_LANGUAGE)
-SHEBANG_PREFIXES: Tuple[bytes, ...] = (
+SHEBANG_PREFIXES: tuple[bytes, ...] = (
     b"#!/bin/bash",
     b"#!/bin/sh",
     b"#!/usr/bin/env bash",

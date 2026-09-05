@@ -1,5 +1,7 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 
+from __future__ import annotations
+
 import argparse
 import difflib
 import multiprocessing as mp
@@ -9,7 +11,6 @@ import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterator, Optional, Sequence, Tuple
-
 
 WORKERS = 8
 
@@ -328,7 +329,7 @@ def process_file(path: Path) -> FileResult:
         )
 
 
-def process_file_wrapper(args: Tuple[Path, bool]) -> FileResult:
+def process_file_wrapper(args: tuple[Path, bool]) -> FileResult:
 
     path, apply_flag = args
     result = process_file(path)

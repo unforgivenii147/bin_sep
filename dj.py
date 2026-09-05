@@ -205,14 +205,10 @@ def main() -> None:
             "simz.json",
             ".gitkeep",
         }:
-            if REMOVE_MODE:
-                remove_it(path)
-                print(f"{rel_path} removed")
-                continue
-            else:
-                empty_it(path)
-                print(rel_path)
-                continue
+            remove_it(path)
+            removed_count += 1
+            print(f"{rel_path} removed")
+            continue
         if path.is_dir() and loname == "licenses" and ("dist-info" in path.parent.name):
             remove_it(path)
             print(rel_path)

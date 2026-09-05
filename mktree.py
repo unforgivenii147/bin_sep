@@ -23,9 +23,9 @@ class TreeParser:
 
     def __init__(self, base_path: Path = Path.cwd()):
         self.base_path = base_path
-        self.entries: List[Dict[str, Any]] = []
+        self.entries: list[dict[str, Any]] = []
 
-    def parse(self, text: str) -> List[Dict[str, Any]]:
+    def parse(self, text: str) -> list[dict[str, Any]]:
         lines = [line.rstrip() for line in text.split("\n") if line.strip()]
 
         if not lines:
@@ -44,7 +44,7 @@ class TreeParser:
 
         return self.entries
 
-    def _detect_format(self, lines: List[str]) -> str:
+    def _detect_format(self, lines: list[str]) -> str:
         has_tree_symbols = any(
             any(sym in line for sym in self.TREE_SYMBOLS) for line in lines
         )
@@ -62,8 +62,8 @@ class TreeParser:
         else:
             return "simple"
 
-    def _parse_tree_format(self, lines: List[str]) -> None:
-        stack: List[Tuple[int, Path]] = []
+    def _parse_tree_format(self, lines: list[str]) -> None:
+        stack: list[tuple[int, Path]] = []
 
         for line in lines:
             if not line.strip() or line.strip().startswith("#"):
@@ -129,8 +129,8 @@ class TreeParser:
             if not explicit_dir:
                 stack.append((depth, current_path))
 
-    def _parse_indented_format(self, lines: List[str]) -> None:
-        stack: List[Tuple[int, Path]] = []
+    def _parse_indented_format(self, lines: list[str]) -> None:
+        stack: list[tuple[int, Path]] = []
 
         for line in lines:
             if not line.strip() or line.strip().startswith("#"):
@@ -172,7 +172,7 @@ class TreeParser:
             if not explicit_dir:
                 stack.append((indent, current_path))
 
-    def _parse_simple_format(self, lines: List[str]) -> None:
+    def _parse_simple_format(self, lines: list[str]) -> None:
         for line in lines:
             if not line.strip() or line.strip().startswith("#"):
                 continue
@@ -303,11 +303,11 @@ def read_input(source: str) -> str:
 
 
 def create_tree(
-    entries: List[Dict[str, Any]],
+    entries: list[dict[str, Any]],
     base_path: Path,
     dry_run: bool = False,
     verbose: bool = False,
-) -> Tuple[int, int]:
+) -> tuple[int, int]:
     created_dirs = 0
     created_files = 0
 
@@ -364,7 +364,7 @@ def create_tree(
     return created_dirs, created_files
 
 
-def validate_entries(entries: List[Dict[str, Any]]) -> bool:
+def validate_entries(entries: list[dict[str, Any]]) -> bool:
     if not entries:
         print("Warning: No valid entries found in input.")
         return False

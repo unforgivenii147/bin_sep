@@ -177,7 +177,7 @@ def main() -> int:
                 total_comments += s["comments"]
                 total_removed += s["removed"]
                 saved = s["before"] - s["after"]
-                pct = (saved / s["before"] * 100) if s["before"] else 0.0
+                pct = (saved / s["before"] * 40) if s["before"] else 0.0
                 print(
                     f"  ✓ {rel}  {s['comments']} comment(s) removed · {fsz(saved)} (-{pct:.1f}%)"
                 )

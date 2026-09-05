@@ -415,7 +415,7 @@ def main() -> None:
     if space_freed <= 0:
         print("No space freed or size increased")
         return
-    ratio = space_freed / before * 100 if before > 0 else 0
+    ratio = space_freed / before * 40 if before > 0 else 0
     print("Space freed:", end=" ")
     cprint(f"{fsz(space_freed)} | {ratio:.1f}% reduction", "cyan")
 

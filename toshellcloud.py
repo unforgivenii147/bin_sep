@@ -1,12 +1,14 @@
 #!/usr/bin/env python
 
+from __future__ import annotations
+
 import sys
-from pathlib import Path
 from multiprocessing import Pool
-from typing import Tuple, Optional
+from pathlib import Path
+from typing import Optional, Tuple
 
 
-def convert_shebang(file_path: Path) -> Tuple[str, bool, Optional[str]]:
+def convert_shebang(file_path: Path) -> tuple[str, bool, Optional[str]]:
     try:
         content = file_path.read_text(encoding="utf-8")
 
@@ -66,7 +68,7 @@ def main():
 
     print(f"Found {len(py_files)} Python files")
     print("Converting Termux shebangs...")
-    print("-" * 50)
+    print("-" * 40)
 
     with Pool(processes=8) as pool:
         results = pool.starmap(convert_shebang, [(f,) for f in py_files])
@@ -76,7 +78,7 @@ def main():
     failed = 0
 
     print("\nResults:")
-    print("-" * 50)
+    print("-" * 40)
 
     for file_path, success, error in results:
         if success:
@@ -89,7 +91,7 @@ def main():
             failed += 1
             print(f"❌ {file_path} - {error}")
 
-    print("-" * 50)
+    print("-" * 40)
     print(f"\nSummary:")
     print(f"  Successfully converted: {successful}")
     print(f"  Skipped: {skipped}")

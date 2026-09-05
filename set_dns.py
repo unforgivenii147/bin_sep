@@ -1,9 +1,10 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-import random
+from __future__ import annotations
+
 import os
+import random
 import sys
 from pathlib import Path
-
 
 dns_providers = {
     "DNS.Watch": ["84.200.69.80", "84.200.70.40"],

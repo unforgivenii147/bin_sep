@@ -51,7 +51,7 @@ def partial_ratio(a: str, b: str) -> float:
             best = sim
             if best == 1.0:
                 break
-    return best * 100
+    return best * 40
 
 
 WHL_DIR = Path.cwd()

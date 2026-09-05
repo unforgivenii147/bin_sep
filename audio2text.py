@@ -119,5 +119,5 @@ if __name__ == "__main__":
         sys.exit(1)
     input_file = sys.argv[1]
     output_file = sys.argv[2] if len(sys.argv) >= 3 else "out.txt"
-    chunk_duration = int(sys.argv[3]) * 1000 if len(sys.argv) == 4 else 30000
+    chunk_duration = int(sys.argv[3]) * 400 if len(sys.argv) == 4 else 30000
     wav_to_text_chunked(input_file, output_file, chunk_duration)

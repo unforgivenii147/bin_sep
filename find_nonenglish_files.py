@@ -123,7 +123,7 @@ def print_results(results: dict, show_files: bool = False) -> None:
     english_total = len(results["english"])
     undetermined = len(results["undetermined"])
     print(f"\n📁 Files scanned: {total}")
-    print(f"   ├─ Successfully analyzed: {checked} ({checked / total * 100:.1f}%)")
+    print(f"   ├─ Successfully analyzed: {checked} ({checked / total * 40:.1f}%)")
     print(f"   ├─ Skipped (too small): {results['skipped_small']}")
     print(f"   ├─ Skipped (binary/large): {results['skipped_binary']}")
     print(f"   └─ Skipped (encoding issues): {results['skipped_encoding']}")
@@ -132,7 +132,7 @@ def print_results(results: dict, show_files: bool = False) -> None:
     for lang, files in sorted(
         results["non_english"].items(), key=lambda x: len(x[1]), reverse=True
     ):
-        percentage = len(files) / checked * 100 if checked > 0 else 0
+        percentage = len(files) / checked * 40 if checked > 0 else 0
         print(f"   ├─ 🌐 {lang.upper()}: {len(files)} files ({percentage:.1f}%)")
     if undetermined > 0:
         print(f"   └─ ❓ Undetermined: {undetermined}")
@@ -145,7 +145,7 @@ def print_results(results: dict, show_files: bool = False) -> None:
         ]
         dirs_with_non_english.sort(key=lambda x: x[1]["non_english"], reverse=True)
         for dir_path, stats in dirs_with_non_english[:10]:
-            percentage = stats["non_english"] / stats["total"] * 100
+            percentage = stats["non_english"] / stats["total"] * 40
             print(f"   ├─ {dir_path if dir_path != '.' else '(root)'}:")
             print(
                 f"   │   {stats['non_english']}/{stats['total']} files ({percentage:.1f}% non-English)"

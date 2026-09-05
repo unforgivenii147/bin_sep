@@ -220,38 +220,38 @@ def convert_chm_to_pdf(input_path, output_path):
         @bottom-center {{
             content: counter(page);
             font-size: 10px;
-            color: 
+            color:
         }}
     }}
     body {{
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
         line-height: 1.6;
         font-size: 11pt;
-        color: 
+        color:
         max-width: 100%;
     }}
     h1 {{
         font-size: 24pt;
-        color: 
-        border-bottom: 2px solid 
+        color:
+        border-bottom: 2px solid
         padding-bottom: 10px;
         margin-top: 30px;
     }}
     h2 {{
         font-size: 20pt;
-        color: 
-        border-bottom: 1px solid 
+        color:
+        border-bottom: 1px solid
         padding-bottom: 8px;
         margin-top: 25px;
     }}
     h3 {{
         font-size: 16pt;
-        color: 
+        color:
         margin-top: 20px;
     }}
     h4 {{
         font-size: 14pt;
-        color: 
+        color:
         margin-top: 15px;
     }}
     img {{
@@ -260,8 +260,8 @@ def convert_chm_to_pdf(input_path, output_path):
         margin: 10px 0;
     }}
     pre {{
-        background-color: 
-        border: 1px solid 
+        background-color:
+        border: 1px solid
         border-radius: 4px;
         padding: 15px;
         overflow-x: auto;
@@ -270,7 +270,7 @@ def convert_chm_to_pdf(input_path, output_path):
         line-height: 1.4;
     }}
     code {{
-        background-color: 
+        background-color:
         padding: 2px 4px;
         border-radius: 3px;
         font-family: 'Courier New', monospace;
@@ -282,27 +282,27 @@ def convert_chm_to_pdf(input_path, output_path):
         margin: 15px 0;
     }}
     th, td {{
-        border: 1px solid 
+        border: 1px solid
         padding: 8px;
         text-align: left;
     }}
     th {{
-        background-color: 
+        background-color:
         font-weight: bold;
     }}
     a {{
-        color: 
+        color:
         text-decoration: none;
     }}
     blockquote {{
-        border-left: 4px solid 
+        border-left: 4px solid
         margin: 15px 0;
         padding: 10px 20px;
-        background-color: 
+        background-color:
     }}
     hr {{
         border: none;
-        border-top: 1px solid 
+        border-top: 1px solid
         margin: 20px 0;
     }}
 </style>

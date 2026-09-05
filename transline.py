@@ -13,13 +13,8 @@ from typing import Any, Final
 
 from deep_translator import GoogleTranslator
 from dh import get_nobinary
-from tenacity import (
-    before_sleep_log,
-    retry,
-    retry_if_exception_type,
-    stop_after_attempt,
-    wait_exponential_jitter,
-)
+from tenacity import (before_sleep_log, retry, retry_if_exception_type,
+                      stop_after_attempt, wait_exponential_jitter)
 
 CHUNK_SIZE = 1024 * 1024
 CHUNK_SIZE: Final[int] = 32768

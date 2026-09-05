@@ -1,13 +1,15 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 
+from __future__ import annotations
+
+import gzip
+import lzma
+import os
+import subprocess
 import sys
 import tarfile
-import lzma
-import gzip
-from pathlib import Path
 from multiprocessing import Pool
-import subprocess
-import os
+from pathlib import Path
 
 MAX_WORKERS = 8
 SUPPORTED_EXTENSIONS = {".tar.gz", ".tar.xz", ".tar.zst", ".tar.br", ".tgz"}
@@ -79,7 +81,7 @@ def extract_archive(archive_path):
         compression = get_compression_type(archive_path)
 
         with tarfile.open(archive_path, f"r:{compression}") as tar:
-            tar.extractall(path=archive_path.parent)
+            tar.extractall(path=archive_path.parent, filter="data")
 
         archive_path.unlink()
         print(f"Successfully extracted and removed: {archive_path.name}")

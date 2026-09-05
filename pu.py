@@ -5,9 +5,9 @@ import subprocess
 import sys
 from pathlib import Path
 
+from dh import get_installed_pkgs
 from pip._internal.cli.main import main as pip_main
 from rapidfuzz import fuzz
-from dh import get_installed_pkgs
 
 
 def uninstall(packages: list[str]) -> int:

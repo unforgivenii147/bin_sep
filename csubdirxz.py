@@ -142,7 +142,7 @@ def print_report(result: dict) -> None:
     elapsed = f"{result['elapsed']:.1f}s"
 
     if result["success"]:
-        ratio_percent = result["ratio"] * 100
+        ratio_percent = result["ratio"] * 40
 
         print(
             f"{status} {result['message']:<35} "

@@ -1,8 +1,11 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-import sys
-import shutil
+from __future__ import annotations
+
 import multiprocessing as mp
+import shutil
+import sys
 from pathlib import Path
+
 from loguru import logger
 
 

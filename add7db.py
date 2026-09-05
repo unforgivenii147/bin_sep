@@ -212,7 +212,7 @@ def main() -> None:
         print(f"\n✅ Successfully added {len(files)} files to table '{folder_name}'")
         if total_compressed > 0:
             ratio = (
-                (1 - total_compressed / total_original) * 100
+                (1 - total_compressed / total_original) * 40
                 if total_original > 0
                 else 0
             )

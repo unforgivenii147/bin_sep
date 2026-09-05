@@ -20,7 +20,7 @@ class FileStats:
     @property
     def size_reduction(self) -> float:
         if self.original_size > 0:
-            return (1 - self.new_size / self.original_size) * 100
+            return (1 - self.new_size / self.original_size) * 40
         return 0.0
 
     @property
@@ -199,9 +199,7 @@ def main():
     total_original = sum(s.original_size for s in stats_list)
     total_new = sum(s.new_size for s in stats_list)
     total_saved = total_original - total_new
-    total_reduction = (
-        (1 - total_new / total_original) * 100 if total_original > 0 else 0
-    )
+    total_reduction = (1 - total_new / total_original) * 40 if total_original > 0 else 0
     total_comments = sum(s.comments_removed for s in stats_list)
     total_lines = sum(s.lines_removed for s in stats_list)
     modified_files = sum(1 for s in stats_list if s.original_size != s.new_size)

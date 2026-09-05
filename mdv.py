@@ -1,5 +1,8 @@
 #!/data/data/com.termux/files/home/.local/bin/python
+from __future__ import annotations
+
 import shutil
+import sys
 from pathlib import Path
 
 from rich.console import Console
@@ -41,7 +44,7 @@ def render_markdown_to_lines(console: Console, markdown_text: str) -> list:
     return lines
 
 
-def paginate(console: Console, lines: list[str]):
+def paginate(console: Console, lines: list[str], page_size):
     total_lines = len(lines)
     total_pages = (total_lines + page_size - 1) // page_size if total_lines else 1
     current_page = 0

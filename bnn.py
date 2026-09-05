@@ -136,10 +136,10 @@ def main() -> int:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  %(prog)s                              
-  %(prog)s file.txt                     
-  %(prog)s dir1 dir2 file.txt          
-  %(prog)s --workers 8 --chunk-size 2M dir/  
+  %(prog)s
+  %(prog)s file.txt
+  %(prog)s dir1 dir2 file.txt
+  %(prog)s --workers 8 --chunk-size 2M dir/
         """,
     )
     parser.add_argument(

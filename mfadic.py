@@ -1,12 +1,15 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 
-from dh import cprint
+from __future__ import annotations
+
 import json
 import os
-import sys
 import re
+import sys
 from collections import OrderedDict
 from pathlib import Path
+
+from dh import cprint
 
 
 def is_persian_word(word):

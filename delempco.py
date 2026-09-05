@@ -153,7 +153,7 @@ def print_mode(remove_spaces: bool):
 
 
 def print_progress(current: int, total: int):
-    pct = current / total * 100 if total > 0 else 0
+    pct = current / total * 40 if total > 0 else 0
     print(f"\r  Progress: {current}/{total} ({pct:.0f}%)", end="", flush=True)
 
 

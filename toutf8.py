@@ -8,7 +8,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 import chardet
-from dh import is_binary, get_nobinary
+from dh import get_nobinary, is_binary
 
 
 def detect_encoding(file_path: Path) -> str:

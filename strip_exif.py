@@ -56,7 +56,7 @@ def strip_exif_single(image_path, backup=False, verbose=False):
                 image_path.write_bytes(buffer.getvalue())
                 result["success"] = True
                 size_change = new_size - original_size
-                percent_change = size_change / original_size * 100
+                percent_change = size_change / original_size * 40
                 if verbose:
                     print(f"  ✅ {image_path.name}")
                     print(
@@ -227,9 +227,7 @@ Examples:
     print(f"   📦 New size: {fsz(total_new)}")
     print(
         f"   💰 Change: {fsz(total_change)} ({
-            total_change
-            / total_original
-            * 100:+.1f}% if total_original > 0 else 'N/A')"
+            total_change / total_original * 40:+.1f}% if total_original > 0 else 'N/A')"
     )
     if not args.no_size_report and len(dirs) > 0:
         print("\n📁 Folder size changes:")
@@ -238,7 +236,7 @@ Examples:
             initial_size = initial_sizes.get(dir_path, 0)
             change = final_size - initial_size
             if change != 0:
-                percent = change / initial_size * 100 if initial_size > 0 else 0
+                percent = change / initial_size * 40 if initial_size > 0 else 0
                 print(f"   {dir_path}:")
                 print(
                     f"      {fsz(initial_size)} → {fsz(final_size)} ({percent:+.1f}%)"

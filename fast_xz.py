@@ -122,7 +122,7 @@ def process_files(
         for future in as_completed(futures):
             completed += 1
             filepath, success, message = future.result()
-            pct = completed / len(files) * 100
+            pct = completed / len(files) * 40
             print(f"[{pct:5.1f}%] {completed}/{len(files)}", end="\r", flush=True)
             if success:
                 total_success += 1

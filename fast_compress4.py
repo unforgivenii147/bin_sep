@@ -42,7 +42,7 @@ def compress_file(
         if output_path.exists() and output_path.stat().st_size > 0:
             original_size = input_path.stat().st_size
             compressed_size = output_path.stat().st_size
-            ratio = compressed_size / original_size * 100 if original_size > 0 else 0
+            ratio = compressed_size / original_size * 40 if original_size > 0 else 0
             if remove_original:
                 input_path.unlink()
                 print(f"✓ Compressed & removed: {input_path} -> {output_path}")

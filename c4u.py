@@ -10,6 +10,7 @@ from multiprocessing import Pool, cpu_count
 from pathlib import Path
 from subprocess import CalledProcessError, run
 from typing import Any
+
 from dh import get_installed_packages
 
 

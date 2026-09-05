@@ -383,7 +383,7 @@ async def process_compress(compressor: str) -> None:
             compressed_size = out_path.stat().st_size
             if compressed_size > 0 and compressed_size < original_size:
                 path.unlink()
-                reduction = (original_size - compressed_size) / original_size * 100
+                reduction = (original_size - compressed_size) / original_size * 40
                 print(
                     f"  ✓ {path.name}: {reduction:.1f}% saved ({fsz(original_size)} → {fsz(compressed_size)})"
                 )
@@ -396,7 +396,7 @@ async def process_compress(compressor: str) -> None:
             print(f"  ✗ Failed to compress {path.name}")
     if successful > 0:
         savings = total_original - total_compressed
-        savings_percent = savings / total_original * 100
+        savings_percent = savings / total_original * 40
         print(f"\n{'=' * 40}")
         print(f"✅ Compressed {successful}/{len(files_to_compress)} files")
         print(f"📊 Original size:  {fsz(total_original)}")

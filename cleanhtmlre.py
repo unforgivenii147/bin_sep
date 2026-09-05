@@ -1,11 +1,12 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 
+from __future__ import annotations
+
 import re
 import sys
 import urllib.request
-from pathlib import Path
-
 from html.parser import HTMLParser
+from pathlib import Path
 
 
 def strip_html_comments(html: str) -> str:

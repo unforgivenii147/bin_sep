@@ -1,4 +1,6 @@
 #!/data/data/com.termux/files/home/.local/bin/python
+from __future__ import annotations
+
 from pathlib import Path
 
 ALLOWED_DIST_INFO_FILES = {
@@ -29,10 +31,9 @@ def clean_records():
                     part.endswith(".dist-info") for part in path_obj.parts
                 )
 
-                if is_in_dist_info:
-                    if path_obj.name not in ALLOWED_DIST_INFO_FILES:
-                        print(f"Removed dist-info reference: {file_path}")
-                        continue
+                if is_in_dist_info and path_obj.name not in ALLOWED_DIST_INFO_FILES:
+                    print(f"Removed dist-info reference: {file_path}")
+                    continue
 
                 filtered.append(line)
 

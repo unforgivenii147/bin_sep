@@ -48,9 +48,8 @@ class TypeshedSanitizer(cst.CSTTransformer):
         if (
             isinstance(original_node.value, cst.Name)
             and original_node.value.value == "_typeshed"
-        ):
-            if original_node.attr.value == "Incomplete":
-                return cst.Attribute(value=cst.Name("typing"), attr=cst.Name("Any"))
+        ) and original_node.attr.value == "Incomplete":
+            return cst.Attribute(value=cst.Name("typing"), attr=cst.Name("Any"))
         return updated_node
 
     def leave_Name(
@@ -175,7 +174,7 @@ def annotate_file(
     dry_run: bool = False,
     show_diff: bool = False,
     verbose: bool = True,
-) -> Tuple[bool, str]:
+) -> tuple[bool, str]:
     py_path = Path(target_file).resolve()
 
     if not py_path.exists():

@@ -1,17 +1,25 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-
 from __future__ import annotations
 
 import argparse
 import sys
 from pathlib import Path
+from typing import Union
 
 from rich.console import Console
 from rich.markdown import Markdown
 
+try:
+    from readchar import key as RKEY
+    from readchar import readkey
 
-def read_markdown(file_path: str) -> str:
-    path = Path(file_path).expanduser()
+    HAVE_READCHAR = True
+except Exception:
+    HAVE_READCHAR = False
+
+
+def read_markdown(file_path: str | Path) -> str:
+    path = Path(file_path)
 
     if not path.is_file():
         raise FileNotFoundError(f"File not found: {path}")
@@ -26,10 +34,10 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "file",
+        nargs="?",
         default="README.md",
-        nargs="*",
         type=str,
-        help="Path to a Markdown file",
+        help="Path to a Markdown file (default: README.md)",
     )
     return parser
 
@@ -40,8 +48,7 @@ def main() -> int:
 
     console = Console()
     err_console = Console(stderr=True)
-    if not args.file:
-        args.file = "README.md"
+
     try:
         markdown_text = read_markdown(args.file)
     except FileNotFoundError as error:
@@ -56,7 +63,8 @@ def main() -> int:
         )
         return 1
     except OSError as error:
-        err_console.print(f"[red]Error:[/red] ")
+        err_console.print(f"[red]Error:[/red] {error}")
+        return 1
 
     md = Markdown(markdown_text)
 
@@ -69,7 +77,7 @@ def main() -> int:
         console.print("[dim](empty file)[/dim]")
         return 0
 
-    height = max(console.height - 2, 1)
+    height = max(console.size.height - 2, 1)
     page_count = max((len(lines) + height - 1) // height, 1)
     current_page = 0
 
@@ -81,30 +89,25 @@ def main() -> int:
             sys.stdout.write(line + "\n")
         sys.stdout.flush()
 
-        console.print(
-            f"\n[bold]Page {current_page + 1}/{page_count}[/bold]  "
-            f"[dim](n: next, p: prev, q: quit)[/dim]"
-        )
-
         try:
-            key = input("> ").strip().lower()
+            if HAVE_READCHAR:
+                k = readkey()
+                if k in (RKEY.PAGE_DOWN, RKEY.SPACE, RKEY.RIGHT, RKEY.DOWN):
+                    if current_page < page_count - 1:
+                        current_page += 1
+                    else:
+                        console.print("[dim](already at last page)[/dim]")
+                elif k in (RKEY.PAGE_UP, RKEY.LEFT, RKEY.UP):
+                    if current_page > 0:
+                        current_page -= 1
+                    else:
+                        console.print("[dim](already at first page)[/dim]")
+                elif k in ("q", "Q"):
+                    break
+                else:
+                    continue
         except (EOFError, KeyboardInterrupt):
             break
-
-        if key in ("q", "quit"):
-            break
-        elif key in ("n", "next", ""):
-            if current_page < page_count - 1:
-                current_page += 1
-            else:
-                console.print("[dim](already at last page)[/dim]")
-        elif key in ("p", "prev"):
-            if current_page > 0:
-                current_page -= 1
-            else:
-                console.print("[dim](already at first page)[/dim]")
-        else:
-            continue
 
     return 0
 

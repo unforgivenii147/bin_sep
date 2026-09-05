@@ -1,5 +1,7 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 
+from __future__ import annotations
+
 import argparse
 import logging
 import sys
@@ -35,11 +37,11 @@ def extract_page_worker(args: tuple) -> str:
         codec,
         strip_control,
         password,
-        rotation,
+        _rotation,
         disable_caching,
     ) = args
     try:
-        for current_idx, page_layout in enumerate(
+        for _current_idx, page_layout in enumerate(
             pdfminer.high_level.extract_pages(
                 pdf_file,
                 laparams=laparams,
@@ -63,7 +65,7 @@ def extract_page_worker(args: tuple) -> str:
             return f"✓ {output_file}"
 
     except Exception as e:
-        return f"✗ {output_file}: {str(e)}"
+        return f"✗ {output_file}: {e!s}"
 
 
 def extract_text(

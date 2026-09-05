@@ -82,7 +82,7 @@ def format_time(seconds: float) -> str:
     h = int(seconds // 3600)
     m = int(seconds % 3600 // 60)
     s = seconds % 60
-    ms = int((s - int(s)) * 1000)
+    ms = int((s - int(s)) * 400)
     return f"{h:02d}:{m:02d}:{int(s):02d},{ms:03d}"
 
 

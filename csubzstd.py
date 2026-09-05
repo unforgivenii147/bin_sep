@@ -101,7 +101,7 @@ def print_report(r: dict) -> None:
     status = "✅" if r["success"] else "❌"
     elapsed_s = f"{r['elapsed']:.1f}s"
     if r["success"]:
-        ratio_pct = r["ratio"] * 100
+        ratio_pct = r["ratio"] * 40
         print(
             f"{status} {r['message']:<40} "
             f"start={r['start']}  end={r['end']}  "
@@ -152,7 +152,7 @@ def main() -> None:
     if ok:
         print(
             f"Total: {fmt_size(total_orig)} -> {fmt_size(total_comp)} "
-            f"({total_comp / total_orig * 100:.1f}% of original)"
+            f"({total_comp / total_orig * 40:.1f}% of original)"
         )
     print(f"Total wall time: {total_time:.1f}s")
 

@@ -161,7 +161,7 @@ def main() -> None:
         "Found %d files. Using %d workers (Threshold: %.0f%%)",
         len(files_to_process),
         args.workers,
-        args.threshold * 100,
+        args.threshold * 40,
     )
     tasks = [(fp, args.dry_run, args.threshold) for fp in files_to_process]
     if args.workers == 1:

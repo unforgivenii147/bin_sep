@@ -1,11 +1,13 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 
+from __future__ import annotations
+
 import json
-import sys
 import re
-from pathlib import Path
-from multiprocessing import Pool
+import sys
 import unicodedata
+from multiprocessing import Pool
+from pathlib import Path
 
 PERSIAN_CHARS = set("ابپتثجچحخدذرزژسشصضطظعغفقکگلمنوهیءآاًهٔة")
 PERSIAN_SPECIFIC = set("پچژگکی")
@@ -237,9 +239,8 @@ def is_transliteration(english_word, persian_text):
     eng_vowels = re.findall(r"[aeiou]+", eng_normalized)
     persian_vowels = re.findall(r"[اوی]", persian_normalized)
 
-    if len(eng_vowels) > 0 and len(persian_vowels) > 0:
-        if abs(len(eng_vowels) - len(persian_vowels)) <= 1:
-            translit_indicators.append("vowel_pattern")
+    if len(eng_vowels) > 0 and len(persian_vowels) > 0 and abs(len(eng_vowels) - len(persian_vowels)) <= 1:
+        translit_indicators.append("vowel_pattern")
 
     consonant_map = {
         "k": "ک",
@@ -272,10 +273,7 @@ def is_transliteration(english_word, persian_text):
     if total_consonants > 0 and mapped_consonants / total_consonants > 0.5:
         translit_indicators.append("consonant_mapping")
 
-    if len(translit_indicators) >= 2:
-        return True
-
-    return False
+    return len(translit_indicators) >= 2
 
 
 def process_chunk(chunk):
@@ -355,24 +353,24 @@ def main():
     with open(cleaned_file, "w", encoding="utf-8") as f:
         json.dump(cleaned, f, ensure_ascii=False, indent=2)
 
-    print(f"\n{'=' * 50}")
+    print(f"\n{'=' * 40}")
     print(f"RESULTS:")
-    print(f"{'=' * 50}")
+    print(f"{'=' * 40}")
     print(f"Total entries processed: {len(data)}")
     print(
-        f"Transliterated entries: {len(transliterated)} ({len(transliterated) / len(data) * 100:.1f}%)"
+        f"Transliterated entries: {len(transliterated)} ({len(transliterated) / len(data) * 40:.1f}%)"
     )
-    print(f"Cleaned entries: {len(cleaned)} ({len(cleaned) / len(data) * 100:.1f}%)")
-    print(f"{'=' * 50}")
+    print(f"Cleaned entries: {len(cleaned)} ({len(cleaned) / len(data) * 40:.1f}%)")
+    print(f"{'=' * 40}")
 
     if transliterated:
         print("\nExample transliterated entries:")
-        for i, (eng, trans) in enumerate(list(transliterated.items())[:10]):
+        for _i, (eng, trans) in enumerate(list(transliterated.items())[:10]):
             print(f"  {eng} -> {trans}")
 
     if cleaned:
         print("\nExample cleaned entries:")
-        for i, (eng, trans) in enumerate(list(cleaned.items())[:10]):
+        for _i, (eng, trans) in enumerate(list(cleaned.items())[:10]):
             print(f"  {eng} -> {trans}")
 
 

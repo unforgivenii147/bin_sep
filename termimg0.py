@@ -2,9 +2,9 @@
 from __future__ import annotations
 
 import sys
+from shutil import get_terminal_size
 
 from PIL import Image
-from shutil import get_terminal_size
 
 
 def print_image(image_path, width=40):

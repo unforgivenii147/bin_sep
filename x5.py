@@ -16,13 +16,8 @@ from dh import fsz
 from rich import box
 from rich.console import Console
 from rich.panel import Panel
-from rich.progress import (
-    BarColumn,
-    Progress,
-    SpinnerColumn,
-    TextColumn,
-    TimeElapsedColumn,
-)
+from rich.progress import (BarColumn, Progress, SpinnerColumn, TextColumn,
+                           TimeElapsedColumn)
 from rich.table import Table
 from rich.text import Text
 
@@ -268,7 +263,7 @@ def process_subdirs_with_tar(
         results.append(result)
         if result.success:
             ratio = (
-                (1 - result.processed_size / result.original_size) * 100
+                (1 - result.processed_size / result.original_size) * 40
                 if result.original_size
                 else 0
             )
@@ -354,7 +349,7 @@ def print_results_rich(
     if operation == "compress":
         space_saved = total_original - total_processed
         avg_ratio = (
-            sum((1 - r.processed_size / r.original_size) * 100 for r in successful)
+            sum((1 - r.processed_size / r.original_size) * 40 for r in successful)
             / len(successful)
             if successful
             else 0
@@ -365,7 +360,7 @@ def print_results_rich(
     else:
         space_saved = total_processed - total_original
         avg_ratio = (
-            sum((r.processed_size / r.original_size - 1) * 100 for r in successful)
+            sum((r.processed_size / r.original_size - 1) * 40 for r in successful)
             / len(successful)
             if successful
             else 0
@@ -389,13 +384,13 @@ def print_results_rich(
     for result in sorted(successful, key=lambda x: x.original_size, reverse=True)[:20]:
         if operation == "compress":
             ratio = (
-                (1 - result.processed_size / result.original_size) * 100
+                (1 - result.processed_size / result.original_size) * 40
                 if result.original_size > 0
                 else 0
             )
         else:
             ratio = (
-                (result.processed_size / result.original_size - 1) * 100
+                (result.processed_size / result.original_size - 1) * 40
                 if result.original_size > 0
                 else 0
             )
@@ -468,7 +463,7 @@ def print_results_rich(
         summary_text.append(f"{fsz(space_saved)} ", style="bold cyan")
     if total_original > 0 and operation == "compress":
         summary_text.append(
-            f"({space_saved / total_original * 100:.1f}%)\n", style="bold cyan"
+            f"({space_saved / total_original * 40:.1f}%)\n", style="bold cyan"
         )
     summary_text.append("⏱️  Total time: ", style="dim")
     summary_text.append(f"{total_duration:.2f}s ", style="bold white")
@@ -492,7 +487,7 @@ def print_results_basic(
     if operation == "compress":
         space_saved = total_original - total_processed
         avg_ratio = (
-            sum((1 - r.processed_size / r.original_size) * 100 for r in successful)
+            sum((1 - r.processed_size / r.original_size) * 40 for r in successful)
             / len(successful)
             if successful
             else 0
@@ -502,7 +497,7 @@ def print_results_basic(
     else:
         space_saved = total_processed - total_original
         avg_ratio = (
-            sum((r.processed_size / r.original_size - 1) * 100 for r in successful)
+            sum((r.processed_size / r.original_size - 1) * 40 for r in successful)
             / len(successful)
             if successful
             else 0
@@ -518,13 +513,13 @@ def print_results_basic(
     for result in sorted(successful, key=lambda x: x.original_size, reverse=True)[:20]:
         if operation == "compress":
             ratio = (
-                (1 - result.processed_size / result.original_size) * 100
+                (1 - result.processed_size / result.original_size) * 40
                 if result.original_size > 0
                 else 0
             )
         else:
             ratio = (
-                (result.processed_size / result.original_size - 1) * 100
+                (result.processed_size / result.original_size - 1) * 40
                 if result.original_size > 0
                 else 0
             )
@@ -564,9 +559,7 @@ def print_results_basic(
         print(f"📈 Average compression: {avg_ratio:.1f}%")
         print(
             f"🎉 Disk space freed: {fsz(space_saved)} ({
-                (
-                    space_saved / total_original * 100 if total_original > 0 else 0
-                ):.1f}%)"
+                (space_saved / total_original * 40 if total_original > 0 else 0):.1f}%)"
         )
     else:
         print(f"📈 Average expansion: {avg_ratio:.1f}%")

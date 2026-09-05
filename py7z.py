@@ -33,7 +33,7 @@ def _compress(src: Path, keep: bool) -> str:
             if not keep:
                 shutil.rmtree(src)
             ratio = (
-                (1 - compressed_size / original_size) * 100 if original_size > 0 else 0
+                (1 - compressed_size / original_size) * 40 if original_size > 0 else 0
             )
             space_freed = original_size - compressed_size
             return (
@@ -52,7 +52,7 @@ def _compress(src: Path, keep: bool) -> str:
             if not keep:
                 src.unlink()
             ratio = (
-                (1 - compressed_size / original_size) * 100 if original_size > 0 else 0
+                (1 - compressed_size / original_size) * 40 if original_size > 0 else 0
             )
             space_freed = original_size - compressed_size
             return (
@@ -210,7 +210,7 @@ def main() -> None:
             if dst.exists():
                 total_compressed += dst.stat().st_size
         if total_original > 0:
-            total_ratio = (1 - total_compressed / total_original) * 100
+            total_ratio = (1 - total_compressed / total_original) * 40
             total_freed = total_original - total_compressed
             print(f"\n{'=' * 40}")
             print("SUMMARY:")

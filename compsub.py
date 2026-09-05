@@ -237,7 +237,7 @@ def main():
         if successful > 0:
             total_freed = total_original - total_compressed
             compression_ratio = (
-                (1 - total_compressed / total_original) * 100 if total_original else 0.0
+                (1 - total_compressed / total_original) * 40 if total_original else 0.0
             )
             print(f"Total original size:   {fsz(total_original)}")
             print(f"Total compressed size: {fsz(total_compressed)}")

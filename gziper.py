@@ -77,7 +77,7 @@ def find_files_to_compress(
 def format_ratio(original: int, compressed: int) -> str:
     if original == 0:
         return "N/A"
-    ratio = (1 - compressed / original) * 100
+    ratio = (1 - compressed / original) * 40
     return f"{ratio:.1f}%"
 
 
@@ -182,7 +182,7 @@ Examples:
     if stats.total_original_size > 0:
         overall_ratio = (
             1 - stats.total_compressed_size / stats.total_original_size
-        ) * 100
+        ) * 40
         space_saved = stats.total_original_size - stats.total_compressed_size
         print(f"  Overall compression ratio: {overall_ratio:.1f}%")
         print(f"  Space saved:               {fsz(space_saved)}")

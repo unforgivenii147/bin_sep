@@ -29,7 +29,7 @@ class MinifyStats:
     def ratio(self) -> float:
         if self.original_size == 0:
             return 0.0
-        return (1 - self.minified_size / self.original_size) * 100
+        return (1 - self.minified_size / self.original_size) * 40
 
     @property
     def saved(self) -> int:
@@ -255,9 +255,7 @@ class HTMLMinifier:
         total_minified: int,
     ) -> None:
         total_saved = total_original - total_minified
-        overall_ratio = (
-            (total_saved / total_original * 100) if total_original > 0 else 0
-        )
+        overall_ratio = (total_saved / total_original * 40) if total_original > 0 else 0
         original_mb = total_original / (1024 * 1024)
         minified_mb = total_minified / (1024 * 1024)
         saved_mb = total_saved / (1024 * 1024)
@@ -282,10 +280,10 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  %(prog)s                          
-  %(prog)s file1.html file2.html    
-  %(prog)s public/ dist/            
-  %(prog)s index.html src/          
+  %(prog)s
+  %(prog)s file1.html file2.html
+  %(prog)s public/ dist/
+  %(prog)s index.html src/
   %(prog)s --workers 8 src/
         """,
     )

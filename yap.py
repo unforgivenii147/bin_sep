@@ -4,9 +4,9 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 from time import perf_counter as pff
+from typing import Any
 
 from dh import cprint, format_time, fsz, get_pyfiles, mpf3
-from typing import Any
 
 MODE: str = "yapf"
 CHUNK_SIZE: Any = 1024 * 1024
@@ -61,7 +61,7 @@ def process_file(path: str | Path, mode: str = MODE):
         etime = pff()
         if dsz:
             path.write_text(code, encoding="utf-8")
-            ratio = dsz / before * 100
+            ratio = dsz / before * 40
             cprint(
                 f"({format_time(etime - stime)}) | {fsz(dsz)} | {ratio:.1f}%", "cyan"
             )

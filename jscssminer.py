@@ -105,7 +105,7 @@ def minify_asset(file_path: Path, dry_run: bool = False, backup: bool = False) -
         file_path.write_text(minified_content, encoding="utf-8")
         original_size = len(original_content.encode("utf-8"))
         minified_size = len(minified_content.encode("utf-8"))
-        savings = (original_size - minified_size) / original_size * 100
+        savings = (original_size - minified_size) / original_size * 40
         print(
             f"  Minified: {original_size:,} -> {minified_size:,} bytes ({savings:.1f}% reduction)"
         )

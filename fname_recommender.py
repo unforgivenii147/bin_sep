@@ -192,10 +192,10 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python script.py                          
-  python script.py . /path/to/project       
-  python script.py -a                       
-  python script.py file1.py file2.py -a    
+  python script.py
+  python script.py . /path/to/project
+  python script.py -a
+  python script.py file1.py file2.py -a
         """,
     )
     parser.add_argument(

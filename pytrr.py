@@ -91,15 +91,14 @@ def create_archive_streaming_optimized():
 def verify_archive(archive_path):
     try:
         decompressor = zstd.ZstdDecompressor()
-        with open(archive_path, "rb") as f:
-            with decompressor.stream_reader(f) as zstd_reader:
-                with tarfile.open(fileobj=zstd_reader, mode="r|") as tar:
-                    for member in tar:
-                        print(
-                            f"{member.name} ({
-                                'dir' if member.isdir() else 'file'
-                            }, size: {member.size}, mode: {oct(member.mode)})"
-                        )
+        with open(archive_path, "rb") as f, decompressor.stream_reader(f) as zstd_reader:
+            with tarfile.open(fileobj=zstd_reader, mode="r|") as tar:
+                for member in tar:
+                    print(
+                        f"{member.name} ({
+                            'dir' if member.isdir() else 'file'
+                        }, size: {member.size}, mode: {oct(member.mode)})"
+                    )
     except Exception as e:
         print(f"Verification failed: {e}", file=sys.stderr)
 

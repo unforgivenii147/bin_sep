@@ -20,7 +20,7 @@ class MinifyResult:
     @property
     def compression_ratio(self) -> float:
         return (
-            (1 - self.minified_size / self.original_size) * 100
+            (1 - self.minified_size / self.original_size) * 40
             if self.original_size
             else 0
         )
@@ -129,7 +129,7 @@ def minify_batch(input_paths: list[Path], max_workers: int | None = None) -> int
     total_minified = sum(r.minified_size for r in results)
     total_saved = total_original - total_minified
     avg_compression = (
-        (1 - total_minified / total_original) * 100 if total_original else 0
+        (1 - total_minified / total_original) * 40 if total_original else 0
     )
     errors = sum(1 for r in results if r.error)
     total_time = sum(r.duration for r in results)

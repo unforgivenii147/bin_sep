@@ -1,14 +1,16 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 
-import sys
+from __future__ import annotations
+
 import multiprocessing as mp
+import sys
+import time
 from pathlib import Path
 from typing import List, Set, Tuple
-import time
 
 try:
-    from tree_sitter import Language, Parser
     import tree_sitter_rust
+    from tree_sitter import Language, Parser
 
     TREE_SITTER_AVAILABLE = True
 except ImportError:
@@ -62,7 +64,7 @@ class RustCommentStripper:
 
         return "".join(result)
 
-    def _collect_comments(self, node, comments: List):
+    def _collect_comments(self, node, comments: list):
         if node.type in ("line_comment", "block_comment"):
             comments.append(node)
 
@@ -70,7 +72,7 @@ class RustCommentStripper:
             self._collect_comments(child, comments)
 
 
-def find_rust_files(paths: List[str]) -> Set[Path]:
+def find_rust_files(paths: list[str]) -> set[Path]:
     rust_files = set()
 
     if not paths:
@@ -92,7 +94,7 @@ def find_rust_files(paths: List[str]) -> Set[Path]:
     return rust_files
 
 
-def process_file(file_path: Path) -> Tuple[Path, bool, str]:
+def process_file(file_path: Path) -> tuple[Path, bool, str]:
     try:
         with open(file_path, "r", encoding="utf-8") as f:
             original_content = f.read()
@@ -115,7 +117,7 @@ def process_file(file_path: Path) -> Tuple[Path, bool, str]:
         return (file_path, False, str(e))
 
 
-def process_files_parallel(files: Set[Path]):
+def process_files_parallel(files: set[Path]):
     files_list = list(files)
     total_files = len(files_list)
 

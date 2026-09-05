@@ -269,7 +269,7 @@ class FileSorter(LineProcessor):
                 "after": fsz(after),
                 "duplicate_lines": unique_count if unique else 0,
                 "size_reduction": original_size - after if original_size > 0 else 0,
-                "size_reduction_pct": (original_size - after) / original_size * 100
+                "size_reduction_pct": (original_size - after) / original_size * 40
                 if original_size > 0
                 else 0,
                 "processing_time": elapsed_time,
@@ -289,7 +289,7 @@ class FileSorter(LineProcessor):
         print(f"Final lines: {stats['final_lines']:,}")
         if stats["duplicate_lines"] > 0:
             dup_pct = (
-                stats["duplicate_lines"] / stats["original_lines"] * 100
+                stats["duplicate_lines"] / stats["original_lines"] * 40
                 if stats["original_lines"] > 0
                 else 0
             )
@@ -340,7 +340,7 @@ class FileAnalyzer(LineProcessor):
             "total_lines": len(lines),
             "unique_lines": len(line_counts),
             "duplicate_lines": duplicate_count,
-            "duplicate_percentage": duplicate_count / len(lines) * 100 if lines else 0,
+            "duplicate_percentage": duplicate_count / len(lines) * 40 if lines else 0,
             "max_line_length": max_length,
             "avg_line_length": avg_length,
             "most_common_lines": most_common,

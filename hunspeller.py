@@ -64,7 +64,7 @@ def process_line(line: str, autofix: bool = False) -> tuple:
 def process_file(
     filepath: str,
     autofix: bool = False,
-    num_processes: int = None,
+    num_processes: int | None = None,
     dic_path: str = "/usr/share/hunspell/en_US.dic",
     aff_path: str = "/usr/share/hunspell/en_US.aff",
 ):
@@ -175,8 +175,8 @@ def process_file(
 
 def find_hunspell_dicts():
 
-    import os
     import glob
+    import os
 
     common_paths = [
         "/usr/share/hunspell/",
@@ -237,7 +237,7 @@ if __name__ == "__main__":
         dicts = find_hunspell_dicts()
         if dicts:
             print("Available Hunspell dictionaries:")
-            for dic, aff in dicts:
+            for dic, _aff in dicts:
                 lang = os.path.basename(dic).replace(".dic", "")
                 print(f"  {lang}: {dic}")
         else:

@@ -57,9 +57,9 @@ def create_chart(target_dir: str = ".") -> None:
     remaining_size = sum(
         size for name, size in subdir_sizes.items() if name not in top_subdirs
     )
-    percentages = {name: size / total_size * 100 for name, size in top_subdirs.items()}
+    percentages = {name: size / total_size * 40 for name, size in top_subdirs.items()}
     if remaining_size > 0:
-        percentages["Other"] = remaining_size / total_size * 100
+        percentages["Other"] = remaining_size / total_size * 40
     labels = list(top_subdirs.keys())
     if remaining_size > 0:
         labels.append("Other")

@@ -1,5 +1,7 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 
+from __future__ import annotations
+
 import json
 import sqlite3
 import sys
@@ -40,7 +42,7 @@ def sqlite_to_json(input_path: Path) -> Path:
             ).fetchall()
 
             database_data[table_name] = [
-                {column_name: json_safe(row[column_name]) for column_name in row.keys()}
+                {column_name: json_safe(row[column_name]) for column_name in row}
                 for row in rows
             ]
 

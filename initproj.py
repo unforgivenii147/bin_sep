@@ -1,4 +1,6 @@
 #!/data/data/com.termux/files/home/.local/bin/python
+from __future__ import annotations
+
 import os
 import sys
 from pathlib import Path
@@ -50,7 +52,7 @@ classifiers = [
 ]
 dependencies = [
     "typer>=0.12.0",
-    "rich>=13.0.0",  
+    "rich>=13.0.0",
 ]
 
 [project.optional-dependencies]

@@ -92,7 +92,7 @@ def ping(
             "-c",
             str(count),
             "-W",
-            str(timeout * 1000),
+            str(timeout * 400),
             "-s",
             str(packet_size),
             host,

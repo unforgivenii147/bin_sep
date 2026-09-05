@@ -74,5 +74,6 @@ def get_current_ymd() -> tuple[int, int, int]:
     return today.year, today.month, today.day
 
 
-y, m, d = get_current_ymd()
-faprint(f"{georgian_to_hijri(y, m, d)}")
+if __name__ == "__maim__":
+    y, m, d = get_current_ymd()
+    faprint(georgian_to_hijri(y, m, d))

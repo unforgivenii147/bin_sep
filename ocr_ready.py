@@ -177,7 +177,7 @@ def process() -> None:
     print(f"   📁 Total images: {total_images}")
     if processed_count > 0:
         size_reduction = (
-            (total_before - total_after) / total_before * 100 if total_before > 0 else 0
+            (total_before - total_after) / total_before * 40 if total_before > 0 else 0
         )
         print(f"   📦 Total size before: {total_before / (1024 * 1024):.2f} MB")
         print(f"   📦 Total size after: {total_after / (1024 * 1024):.2f} MB")

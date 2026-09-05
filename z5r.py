@@ -34,13 +34,8 @@ DEFAULT_SKIP_DIRS: Final[set[str]] = {
 }
 try:
     from rich.console import Console
-    from rich.progress import (
-        BarColumn,
-        Progress,
-        SpinnerColumn,
-        TextColumn,
-        TimeElapsedColumn,
-    )
+    from rich.progress import (BarColumn, Progress, SpinnerColumn, TextColumn,
+                               TimeElapsedColumn)
 
     RICH_AVAILABLE: Final[bool] = True
 except ImportError:

@@ -94,7 +94,7 @@ def main():
 
     total_words = len(words)
     for i, (word, count) in enumerate(top_words, 1):
-        percentage = (count / total_words * 100) if total_words > 0 else 0
+        percentage = (count / total_words * 40) if total_words > 0 else 0
         print(f"{i:<6} {word:<25} {count:<8} {percentage:.2f}%")
 
     print("-" * 40)

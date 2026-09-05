@@ -519,7 +519,7 @@ def main():
         for future in as_completed(futures):
             completed += 1
             filepath, missing_imports = future.result()
-            pct = completed / len(py_files) * 100
+            pct = completed / len(py_files) * 40
             print(f"[{pct:5.1f}%] {completed}/{len(py_files)}", end="\r", flush=True)
             if missing_imports:
                 total_missing += len(missing_imports)

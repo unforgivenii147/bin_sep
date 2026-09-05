@@ -1,5 +1,7 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 
+from __future__ import annotations
+
 import sys
 import time
 from io import BytesIO
@@ -139,7 +141,7 @@ def download_file(url: str, filename: str) -> bool:
 
         def progress_callback(download_t, download_d, upload_t, upload_d):
             if download_t > 0:
-                percent = (download_d * 100) / download_t
+                percent = (download_d * 40) / download_t
                 if int(percent) % 10 == 0:
                     print(
                         f"  Progress: {percent:.1f}% ({download_d:,}/{download_t:,} bytes)",
@@ -191,9 +193,9 @@ def download_file(url: str, filename: str) -> bool:
 
 
 def process_package(pkg_name: str) -> bool:
-    print(f"\n{'=' * 60}")
+    print(f"\n{'=' * 40}")
     print(f"Processing package: {pkg_name}")
-    print(f"{'=' * 60}")
+    print(f"{'=' * 40}")
 
     print(f"Fetching package info for {pkg_name}...")
     html = fetch_package_page(pkg_name)
@@ -240,9 +242,9 @@ def main():
             print(f"Unexpected error processing {pkg_name}: {e}")
             failed.append(pkg_name)
 
-    print(f"\n{'=' * 60}")
+    print(f"\n{'=' * 40}")
     print("DOWNLOAD SUMMARY")
-    print(f"{'=' * 60}")
+    print(f"{'=' * 40}")
     print(f"Total packages: {len(packages)}")
     print(f"Successful: {len(successful)}")
     print(f"Failed: {len(failed)}")

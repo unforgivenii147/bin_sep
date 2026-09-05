@@ -68,7 +68,7 @@ class CompressionResult:
 
     @property
     def savings_percent(self) -> float:
-        return self.saved_bytes / self.original_size * 100
+        return self.saved_bytes / self.original_size * 40
 
 
 class CompressionManager:

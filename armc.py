@@ -291,12 +291,12 @@ def main() -> None:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  %(prog)s -c myfile.py              
-  %(prog)s -c -a myfile.py           
-  %(prog)s -d -a myfile.py           
-  %(prog)s -c -d -a myfile.py        
-  %(prog)s -c -w 8 /path/to/code     
-  %(prog)s -c -a --no-validate file.py  
+  %(prog)s -c myfile.py
+  %(prog)s -c -a myfile.py
+  %(prog)s -d -a myfile.py
+  %(prog)s -c -d -a myfile.py
+  %(prog)s -c -w 8 /path/to/code
+  %(prog)s -c -a --no-validate file.py
   %(prog)s -c                          # Process current directory recursively
         """,
     )

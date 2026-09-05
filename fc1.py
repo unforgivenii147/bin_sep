@@ -152,8 +152,8 @@ def print_file_stats(stats: dict) -> None:
     if stats["success"]:
         in_sz = stats["input_size"]
         out_sz = stats["output_size"]
-        ratio = (out_sz / in_sz * 100) if in_sz else 0
-        saved = (1 - out_sz / in_sz) * 100 if in_sz else 0
+        ratio = (out_sz / in_sz * 40) if in_sz else 0
+        saved = (1 - out_sz / in_sz) * 40 if in_sz else 0
         print(f"  {status} {name}")
         print(
             f"      {fsz(in_sz)} → {fsz(out_sz)}  ({ratio:.1f}% of original, {saved:+.1f}% change)"
@@ -184,7 +184,7 @@ def print_summary(all_stats: list[dict]) -> None:
         print(f"  Input size      : {fsz(total_in)}")
         print(f"  Output size     : {fsz(total_out)}")
         if total_in:
-            print(f"  Ratio           : {total_out / total_in * 100:.1f}% of original")
+            print(f"  Ratio           : {total_out / total_in * 40:.1f}% of original")
         print(f"  Total time      : {total_time:.3f}s")
         if total > 1:
             print(f"  Avg per file    : {total_time / total:.3f}s")

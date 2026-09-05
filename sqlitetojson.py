@@ -1,6 +1,8 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-import sqlite3
+from __future__ import annotations
+
 import json
+import sqlite3
 import sys
 from pathlib import Path
 

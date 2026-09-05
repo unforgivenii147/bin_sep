@@ -100,7 +100,7 @@ def compress_file(path: Path) -> tuple[bool, int, int]:
             compressed_size = out_path.stat().st_size
             if compressed_size < original_size:
                 path.unlink()
-                reduction = (original_size - compressed_size) / original_size * 100
+                reduction = (original_size - compressed_size) / original_size * 40
                 logger.info(
                     f"  ✓ {path.name}: {reduction:.1f}% saved ({fsz(original_size)} → {fsz(compressed_size)})"
                 )
@@ -171,7 +171,7 @@ async def compress_folder_async(folder_path: Path, output_base_name: str) -> boo
             zst_size = zst_path.stat().st_size
             if zst_size < tar_size:
                 tar_path.unlink()
-                reduction = (tar_size - zst_size) / tar_size * 100
+                reduction = (tar_size - zst_size) / tar_size * 40
                 logger.info(
                     f"  ✓ Compressed archive: {reduction:.1f}% saved ({fsz(tar_size)} → {fsz(zst_size)})"
                 )
@@ -216,7 +216,7 @@ async def process_compress() -> None:
             logger.info(
                 f"\n{'=' * 40}\n✅ Compressed {successful} files\n📊 Saved {
                     fsz(saved)
-                } ({saved / total_orig * 100:.1f}%)\n{'=' * 40}"
+                } ({saved / total_orig * 40:.1f}%)\n{'=' * 40}"
             )
 
 

@@ -237,7 +237,7 @@ def compress_single_file(
         elapsed = time.time() - start_time
         original_size = len(data)
         compressed_size = len(compressed_data)
-        ratio = compressed_size / original_size * 100
+        ratio = compressed_size / original_size * 40
         if verbose:
             print(
                 f"✓ {Path(file_path).name}: {algo.upper()}:{level} {
@@ -346,7 +346,7 @@ def create_tar_archive(
         final_path = compressed_path
         elapsed = time.time() - start_time
         compressed_size = len(compressed_data)
-        ratio = compressed_size / total_size * 100
+        ratio = compressed_size / total_size * 40
         print(f"\n✓ Archive created: {final_path}")
         print(
             f"  Size: {compressed_size / 1024 / 1024:.2f} MB ({ratio:.1f}% of original)"
@@ -540,9 +540,7 @@ Examples:
                 print(
                     f"  Total size: {total_original / 1024 / 1024:.2f} MB → {total_compressed / 1024 / 1024:.2f} MB"
                 )
-                print(
-                    f"  Overall ratio: {total_compressed / total_original * 100:.1f}%"
-                )
+                print(f"  Overall ratio: {total_compressed / total_original * 40:.1f}%")
         else:
             for file_path in files:
                 compress_single_file(

@@ -18,8 +18,8 @@ logger.add(log_path)
 
 
 def process_single_dist(
-    dist_info: Tuple[str, str, List[str]],
-) -> Tuple[Set[str], Set[str]]:
+    dist_info: tuple[str, str, list[str]],
+) -> tuple[set[str], set[str]]:
     dist_name, dist_path, dist_files = dist_info
     files = set()
     dirs = set()
@@ -92,7 +92,7 @@ def process_single_dist(
     return files, dirs
 
 
-def scan_directory_worker(args: Tuple[str, Set[str], Set[str]]) -> List[str]:
+def scan_directory_worker(args: tuple[str, set[str], set[str]]) -> list[str]:
     site_dir, package_files, package_dirs = args
     orphan_files = []
 
@@ -146,8 +146,8 @@ def should_skip_file(file_path: str) -> bool:
 class OrphanFileDetector:
     def __init__(self):
         self.site_dirs = self._get_site_dirs()
-        self.package_files: Set[str] = set()
-        self.package_dirs: Set[str] = set()
+        self.package_files: set[str] = set()
+        self.package_dirs: set[str] = set()
 
     def _get_site_dirs(self) -> list[Path]:
         dirs = []

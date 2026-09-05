@@ -1,9 +1,12 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 
+from __future__ import annotations
+
 import json
 import multiprocessing as mp
-from pathlib import Path
 from io import BytesIO
+from pathlib import Path
+
 import pycurl
 from dh import get_installed_packages
 
@@ -43,7 +46,7 @@ def get_latest_version(pkg_info):
             return None
 
     except Exception as e:
-        print(f"Error fetching {pkg_name}: {str(e)}")
+        print(f"Error fetching {pkg_name}: {e!s}")
         return None
 
 

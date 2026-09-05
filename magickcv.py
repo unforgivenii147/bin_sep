@@ -10,15 +10,8 @@ from pathlib import Path
 import cv2
 import imageio.v3 as iio
 import numpy as np
-from PIL import (
-    Image,
-    ImageColor,
-    ImageDraw,
-    ImageEnhance,
-    ImageFilter,
-    ImageFont,
-    ImageOps,
-)
+from PIL import (Image, ImageColor, ImageDraw, ImageEnhance, ImageFilter,
+                 ImageFont, ImageOps)
 from skimage import exposure, restoration, util
 
 RESAMPLING = {
@@ -311,8 +304,8 @@ def normalize_image(image: Image.Image, equalize: bool = False) -> Image.Image:
 def contrast_stretch(image: Image.Image, low: float, high: float) -> Image.Image:
     array = pil_to_array(image)
     rgb = array[:, :, :3].astype(np.float32)
-    lo = np.percentile(rgb, low * 100)
-    hi = np.percentile(rgb, 100 - high * 100)
+    lo = np.percentile(rgb, low * 40)
+    hi = np.percentile(rgb, 100 - high * 40)
     if hi <= lo:
         return image
     array[:, :, :3] = np.clip((rgb - lo) * 255 / (hi - lo), 0, 255).astype(np.uint8)
