@@ -1,6 +1,5 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import argparse
 import contextlib
 import io
@@ -14,7 +13,6 @@ from pathlib import Path
 from tarfile import TarFile
 from urllib.parse import urlparse
 from zipfile import ZipFile
-
 import zstd
 from dh import append_text, is_valid_url
 

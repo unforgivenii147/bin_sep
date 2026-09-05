@@ -1,8 +1,6 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 from pathlib import Path
-
 from rcssmin import cssmin
 from rjsmin import jsmin
 

@@ -1,13 +1,11 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import argparse
 import io
 import sys
 import zipfile
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-
 import requests
 
 

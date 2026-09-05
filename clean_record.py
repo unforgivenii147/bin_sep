@@ -1,6 +1,5 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 from pathlib import Path
 
 ALLOWED_DIST_INFO_FILES = {
@@ -18,25 +17,19 @@ def clean_records():
         if record_file.exists():
             lines = record_file.read_text().splitlines()
             filtered = []
-
             for line in lines:
                 if not line.strip():
                     continue
-
                 parts = line.split(",")
                 file_path = parts[0]
                 path_obj = Path(file_path)
-
                 is_in_dist_info = any(
                     part.endswith(".dist-info") for part in path_obj.parts
                 )
-
                 if is_in_dist_info and path_obj.name not in ALLOWED_DIST_INFO_FILES:
                     print(f"Removed dist-info reference: {file_path}")
                     continue
-
                 filtered.append(line)
-
             record_file.write_text("\n".join(filtered) + ("\n" if filtered else ""))
             print(f"record file in {record_file.parent.name} cleaned.")
 

@@ -1,6 +1,5 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import argparse
 import json
 import re
@@ -9,7 +8,6 @@ import sys
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
-
 from dh import PY_KEYWORDS
 
 COMMON_SUBSTITUTIONS = {

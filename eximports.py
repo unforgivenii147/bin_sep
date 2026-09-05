@@ -1,9 +1,7 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
-
 import tree_sitter_python as tsp
 from dh import cprint, get_installed_pkgs
 from tree_sitter import Language, Parser

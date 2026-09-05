@@ -1,13 +1,11 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import json
 import sys
 import threading
 import time
 from os import getenv
 from pathlib import Path
-
 from dotenv import load_dotenv
 from github import Auth, Github, GithubException
 
@@ -62,23 +60,18 @@ def main() -> None:
     if len(sys.argv) < 2:
         print("Usage: script.py <username>")
         sys.exit(1)
-
     env_path = Path("~/.env").expanduser()
     load_dotenv(env_path)
     token = getenv("GITHUB_TOKEN")
     username = sys.argv[1]
-
     if token:
         print("Using authenticated access (rate limit: 5000 requests/hour)")
     else:
         print(
             "No token found in .env, using unauthenticated access (rate limit: 60 requests/hour)"
         )
-
     repos = get_repos(username, token=token, timeout=60)
-
     repos.sort(key=lambda r: r.stargazers_count, reverse=True)
-
     print(f"\nRepositories of '{username}' (sorted by stars):")
     for repo in repos:
         stars = repo.stargazers_count
@@ -86,7 +79,6 @@ def main() -> None:
         description = repo.description or "No description"
         print(f"- {repo.name}")
         print(f"  ⭐ {stars} | 🔤 {language} | {description[:80]}")
-
     json_data = [
         {
             "name": repo.name,
@@ -97,11 +89,9 @@ def main() -> None:
         }
         for repo in repos
     ]
-
     json_filename = f"{username}.json"
     with Path(json_filename).open("w", encoding="utf-8") as f:
         json.dump(json_data, f, indent=4, ensure_ascii=False)
-
     print(f"\nData successfully saved to {json_filename}")
 
 

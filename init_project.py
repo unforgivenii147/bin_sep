@@ -1,6 +1,5 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import argparse
 from pathlib import Path
 
@@ -33,7 +32,6 @@ def create_pyproject(
     python_requires: str = ">=3.11",
 ) -> str:
     import_name = pkg.replace("-", "_")
-
     lines = [
         "[build-system]",
         'requires = ["setuptools>=68"]',
@@ -93,37 +91,28 @@ def create_project_structure(
     cwd = Path.cwd() / pkg
     cwd.mkdir(exist_ok=True)
     import_name = pkg.replace("-", "_")
-
     write_file_if_missing(cwd / "README.md", f"# {pkg}\n")
     write_file_if_missing(cwd / ".gitignore", _GITIGNORE_CONTENT)
     write_file_if_missing(cwd / "LICENSE", "")
     (cwd / "pyproject.toml").write_text(
         create_pyproject(pkg, version, author, email, url, description, simple_cli)
     )
-
     src_pkg = cwd / "src" / import_name
     src_pkg.mkdir(parents=True, exist_ok=True)
     write_file_if_missing(src_pkg / "__init__.py", f'__version__ = "{version}"\n')
-
     if simple_cli:
         write_file_if_missing(
             src_pkg / "__main__.py",
             '''"""CLI entry point for {pkg}."""
-
 import sys
-
-
 def main() -> int:
     """Main entry point. Returns process exit code."""
     print(f"Hello from {pkg}!")
     return 0
-
-
 if __name__ == "__main__":
     raise SystemExit(main())
 '''.format(pkg=pkg),
         )
-
     tests = cwd / "tests"
     tests.mkdir(exist_ok=True)
     write_file_if_missing(tests / "__init__.py")
@@ -131,11 +120,9 @@ if __name__ == "__main__":
         tests / f"test_{import_name}.py",
         f"""def test_version():
     from {import_name} import __version__
-
     assert __version__ == "{version}"
 """,
     )
-
     print(f"Project '{pkg}' initialized in {cwd}")
     print(f"  - pyproject.toml with {'CLI entry point' if simple_cli else 'no CLI'}")
     print("  - src/ layout with setuptools auto-discovery")
@@ -177,12 +164,10 @@ def main() -> None:
         help="Create a console_scripts entry point + __main__.py",
     )
     args = parser.parse_args()
-
     author = user_info.get("name", "")
     email = user_info.get("email", "")
     github_user = user_info.get("github_username", "")
     url = f"https://github.com/{github_user}/{args.name}" if github_user else ""
-
     create_project_structure(
         args.name,
         author,

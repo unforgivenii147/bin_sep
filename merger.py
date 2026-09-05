@@ -1,10 +1,8 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import argparse
 import sys
 from pathlib import Path
-
 from dh import get_nobinary, get_random_filename, should_skip
 
 
@@ -25,11 +23,9 @@ def merge_files_by_type(
     ext_filter: list[str] | None = None,
     group_by_ext: bool = False,
 ) -> list[Path]:
-
     if ext_filter:
         ext_filter = [e.lower() for e in ext_filter]
         files = [f for f in files if get_file_extension(f).lower() in ext_filter]
-
     valid_files = []
     for file_path in files:
         if should_skip(file_path):
@@ -37,11 +33,9 @@ def merge_files_by_type(
         content = read_file(file_path)
         if content is not None and content.strip():
             valid_files.append((file_path, content))
-
     if not valid_files:
         print("ℹ️  No files to merge.")
         return []
-
     if not group_by_ext:
         output_file = cwd / f"{get_random_filename()}.txt"
         extensions = {get_file_extension(f) for f, _ in valid_files}
@@ -49,20 +43,17 @@ def merge_files_by_type(
             ext = next(iter(extensions))
             if ext:
                 output_file = cwd / f"{get_random_filename()}.{ext}"
-
         write_merged_file(output_file, valid_files, cwd)
         return [output_file]
     else:
         output_dir = cwd / "merged"
         output_dir.mkdir(exist_ok=True)
-
         ext_groups: dict[str, list[tuple[Path, str]]] = {}
         for file_path, content in valid_files:
             ext = get_file_extension(file_path)
             if ext not in ext_groups:
                 ext_groups[ext] = []
             ext_groups[ext].append((file_path, content))
-
         output_files = []
         for ext, group_files in ext_groups.items():
             output_file = (
@@ -72,7 +63,6 @@ def merge_files_by_type(
             )
             write_merged_file(output_file, group_files, cwd)
             output_files.append(output_file)
-
         return output_files
 
 
@@ -82,7 +72,6 @@ def write_merged_file(
     try:
         total_size = 0
         file_count = 0
-
         with output_file.open("w", encoding="utf-8") as fo:
             for file_path, content in files_content:
                 relative_path = file_path.relative_to(cwd)
@@ -92,11 +81,9 @@ def write_merged_file(
                     fo.write("\n")
                 total_size += len(content)
                 file_count += 1
-
         print(
             f"✅ Merged {file_count} files ({total_size:,} bytes) into: {output_file}"
         )
-
     except OSError as e:
         print(f"❌ Error writing output file {output_file}: {e}")
         if output_file.exists():
@@ -105,22 +92,16 @@ def write_merged_file(
 
 def merge_files(args: argparse.Namespace) -> None:
     cwd = Path.cwd()
-
     files = [f for f in get_nobinary(cwd)]
-
     if not args.group:
         pass
-
     if args.extensions:
         print(f"🔍 Filtering for extensions: {', '.join(args.extensions)}")
-
     output_files = merge_files_by_type(
         files, cwd, ext_filter=args.extensions, group_by_ext=args.group
     )
-
     if not output_files:
         print("ℹ️  No content to merge (all files were empty or skipped).")
-
     if args.group and output_files:
         print(f"📁 All merged files saved in: {cwd / 'merged'}")
 
@@ -137,21 +118,18 @@ Examples:
   python merger.py -c -e py cpp       # Group .py and .cpp files by extension
         """,
     )
-
     parser.add_argument(
         "-e",
         "--extensions",
         nargs="+",
         help="File extensions to merge (e.g., py cpp js)",
     )
-
     parser.add_argument(
         "-c",
         "--group",
         action="store_true",
         help='Group files by extension, output multiple files in "merged" directory',
     )
-
     return parser.parse_args()
 
 

@@ -1,9 +1,7 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import argparse
 from pathlib import Path
-
 from dh import FONTEXT, unique_path
 from fontTools.ttLib import TTFont
 
@@ -76,21 +74,17 @@ def rename_font_file(
     if not family_name:
         print(f"  Skipping {font_path.name}: Could not extract font family name")
         return (None, None)
-
     family_name = sanitize_filename(family_name)
     style = sanitize_filename(style)
     ext = font_path.suffix
     new_name = f"{family_name}-{style}{ext}"
     new_path = font_path.parent / new_name
-
     if font_path == new_path:
         print(f"  {font_path.name} -> already has correct name")
         return (None, None)
-
     if new_path.exists():
         new_path = unique_path(new_path)
         new_name = new_path.name
-
     if apply:
         try:
             font_path.rename(new_path)
@@ -141,19 +135,15 @@ Examples:
     parser.add_argument(
         "--no-recursive", action="store_true", help="Don't process subdirectories"
     )
-
     args = parser.parse_args()
     cwd = Path.cwd()
-
     if args.apply:
         print("Applying renames...")
     else:
         print("Dry-run mode (no changes will be made). Use -a to apply.\n")
-
     renamed_count = process_directory(
         cwd, recursive=not args.no_recursive, apply=args.apply
     )
-
     if args.apply:
         print(f"\n{renamed_count} font file(s) renamed.")
     else:

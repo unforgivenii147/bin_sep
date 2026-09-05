@@ -1,21 +1,17 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-
 from __future__ import annotations
-
 import argparse
 import logging
 import sys
 from collections.abc import Container, Iterable
 from pathlib import Path
 from typing import Any
-
 import pdfminer.high_level
 from pdfminer.layout import LAParams, LTTextBox
 from pdfminer.pdfexceptions import PDFValueError
 from pdfminer.utils import AnyIO
 
 logging.basicConfig()
-
 OUTPUT_TYPES = ((".htm", "html"), (".html", "html"), (".xml", "xml"), (".tag", "tag"))
 
 
@@ -56,12 +52,10 @@ def extract_text(
 ) -> None:
     if not files:
         raise PDFValueError("Must provide files to work upon!")
-
     for fname in files:
         input_path = Path(fname)
         output_directory = input_path.parent / input_path.stem
         output_directory.mkdir(exist_ok=True)
-
         page_num = 0
         for page_idx, page_layout in enumerate(
             pdfminer.high_level.extract_pages(
@@ -75,15 +69,12 @@ def extract_text(
         ):
             if maxpages > 0 and page_num >= maxpages:
                 break
-
             if page_numbers and page_idx not in page_numbers:
                 continue
-
             text = ""
             for element in page_layout:
                 if isinstance(element, LTTextBox):
                     text += element.get_text()
-
             output_file = output_directory / f"page_{page_idx:04d}.txt"
             if output_file.exists():
                 print(f"{output_file.name} exists.")
@@ -92,7 +83,6 @@ def extract_text(
                 if strip_control:
                     text = "".join(c for c in text if ord(c) >= 32 or c in "\n\r\t")
                 f.write(text)
-
             print(f"Saved: {output_file}")
             page_num += 1
 
@@ -106,7 +96,6 @@ def create_parser() -> argparse.ArgumentParser:
         nargs="+",
         help="One or more paths to PDF files.",
     )
-
     parser.add_argument(
         "--version",
         "-v",
@@ -127,7 +116,6 @@ def create_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="If caching or resources, such as fonts, should be disabled.",
     )
-
     parse_params = parser.add_argument_group(
         "Parser",
         description="Used during PDF parsing",
@@ -169,7 +157,6 @@ def create_parser() -> argparse.ArgumentParser:
         help="The number of degrees to rotate the PDF "
         "before other types of processing.",
     )
-
     la_params = LAParams()
     la_param_group = parser.add_argument_group(
         "Layout analysis",
@@ -245,7 +232,6 @@ def create_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="If layout analysis should be performed on text in figures.",
     )
-
     output_params = parser.add_argument_group(
         "Output",
         description="Used during output generation.",
@@ -264,13 +250,11 @@ def create_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Remove control statement from text.",
     )
-
     return parser
 
 
 def parse_args(args: list[str] | None) -> argparse.Namespace:
     parsed_args = create_parser().parse_args(args=args)
-
     if parsed_args.no_laparams:
         parsed_args.laparams = None
     else:
@@ -283,13 +267,10 @@ def parse_args(args: list[str] | None) -> argparse.Namespace:
             detect_vertical=parsed_args.detect_vertical,
             all_texts=parsed_args.all_texts,
         )
-
     if parsed_args.page_numbers:
         parsed_args.page_numbers = {x - 1 for x in parsed_args.page_numbers}
-
     if parsed_args.pagenos:
         parsed_args.page_numbers = {int(x) - 1 for x in parsed_args.pagenos.split(",")}
-
     return parsed_args
 
 

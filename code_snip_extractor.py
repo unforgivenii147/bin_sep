@@ -1,6 +1,5 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import re
 import sys
 from multiprocessing import Pool
@@ -13,10 +12,8 @@ def extract_snippets(file_path: Path) -> Generator[tuple[int, str], None, None]:
         content = file_path.read_text(encoding="utf-8", errors="replace")
     except Exception:
         return
-
     lines = content.split("\n")
     i = 0
-
     while i < len(lines):
         if lines[i].strip().startswith("```"):
             fence_match = re.match(r"^```+(\w*)", lines[i].strip())
@@ -24,25 +21,20 @@ def extract_snippets(file_path: Path) -> Generator[tuple[int, str], None, None]:
                 start_line = i + 1
                 i += 1
                 code_lines = []
-
                 while i < len(lines) and not lines[i].strip().startswith("```"):
                     code_lines.append(lines[i])
                     i += 1
-
                 code_text = "\n".join(code_lines).strip()
                 if code_text:
                     yield (start_line, code_text)
                 i += 1
                 continue
-
         if lines[i].strip().startswith(">>>"):
             start_line = i + 1
             code_lines = []
-
             while i < len(lines):
                 line = lines[i]
                 stripped = line.strip()
-
                 if stripped.startswith(">>>"):
                     code_lines.append(stripped[3:].lstrip())
                     i += 1
@@ -61,27 +53,22 @@ def extract_snippets(file_path: Path) -> Generator[tuple[int, str], None, None]:
                     ):
                         break
                     i += 1
-
             code_text = "\n".join(code_lines).strip()
             if code_text:
                 yield (start_line, code_text)
             continue
-
         i += 1
 
 
 def process_file(file_path: Path, output_dir: Path) -> dict:
     rel_path = file_path.relative_to(file_path.anchor)
     safe_name = str(rel_path).replace("/", "_").replace(".", "_")
-
     count = 0
     errors = 0
-
     try:
         for line_num, code_text in extract_snippets(file_path):
             try:
                 output_file = output_dir / f"{safe_name}_line{line_num}.py"
-
                 header = f"# Source: {file_path}\n# Line: {line_num}\n\n"
                 output_file.write_text(header + code_text, encoding="utf-8")
                 count += 1
@@ -89,7 +76,6 @@ def process_file(file_path: Path, output_dir: Path) -> dict:
                 errors += 1
     except Exception:
         errors += 1
-
     return {"file": str(file_path), "count": count, "errors": errors}
 
 
@@ -98,7 +84,6 @@ def scan_files(paths: Optional[list[str]] = None, workers: int = 4) -> None:
         targets = [Path.cwd()]
     else:
         targets = [Path(p).resolve() for p in paths]
-
     all_files = []
     for target in targets:
         if target.is_file():
@@ -113,34 +98,26 @@ def scan_files(paths: Optional[list[str]] = None, workers: int = 4) -> None:
                 and p.suffix
                 in {".md", ".rst", ".txt", ".METADATA", ".PKG-INFO", ".cfg", ".ini"}
             )
-
     if not all_files:
         print("No files found.")
         return
-
     output_dir = Path.cwd() / "output"
     output_dir.mkdir(exist_ok=True)
-
     print(f"📂 Found {len(all_files)} files. Processing with {workers} workers...")
-
     total_count = 0
     total_errors = 0
-
     with Pool(workers) as pool:
         results = [pool.apply_async(process_file, (f, output_dir)) for f in all_files]
-
         for _i, result in enumerate(results, 1):
             try:
                 res = result.get(timeout=30)
                 total_count += res["count"]
                 total_errors += res["errors"]
-
                 if res["count"] > 0:
                     print(f"  ✓ {res['file']}: {res['count']} snippet(s)")
             except Exception as e:
                 print(f"  ✗ Error: {e}")
                 total_errors += 1
-
     print(f"\n✅ Complete: {total_count} snippets extracted, {total_errors} error(s).")
     print(f"📁 Output saved to: {output_dir.resolve()}")
 

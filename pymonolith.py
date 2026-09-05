@@ -1,13 +1,11 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import argparse
 import sys
 from base64 import b64encode
 from mimetypes import guess_type
 from pathlib import Path
 from urllib.parse import urljoin, urlparse
-
 import requests
 from bs4 import BeautifulSoup
 

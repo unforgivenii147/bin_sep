@@ -1,13 +1,11 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import argparse
 import os
 import re
 import shutil
 import sysconfig
 from pathlib import Path
-
 from wheel.wheelfile import WheelFile
 
 

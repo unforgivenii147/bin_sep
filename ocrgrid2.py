@@ -1,10 +1,8 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import itertools
 import time
 from pathlib import Path
-
 import cv2
 import pytesseract
 from dh import IMGEXT

@@ -1,12 +1,10 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import ast
 import sys
 from difflib import unified_diff
 from multiprocessing.pool import Pool as mp_pool
 from pathlib import Path
-
 from dh import get_pyfiles
 
 
@@ -98,14 +96,12 @@ def process_file(file_path: Path, autofix: bool = False) -> dict:
 
 
 def process_file_wrapper(args):
-
     return process_file(*args)
 
 
 def main():
     cwd = Path.cwd()
     args = sys.argv[1:]
-
     autofix = False
     file_args = []
     for arg in args:
@@ -113,15 +109,11 @@ def main():
             autofix = True
         else:
             file_args.append(arg)
-
     files = [Path(p) for p in file_args] if file_args else get_pyfiles(cwd)
-
     if len(files) == 1:
         process_file(files[0], autofix)
         sys.exit(0)
-
     results = {"fixed": 0, "diff": 0, "unchanged": 0, "error": 0}
-
     with mp_pool(processes=8) as pool:
         tasks = [(f, autofix) for f in files]
         for result in pool.starmap(process_file, tasks):
@@ -134,7 +126,6 @@ def main():
                 print("".join(result["diff"]))
             elif status == "error":
                 print(f"❌ {result['path'].name}: {result['error']}")
-
     print(
         f"\n📊 Fixed: {results['fixed']}, Changed: {results['diff']}, Unchanged: {
             results['unchanged']

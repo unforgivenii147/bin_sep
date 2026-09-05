@@ -1,12 +1,9 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-
 from __future__ import annotations
-
 import sys
 from multiprocessing import Pool
 from pathlib import Path
 from typing import List, Optional
-
 from dh import is_binary, should_skip
 
 WORKERS = 8
@@ -90,20 +87,16 @@ def main(argv: Optional[list[str]] = None) -> int:
         help="Show what would be done without modifying files.",
     )
     args = parser.parse_args(argv)
-
     files = _collect_files(args.paths)
     if not files:
         print("No files to process.", file=sys.stderr)
         return 0
-
     if args.dry_run:
         for f in files:
             print(f"Would convert: {f}")
         print(f"\n{len(files)} file(s) would be processed.")
         return 0
-
     changed, unchanged, errors = _run_parallel(files)
-
     if not args.quiet:
         for f in files:
             pass

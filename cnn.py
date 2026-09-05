@@ -1,6 +1,5 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import shutil
 from multiprocessing import Pool, cpu_count
 from pathlib import Path

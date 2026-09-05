@@ -1,15 +1,12 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import argparse
 import re
 from multiprocessing import Pool, cpu_count
-
 from spellchecker import SpellChecker
 
 
 def process_line(line: str, autofix: bool = False) -> tuple:
-
     spell = SpellChecker()
     misspelled_count = 0
     fixed_count = 0
@@ -17,30 +14,25 @@ def process_line(line: str, autofix: bool = False) -> tuple:
     def check_and_replace(match):
         nonlocal misspelled_count, fixed_count
         word = match.group(0)
-
         clean_word = word.strip("'")
         if not clean_word.isalpha():
             return word
-
         if clean_word.lower() not in spell:
             misspelled_count += 1
             if autofix:
                 correction = spell.correction(clean_word.lower())
                 if not correction:
                     return word
-
                 if clean_word.istitle():
                     corrected_word = correction.capitalize()
                 elif clean_word.isupper():
                     corrected_word = correction.upper()
                 else:
                     corrected_word = correction
-
                 if word.startswith("'"):
                     corrected_word = "'" + corrected_word
                 if word.endswith("'"):
                     corrected_word = corrected_word + "'"
-
                 fixed_count += 1
                 return corrected_word
             else:
@@ -51,12 +43,12 @@ def process_line(line: str, autofix: bool = False) -> tuple:
         return word
 
     updated_line = re.sub(r"[a-zA-Z']+", check_and_replace, line)
-
     return updated_line, misspelled_count, fixed_count
 
 
-def process_file(filepath: str, autofix: bool = False, num_processes: int | None = None):
-
+def process_file(
+    filepath: str, autofix: bool = False, num_processes: int | None = None
+):
     try:
         with open(filepath, "r", encoding="utf-8") as f:
             lines = f.readlines()
@@ -66,30 +58,23 @@ def process_file(filepath: str, autofix: bool = False, num_processes: int | None
     except Exception as e:
         print(f"Error reading file: {e}")
         return
-
     if num_processes is None:
         num_processes = min(cpu_count(), len(lines))
-
     print(f"Processing {len(lines)} lines using {num_processes} processes...")
-
     args = [(line, autofix) for line in lines]
-
     try:
         with Pool(processes=num_processes) as pool:
             results = pool.starmap(process_line, args)
     except Exception as e:
         print(f"Error during multiprocessing: {e}")
         return
-
     updated_lines = []
     total_misspelled = 0
     total_fixed = 0
-
     for updated_line, misspelled, fixed in results:
         updated_lines.append(updated_line)
         total_misspelled += misspelled
         total_fixed += fixed
-
     if autofix:
         if total_fixed > 0:
             try:

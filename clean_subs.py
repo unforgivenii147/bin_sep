@@ -1,10 +1,8 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import argparse
 import re
 from pathlib import Path
-
 from dh import colored
 
 VIDEO_EXTS = {".srt"}

@@ -1,6 +1,5 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import bz2
 import gzip
 import logging
@@ -11,7 +10,6 @@ import tempfile
 import traceback
 from io import BytesIO
 from pathlib import Path
-
 from dh import fsz
 
 try:

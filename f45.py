@@ -1,6 +1,5 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import shutil
 import sys
 import textwrap
@@ -16,14 +15,10 @@ def wrap_file_content(file_path: Path, width: int) -> None:
     except Exception as e:
         print(f"Error reading file: {e}", file=sys.stderr)
         sys.exit(1)
-
     wrapped_lines = []
-
     paragraphs = content.split("\n\n")
-
     for paragraph in paragraphs:
         lines = paragraph.split("\n")
-
         for _i, line in enumerate(lines):
             if line.strip():
                 wrapped = textwrap.wrap(
@@ -37,10 +32,8 @@ def wrap_file_content(file_path: Path, width: int) -> None:
                 wrapped_lines.extend(wrapped if wrapped else [""])
             else:
                 wrapped_lines.append("")
-
         if paragraph != paragraphs[-1]:
             wrapped_lines.append("")
-
     try:
         file_path.write_text("\n".join(wrapped_lines) + "\n", encoding="utf-8")
         print(f"Successfully wrapped '{file_path}' to {width} characters wide.")
@@ -53,9 +46,7 @@ def main():
     if len(sys.argv) != 2:
         print(f"Usage: {sys.argv[0]} <file_path>", file=sys.stderr)
         sys.exit(1)
-
     file_path = Path(sys.argv[1])
-
     try:
         terminal_width = shutil.get_terminal_size().columns
     except Exception:
@@ -63,9 +54,7 @@ def main():
         print(
             f"Warning: Could not determine terminal width. Using {terminal_width} columns."
         )
-
     terminal_width = max(terminal_width, 20)
-
     wrap_file_content(file_path, terminal_width)
 
 

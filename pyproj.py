@@ -1,6 +1,5 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import argparse
 from pathlib import Path
 
@@ -29,7 +28,6 @@ def create_project_structure(
 ) -> None:
     project_dir = Path.cwd() / pkg
     project_dir.mkdir(exist_ok=True)
-
     cwd = project_dir
     version = "1.4.7"
     readme_path = cwd / "README.md"
@@ -37,7 +35,6 @@ def create_project_structure(
     src_pkg = cwd / "src" / pkg
     src_pkg.mkdir(parents=True, exist_ok=True)
     write_file_if_missing(src_pkg / "__init__.py")
-
     if simple_cli:
         main_py = src_pkg / "__main__.py"
         write_file_if_missing(
@@ -49,14 +46,11 @@ if __name__ == "__main__":
     raise SystemExit(main())
 """,
         )
-
     tests_path = cwd / "tests"
     tests_path.mkdir(exist_ok=True)
     write_file_if_missing(tests_path / "__init__.py")
-
     setup_py = cwd / "setup.py"
     setup_py.write_text('__import__("setuptools").setup()\n')
-
     setup_cfg = cwd / "setup.cfg"
     cfg_content = ["[metadata]", f"name = {pkg}", f"version = {version}"]
     if author:
@@ -78,7 +72,6 @@ if __name__ == "__main__":
             "where = src",
         ]
     )
-
     if simple_cli:
         cfg_content.extend(
             [
@@ -88,7 +81,6 @@ if __name__ == "__main__":
                 f"    {pkg} = {pkg}.__main__:main",
             ]
         )
-
     setup_cfg.write_text("\n".join(cfg_content))
     print(f"Project '{pkg}' initialized in {cwd}")
 
@@ -107,15 +99,11 @@ def main():
     parser.add_argument(
         "--version", default="1.4.7", help="Initial version (default: 1.4.7)"
     )
-
     args = parser.parse_args()
-
     user_info = load_user_info()
-
     author = args.author or user_info.get("author", "")
     email = args.email or user_info.get("email", "")
     url = args.url or user_info.get("url", "")
-
     create_project_structure(
         pkg=args.package_name,
         author=author,

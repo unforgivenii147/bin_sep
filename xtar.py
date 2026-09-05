@@ -1,7 +1,5 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-
 from __future__ import annotations
-
 import gzip
 import lzma
 import os
@@ -30,7 +28,6 @@ def get_compression_type(file_path):
 
 def check_integrity(archive_path):
     compression = get_compression_type(archive_path)
-
     try:
         if compression == "gz":
             with gzip.open(archive_path, "rb") as f:
@@ -52,10 +49,8 @@ def check_integrity(archive_path):
             )
             if result.returncode != 0:
                 return False
-
         with tarfile.open(archive_path, f"r:{compression}") as tar:
             tar.getmembers()
-
         return True
     except (
         tarfile.TarError,
@@ -70,23 +65,17 @@ def check_integrity(archive_path):
 
 def extract_archive(archive_path):
     archive_path = Path(archive_path)
-
     print(f"Processing: {archive_path.name}")
-
     if not check_integrity(archive_path):
         print(f"Skipping {archive_path.name} (integrity check failed)")
         return False
-
     try:
         compression = get_compression_type(archive_path)
-
         with tarfile.open(archive_path, f"r:{compression}") as tar:
             tar.extractall(path=archive_path.parent, filter="data")
-
         archive_path.unlink()
         print(f"Successfully extracted and removed: {archive_path.name}")
         return True
-
     except (tarfile.TarError, OSError, EOFError) as e:
         print(f"Extraction failed for {archive_path.name}: {e}")
         return False
@@ -104,23 +93,18 @@ def main():
         archives = [Path(arg) for arg in sys.argv[1:] if Path(arg).exists()]
     else:
         archives = find_archives()
-
     if not archives:
         print("No archive files found or specified.")
         print("Supported formats: .tar.gz, .tgz, .tar.xz, .tar.zst, .tar.br")
         print("Usage: python extractor.py [archive1.tar.gz archive2.tar.xz ...]")
         sys.exit(1)
-
     print(f"Found {len(archives)} archive(s) to process")
     print(f"Using {MAX_WORKERS} workers")
     print("-" * 40)
-
     with Pool(processes=MAX_WORKERS) as pool:
         results = pool.map(extract_archive, archives)
-
     successful = sum(1 for r in results if r)
     failed = sum(1 for r in results if not r)
-
     print("-" * 40)
     print(f"Summary: {successful} successful, {failed} failed/skipped")
 

@@ -1,6 +1,5 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import ast
 import io
 import logging
@@ -8,7 +7,6 @@ import multiprocessing
 import time
 import tokenize
 from pathlib import Path
-
 import pycld2
 from deep_translator import GoogleTranslator
 from dh import DOC_TH1, DOC_TH2

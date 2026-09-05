@@ -1,10 +1,8 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import sys
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
-
 from dh import cprint, read_lines
 
 
@@ -18,10 +16,8 @@ def strip_indentation(lines: list[str]) -> list[str]:
 
 def read_file_task(path: Path, use_mmap: bool) -> tuple[Path, list[str]]:
     lines = read_lines(path, ke=False)
-
     if path.suffix.lower() in CODE_EXT:
         lines = strip_indentation(lines)
-
     return path, lines
 
 

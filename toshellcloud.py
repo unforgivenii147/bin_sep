@@ -1,7 +1,5 @@
 #!/usr/bin/env python
-
 from __future__ import annotations
-
 import sys
 from multiprocessing import Pool
 from pathlib import Path
@@ -11,35 +9,26 @@ from typing import Optional, Tuple
 def convert_shebang(file_path: Path) -> tuple[str, bool, Optional[str]]:
     try:
         content = file_path.read_text(encoding="utf-8")
-
         if not content.startswith("#!"):
             return str(file_path), False, "No shebang found"
-
         lines = content.split("\n")
         shebang = lines[0]
-
         termux_patterns = [
             "#!/data/data/com.termux/files/usr/bin/python",
             "#!/data/data/com.termux/files/usr/bin/python3",
             "#!/data/data/com.termux/files/usr/bin/env python",
             "#!/data/data/com.termux/files/usr/bin/env python3",
         ]
-
         if shebang not in termux_patterns:
             return str(file_path), False, "Not a Termux shebang"
-
         if "python3" in shebang:
             new_shebang = "#!/usr/bin/env python3"
         else:
             new_shebang = "#!/usr/bin/env python"
-
         lines[0] = new_shebang
         new_content = "\n".join(lines)
-
         file_path.write_text(new_content, encoding="utf-8")
-
         return str(file_path), True, None
-
     except Exception as e:
         return str(file_path), False, str(e)
 
@@ -53,33 +42,24 @@ def main():
         target_dir = Path(sys.argv[1])
     else:
         target_dir = Path(".")
-
     if not target_dir.exists() or not target_dir.is_dir():
         print(f"Error: {target_dir} is not a valid directory")
         sys.exit(1)
-
     print(f"Searching for Python files in: {target_dir.absolute()}")
-
     py_files = find_py_files(target_dir)
-
     if not py_files:
         print("No Python files found.")
         return
-
     print(f"Found {len(py_files)} Python files")
     print("Converting Termux shebangs...")
     print("-" * 40)
-
     with Pool(processes=8) as pool:
         results = pool.starmap(convert_shebang, [(f,) for f in py_files])
-
     successful = 0
     skipped = 0
     failed = 0
-
     print("\nResults:")
     print("-" * 40)
-
     for file_path, success, error in results:
         if success:
             successful += 1
@@ -90,7 +70,6 @@ def main():
         else:
             failed += 1
             print(f"❌ {file_path} - {error}")
-
     print("-" * 40)
     print(f"\nSummary:")
     print(f"  Successfully converted: {successful}")

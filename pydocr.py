@@ -1,6 +1,5 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import ast
 import importlib
 import inspect
@@ -9,7 +8,6 @@ from collections import deque
 from multiprocessing import get_context
 from pathlib import Path
 from textwrap import dedent
-
 from dh import get_files, unique_path
 
 cwd = Path.cwd()
@@ -88,7 +86,6 @@ def module_to_md_paths(name: str) -> tuple[str, str]:
 
 
 def file_to_md_paths(py_file: str, root: str) -> tuple[str, str]:
-
     rel = Path(py_file).relative_to(root)
     parts = list(rel.parts)
     parts[-1] = parts[-1].replace(".py", ".md")

@@ -1,17 +1,22 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import argparse
 import io
 import re
 import sys
 from pathlib import Path
-
 import cv2
 import imageio.v3 as iio
 import numpy as np
-from PIL import (Image, ImageColor, ImageDraw, ImageEnhance, ImageFilter,
-                 ImageFont, ImageOps)
+from PIL import (
+    Image,
+    ImageColor,
+    ImageDraw,
+    ImageEnhance,
+    ImageFilter,
+    ImageFont,
+    ImageOps,
+)
 from skimage import exposure, restoration, util
 
 RESAMPLING = {

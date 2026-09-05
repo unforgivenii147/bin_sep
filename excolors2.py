@@ -1,11 +1,9 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import contextlib
 import re
 from dataclasses import dataclass
 from pathlib import Path
-
 from dh import is_binary
 
 HEX_RE = re.compile(

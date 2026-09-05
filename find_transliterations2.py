@@ -1,6 +1,5 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import json
 import mmap
 import multiprocessing as mp
@@ -12,20 +11,16 @@ from pathlib import Path
 def is_transliterated(persian_word: str, english_word: str) -> bool:
     persian_word_lower = persian_word.lower()
     english_word_lower = english_word.lower()
-
     if len(english_word_lower) < 3:
         return False
     if not persian_word_lower:
         return False
-
     simplified_persian = re.sub(r"[آأ]", "a", persian_word_lower)
     simplified_persian = re.sub(r"[اوو]", "o", simplified_persian)
     simplified_persian = re.sub(r"[ایئ]", "i", simplified_persian)
     simplified_persian = re.sub(r"[eé]", "e", simplified_persian)
     simplified_persian = re.sub(r"[ \-\']", "", simplified_persian)
-
     english_alphanum = re.sub(r"[^a-z0-9]", "", english_word_lower)
-
     transliteration_digraphs = [
         "kh",
         "gh",
@@ -40,7 +35,6 @@ def is_transliterated(persian_word: str, english_word: str) -> bool:
         "y",
     ]
     transliteration_vowels = ["a", "e", "i", "o", "u"]
-
     english_score = 0
     for char in english_word_lower:
         if char in transliteration_vowels:
@@ -49,10 +43,8 @@ def is_transliterated(persian_word: str, english_word: str) -> bool:
             english_score += 1
         else:
             english_score += 0.2
-
     if re.search(r"(aa|oo|ee|gh|kh|zh|sh|ch|q|x|w|y)", english_word_lower):
         return True
-
     persian_to_phonetic = {
         "ا": "a",
         "آ": "aa",
@@ -92,10 +84,8 @@ def is_transliterated(persian_word: str, english_word: str) -> bool:
     phonetic_persian = ""
     for char in persian_word:
         phonetic_persian += persian_to_phonetic.get(char, char)
-
     phonetic_persian_cleaned = re.sub(r"[^a-z]", "", phonetic_persian.lower())
     english_word_cleaned = re.sub(r"[^a-z]", "", english_word_lower)
-
     if len(phonetic_persian_cleaned) > 0 and len(english_word_cleaned) > 0:
         set1 = set(phonetic_persian_cleaned)
         set2 = set(english_word_cleaned)
@@ -103,7 +93,6 @@ def is_transliterated(persian_word: str, english_word: str) -> bool:
         union = len(set1.union(set2))
         if union > 0 and intersection / union > 0.7:
             return True
-
     common_english_words = {
         "the",
         "a",
@@ -238,7 +227,6 @@ def is_transliterated(persian_word: str, english_word: str) -> bool:
     }
     if english_word_lower in common_english_words:
         return False
-
     return False
 
 
@@ -259,7 +247,10 @@ def worker_task(chunk):
 
 def read_json_with_mmap(filepath: Path):
     try:
-        with filepath.open("r", encoding="utf-8") as f, mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ) as mm:
+        with (
+            filepath.open("r", encoding="utf-8") as f,
+            mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ) as mm,
+        ):
             content = mm.read().decode("utf-8")
             return json.loads(content)
     except FileNotFoundError:
@@ -280,54 +271,41 @@ def main():
     if len(sys.argv) != 2:
         print("Usage: python script_name.py <input_json_file>")
         sys.exit(1)
-
     input_file_path = Path(sys.argv[1])
     output_transliterated_path = Path("transliterated.json")
     output_cleaned_path = Path("cleaned.json")
-
     print(f"Reading input file: {input_file_path}")
     data = read_json_with_mmap(input_file_path)
-
     if not isinstance(data, dict):
         print(
             f"Error: Input JSON file should contain a dictionary, but found {type(data)}.",
             file=sys.stderr,
         )
         sys.exit(1)
-
     items_list = list(data.items())
     num_items = len(items_list)
     num_workers = 8
     chunk_size = (num_items + num_workers - 1) // num_workers
-
     print(f"Processing {num_items} entries with {num_workers} workers...")
-
     chunks = [items_list[i : i + chunk_size] for i in range(0, num_items, chunk_size)]
-
     transliterated_entries = []
     valid_entries = {}
-
     with mp.Pool(processes=num_workers) as pool:
         results_from_chunks = pool.map(worker_task, chunks)
-
     all_results = [item for sublist in results_from_chunks for item in sublist]
-
     for entry_type, item in all_results:
         if entry_type == "transliterated":
             transliterated_entries.append(item)
         else:
             valid_entries[item[0]] = item[1]
-
     print(
         f"Saving {len(transliterated_entries)} transliterated entries to {output_transliterated_path}"
     )
     with output_transliterated_path.open("w", encoding="utf-8") as f:
         json.dump(dict(transliterated_entries), f, ensure_ascii=False, indent=4)
-
     print(f"Saving {len(valid_entries)} valid entries to {output_cleaned_path}")
     with output_cleaned_path.open("w", encoding="utf-8") as f:
         json.dump(valid_entries, f, ensure_ascii=False, indent=4)
-
     print("Processing complete.")
 
 

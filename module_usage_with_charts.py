@@ -1,11 +1,9 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import ast
 import pkgutil
 from collections import Counter, defaultdict
 from pathlib import Path
-
 import matplotlib.pyplot as plt
 
 BIN_DIR = Path.home() / "bin"

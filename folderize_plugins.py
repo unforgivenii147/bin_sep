@@ -1,7 +1,5 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-
 from __future__ import annotations
-
 import os
 import re
 import shutil
@@ -380,176 +378,39 @@ PLUGIN_PATTERNS = {
     "vim-raku": [r"vim-raku", r"raku\.vim", r"vim_raku"],
 }
 
-"""
-
-PLUGIN_PATTERNS = {
-    'treesitter': [
-        r'treesitter',
-        r'nvim-treesitter',
-        r'tree-sitter',
-    ],
-    'blink.cmp': [
-        r'blink\.cmp',
-        r'blink-cmp',
-        r'blink_cmp',
-    ],
-    'lualine': [
-        r'lualine',
-        r'nvim-lualine',
-    ],
-    'telescope': [
-        r'telescope',
-        r'nvim-telescope',
-    ],
-    'nvim-cmp': [
-        r'nvim-cmp',
-        r'nvim_cmp',
-        r'cmp\.setup',
-        r'cmp\.config',
-    ],
-    'lspconfig': [
-        r'lspconfig',
-        r'nvim-lspconfig',
-    ],
-    'conform': [
-        r'conform',
-        r'nvim-conform',
-    ],
-    'mason': [
-        r'mason',
-        r'mason-nvim',
-        r'mason-lspconfig',
-    ],
-    'which-key': [
-        r'which-key',
-        r'which_key',
-        r'whichkey',
-    ],
-    'gitsigns': [
-        r'gitsigns',
-        r'git-signs',
-        r'git_signs',
-    ],
-    'neo-tree': [
-        r'neo-tree',
-        r'neo_tree',
-        r'neotree',
-    ],
-    'bufferline': [
-        r'bufferline',
-        r'buffer-line',
-        r'buffer_line',
-    ],
-    'indent-blankline': [
-        r'indent-blankline',
-        r'indent_blankline',
-        r'indent-blank-line',
-    ],
-    'autopairs': [
-        r'autopairs',
-        r'nvim-autopairs',
-        r'auto-pairs',
-    ],
-    'surround': [
-        r'surround',
-        r'nvim-surround',
-    ],
-    'comment': [
-        r'comment',
-        r'nvim-comment',
-        r'Comment\.setup',
-    ],
-    'harpoon': [
-        r'harpoon',
-        r'harpoon2',
-    ],
-    'oil': [
-        r'oil\.setup',
-        r'nvim-oil',
-        r'\boil\b',
-    ],
-    'notify': [
-        r'notify',
-        r'nvim-notify',
-        r'noice',  # often paired with notify
-    ],
-    'dressing': [
-        r'dressing',
-        r'nvim-dressing',
-    ],
-    'todo-comments': [
-        r'todo-comments',
-        r'todo_comments',
-        r'todocomments',
-    ],
-    'trouble': [
-        r'trouble',
-        r'nvim-trouble',
-    ],
-    'dap': [
-        r'dap',
-        r'nvim-dap',
-        r'dapui',
-        r'dap-ui',
-    ],
-    'lazy': [
-        r'lazy\.setup',
-        r'lazy\.nvim',
-        r'Lazy',
-    ],
-    'which-key': [
-        r'which-key',
-        r'which_key',
-    ],
-}
-
-
-"""
-
 
 def detect_plugins(file_path):
     detected = set()
-
     try:
         with open(file_path, "r", encoding="utf-8") as f:
             content = f.read()
-
         filename = file_path.name.lower()
-
         for plugin_name, patterns in PLUGIN_PATTERNS.items():
             for pattern in patterns:
                 if re.search(pattern, content, re.IGNORECASE):
                     detected.add(plugin_name)
                     break
-
             for pattern in patterns:
                 if re.search(pattern, filename, re.IGNORECASE):
                     detected.add(plugin_name)
                     break
-
     except Exception as e:
         print(f"Error reading {file_path}: {e}")
-
     return detected
 
 
 def organize_files(dry_run=False):
     current_dir = Path.cwd()
     lua_files = list(current_dir.rglob("*.lua"))
-
     if not lua_files:
         print("No .lua files found in the current directory tree.")
         return
-
     print(f"Found {len(lua_files)} .lua files")
     print("Scanning for plugin references...\n")
-
     plugin_files = defaultdict(list)
     unclassified_files = []
-
     for lua_file in lua_files:
         plugins = detect_plugins(lua_file)
-
         if plugins:
             for plugin in plugins:
                 plugin_files[plugin].append(lua_file)
@@ -559,40 +420,32 @@ def organize_files(dry_run=False):
         else:
             unclassified_files.append(lua_file)
             print(f"  {lua_file.relative_to(current_dir)}: No plugins detected")
-
     print("\n" + "=" * 40)
     print("Organization Plan:")
     print("=" * 40)
-
     for plugin in sorted(plugin_files.keys()):
         files = plugin_files[plugin]
         print(f"\n📁 {plugin}/ ({len(files)} files)")
         for file in files:
             print(f"  → {file.relative_to(current_dir)}")
-
     if unclassified_files:
         print(f"\n📁 unclassified/ ({len(unclassified_files)} files)")
         for file in unclassified_files:
             print(f"  → {file.relative_to(current_dir)}")
-
     if dry_run:
         print(
             "\n[DRY RUN] No files were moved. Run without --dry-run to organize files."
         )
         return
-
     response = input("\nProceed with moving files? (y/N): ").strip().lower()
     if response not in ["y", "yes"]:
         print("Operation cancelled.")
         return
-
     print("\nMoving files...")
     moved_count = 0
-
     for plugin, files in plugin_files.items():
         plugin_folder = current_dir / plugin
         plugin_folder.mkdir(exist_ok=True)
-
         for file in files:
             try:
                 destination = plugin_folder / file.name
@@ -605,7 +458,6 @@ def organize_files(dry_run=False):
                         destination = plugin_folder / new_name
                         counter += 1
                     print(f"  ⚠️  Name conflict: {file.name} → {destination.name}")
-
                 shutil.move(str(file), str(destination))
                 moved_count += 1
                 print(
@@ -613,11 +465,9 @@ def organize_files(dry_run=False):
                 )
             except Exception as e:
                 print(f"  ✗ Failed to move {file}: {e}")
-
     if unclassified_files:
         unclassified_folder = current_dir / "unclassified"
         unclassified_folder.mkdir(exist_ok=True)
-
         for file in unclassified_files:
             try:
                 destination = unclassified_folder / file.name
@@ -629,7 +479,6 @@ def organize_files(dry_run=False):
                         new_name = f"{stem}_{counter}{suffix}"
                         destination = unclassified_folder / new_name
                         counter += 1
-
                 shutil.move(str(file), str(destination))
                 moved_count += 1
                 print(
@@ -637,7 +486,6 @@ def organize_files(dry_run=False):
                 )
             except Exception as e:
                 print(f"  ✗ Failed to move {file}: {e}")
-
     print(f"\n✅ Completed! Moved {moved_count} files.")
 
 
@@ -652,7 +500,6 @@ def main():
         action="store_true",
         help="Show what would be done without actually moving files",
     )
-
     args = parser.parse_args()
     organize_files(dry_run=args.dry_run)
 

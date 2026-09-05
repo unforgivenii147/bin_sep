@@ -1,6 +1,5 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import argparse
 import json
 import logging
@@ -11,7 +10,6 @@ import sys
 from difflib import get_close_matches
 from pathlib import Path
 from typing import Final
-
 from faprint import faprint
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")

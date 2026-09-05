@@ -1,12 +1,10 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import argparse
 import sys
 import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
-
 from dh import fsz
 from tree_sitter import Language, Parser
 from tree_sitter_javascript import language as js_language

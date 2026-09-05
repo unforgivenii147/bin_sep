@@ -1,6 +1,5 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import ast
 import operator
 import re
@@ -8,7 +7,6 @@ import tarfile
 import zipfile
 from collections import defaultdict
 from pathlib import Path
-
 from dh import STDLIB
 
 SHEBANG_PATTERNS = [

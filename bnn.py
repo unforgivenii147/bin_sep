@@ -1,6 +1,5 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import argparse
 import logging
 import shutil
@@ -8,7 +7,6 @@ import tempfile
 from collections.abc import Generator
 from dataclasses import dataclass
 from pathlib import Path
-
 from joblib import Parallel, delayed
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)-8s %(message)s")

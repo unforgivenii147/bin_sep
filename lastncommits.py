@@ -1,6 +1,5 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import subprocess
 import sys
 from pathlib import Path
@@ -17,9 +16,7 @@ def get_created_files(n_commits: int) -> list:
             "--name-status",
             "--diff-filter=A",
         ]
-
         result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-
         created_files = []
         for line in result.stdout.strip().split("\n"):
             if line.strip():
@@ -30,9 +27,7 @@ def get_created_files(n_commits: int) -> list:
                     if path.is_symlink():
                         continue
                     created_files.append(file_path)
-
         return created_files
-
     except subprocess.CalledProcessError as e:
         print(f"✗ Git command failed: {e.stderr}", file=sys.stderr)
         sys.exit(1)
@@ -49,16 +44,12 @@ def main():
         print("  python3 list_commits.py 5")
         print("  python3 list_commits.py 10")
         sys.exit(1)
-
     try:
         n_commits = int(sys.argv[1])
-
         if n_commits <= 0:
             print("✗ Error: Number of commits must be positive", file=sys.stderr)
             sys.exit(1)
-
         created_files = get_created_files(n_commits)
-
         if created_files:
             for file_path in created_files:
                 print(file_path)
@@ -67,7 +58,6 @@ def main():
                 "No files created in the last {} commit(s)".format(n_commits),
                 file=sys.stderr,
             )
-
     except ValueError:
         print(f"✗ Error: '{sys.argv[1]}' is not a valid integer", file=sys.stderr)
         sys.exit(1)

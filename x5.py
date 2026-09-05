@@ -1,6 +1,5 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import argparse
 import lzma
 import multiprocessing as mp
@@ -11,19 +10,21 @@ import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
-
 from dh import fsz
 from rich import box
 from rich.console import Console
 from rich.panel import Panel
-from rich.progress import (BarColumn, Progress, SpinnerColumn, TextColumn,
-                           TimeElapsedColumn)
+from rich.progress import (
+    BarColumn,
+    Progress,
+    SpinnerColumn,
+    TextColumn,
+    TimeElapsedColumn,
+)
 from rich.table import Table
 from rich.text import Text
 
 RICH_AVAILABLE = True
-
-
 # fmt: off
 EXCLUDED_EXTENSIONS = {
     ".xz", ".lzma", ".7z", ".gz", ".bz2", ".zip", ".rar", ".tar", ".tgz", ".tbz2", ".txz", ".tlz",
@@ -37,8 +38,6 @@ EXCLUDED_EXTENSIONS = {
     ".iso", ".img", ".dmg", ".vdi", ".vmdk", ".qcow2",
 }
 # fmt: on
-
-
 @dataclass
 class CompressionResult:
     file_path: Path

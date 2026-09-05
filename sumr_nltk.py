@@ -1,9 +1,7 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import sys
 from collections import Counter
-
 from nltk.corpus import stopwords
 from nltk.tokenize import sent_tokenize, word_tokenize
 

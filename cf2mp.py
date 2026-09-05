@@ -1,7 +1,5 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-
 from __future__ import annotations
-
 import argparse
 import difflib
 import multiprocessing
@@ -16,7 +14,6 @@ CM_PATTERN = re.compile(
     r"as\s+(\w+)\s*:",
     re.DOTALL | re.VERBOSE,
 )
-
 IGNORE_DIRS = {
     ".git",
     "__pycache__",
@@ -33,16 +30,12 @@ IGNORE_DIRS = {
 def transform_code(code: str) -> tuple[str, bool]:
     original_code = code
     pool_vars = CM_PATTERN.findall(code)
-
     if not pool_vars:
         return code, False
-
     code = CM_PATTERN.sub(r"with multiprocessing.Pool(processes=8) as \1:", code)
-
     for var in pool_vars:
         code = re.sub(rf"\b{var}\.map\(", f"{var}.imap_unordered(", code)
         code = re.sub(rf"\b{var}\.submit\(", f"{var}.apply_async(", code)
-
         code = re.sub(
             rf"\bas_completed\(\s*{var}\b",
             f"# TODO: multiprocessing has no as_completed. Use {
@@ -50,7 +43,6 @@ def transform_code(code: str) -> tuple[str, bool]:
             }.imap_unordered or loop with .get()\n# as_completed({var}",
             code,
         )
-
     code = re.sub(
         r"^[ \t]*from\s+concurrent\.futures\s+import\s+.*?\n",
         "",
@@ -59,26 +51,21 @@ def transform_code(code: str) -> tuple[str, bool]:
     )
     if "import multiprocessing" not in code and "from multiprocessing" not in code:
         code = "import multiprocessing\n" + code
-
     if "apply_async" in code and "MIGRATION NOTE" not in code:
         note = "# MIGRATION NOTE: apply_async requires args as a tuple: pool.apply_async(func, (arg1, arg2))\n"
         code = note + code
-
     return code, code != original_code
 
 
 def process_file(args: tuple[Path, bool]) -> dict[str, Any]:
     file_path, apply_changes = args
     result = {"path": str(file_path), "changed": False, "diff": "", "error": None}
-
     try:
         try:
             content = file_path.read_text(encoding="utf-8")
         except UnicodeDecodeError:
             content = file_path.read_text(encoding="latin-1")
-
         new_content, changed = transform_code(content)
-
         if changed:
             result["changed"] = True
             diff = difflib.unified_diff(
@@ -88,16 +75,13 @@ def process_file(args: tuple[Path, bool]) -> dict[str, Any]:
                 tofile=f"b/{file_path}",
             )
             result["diff"] = "".join(diff)
-
             if apply_changes:
                 try:
                     file_path.write_text(new_content, encoding="utf-8")
                 except UnicodeEncodeError:
                     file_path.write_text(new_content, encoding="latin-1")
-
     except Exception as e:
         result["error"] = str(e)
-
     return result
 
 
@@ -130,22 +114,17 @@ def main():
         help="Apply changes in-place. Default is dry-run (shows diff).",
     )
     args = parser.parse_args()
-
     target_paths = args.paths if args.paths else [Path(".")]
     files = collect_python_files(target_paths)
-
     if not files:
         print("No Python files found to process.")
         return
-
     print(f"Found {len(files)} Python file(s). Processing with 8 workers...")
     print("Mode: APPLY (In-place)" if args.apply else "Mode: DRY-RUN (Diff only)")
     print("-" * 40)
-
     tasks = [(f, args.apply) for f in files]
     changed_count = 0
     error_count = 0
-
     with multiprocessing.Pool(processes=8) as pool:
         for res in pool.imap_unordered(process_file, tasks):
             if res["error"]:
@@ -157,7 +136,6 @@ def main():
                 changed_count += 1
                 print(f"\n--- Modified: {res['path']} ---")
                 print(res["diff"])
-
     print("-" * 40)
     print(f"Summary: {changed_count} file(s) modified, {error_count} error(s).")
 

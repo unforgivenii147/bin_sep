@@ -1,11 +1,9 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import ast
 import logging
 import operator
 from pathlib import Path
-
 from joblib import Parallel, delayed
 from xxhash import xxh64
 

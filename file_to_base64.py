@@ -1,13 +1,11 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import base64
 import sys
 from pathlib import Path
 
 
 def font_to_base64(font_path):
-
     font_data = font_path.read_bytes()
     return base64.b64encode(font_data).decode("utf-8")
 

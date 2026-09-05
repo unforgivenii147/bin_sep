@@ -1,7 +1,5 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-
 from __future__ import annotations
-
 import shutil
 import sys
 from pathlib import Path
@@ -9,46 +7,35 @@ from pathlib import Path
 
 def flatten_directory(directory="."):
     root = Path(directory).resolve()
-
     if not root.is_dir():
         print(f"Error: {root} is not a valid directory")
         return
-
     print(f"Flattening directory: {root}")
-
     files_to_move = []
     for subdir in root.iterdir():
         if subdir.is_dir():
             for file_path in subdir.iterdir():
                 if file_path.is_file():
                     files_to_move.append(file_path)
-
     if not files_to_move:
         print("No files found in subdirectories.")
         return
-
     print(f"Found {len(files_to_move)} file(s) to move")
-
     moved_count = 0
     skipped_count = 0
-
     for file_path in files_to_move:
         target_path = root / file_path.name
-
         if target_path.exists():
             print(f"Skipping: {file_path} -> {target_path} (file already exists)")
             skipped_count += 1
             continue
-
         try:
             shutil.move(str(file_path), str(target_path))
             print(f"Moved: {file_path} -> {target_path}")
             moved_count += 1
         except Exception as e:
             print(f"Error moving {file_path}: {e}")
-
     print(f"\nMoved {moved_count} file(s), skipped {skipped_count} file(s)")
-
     removed_dirs = 0
     for subdir in root.iterdir():
         if subdir.is_dir():
@@ -61,7 +48,6 @@ def flatten_directory(directory="."):
                     print(f"Directory not empty (skipping): {subdir}")
             except Exception as e:
                 print(f"Error removing {subdir}: {e}")
-
     print(f"\nRemoved {removed_dirs} empty directory(ies)")
     print("Flattening complete!")
 

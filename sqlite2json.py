@@ -1,6 +1,5 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import base64
 import json
 import sqlite3
@@ -146,7 +145,6 @@ def main():
         print("No tables found in database")
         sys.exit(1)
     num_processes = 4
-
     print(f"Processing {len(tables)} tables")
     for tbl in tables:
         print(tbl)

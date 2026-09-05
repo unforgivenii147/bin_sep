@@ -1,6 +1,5 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import argparse
 import asyncio
 import mmap
@@ -9,7 +8,6 @@ import sys
 import tarfile
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-
 from dh import fsz, get_files
 from lzma_mt import compress, decompress
 

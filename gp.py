@@ -1,10 +1,8 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import sys
 from datetime import datetime
 from pathlib import Path
-
 from git import GitCommandError, InvalidGitRepositoryError, Repo
 
 

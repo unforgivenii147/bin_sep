@@ -239,7 +239,11 @@ def is_transliteration(english_word, persian_text):
     eng_vowels = re.findall(r"[aeiou]+", eng_normalized)
     persian_vowels = re.findall(r"[اوی]", persian_normalized)
 
-    if len(eng_vowels) > 0 and len(persian_vowels) > 0 and abs(len(eng_vowels) - len(persian_vowels)) <= 1:
+    if (
+        len(eng_vowels) > 0
+        and len(persian_vowels) > 0
+        and abs(len(eng_vowels) - len(persian_vowels)) <= 1
+    ):
         translit_indicators.append("vowel_pattern")
 
     consonant_map = {

@@ -1,6 +1,5 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import argparse
 import asyncio
 import contextlib
@@ -15,14 +14,18 @@ from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 from urllib.parse import urljoin, urlparse
-
 import aiohttp
 
 try:
     from rich.console import Console
     from rich.panel import Panel
-    from rich.progress import (BarColumn, Progress, SpinnerColumn, TextColumn,
-                               TimeRemainingColumn)
+    from rich.progress import (
+        BarColumn,
+        Progress,
+        SpinnerColumn,
+        TextColumn,
+        TimeRemainingColumn,
+    )
     from rich.table import Table
     from rich.text import Text
 

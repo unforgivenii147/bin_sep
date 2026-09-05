@@ -1,11 +1,9 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import sys
 import time
 from pathlib import Path
 from urllib.parse import urlparse
-
 import pycurl
 from dh import fsz
 
@@ -17,7 +15,6 @@ def get_remote_size(url):
     c.setopt(c.FOLLOWLOCATION, True)
     c.setopt(c.TIMEOUT, 15)
     c.setopt(c.USERAGENT, "Mozilla/5.0")
-
     try:
         c.perform()
         size = c.getinfo(c.CONTENT_LENGTH_DOWNLOAD)
@@ -34,48 +31,36 @@ def main():
         print("  <url>  : The remote file URL (must be sys.argv[1])")
         print("  -d     : Download the file to the current directory")
         sys.exit(1)
-
     url = sys.argv[1]
     do_download = "-d" in sys.argv
-
     print(f"Checking remote link: {url}")
     total_size = get_remote_size(url)
-
     if total_size:
         print(f"Remote file size: {fsz(total_size)}")
     else:
         print("Remote file size: Unknown (Server didn't provide Content-Length)")
-
     if not do_download:
         print("\nUse the -d flag to download the file.")
         return
-
     print("Starting chunked download...\n")
-
     parsed = urlparse(url)
     filename = Path(parsed.path).name
     if not filename or filename == "/":
         filename = "downloaded_file"
-
     filepath = Path.cwd() / filename
-
     if filepath.exists():
         print(f"{filepath} exists.")
         sys.exit(0)
-
     downloaded = 0
     start_time = time.time()
 
     def write_function(data):
         nonlocal downloaded
-
         with open(filepath, "ab") as f:
             f.write(data)
         downloaded += len(data)
-
         elapsed = time.time() - start_time
         speed = downloaded / elapsed if elapsed > 0 else 0
-
         if total_size and total_size > 0:
             progress = (downloaded / total_size) * 40
             remaining = total_size - downloaded
@@ -86,7 +71,6 @@ def main():
             progress = 0.0
             eta_str = "Unknown"
             size_str = f"{fsz(downloaded)}/Unknown"
-
         sys.stdout.write(
             f"\r[{progress:5.1f}%] {size_str} | Speed: {fsz(speed)}/s | ETA: {eta_str}   "
         )
@@ -97,7 +81,6 @@ def main():
     c.setopt(c.FOLLOWLOCATION, True)
     c.setopt(c.USERAGENT, "Mozilla/5.0")
     c.setopt(c.WRITEFUNCTION, write_function)
-
     try:
         c.perform()
         http_code = c.getinfo(c.HTTP_CODE)
@@ -114,7 +97,6 @@ def main():
         sys.exit(1)
     finally:
         c.close()
-
     print(f"\n\nDownload complete! Saved to: {filepath}")
 
 

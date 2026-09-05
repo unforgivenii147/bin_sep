@@ -7,7 +7,6 @@ dependencies = [
     "dh @ file:///data/data/com.termux/files/home/projects/py/dh/src",
 ]
 [tool.ty]
-
 [environment]
 extra-search-path = [
     "/data/data/com.termux/files/home/projects/py/dh/src",

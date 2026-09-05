@@ -1,13 +1,15 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import argparse
 import csv
 import os
 from collections.abc import Iterable
-
-from cld import (detect_language, is_probably_text_bytes, read_file_bytes,
-                 safe_text_from_bytes)
+from cld import (
+    detect_language,
+    is_probably_text_bytes,
+    read_file_bytes,
+    safe_text_from_bytes,
+)
 
 DEFAULT_MAX_PROBE = 4096
 DEFAULT_READ_BYTES = 2 * 1024 * 1024

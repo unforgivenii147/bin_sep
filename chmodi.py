@@ -1,13 +1,11 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import os
 import stat
 import sys
 import time
 from multiprocessing import Pool, cpu_count
 from pathlib import Path
-
 from dh import is_binary
 
 DIR_PERM = 0o755

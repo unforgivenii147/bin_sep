@@ -1,6 +1,5 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import os
 import subprocess
 import sys
@@ -51,9 +50,7 @@ class PythonDevSetup:
 __pycache__/
 *.py[cod]
 *$py.class
-
 *.so
-
 .Python
 build/
 develop-eggs/
@@ -70,13 +67,10 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-
 *.manifest
 *.spec
-
 pip-log.txt
 pip-delete-this-directory.txt
-
 htmlcov/
 .tox/
 .nox/
@@ -89,10 +83,8 @@ coverage.xml
 *.py,cover
 .hypothesis/
 .pytest_cache/
-
 *.mo
 *.pot
-
 .env
 .venv
 env/
@@ -100,19 +92,15 @@ venv/
 ENV/
 env.bak/
 venv.bak/
-
 .idea/
 .vscode/
 *.swp
 *.swo
 *~
-
 .DS_Store
 Thumbs.db
-
 *.log
 logs/
-
 .env.local
 .env.*.local
 """
@@ -352,7 +340,6 @@ exclude_lines = [
         if not neovim_file.exists():
             content = f"""# Neovim Configuration for Python Development
 This project uses **LazyVim** with a custom Python configuration.
-
 1. **Install Neovim** (v0.9+ recommended):
    Linux/macOS:
    brew install neovim  (macOS)
@@ -367,7 +354,6 @@ This project uses **LazyVim** with a custom Python configuration.
    Create ~/.config/nvim/lua/plugins/python.lua with the configuration.
 4. **Install Python LSP Tools**:
    pip install pyright black isort debugpy pynvim
-
 | Key | Action |
 |-----|--------|
 | <leader>rp | Run current Python file |
@@ -383,12 +369,10 @@ This project uses **LazyVim** with a custom Python configuration.
 | <leader>tt | Run all tests |
 | <leader>td | Debug tests |
 | <leader>cv | Create virtualenv |
-
 The configuration automatically detects and uses virtual environments.
 To create a virtual environment:
 python -m venv .venv
 source .venv/bin/activate
-
 The Python configuration includes:
 - LSP: Pyright + Ruff LSP
 - Formatting: Black + isort (via Conform.nvim)
@@ -397,7 +381,6 @@ The Python configuration includes:
 - Testing: neotest with pytest
 - Snippets: Python docstring and code snippets
 - Virtualenv: Automatic venv detection and creation
-
 LSP not working?
 :LspInfo
 :Mason

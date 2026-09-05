@@ -1,6 +1,5 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import importlib.metadata
 import json
 import os
@@ -9,7 +8,6 @@ import sysconfig
 from multiprocessing import Pool
 from pathlib import Path
 from typing import Dict, List, Set, Tuple
-
 from loguru import logger
 
 logger.remove()
@@ -23,10 +21,8 @@ def process_single_dist(
     dist_name, dist_path, dist_files = dist_info
     files = set()
     dirs = set()
-
     try:
         dist_info_dir = Path(dist_path)
-
         if dist_files:
             for file_path in dist_files:
                 full_path = Path(file_path)
@@ -34,11 +30,9 @@ def process_single_dist(
                     files.add(str(full_path.resolve()))
                 else:
                     files.add(str((dist_info_dir.parent / file_path).resolve()))
-
         if dist_info_dir.exists():
             files.add(str(dist_info_dir.resolve()))
             dirs.add(str(dist_info_dir.resolve()))
-
             record_file = dist_info_dir / "RECORD"
             if record_file.exists():
                 try:
@@ -56,7 +50,6 @@ def process_single_dist(
                                     files.add(str(full_path))
                 except:
                     pass
-
             installed_files = dist_info_dir / "installed-files.txt"
             if installed_files.exists():
                 try:
@@ -68,7 +61,6 @@ def process_single_dist(
                                 files.add(str(full_path))
                 except:
                     pass
-
         try:
             top_level_file = dist_info_dir / "top_level.txt"
             if top_level_file.exists():
@@ -85,26 +77,20 @@ def process_single_dist(
                                         files.add(str(file.resolve()))
         except:
             pass
-
     except Exception as e:
         logger.info(f"Warning: Could not process package {dist_name}: {e}")
-
     return files, dirs
 
 
 def scan_directory_worker(args: tuple[str, set[str], set[str]]) -> list[str]:
     site_dir, package_files, package_dirs = args
     orphan_files = []
-
     if not Path(site_dir).exists():
         return orphan_files
-
     for root, dirs, files in os.walk(site_dir):
         root_path = Path(root)
-
         if "__pycache__" in dirs:
             dirs.remove("__pycache__")
-
         try:
             root_resolved = str(root_path.resolve())
             if root_resolved in package_dirs:
@@ -112,7 +98,6 @@ def scan_directory_worker(args: tuple[str, set[str], set[str]]) -> list[str]:
                 continue
         except:
             pass
-
         for file in files:
             file_path = str((root_path / file).resolve())
             if file_path in package_files:
@@ -120,7 +105,6 @@ def scan_directory_worker(args: tuple[str, set[str], set[str]]) -> list[str]:
             if should_skip_file(file_path):
                 continue
             orphan_files.append(file_path)
-
     return orphan_files
 
 
@@ -168,7 +152,6 @@ class OrphanFileDetector:
     def collect_package_files(self):
         logger.info("Collecting package files...")
         packages = self.get_installed_packages()
-
         package_infos = []
         for dist in packages:
             try:
@@ -178,20 +161,16 @@ class OrphanFileDetector:
                 )
             except:
                 continue
-
         with Pool(processes=8) as pool:
             results = pool.map(process_single_dist, package_infos)
-
         for files, dirs in results:
             self.package_files.update(files)
             self.package_dirs.update(dirs)
-
         logger.info(f"Found {len(self.package_files)} files belonging to packages")
 
     def scan_site_dirs(self) -> list[Path]:
         orphan_files = []
         logger.info("\nScanning site-packages directories:")
-
         scan_args = []
         for site_dir in self.site_dirs:
             logger.info(f"  - {site_dir}")
@@ -199,13 +178,10 @@ class OrphanFileDetector:
                 scan_args.append((str(site_dir), self.package_files, self.package_dirs))
             else:
                 logger.info("    (does not exist)")
-
         with Pool(processes=8) as pool:
             results = pool.map(scan_directory_worker, scan_args)
-
         for files in results:
             orphan_files.extend(files)
-
         return sorted(set(Path(f) for f in orphan_files))
 
     def analyze_orphan_files(self, orphan_files: list[Path]):

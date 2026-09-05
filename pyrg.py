@@ -1,6 +1,5 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import argparse
 import fnmatch
 import operator
@@ -9,7 +8,6 @@ import sys
 from collections.abc import Generator
 from multiprocessing import Pool
 from pathlib import Path
-
 from dh import is_binary
 from loguru import logger
 
@@ -125,17 +123,14 @@ def search_file_text_mode(
 
 def worker(args_tuple):
     path, cwd, regex_pattern, fixed, ignore_case = args_tuple
-
     compiled_regex = None
     if regex_pattern:
         flags = re.MULTILINE
         if ignore_case:
             flags |= re.IGNORECASE
         compiled_regex = re.compile(regex_pattern, flags)
-
     if is_binary(path):
         return (str(path), [])
-
     return search_file_text_mode(
         path=path,
         cwd=cwd,
@@ -221,7 +216,6 @@ def main(argv: list[str] | None = None) -> int:
             file=sys.stderr,
         )
         return 2
-
     compiled = None
     if not args.fixed_strings:
         flags = re.MULTILINE
@@ -232,7 +226,6 @@ def main(argv: list[str] | None = None) -> int:
         except re.error as ex:
             print(f"Invalid regex: {ex}", file=sys.stderr)
             return 2
-
     candidates = list(
         get_files(
             paths=args.paths,
@@ -242,10 +235,8 @@ def main(argv: list[str] | None = None) -> int:
             max_size=args.max_filesize,
         )
     )
-
     color = not args.no_color and sys.stdout.isatty()
     any_match = False
-
     worker_args = [
         (
             path,
@@ -256,10 +247,8 @@ def main(argv: list[str] | None = None) -> int:
         )
         for path in candidates
     ]
-
     with Pool(processes=args.workers) as pool:
         async_results = [pool.apply_async(worker, (arg,)) for arg in worker_args]
-
         try:
             for async_result in async_results:
                 path_str, matches = async_result.get()
@@ -284,7 +273,6 @@ def main(argv: list[str] | None = None) -> int:
             pool.terminate()
             pool.join()
             return 130
-
     return 0 if any_match else 1
 
 

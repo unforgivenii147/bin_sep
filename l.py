@@ -1,10 +1,8 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import datetime
 from os import scandir as _scandir
 from pathlib import Path
-
 from dh import fsz, gsz
 
 EXCLUDED = {".mypy_cache", ".ruff_cache", ".git", "__pycache__"}

@@ -1,7 +1,5 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-
 from __future__ import annotations
-
 import html
 import os
 import re
@@ -9,7 +7,6 @@ import sys
 import tempfile
 from html.parser import HTMLParser
 from pathlib import Path
-
 import chm.chm as pychm
 from weasyprint import HTML
 
@@ -61,7 +58,6 @@ def extract_html_content(chm_file):
         chm = pychm.CHMFile()
         if not chm.LoadCHM(str(chm_file)):
             raise Exception(f"Failed to load CHM file: {chm_file}")
-
         toc = chm.GetTopicsTree()
         if not toc:
             default_topic = chm.GetDefaultTopic()
@@ -76,7 +72,6 @@ def extract_html_content(chm_file):
                     raise Exception("No HTML content found in CHM file")
         else:
             return extract_topics_from_toc(chm, toc)
-
     except Exception as e:
         raise Exception(f"Error extracting HTML from CHM: {e}")
     finally:
@@ -105,7 +100,6 @@ def extract_multiple_topics(chm, topics):
         "code { background-color: #f5f5f5; padding: 0.2em 0.4em; border-radius: 3px; }"
         "</style></head><body>"
     ]
-
     for topic in topics:
         try:
             content = chm.RetrieveObject(chm.ResolveObject(topic))
@@ -119,7 +113,6 @@ def extract_multiple_topics(chm, topics):
                 )
         except Exception as e:
             print(f"Warning: Could not extract topic {topic}: {e}")
-
     combined_html.append("</body></html>")
     return "".join(combined_html)
 
@@ -139,13 +132,11 @@ def extract_topics_from_toc(chm, toc):
         if hasattr(node, "GetTitle") and hasattr(node, "GetLocal"):
             title = node.GetTitle()
             local_path = node.GetLocal()
-
             if title and local_path:
                 heading_level = min(level + 1, 6)
                 html_parts.append(
                     f"<h{heading_level}>{html.escape(title)}</h{heading_level}>"
                 )
-
                 try:
                     content = chm.RetrieveObject(chm.ResolveObject(local_path))
                     if isinstance(content, bytes):
@@ -155,11 +146,9 @@ def extract_topics_from_toc(chm, toc):
                         html_parts.append(cleaned)
                 except Exception as e:
                     print(f"Warning: Could not extract topic {local_path}: {e}")
-
                 html_parts.append(
                     '<hr style="border: 1px solid #ccc; margin: 20px 0;">'
                 )
-
         if hasattr(node, "GetChildren"):
             for child in node.GetChildren():
                 process_toc_node(child, level + 1)
@@ -169,7 +158,6 @@ def extract_topics_from_toc(chm, toc):
             process_toc_node(topic)
     else:
         process_toc_node(toc)
-
     html_parts.append("</body></html>")
     return "".join(html_parts)
 
@@ -177,19 +165,16 @@ def extract_topics_from_toc(chm, toc):
 def clean_html(html_content):
     if not html_content:
         return ""
-
     html_content = re.sub(
         r"<script[^>]*>.*?</script>", "", html_content, flags=re.DOTALL | re.IGNORECASE
     )
     html_content = re.sub(
         r"<style[^>]*>.*?</style>", "", html_content, flags=re.DOTALL | re.IGNORECASE
     )
-
     parser = CHMHTMLParser()
     try:
         parser.feed(html_content)
         body_content = parser.get_content()
-
         body_content = re.sub(r"\n\s*\n", "\n\n", body_content)
         return body_content.strip()
     except Exception as e:
@@ -199,13 +184,10 @@ def clean_html(html_content):
 
 def convert_chm_to_pdf(input_path, output_path):
     print(f"Converting {input_path} to {output_path}...")
-
     print("Extracting HTML content from CHM...")
     html_content = extract_html_content(input_path)
-
     if not html_content:
         raise Exception("No content extracted from CHM file")
-
     with tempfile.NamedTemporaryFile(
         mode="w", suffix=".html", delete=False, encoding="utf-8"
     ) as temp_html:
@@ -311,15 +293,12 @@ def convert_chm_to_pdf(input_path, output_path):
 {html_content}
 </body>
 </html>"""
-
         temp_html.write(full_html)
         temp_html_path = temp_html.name
-
     try:
         print("Converting HTML to PDF using WeasyPrint...")
         HTML(filename=temp_html_path).write_pdf(output_path)
         print(f"PDF successfully created: {output_path}")
-
     finally:
         if os.path.exists(temp_html_path):
             os.unlink(temp_html_path)
@@ -330,22 +309,16 @@ def main():
         print("Usage: python chm_to_pdf.py <input_file.chm>")
         print("Example: python chm_to_pdf.py documentation.chm")
         sys.exit(1)
-
     input_path = Path(sys.argv[1])
-
     if not input_path.exists():
         print(f"Error: Input file '{input_path}' does not exist")
         sys.exit(1)
-
     if input_path.suffix.lower() != ".chm":
         print(f"Error: Input file '{input_path}' is not a CHM file")
         sys.exit(1)
-
     output_path = input_path.with_suffix(".pdf")
-
     try:
         convert_chm_to_pdf(input_path, output_path)
-
     except Exception as e:
         print(f"Error during conversion: {e}")
         sys.exit(1)

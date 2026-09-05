@@ -1,6 +1,5 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import argparse
 import sys
 import tarfile
@@ -8,7 +7,6 @@ import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
-
 import zstandard as zstd
 from dh import fsz, should_skip
 
@@ -94,8 +92,13 @@ try:
     from rich import box
     from rich.console import Console
     from rich.panel import Panel
-    from rich.progress import (BarColumn, Progress, SpinnerColumn, TextColumn,
-                               TimeElapsedColumn)
+    from rich.progress import (
+        BarColumn,
+        Progress,
+        SpinnerColumn,
+        TextColumn,
+        TimeElapsedColumn,
+    )
     from rich.table import Table
     from rich.text import Text
 

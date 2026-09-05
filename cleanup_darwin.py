@@ -1,9 +1,7 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import sys
 from pathlib import Path
-
 from dh import fsz
 
 DARWIN_PATTERNS = {
@@ -104,7 +102,6 @@ def find_and_remove_files(root_dir: Path | None = None) -> dict:
         results.append(result)
     total_freed = sum((size for _, size in results))
     successful = sum((1 for _, size in results if size > 0))
-
     stats = {
         "files_removed": successful,
         "total_freed_bytes": total_freed,

@@ -1,7 +1,5 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-
 from __future__ import annotations
-
 import subprocess
 import sys
 from datetime import datetime
@@ -26,7 +24,6 @@ def branch_exists(branch_name: str) -> bool:
         )
         if branch_name in result.stdout:
             return True
-
         result = subprocess.run(
             ["git", "ls-remote", "--heads", "origin", branch_name],
             cwd=REPO_PATH,
@@ -40,51 +37,41 @@ def branch_exists(branch_name: str) -> bool:
 
 def create_monthly_branch() -> bool:
     branch_name = get_branch_name()
-
     print(f"Creating branch for {branch_name}...")
-
     if branch_exists(branch_name):
         print(f"✓ Branch '{branch_name}' already exists")
         return True
-
     try:
         subprocess.run(
             ["git", "fetch", "--all"], cwd=REPO_PATH, check=True, capture_output=True
         )
-
         subprocess.run(
             ["git", "checkout", MAIN_BRANCH],
             cwd=REPO_PATH,
             check=True,
             capture_output=True,
         )
-
         subprocess.run(["git", "pull"], cwd=REPO_PATH, check=True, capture_output=True)
-
         subprocess.run(
             ["git", "checkout", "-b", branch_name],
             cwd=REPO_PATH,
             check=True,
             capture_output=True,
         )
-
         subprocess.run(
             ["git", "push", "-u", "origin", branch_name],
             cwd=REPO_PATH,
             check=True,
             capture_output=True,
         )
-
         subprocess.run(
             ["git", "checkout", MAIN_BRANCH],
             cwd=REPO_PATH,
             check=True,
             capture_output=True,
         )
-
         print(f"✓ Created and pushed branch: {branch_name}")
         return True
-
     except subprocess.CalledProcessError as e:
         print(f"✗ Error: {e.stderr.decode() if e.stderr else str(e)}")
         return False
@@ -94,6 +81,5 @@ if __name__ == "__main__":
     if not (REPO_PATH / ".git").exists():
         print(f"Error: {REPO_PATH} is not a Git repository")
         sys.exit(1)
-
     success = create_monthly_branch()
     sys.exit(0 if success else 1)

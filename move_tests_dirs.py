@@ -1,11 +1,9 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import shutil
 import sys
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
-
 from dh import cprint
 
 DRY_RUN = "-d" in sys.argv
@@ -19,7 +17,6 @@ def move_tests_folder(
     strp = str(tests_path)
     if "numpy" in strp or "scipy" in strp or "pandas" in strp or "numba" in strp:
         return False, f"excluded path"
-
     try:
         relative_path = tests_path.relative_to(base_src)
         parent_relative = relative_path.parent

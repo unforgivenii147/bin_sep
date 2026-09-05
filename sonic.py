@@ -1,6 +1,5 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import argparse
 import json
 import mmap
@@ -13,7 +12,6 @@ from collections import Counter
 from collections.abc import Generator
 from datetime import UTC, datetime
 from pathlib import Path
-
 from dh import fsz
 
 

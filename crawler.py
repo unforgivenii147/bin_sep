@@ -1,11 +1,9 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import json
 import os
 import re
 from urllib.parse import urljoin
-
 import requests
 from bs4 import BeautifulSoup
 from dh import cprint

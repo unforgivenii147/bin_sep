@@ -1,10 +1,8 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import sys
 import tempfile
 from pathlib import Path
-
 from dh import get_files, mpf3, rrs, runcmd
 
 

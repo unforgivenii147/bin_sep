@@ -1,6 +1,5 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 from pathlib import Path
 
 BASHBIN: Path = Path.home() / "bashbin"
@@ -8,7 +7,6 @@ BIN: Path = Path.home() / "bin"
 
 
 def process_dir(cwd: Path, ext: str) -> None:
-
     for path in cwd.glob(f"*.{ext}"):
         symlink_path = path.with_name(path.stem)
         if symlink_path.exists() and not symlink_path.is_symlink():

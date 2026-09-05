@@ -1,12 +1,9 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-
 from __future__ import annotations
-
 import argparse
 import re
 import sys
 from pathlib import Path
-
 import hunspell
 
 DICT_PATHS = [
@@ -19,7 +16,6 @@ DICT_PATHS = [
         "/data/data/com.termux/files/home/.local/share/hunspell/fa_IR.aff",
     ),
 ]
-
 WORD_SPLIT_RE = re.compile(r"[^A-Za-z]+")
 CAMEL_SPLIT_RE = re.compile(r"(?<=[a-z])(?=[A-Z])")
 
@@ -76,15 +72,12 @@ def scan(root: Path, checker, autofix: bool):
     for path in sorted(root.rglob("*")):
         if not path.is_file():
             continue
-
         stem = path.stem
         words = split_words(stem)
         misspelled = find_misspelled(words, checker)
-
         if misspelled:
             found_any = True
             print(f"{path.name}")
-
             if autofix:
                 new_stem = suggest_fix(stem, misspelled, checker)
                 if new_stem != stem:
@@ -97,7 +90,6 @@ def scan(root: Path, checker, autofix: bool):
                     else:
                         path.rename(new_path)
                         print(f"  -> renamed to: {new_path.name}")
-
     if not found_any:
         print("No misspelled filenames found.")
 
@@ -119,12 +111,10 @@ def main():
         help="Automatically rename files using best spelling suggestions",
     )
     args = parser.parse_args()
-
     root = Path(args.path).resolve()
     if not root.is_dir():
         print(f"Error: {root} is not a directory", file=sys.stderr)
         sys.exit(1)
-
     checker = load_spellchecker()
     scan(root, checker, args.autofix)
 

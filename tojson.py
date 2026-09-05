@@ -1,6 +1,5 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import json
 import sys
 from pathlib import Path
@@ -35,7 +34,6 @@ def file_to_json(filepath: Path, delimiter: str):
                     seenkeys.add(key)
                 else:
                     print(f"repeated key: {key}")
-
                 if value not in seenvals:
                     seenvals.add(value)
                 else:
@@ -47,7 +45,6 @@ def file_to_json(filepath: Path, delimiter: str):
                             print("repeated random")
                             continue
                 result[key] = int(value)
-
     except FileNotFoundError:
         print(f"Error: File '{filepath}' not found.", file=sys.stderr)
         sys.exit(1)

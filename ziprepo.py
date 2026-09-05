@@ -1,12 +1,10 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import argparse
 import logging
 import os
 import sys
 from pathlib import Path
-
 from dotenv import load_dotenv
 from github import Github, GithubException
 

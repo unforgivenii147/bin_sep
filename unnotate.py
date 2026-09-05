@@ -1,7 +1,5 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-
 from __future__ import annotations
-
 import argparse
 import multiprocessing as mp
 import os
@@ -30,8 +28,6 @@ except Exception as exc:
     raise RuntimeError(
         "tree-sitter is required. Install with: pip install tree_sitter tree_sitter_languages"
     ) from exc
-
-
 TYPE_COMMENT_RE = re.compile(r"\s*#\s*type\s*:\s*([^\n]*)$", flags=re.IGNORECASE)
 
 
@@ -98,23 +94,18 @@ def process_file(path_str: str) -> Result:
         src_bytes = p.read_bytes()
     except Exception as e:
         return Result(p, False, warnings, f"read error: {e}")
-
     parser = Parser()
     parser.set_language(PY_LANGUAGE)
     try:
         tree = parser.parse(src_bytes)
     except Exception as e:
         return Result(p, False, warnings, f"parse error: {e}")
-
     root = tree.root_node
     ann_nodes = _collect_annotation_nodes(root)
-
     remove_ranges: list[tuple[int, int]] = []
-
     for node in ann_nodes:
         s = node.start_byte
         e = node.end_byte
-
         prev_i = _prev_nonspace(src_bytes, s)
         removed_prefix_start = s
         if prev_i >= 1 and src_bytes[prev_i - 1 : prev_i + 1] == b"->":
@@ -123,7 +114,6 @@ def process_file(path_str: str) -> Result:
             removed_prefix_start = prev_i
         else:
             removed_prefix_start = s
-
         next_i = _next_nonspace(src_bytes, e)
         next_char = src_bytes[next_i : next_i + 1] if next_i < len(src_bytes) else b""
         safe_next = next_char in (b"=", b",", b")", b":")
@@ -131,7 +121,6 @@ def process_file(path_str: str) -> Result:
             safe = True
         else:
             safe = safe_next
-
         if not safe:
             line_start = src_bytes.rfind(b"\n", 0, s) + 1
             line_end = src_bytes.find(b"\n", e)
@@ -142,13 +131,10 @@ def process_file(path_str: str) -> Result:
                 f'skipped standalone annotation at {p}:{node.start_point[0] + 1}: "{snippet}"'
             )
             continue
-
         remove_ranges.append((removed_prefix_start, e))
-
     type_comment_ranges: list[tuple[int, int]] = []
     for m in TYPE_COMMENT_RE.finditer(src_bytes.decode(errors="ignore")):
         pass
-
     lines = src_bytes.splitlines(keepends=True)
     offset = 0
     for ln in lines:
@@ -163,17 +149,12 @@ def process_file(path_str: str) -> Result:
             byte_end = offset + len(text[: m.end(0)].encode())
             type_comment_ranges.append((byte_start, byte_end))
         offset += len(ln)
-
     all_remove = remove_ranges + type_comment_ranges
-
     if not all_remove:
         return Result(p, False, warnings, None)
-
     new_bytes = _remove_ranges_from_bytes(src_bytes, all_remove)
-
     if new_bytes == src_bytes:
         return Result(p, False, warnings, None)
-
     try:
         parent = p.parent
         fd, tmp_path = tempfile.mkstemp(dir=str(parent), prefix=".tmp_removeann_")
@@ -228,15 +209,12 @@ def main(argv: Optional[list[str]] = None) -> int:
         help="(ignored) pool size is fixed to 8 as required; flag kept for compatibility",
     )
     args = parser.parse_args(argv)
-
     files = gather_py_files(args.paths)
     if not files:
         print("No .py files found.", file=sys.stderr)
         return 1
-
     pool_size = 8
     pool = mp.Pool(processes=pool_size)
-
     results = []
     pending = []
 
@@ -246,7 +224,6 @@ def main(argv: Optional[list[str]] = None) -> int:
     for f in files:
         a = pool.apply_async(process_file, args=(str(f),), callback=_collect_result)
         pending.append(a)
-
     for a in pending:
         try:
             a.wait()
@@ -255,31 +232,25 @@ def main(argv: Optional[list[str]] = None) -> int:
             pool.terminate()
             pool.join()
             return 130
-
     pool.close()
     pool.join()
-
     changed = [r for r in results if r.changed and r.error is None]
     failed = [r for r in results if r.error]
     skipped = [r for r in results if (not r.changed) and (not r.error)]
     warnings = [w for r in results for w in r.warnings]
-
     for r in changed:
         print(f"updated: {r.path}")
     for r in skipped:
         print(f"no-change: {r.path}")
     for r in failed:
         print(f"error: {r.path} -> {r.error}")
-
     if warnings:
         print("\nWarnings:")
         for w in warnings:
             print("  -", w)
-
     print(
         f"\nSummary: processed={len(results)} updated={len(changed)} no-change={len(skipped)} errors={len(failed)} warnings={len(warnings)}"
     )
-
     return 0 if not failed else 2
 
 

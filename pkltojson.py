@@ -1,6 +1,5 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import json
 import pickle
 import sys
@@ -35,38 +34,29 @@ def main():
     if len(sys.argv) < 2:
         print("Usage: python script.py <pickle_file>")
         sys.exit(1)
-
     pkl_path = Path(sys.argv[1])
-
     if not pkl_path.exists():
         print(f"Error: File not found: {pkl_path}")
         sys.exit(1)
-
     if pkl_path.suffix != ".pkl":
         print(f"Warning: Expected .pkl file, got {pkl_path.suffix}")
-
     try:
         with open(pkl_path, "rb") as f:
             data = pickle.load(f)
     except Exception as e:
         print(f"Error loading pickle: {e}")
         sys.exit(1)
-
     print(f"✓ Loaded: {pkl_path}")
     print(f"  Type: {type(data).__name__}")
     print(f"  Size: {len(str(data))} chars\n")
     print("Content:")
     print("-" * 40)
-
     if isinstance(data, dict):
         print(json.dumps(data, indent=2, default=str))
     else:
         print(json.dumps(data, indent=2, default=str))
-
     print("-" * 40)
-
     json_path = pkl_path.with_suffix(".json")
-
     if is_json_serializable(data):
         try:
             with open(json_path, "w") as f:

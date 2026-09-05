@@ -1,6 +1,5 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import argparse
 import base64
 import mimetypes
@@ -10,7 +9,6 @@ import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 from urllib.parse import urljoin, urlparse
-
 import requests
 from bs4 import BeautifulSoup
 from loguru import logger
@@ -19,7 +17,6 @@ logger.remove()
 logger.add(
     sys.stderr, level="WARNING", format="<red>{level}</red> | <cyan>{message}</cyan>"
 )
-
 IMAGE_EXTENSIONS = {
     ".png",
     ".jpg",
@@ -32,9 +29,7 @@ IMAGE_EXTENSIONS = {
     ".bmp",
     ".tiff",
 }
-
 CSS_URL_PATTERN = re.compile(r'url\((["\']?)([^)"\']+)\1\)')
-
 TIMEOUT = 10
 
 
@@ -92,14 +87,11 @@ def process_css_content(
         nonlocal loc, rem
         quote = match.group(1)
         url = match.group(2)
-
         if url.startswith("data:"):
             return match.group(0)
-
         if is_remote(url):
             if is_image(url):
                 return match.group(0)
-
             target_url = urljoin(base_url, url) if base_url else url
             content = fetch_remote(target_url)
             if content:
@@ -108,15 +100,12 @@ def process_css_content(
                 rem += 1
                 return f"url({quote}data:{mime};base64,{b64}{quote})"
             return match.group(0)
-
         else:
             clean_url = url.split("?")[0].split("#")[0]
             local_file = (base_path.parent / clean_url).resolve()
-
             if not local_file.exists():
                 logger.warning(f"Missing local CSS asset referenced: {local_file}")
                 return match.group(0)
-
             content = read_local(local_file)
             if content:
                 mime = get_mime_type(str(local_file))
@@ -138,22 +127,17 @@ def process_html_file(file_path: Path) -> dict:
         "status": "success",
     }
     start = time.perf_counter()
-
     try:
         html_text = file_path.read_text(encoding="utf-8")
         soup = BeautifulSoup(html_text, "html.parser")
-
         for img in soup.find_all("img"):
             src = img.get("src")
             if not src or src.startswith("data:"):
                 continue
-
             if is_remote(src):
                 continue
-
             clean_src = src.split("?")[0].split("#")[0]
             local_img_path = (file_path.parent / clean_src).resolve()
-
             if local_img_path.exists():
                 if content := read_local(local_img_path):
                     b64 = base64.b64encode(content).decode("ascii")
@@ -162,14 +146,11 @@ def process_html_file(file_path: Path) -> dict:
                     stats["local"] += 1
             else:
                 logger.warning(f"Missing local image: {local_img_path} in {file_path}")
-
         for link in soup.find_all("link", rel="stylesheet"):
             href = link.get("href")
             if not href:
                 continue
-
             css_text, base_url, css_base_path = "", None, file_path
-
             if is_remote(href):
                 if raw := fetch_remote(href):
                     css_text = raw.decode("utf-8", errors="ignore")
@@ -188,23 +169,19 @@ def process_html_file(file_path: Path) -> dict:
                     logger.warning(
                         f"Missing local CSS: {local_css_path} in {file_path}"
                     )
-
             if css_text:
                 processed_css, c_loc, c_rem = process_css_content(
                     css_text, css_base_path, base_url
                 )
                 stats["local"] += c_loc
                 stats["remote"] += c_rem
-
                 style_tag = soup.new_tag("style")
                 style_tag.string = processed_css
                 link.replace_with(style_tag)
-
         for script in soup.find_all("script"):
             src = script.get("src")
             if not src:
                 continue
-
             script_text = ""
             if is_remote(src):
                 if raw := fetch_remote(src):
@@ -222,31 +199,25 @@ def process_html_file(file_path: Path) -> dict:
                     logger.warning(
                         f"Missing local script: {local_script} in {file_path}"
                     )
-
             if script_text:
                 new_script = soup.new_tag("script")
                 new_script.string = script_text
                 script.replace_with(new_script)
-
         for tag in soup.find_all(style=True):
             processed, l, r = process_css_content(tag["style"], file_path)
             tag["style"] = processed
             stats["local"] += l
             stats["remote"] += r
-
         for style in soup.find_all("style"):
             if style.string:
                 processed, l, r = process_css_content(style.string, file_path)
                 style.string = processed
                 stats["local"] += l
                 stats["remote"] += r
-
         file_path.write_text(str(soup), encoding="utf-8")
-
     except Exception as e:
         stats["status"] = f"error: {e}"
         logger.error(f"Failed to process HTML file {file_path}: {e}")
-
     stats["time"] = time.perf_counter() - start
     return stats
 
@@ -260,18 +231,15 @@ def process_css_file(file_path: Path) -> dict:
         "status": "success",
     }
     start = time.perf_counter()
-
     try:
         content = file_path.read_text(encoding="utf-8")
         processed_css, l, r = process_css_content(content, file_path)
         stats["local"] += l
         stats["remote"] += r
-
         file_path.write_text(processed_css, encoding="utf-8")
     except Exception as e:
         stats["status"] = f"error: {e}"
         logger.error(f"Failed to process CSS file {file_path}: {e}")
-
     stats["time"] = time.perf_counter() - start
     return stats
 
@@ -299,9 +267,7 @@ def main():
         help="Files or directories to process (default: current directory)",
     )
     args = parser.parse_args()
-
     targets: list[Path] = []
-
     for p_str in args.paths:
         p = Path(p_str)
         if p.is_file() and p.suffix.lower() in (".html", ".css"):
@@ -309,36 +275,27 @@ def main():
         elif p.is_dir():
             targets.extend(p.rglob("*.html"))
             targets.extend(p.rglob("*.css"))
-
     targets = list({p.resolve(): p for p in targets}.values())
-
     if not targets:
         print("\033[93mNo HTML or CSS files found to process.\033[0m")
         return
-
     print(
         f"\033[96mProcessing {len(targets)} files across multiple CPU cores...\033[0m\n"
     )
-
     t_loc, t_rem = 0, 0
     start_time = time.perf_counter()
-
     with ProcessPoolExecutor() as executor:
         futures = {executor.submit(process_file, p): p for p in targets}
-
         for future in as_completed(futures):
             s = future.result()
-
             raw_path = Path(s["path"])
             try:
                 display_path = raw_path.relative_to(Path.cwd())
             except ValueError:
                 display_path = raw_path
-
             t_loc += s["local"]
             t_rem += s["remote"]
             status = s["status"]
-
             if status == "success":
                 print(
                     f"\033[92m[SUCCESS]\033[0m "
@@ -351,7 +308,6 @@ def main():
                 pass
             else:
                 print(f"\033[91m[ERROR]\033[0m {display_path} - {status}")
-
     total_time = time.perf_counter() - start_time
     print(f"\n\033[1;92mBuild Complete in {total_time:.2f}s!\033[0m")
     print(

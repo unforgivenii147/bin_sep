@@ -1,6 +1,5 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import argparse
 import itertools
 import re
@@ -81,12 +80,9 @@ def cluster_means(values, min_gap=None):
 
 def parse_tree_text(text, keep_suffix=False, warn=print):
     lines = text.splitlines()
-
     flat_list = not any(find_node_marker(line)[0] is not None for line in lines)
-
     candidates = []
     warnings = []
-
     for line_no, line in enumerate(lines, 1):
         stripped = line.strip()
         if not stripped:
@@ -109,13 +105,11 @@ def parse_tree_text(text, keep_suffix=False, warn=print):
             candidates.append((line_no, None, stripped))
         else:
             warnings.append(f"line {line_no}: ignoring unrecognized line {stripped!r}")
-
     marker_idxs = sorted({idx for _, idx, _ in candidates if idx is not None})
     if marker_idxs:
         col_to_depth = {c: k + 1 for k, c in enumerate(marker_idxs)}
     else:
         col_to_depth = None
-
     entries = []
     for line_no, idx, raw in candidates:
         name, explicit = clean_name(raw, keep_suffix=keep_suffix)
@@ -136,7 +130,6 @@ def parse_tree_text(text, keep_suffix=False, warn=print):
                 "line_no": line_no,
             }
         )
-
     for w in warnings:
         warn("warning: " + w)
     return entries
@@ -172,7 +165,6 @@ def load_ocr(choice):
                 sys.exit(
                     "error: rapidocr-onnxruntime is not installed (pip install rapidocr-onnxruntime)"
                 )
-
     if choice in ("auto", "pytesseract"):
         try:
             import pytesseract
@@ -209,7 +201,6 @@ def load_ocr(choice):
                 sys.exit(
                     "error: pytesseract is not installed (pip install pytesseract)"
                 )
-
     sys.exit(
         "error: no OCR engine available — install one with:\n"
         "    pip install rapidocr-onnxruntime     (recommended, self-contained)\n"
@@ -265,18 +256,15 @@ def image_to_entries(path, keep_suffix=False, engine="auto"):
     if ImageStat.Stat(img).mean[0] < 128:
         img = ImageOps.invert(img)
     img = ImageOps.autocontrast(img)
-
     small = min(img.size)
     if small < 800:
         factor = min(800 / small, 4.0)
         img = img.resize(
             (round(img.width * factor), round(img.height * factor)), Image.LANCZOS
         )
-
     engine_name, ocr = load_ocr(engine)
     tokens = ocr(img)
     raw_count = len(tokens)
-
     kept = []
     for left, top, width, text, conf in tokens:
         if conf < 0.4:
@@ -292,39 +280,31 @@ def image_to_entries(path, keep_suffix=False, engine="auto"):
             continue
         kept.append((left, top, width, text.strip()))
     tokens = kept
-
     if not tokens:
         sys.exit(f"error: OCR found no readable entries in {path}")
-
     cell_widths = [
         w / max(1, len(t)) for _l, _t, w, t, *_ in tokens if len(t) >= 2 and w > 0
     ]
-
     tokens.sort(key=lambda t: (t[1], t[0]))
     tops = [t[1] for t in tokens]
     top_diffs = [b - a for a, b in itertools.pairwise(tops) if b - a > 0]
     pitch = median(top_diffs) if top_diffs else 40.0
     row_thresh = max(6.0, 0.45 * pitch)
-
     rows = []
     for left, top, _w, text in tokens:
         if rows and top - rows[-1][0] <= row_thresh:
             rows[-1][1].append((left, text))
         else:
             rows.append((top, [(left, text)]))
-
     row_lefts, row_names = [], []
     for top, parts in rows:
         parts.sort(key=lambda p: p[0])
         row_lefts.append(parts[0][0])
         row_names.append(re.sub(r"\s*\.\s*", ".", "".join(p[1] for p in parts)))
-
     if not cell_widths:
         cell_widths = [pitch / 2.2]
     char_width = median(cell_widths)
-
     marker_xs = detect_marker_xs(img, rows, pitch, char_width)
-
     col_gap = 0.8 * char_width
     ocr_means = cluster_means(row_lefts, min_gap=col_gap)
     ocr_depth = {m: k + 1 for k, m in enumerate(ocr_means)}
@@ -357,7 +337,6 @@ def image_to_entries(path, keep_suffix=False, engine="auto"):
                 "line_no": round(top),
             }
         )
-
     if not entries:
         sys.exit(f"error: OCR found no usable entries in {path}")
     return engine_name, entries, {"tokens": raw_count, "rows": len(rows)}
@@ -419,29 +398,23 @@ def create_tree(entries, base_dir: Path, dry_run=False):
         base_dir.mkdir(parents=True, exist_ok=True)
     stack = []
     counts = {"dirs": 0, "files": 0, "existing": 0, "skipped": 0}
-
     for entry in entries:
         depth = entry["depth"]
         name = entry["name"]
         is_dir = entry["is_dir"]
         prefix = "DRYRUN " if dry_run else ""
-
         if name == ".":
             if not stack:
                 stack.append((0, base_dir))
             continue
-
         if _unsafe_name(name):
             print(f"{prefix}SKIP  unsafe path: {name!r}", file=sys.stderr)
             counts["skipped"] += 1
             continue
-
         while stack and stack[-1][0] >= depth:
             stack.pop()
-
         parent = stack[-1][1] if stack else base_dir
         target = parent / name
-
         if is_dir:
             try:
                 already = not dry_run and target.exists()
@@ -474,7 +447,6 @@ def create_tree(entries, base_dir: Path, dry_run=False):
             except Exception as e:
                 print(f"Failed to create file {target}: {e}", file=sys.stderr)
                 counts["skipped"] += 1
-
     return counts
 
 
@@ -543,12 +515,10 @@ def main():
         help="keep tree -F suffixes (* @ = |) in names",
     )
     args = parser.parse_args()
-
     input_path = args.input
     if not input_path.is_file():
         print(f"error: input file not found: {input_path}", file=sys.stderr)
         sys.exit(1)
-
     if detect_mode(input_path) == "image":
         engine_name, entries, stats = image_to_entries(
             input_path, keep_suffix=args.keep_suffix, engine=args.engine
@@ -564,15 +534,12 @@ def main():
             sys.exit(1)
         entries = parse_tree_text(text, keep_suffix=args.keep_suffix)
         print(f"Text: parsed {len(entries)} entries")
-
     if not entries:
         print("error: no entries found in input.", file=sys.stderr)
         sys.exit(1)
-
     finalize(entries, assume_dir=args.assume_dir)
     for note in ambiguous_notes(entries, assume_dir=args.assume_dir):
         print("note: " + note)
-
     counts = create_tree(entries, args.base, dry_run=args.dry_run)
     what = "Would create" if args.dry_run else "Created"
     print(

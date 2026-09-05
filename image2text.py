@@ -1,9 +1,7 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import sys
 from pathlib import Path
-
 from dh import fsz, get_files, gsz, mpf3
 from PIL import Image
 from PIL.Image import Image
@@ -25,8 +23,6 @@ except ImportError:
             "Install one of them: pip install opencv-python or pip install scikit-image"
         )
         sys.exit(1)
-
-
 MAX_QUEUE = 16
 
 

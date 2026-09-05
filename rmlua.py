@@ -1,12 +1,10 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import argparse
 import os
 import sys
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
-
 import tree_sitter_lua
 from tree_sitter import Language, Parser
 

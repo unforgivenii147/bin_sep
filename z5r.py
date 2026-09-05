@@ -1,6 +1,5 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import argparse
 import multiprocessing as mp
 import tarfile
@@ -9,7 +8,6 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Final
-
 import zstandard as zstd
 from dh import fsz, gsz
 
@@ -34,8 +32,13 @@ DEFAULT_SKIP_DIRS: Final[set[str]] = {
 }
 try:
     from rich.console import Console
-    from rich.progress import (BarColumn, Progress, SpinnerColumn, TextColumn,
-                               TimeElapsedColumn)
+    from rich.progress import (
+        BarColumn,
+        Progress,
+        SpinnerColumn,
+        TextColumn,
+        TimeElapsedColumn,
+    )
 
     RICH_AVAILABLE: Final[bool] = True
 except ImportError:

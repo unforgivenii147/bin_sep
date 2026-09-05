@@ -1,6 +1,5 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import argparse
 import json
 import multiprocessing as mp
@@ -9,7 +8,6 @@ import threading
 from collections.abc import Iterable, Iterator
 from pathlib import Path
 from typing import Any
-
 import gcld3
 import pycld2 as cld2
 from binaryornot import is_binary

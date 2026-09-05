@@ -1,10 +1,8 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import datetime
 from os import scandir as _scandir
 from pathlib import Path
-
 from dh import fsz, gsz
 
 if __name__ == "__main__":

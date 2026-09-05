@@ -1,10 +1,8 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import sys
 from gzip import compress as gzip_compress
 from pathlib import Path
-
 from dh import get_files, mpf3
 from lzma_mt import decompress
 

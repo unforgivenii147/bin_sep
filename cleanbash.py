@@ -1,13 +1,11 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import argparse
 import multiprocessing as mp
 import os
 import sys
 from pathlib import Path
 from typing import Generator, Iterable, Tuple
-
 import tree_sitter_bash
 from tree_sitter import Language, Node, Parser
 
@@ -119,18 +117,14 @@ def main() -> int:
     args = ap.parse_args()
     targets: list[Path] = args.paths or [Path.cwd()]
     files = list(iter_targets(targets))
-
     if not files:
         print("no bash scripts found", file=sys.stderr)
         return 1
-
     total_removed = 0
     files_touched = 0
     errors = 0
-
     with mp.Pool(processes=8) as pool:
         results = [pool.apply_async(process_file, (f,)) for f in files]
-
         for res in results:
             rel, count, err = res.get()
             if err:
@@ -141,7 +135,6 @@ def main() -> int:
                     files_touched += 1
                 total_removed += count
                 print(f"{rel}: {count} comment(s) removed")
-
     print(
         f"\nDone: {files_touched}/{len(files)} file(s) modified, {total_removed} comment(s) removed, {errors} error(s)."
     )

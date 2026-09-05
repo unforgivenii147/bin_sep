@@ -1,7 +1,5 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-
 from __future__ import annotations
-
 import argparse
 import sys
 from multiprocessing import Pool
@@ -21,7 +19,6 @@ except ImportError as e:
         "pip install tree-sitter tree-sitter-html tree-sitter-css tree-sitter-javascript tree-sitter-typescript"
     )
     sys.exit(1)
-
 HTML_LANG = Language(tree_sitter_html.language())
 CSS_LANG = Language(tree_sitter_css.language())
 JS_LANG = Language(tree_sitter_javascript.language())
@@ -50,7 +47,6 @@ def _find_comment_ranges(node, ranges: list[tuple[int, int]]) -> None:
 def _apply_removals(content: bytes, ranges: list[tuple[int, int]]) -> bytes:
     if not ranges:
         return content
-
     result = bytearray()
     last_idx = 0
     for start, end in sorted(ranges):
@@ -64,41 +60,33 @@ def strip_comments_standard(content: bytes, parser: Parser) -> tuple[bytes, int]
     tree = parser.parse(content)
     ranges = []
     _find_comment_ranges(tree.root_node, ranges)
-
     if not ranges:
         return content, 0
-
     return _apply_removals(content, ranges), len(ranges)
 
 
 def strip_comments_html(content: bytes) -> tuple[bytes, int]:
     tree = HTML_PARSER.parse(content)
-
     modifications: list[tuple[int, int, bytes]] = []
     total_comments = 0
 
     def traverse(node) -> None:
         nonlocal total_comments
-
         if node.type == "comment":
             modifications.append((node.start_byte, node.end_byte, b""))
             total_comments += 1
-
         elif node.type in ("script_element", "style_element"):
             raw_text_node = next(
                 (child for child in node.children if child.type == "raw_text"), None
             )
-
             if raw_text_node and raw_text_node.end_byte > raw_text_node.start_byte:
                 inner_content = content[
                     raw_text_node.start_byte : raw_text_node.end_byte
                 ]
                 parser = JS_PARSER if node.type == "script_element" else CSS_PARSER
-
                 inner_tree = parser.parse(inner_content)
                 inner_ranges = []
                 _find_comment_ranges(inner_tree.root_node, inner_ranges)
-
                 if inner_ranges:
                     total_comments += len(inner_ranges)
                     cleaned_inner = _apply_removals(inner_content, inner_ranges)
@@ -109,17 +97,13 @@ def strip_comments_html(content: bytes) -> tuple[bytes, int]:
                             cleaned_inner,
                         )
                     )
-
         for child in node.children:
             traverse(child)
 
     traverse(tree.root_node)
-
     if not modifications:
         return content, 0
-
     modifications.sort(key=lambda x: x[0])
-
     result = bytearray()
     last_idx = 0
     for start, end, replacement in modifications:
@@ -127,7 +111,6 @@ def strip_comments_html(content: bytes) -> tuple[bytes, int]:
         result.extend(replacement)
         last_idx = end
     result.extend(content[last_idx:])
-
     return bytes(result), total_comments
 
 
@@ -141,9 +124,7 @@ def process_file(filepath: Path) -> dict[str, Any]:
             "comments_removed": 0,
             "changed": False,
         }
-
     ext = filepath.suffix.lower()
-
     try:
         if ext == ".html":
             new_content, count = strip_comments_html(content)
@@ -167,7 +148,6 @@ def process_file(filepath: Path) -> dict[str, Any]:
             "comments_removed": 0,
             "changed": False,
         }
-
     changed = new_content != content
     if changed:
         try:
@@ -179,7 +159,6 @@ def process_file(filepath: Path) -> dict[str, Any]:
                 "comments_removed": count,
                 "changed": False,
             }
-
     return {
         "file": str(filepath),
         "comments_removed": count,
@@ -191,10 +170,8 @@ def process_file(filepath: Path) -> dict[str, Any]:
 def collect_files(paths: list[str]) -> list[Path]:
     extensions = {".html", ".css", ".js", ".ts"}
     files = set()
-
     if not paths:
         paths = ["."]
-
     for p in paths:
         path = Path(p).resolve()
         if path.is_file():
@@ -206,7 +183,6 @@ def collect_files(paths: list[str]) -> list[Path]:
                 for f in path.rglob("*")
                 if f.is_file() and f.suffix.lower() in extensions
             )
-
     return sorted(list(files))
 
 
@@ -227,21 +203,16 @@ def main():
         help="Number of multiprocessing workers (default: 8).",
     )
     args = parser.parse_args()
-
     files = collect_files(args.paths)
     if not files:
         print("No matching files found.")
         return
-
     print(f"Found {len(files)} files. Processing with {args.workers} workers...")
-
     total_comments = 0
     changed_files = 0
     errors = 0
-
     with Pool(processes=args.workers) as pool:
         async_results = [pool.apply_async(process_file, (f,)) for f in files]
-
         for res in async_results:
             stats = res.get()
             if stats.get("error"):
@@ -255,7 +226,6 @@ def main():
                 changed_files += 1
             else:
                 pass
-
     print("-" * 40)
     print(f"Processing complete.")
     print(f"Files changed: {changed_files}")

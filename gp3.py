@@ -1,15 +1,12 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import os
 import re
 import sys
 from datetime import datetime
 from pathlib import Path
-
 from dotenv import load_dotenv
-from git import Repo
-from git import exc as GitExc
+from git import Repo, exc as GitExc
 from github import Github, GithubException
 
 load_dotenv(Path.home() / ".env")

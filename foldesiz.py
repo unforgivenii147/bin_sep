@@ -1,12 +1,10 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import operator
 import os
 import shutil
 import sys
 from pathlib import Path
-
 from dh import fsz, should_skip, unique_path
 
 
@@ -43,7 +41,6 @@ def create_range_folders(cwd: Path, files, num_folders: int):
         folder_files = sizes[start_idx:end_idx]
         if folder_files:
             min_size, max_size = (min(folder_files), max(folder_files))
-
             folder_name = f"{fsz(min_size)}-{fsz(max_size)}"
             folder_ranges.append((min_size, max_size, folder_name))
             folder_path = os.path.join(cwd, folder_name)

@@ -1,11 +1,9 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import argparse
 import urllib.error
 import urllib.request
 from pathlib import Path
-
 from dh import fsz
 
 MAX_DOWNLOAD_SIZE = 1 * 1024 * 1024
