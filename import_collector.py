@@ -8,8 +8,9 @@ import sys
 from pathlib import Path
 
 from dh import is_python_file
+from typing import Any
 
-PACKAGE_MAPPING = {
+PACKAGE_MAPPING: Any = {
     "cv2": "opencv-python",
     "PIL": "Pillow",
     "sklearn": "scikit-learn",

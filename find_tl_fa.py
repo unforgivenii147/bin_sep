@@ -227,7 +227,7 @@ def process_json_file(input_file):
     return transliterated, cleaned
 
 
-def main():
+def main() -> None:
     if len(sys.argv) != 2:
         print("Usage: python script.py <input.json>")
         sys.exit(1)

@@ -5,11 +5,12 @@ import os
 from pathlib import Path
 
 import lz4.frame
+from typing import Any
 
-CHUNK_SIZE = 1024 * 1024
-CHUNK_THRESHOLD = 5 * 1024 * 1024
-COMPRESSED_EXT = ".lz4"
-EXT = {".gz", ".br", ".xz", ".zst", ".bz2", ".zip", ".whl", ".lz4"}
+CHUNK_SIZE: Any = 1024 * 1024
+CHUNK_THRESHOLD: Any = 5 * 1024 * 1024
+COMPRESSED_EXT: str = ".lz4"
+EXT: Any = {".gz", ".br", ".xz", ".zst", ".bz2", ".zip", ".whl", ".lz4"}
 
 
 def compress_file(

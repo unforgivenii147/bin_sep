@@ -62,7 +62,7 @@ def parse_metadata_section(lines):
     return metadata, end_line
 
 
-def find_section_boundaries(content, start_pos=0):
+def find_section_boundaries(content, start_pos: int = 0):
     sections = []
     pos = start_pos
     code_pattern = re.compile(r"```(python|shell|bash|sh|py)\s*\n(.*?)```", re.DOTALL)
@@ -139,7 +139,7 @@ def convert_metadata_to_notebook(metadata_file_path):
     return output_path
 
 
-def main():
+def main() -> None:
     if len(sys.argv) < 2:
         print("Usage: python metadata_to_notebook.py <METADATA_file>")
         print("Output will be saved as <package_name>.ipynb")

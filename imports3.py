@@ -8,10 +8,11 @@ import tarfile
 import zipfile
 from multiprocessing import Pool, cpu_count
 from pathlib import Path
+from typing import Any
 
 
 class PIPPackageCache:
-    def __init__(self, pip_list_path: str = "/sdcard/data/pip.txt"):
+    def __init__(self, pip_list_path: str = "/sdcard/data/pip.txt") -> None:
         self.packages = set()
         self.package_lower_map = {}
         self._load_pip_packages(pip_list_path)
@@ -403,7 +404,7 @@ def filter_packages(
     return filtered
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Generate requirements.txt by inspecting Python files recursively"
     )

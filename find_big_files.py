@@ -5,6 +5,7 @@ import sys
 from pathlib import Path
 
 from dh import fsz
+from typing import Any
 
 
 def get_filez(root_dir: str | Path):
@@ -29,8 +30,8 @@ def get_filez(root_dir: str | Path):
         yield root_dir
 
 
-THRESHOLD = 1024 * 1024
-cwd = Path.cwd()
+THRESHOLD: Any = 1024 * 1024
+cwd: Any = Path.cwd()
 
 
 def process_file(path: Path, threshold: int = THRESHOLD) -> None:

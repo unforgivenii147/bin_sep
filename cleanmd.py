@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from enum import Enum
 from multiprocessing import Pool
 from pathlib import Path
-from typing import NamedTuple
+from typing import Any, NamedTuple
 
 
 class Color(Enum):
@@ -77,22 +77,24 @@ class ProcessingConfig:
 
 
 class MarkdownPatterns:
-    INLINE_IMAGE = re.compile(r"!\[([^\[\]]*)\]\(([^\)]+)\)", re.MULTILINE)
-    HTML_IMG_TAG = re.compile(
+    INLINE_IMAGE: Any = re.compile(r"!\[([^\[\]]*)\]\(([^\)]+)\)", re.MULTILINE)
+    HTML_IMG_TAG: Any = re.compile(
         r"<img\s+[^>]*src=['\"]?([^'\">\s]+)['\"]?[^>]*/?>\s*",
         re.IGNORECASE | re.MULTILINE,
     )
-    REFERENCE_IMAGE = re.compile(r"!\[([^\[\]]*)\]\[([^\[\]]+)\]", re.MULTILINE)
-    IMAGE_DEF = re.compile(
+    REFERENCE_IMAGE: Any = re.compile(r"!\[([^\[\]]*)\]\[([^\[\]]+)\]", re.MULTILINE)
+    IMAGE_DEF: Any = re.compile(
         r"^\s*\[([^\[\]]+)\]:\s*(.+?(?:\.(?:png|jpg|jpeg|gif|webp|svg|bmp))?)\s*(?:\"[^\"]*\")?\s*$",
         re.MULTILINE | re.IGNORECASE,
     )
-    PICTURE_TAG = re.compile(r"<picture\s*>.*?</picture>", re.DOTALL | re.IGNORECASE)
-    FIGURE_TAG = re.compile(r"<figure\s*>.*?</figure>", re.DOTALL | re.IGNORECASE)
+    PICTURE_TAG: Any = re.compile(
+        r"<picture\s*>.*?</picture>", re.DOTALL | re.IGNORECASE
+    )
+    FIGURE_TAG: Any = re.compile(r"<figure\s*>.*?</figure>", re.DOTALL | re.IGNORECASE)
 
 
 class MarkdownImageRemover:
-    def __init__(self, config: ProcessingConfig):
+    def __init__(self, config: ProcessingConfig) -> None:
         self.config = config
         self.patterns = MarkdownPatterns()
 
@@ -178,7 +180,7 @@ def worker_process_file(args: tuple[Path, ProcessingConfig]) -> ImageStats:
 
 class Reporter:
     @staticmethod
-    def print_header():
+    def print_header() -> None:
         print()
         print(Styling.style("=" * 40, Color.BRIGHT_CYAN, bold=True))
         print(
@@ -245,7 +247,7 @@ class Reporter:
         return f"{size:.1f}TB"
 
 
-def main():
+def main() -> None:
     Reporter.print_header()
     args = sys.argv[1:]
     if not args:

@@ -9,15 +9,16 @@ from importlib import metadata
 from pathlib import Path
 
 from joblib import Parallel, delayed
+from importlib.metadata import Distribution
 
-WORKERS = 8
+WORKERS: int = 8
 
 
 def normalize_name(name: str) -> str:
     return re.sub(r"[-_.]+", "-", name).lower()
 
 
-def get_installed_packages() -> dict[str, metadata.Distribution]:
+def get_installed_packages() -> dict[str, Distribution]:
     packages = {}
     for distribution in metadata.distributions():
         name = distribution.metadata.get("Name")
@@ -27,7 +28,7 @@ def get_installed_packages() -> dict[str, metadata.Distribution]:
 
 
 def package_dependencies(
-    item: tuple[str, metadata.Distribution],
+    item: tuple[str, Distribution],
 ) -> tuple[str, list[str]]:
     package_name, distribution = item
     print(f"procesding ... {package_name}")
@@ -41,7 +42,7 @@ def package_dependencies(
 
 
 def build_dependency_graph(
-    packages: dict[str, metadata.Distribution],
+    packages: dict[str, Distribution],
 ) -> dict[str, list[str]]:
     results = Parallel(n_jobs=WORKERS, prefer="threads")(
         delayed(package_dependencies)(item) for item in packages.items()

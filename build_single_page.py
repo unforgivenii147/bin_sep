@@ -12,17 +12,18 @@ import pycurl
 import requests
 from bs4 import BeautifulSoup
 from bs4.element import AttributeValueList
+from typing import Any
 
-cwd = Path.cwd()
-OUTPUT_DIR = cwd / "output"
-ASSETS_DIR = cwd / "output" / "assets"
-DOWNLOAD_REMOTE = True
-TIMEOUT = 10
+cwd: Any = Path.cwd()
+OUTPUT_DIR: Any = cwd / "output"
+ASSETS_DIR: Any = cwd / "output" / "assets"
+DOWNLOAD_REMOTE: bool = True
+TIMEOUT: int = 10
 if not OUTPUT_DIR.exists():
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 if not ASSETS_DIR.exists():
     ASSETS_DIR.mkdir(parents=True, exist_ok=True)
-HASH_MAP = {}
+HASH_MAP: Any = {}
 
 
 def sha256(data: bytes) -> str:
@@ -99,7 +100,7 @@ def download_external_with_requests(url: AttributeValueList | str):
         return None
 
 
-processed_html_files = []
+processed_html_files: Any = []
 
 
 def process_html(path: Path) -> None:

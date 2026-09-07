@@ -11,40 +11,40 @@ from dh import is_binary, runcmd, unique_path
 
 
 class Color:
-    BLACK = 30
-    RED = 31
-    GREEN = 32
-    YELLOW = 33
-    BLUE = 34
-    MAGENTA = 35
-    CYAN = 36
-    WHITE = 37
-    LIGHT_BLACK = 90
-    LIGHT_RED = 91
-    LIGHT_GREEN = 92
-    LIGHT_YELLOW = 93
-    LIGHT_BLUE = 94
-    LIGHT_MAGENTA = 95
-    LIGHT_CYAN = 96
-    LIGHT_WHITE = 97
-    ON_BLACK = 40
-    ON_RED = 41
-    ON_GREEN = 42
-    ON_YELLOW = 43
-    ON_BLUE = 44
-    ON_MAGENTA = 45
-    ON_CYAN = 46
-    ON_WHITE = 47
-    RESET = 0
-    BOLD = 1
-    DIM = 2
-    ITALIC = 3
-    UNDERLINE = 4
-    BLINK = 5
-    REVERSE = 7
-    CONCEALED = 8
-    STRIKETHROUGH = 9
-    _enabled = True
+    BLACK: int = 30
+    RED: int = 31
+    GREEN: int = 32
+    YELLOW: int = 33
+    BLUE: int = 34
+    MAGENTA: int = 35
+    CYAN: int = 36
+    WHITE: int = 37
+    LIGHT_BLACK: int = 90
+    LIGHT_RED: int = 91
+    LIGHT_GREEN: int = 92
+    LIGHT_YELLOW: int = 93
+    LIGHT_BLUE: int = 94
+    LIGHT_MAGENTA: int = 95
+    LIGHT_CYAN: int = 96
+    LIGHT_WHITE: int = 97
+    ON_BLACK: int = 40
+    ON_RED: int = 41
+    ON_GREEN: int = 42
+    ON_YELLOW: int = 43
+    ON_BLUE: int = 44
+    ON_MAGENTA: int = 45
+    ON_CYAN: int = 46
+    ON_WHITE: int = 47
+    RESET: int = 0
+    BOLD: int = 1
+    DIM: int = 2
+    ITALIC: int = 3
+    UNDERLINE: int = 4
+    BLINK: int = 5
+    REVERSE: int = 7
+    CONCEALED: int = 8
+    STRIKETHROUGH: int = 9
+    _enabled: bool = True
 
     @classmethod
     def _build_code(
@@ -70,11 +70,11 @@ class Color:
         return f"{escape}{text}{reset}"
 
     @classmethod
-    def disable(cls):
+    def disable(cls) -> None:
         cls._enabled = False
 
     @classmethod
-    def enable(cls):
+    def enable(cls) -> None:
         cls._enabled = True
 
     @classmethod
@@ -573,7 +573,7 @@ def print_results(mismatches: list[MismatchResult], confirm: bool = False) -> in
     return renamed_count
 
 
-def main():
+def main() -> None:
     import argparse
 
     parser = argparse.ArgumentParser(

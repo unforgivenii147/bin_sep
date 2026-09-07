@@ -11,8 +11,9 @@ from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass, field
 from multiprocessing import cpu_count
 from pathlib import Path
+from typing import Any
 
-RE_FUNCTIONS = {
+RE_FUNCTIONS: Any = {
     "compile",
     "search",
     "match",
@@ -23,7 +24,7 @@ RE_FUNCTIONS = {
     "sub",
     "subn",
 }
-SKIP_TOKEN_TYPES = {
+SKIP_TOKEN_TYPES: Any = {
     tokenize.NL,
     tokenize.COMMENT,
     tokenize.NEWLINE,
@@ -33,7 +34,7 @@ SKIP_TOKEN_TYPES = {
     tokenize.TYPE_COMMENT,
     tokenize.ERRORTOKEN,
 }
-REGEX_INDICATORS = {
+REGEX_INDICATORS: Any = {
     "\\d",
     "\\w",
     "\\s",
@@ -101,7 +102,7 @@ class RegexFixer:
         dry_run: bool = False,
         verbose: bool = False,
         max_workers: int | None = None,
-    ):
+    ) -> None:
         self.create_backup = create_backup
         self.dry_run = dry_run
         self.verbose = verbose
@@ -399,7 +400,7 @@ class RegexFixer:
             return str(path)
 
 
-def main():
+def main() -> None:
     import argparse
 
     parser = argparse.ArgumentParser(

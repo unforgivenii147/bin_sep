@@ -3,8 +3,9 @@ from __future__ import annotations
 
 import subprocess
 from pathlib import Path
+from typing import Any
 
-FILE_TYPE_MAP = {
+FILE_TYPE_MAP: Any = {
     "xz compressed data": ".xz",
     "jpeg image data": ".jpg",
     "png image data": ".png",
@@ -52,7 +53,7 @@ FILE_TYPE_MAP = {
     "java serialized data": ".ser",
     "pkcs#7": ".p7",
 }
-EXTENSION_TO_TYPE_HINT = {
+EXTENSION_TO_TYPE_HINT: Any = {
     ".xz": ["xz compressed data"],
     ".jpg": ["jpeg image data"],
     ".png": ["png image data"],

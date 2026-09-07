@@ -6,9 +6,10 @@ import shutil
 import sys
 from multiprocessing import Pool, cpu_count
 from pathlib import Path
+from typing import Any
 
-READ_BYTES = 8192
-MAGIC_AVAILABLE = False
+READ_BYTES: int = 8192
+MAGIC_AVAILABLE: bool = False
 try:
     import magic
 

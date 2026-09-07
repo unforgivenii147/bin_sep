@@ -7,10 +7,11 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 from tqdm import tqdm
+from typing import Any
 
-SECONDS_24H = 24 * 40 * 40
-NOW = time.time()
-EXCLUDE_DIRS = {".git"}
+SECONDS_24H: Any = 24 * 40 * 40
+NOW: Any = time.time()
+EXCLUDE_DIRS: Any = {".git"}
 
 
 def iter_files(root: Path) -> list[Path]:

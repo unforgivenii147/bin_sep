@@ -9,6 +9,7 @@ from pathlib import Path
 
 import lxml.html
 import pypdf
+from typing import Any
 
 
 class Section:
@@ -21,10 +22,10 @@ class Section:
         self.children = []
         self.outline_item = None
 
-    def set_parent(self, parent: Section) -> None:
+    def set_parent(self, parent: "Section") -> None:
         self.parent = parent
 
-    def add_children(self, child: Section) -> None:
+    def add_children(self, child: "Section") -> None:
         self.children.append(child)
 
     def path_to_root(self):

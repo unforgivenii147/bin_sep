@@ -4,12 +4,13 @@ from __future__ import annotations
 import shutil
 import sys
 from pathlib import Path
+from typing import Any
 
-EMPTY_MODE = "-e" in sys.argv
-REMOVE_MODE = "-r" in sys.argv
-SKIP_DIRS = {".git", "var"}
-REMOVABLE_EXTENSIONS = {".txt", ".md"}
-JUNK_EXTENSIONS = {".tmp", ".bak", ".log", ".pyc"}
+EMPTY_MODE: Any = "-e" in sys.argv
+REMOVE_MODE: Any = "-r" in sys.argv
+SKIP_DIRS: Any = {".git", "var"}
+REMOVABLE_EXTENSIONS: Any = {".txt", ".md"}
+JUNK_EXTENSIONS: Any = {".tmp", ".bak", ".log", ".pyc"}
 
 
 def empty_it(path: Path) -> None:

@@ -1,9 +1,6 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-import os
 import re
-import shutil
 import tarfile
-import tempfile
 from pathlib import Path
 
 
@@ -47,7 +44,7 @@ def get_metadata_from_tar(tar_path):
     return None, None
 
 
-def rename_tar_files(directory):
+def rename_tar_files(directory) -> None:
     directory = Path(directory)
     tar_files = list(directory.glob("*.tar.gz"))
     for tar_path in tar_files:

@@ -4,7 +4,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-HTML_TEMPLATE = """<!doctype html>
+HTML_TEMPLATE: str = """<!doctype html>
 <html>
   <head>
     <link rel="stylesheet" href="style.css" />

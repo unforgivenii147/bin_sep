@@ -8,10 +8,11 @@ from pathlib import Path
 
 from joblib import Parallel, delayed
 from xxhash import xxh64
+from typing import Any
 
-OUTPUT_DIR = Path("output")
-OUTPUT_FILE = OUTPUT_DIR / "const.py"
-LOG_FILE = OUTPUT_DIR / "error.log"
+OUTPUT_DIR: Any = Path("output")
+OUTPUT_FILE: Any = OUTPUT_DIR / "const.py"
+LOG_FILE: Any = OUTPUT_DIR / "error.log"
 OUTPUT_DIR.mkdir(exist_ok=True)
 logging.basicConfig(
     filename=LOG_FILE,

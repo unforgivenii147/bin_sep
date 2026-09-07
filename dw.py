@@ -9,7 +9,7 @@ import time
 from pathlib import Path
 
 
-def tail_file(fname, n=10):
+def tail_file(fname, n: int = 10):
     try:
         with open(fname) as f:
             lines = f.readlines()
@@ -43,7 +43,7 @@ def copy_file(src, dst_folder: Path | None) -> bool:
         return False
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Recursively watch folder for file changes"
     )

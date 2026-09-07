@@ -15,7 +15,7 @@ class ValidationError(Exception):
     pass
 
 
-TOC_HTML = """
+TOC_HTML: str = """
 <nav class="toc">
 <h1>Contents</h1>
 <ul></ul>

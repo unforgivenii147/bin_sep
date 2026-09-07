@@ -8,7 +8,7 @@ import html2text
 from dh import get_files, mpf3
 from readability import Document
 
-remove_orig = True
+remove_orig: bool = True
 
 
 def process_file(path: str | Path) -> tuple[Path, bool]:

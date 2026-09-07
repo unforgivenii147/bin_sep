@@ -2,8 +2,9 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
-ALLOWED_DIST_INFO_FILES = {
+ALLOWED_DIST_INFO_FILES: Any = {
     "METADATA",
     "RECORD",
     "WHEEL",
@@ -12,7 +13,7 @@ ALLOWED_DIST_INFO_FILES = {
 }
 
 
-def clean_records():
+def clean_records() -> None:
     for dist_info in Path(".").glob("*.dist-info"):
         record_file = dist_info / "RECORD"
         if record_file.exists():
@@ -35,7 +36,7 @@ def clean_records():
             print(f"record file in {record_file.parent.name} cleaned.")
 
 
-def main():
+def main() -> None:
     clean_records()
 
 

@@ -3,8 +3,9 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
+from typing import Any
 
-OUTPUT_DIR = Path("output")
+OUTPUT_DIR: Any = Path("output")
 if not OUTPUT_DIR.exists():
     OUTPUT_DIR.mkdir(exist_ok=True)
 

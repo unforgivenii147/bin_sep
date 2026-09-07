@@ -6,7 +6,7 @@ import sys
 import requests
 
 
-def check_package(pkg_name):
+def check_package(pkg_name) -> None:
     url = f"https://pypi.org/pypi/{pkg_name}/json"
     response = requests.get(url)
     if response.status_code == 200:

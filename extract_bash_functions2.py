@@ -8,11 +8,12 @@ import re
 import sys
 from collections.abc import Generator
 from pathlib import Path
+from typing import Any
 
-IS_TERMUX = os.environ.get(
+IS_TERMUX: Any = os.environ.get(
     "TERMUX_VERSION"
 ) is not None or "com.termux" in os.environ.get("PREFIX", "")
-EXCLUDED = {
+EXCLUDED: Any = {
     ".py",
     ".h",
     ".c",
@@ -34,7 +35,9 @@ EXCLUDED = {
 
 
 class ShellScriptFinder:
-    def __init__(self, include_extensionless: bool = True, skip_hidden: bool = False):
+    def __init__(
+        self, include_extensionless: bool = True, skip_hidden: bool = False
+    ) -> None:
         self.include_extensionless = include_extensionless
         self.skip_hidden = skip_hidden
         self.script_count = 0
@@ -116,7 +119,7 @@ class ShellScriptFinder:
 
 
 class FunctionExtractor:
-    def __init__(self):
+    def __init__(self) -> None:
         self.function_count = 0
 
     def extract_functions(
@@ -161,7 +164,7 @@ class FunctionExtractor:
 
 
 class FunctionWriter:
-    def __init__(self, output_dir: Path, use_extension: bool = True):
+    def __init__(self, output_dir: Path, use_extension: bool = True) -> None:
         self.output_dir = output_dir
         self.use_extension = use_extension
         self.written_count = 0

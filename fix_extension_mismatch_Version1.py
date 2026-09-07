@@ -6,9 +6,10 @@ import shutil
 import sys
 from multiprocessing import Pool, cpu_count
 from pathlib import Path
+from typing import Any
 
-READ_BYTES = 8192
-SIGNATURES = [
+READ_BYTES: int = 8192
+SIGNATURES: Any = [
     (lambda b: b.startswith(b"\x89PNG\r\n\x1a\n"), ".png", "PNG image"),
     (lambda b: b.startswith(b"\xff\xd8\xff"), ".jpg", "JPEG image"),
     (lambda b: b.startswith((b"GIF87a", b"GIF89a")), ".gif", "GIF image"),
@@ -65,8 +66,8 @@ SIGNATURES = [
     (lambda b: b.startswith(b"\x7fELF"), ".elf", "ELF binary"),
     (lambda b: b.startswith(b"MZ"), ".exe", "PE/EXE binary"),
 ]
-PREFERRED_EXT = {".jpeg": ".jpg", ".tiff": ".tif", ".htm": ".html"}
-SKIP_EXTS = {".py", ".pyc", ".pyo", ".so", ".dll"}
+PREFERRED_EXT: Any = {".jpeg": ".jpg", ".tiff": ".tif", ".htm": ".html"}
+SKIP_EXTS: Any = {".py", ".pyc", ".pyo", ".so", ".dll"}
 
 
 def detect_by_signature(path: Path, nbytes: int = READ_BYTES) -> tuple[str, str] | None:
@@ -247,7 +248,7 @@ def print_summary(results: list[dict], verbose: bool = False) -> None:
                 print(f"  {r['path']}: {r.get('reason')}")
 
 
-def main():
+def main() -> None:
     ap = argparse.ArgumentParser(
         prog="fix_extension_mismatch.py",
         description="Fix extension mismatches using file signatures",

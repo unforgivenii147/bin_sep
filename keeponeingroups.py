@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 
 
-def keep_one_image_per_folder(base_dir):
+def keep_one_image_per_folder(base_dir) -> None:
     base_path = Path(base_dir)
     image_extensions = {
         ".jpg",

@@ -11,11 +11,12 @@ from pathlib import Path
 
 from dh import fsz
 from fontTools.ttLib import TTFont, TTLibError
+from typing import Any
 
-SUPPORTED_EXTS = {".ttf", ".otf", ".woff", ".woff2"}
-VALID_TARGETS = {"ttf", "otf", "woff", "woff2"}
-CFF_TABLES = {"CFF ", "CFF2"}
-TRUETYPE_TABLE = "glyf"
+SUPPORTED_EXTS: Any = {".ttf", ".otf", ".woff", ".woff2"}
+VALID_TARGETS: Any = {"ttf", "otf", "woff", "woff2"}
+CFF_TABLES: Any = {"CFF ", "CFF2"}
+TRUETYPE_TABLE: str = "glyf"
 
 
 @dataclass

@@ -4,8 +4,9 @@ from __future__ import annotations
 import shutil
 import time
 from pathlib import Path
+from typing import Any
 
-TIME_THRESHOLD = 8 * 40
+TIME_THRESHOLD: Any = 8 * 40
 
 
 def get_file_age(filepath: Path) -> float:

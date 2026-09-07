@@ -8,10 +8,11 @@ from multiprocessing.pool import Pool as mp_pool
 from pathlib import Path
 
 from dh import get_pyfiles
+from typing import Any
 
 
 class RegexRawConverter(ast.NodeTransformer):
-    def __init__(self, source_lines, source_text):
+    def __init__(self, source_lines, source_text) -> None:
         self.source_lines = source_lines
         self.source_text = source_text
         self.modified = False
@@ -101,7 +102,7 @@ def process_file_wrapper(args):
     return process_file(*args)
 
 
-def main():
+def main() -> None:
     cwd = Path.cwd()
     args = sys.argv[1:]
     autofix = False

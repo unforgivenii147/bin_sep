@@ -11,8 +11,8 @@ from datetime import datetime
 from multiprocessing import Pool
 from pathlib import Path
 
-XZ_PRESET = 9
-DEFAULT_WORKERS = 8
+XZ_PRESET: int = 9
+DEFAULT_WORKERS: int = 8
 
 
 def dir_size(path: Path) -> int:

@@ -6,27 +6,33 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 
 import libcst as cst
+from libcst import (
+    CSTTransformer,
+    ClassDef,
+    Comment,
+    FunctionDef,
+    Module,
+    RemovalSentinel,
+)
 
 
 class CleanTransformer(cst.CSTTransformer):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.comments_removed = 0
         self.docstrings_removed = 0
 
-    def leave_Module(
-        self, original_node: cst.Module, updated_node: cst.Module
-    ) -> cst.Module:
+    def leave_Module(self, original_node: Module, updated_node: Module) -> Module:
         return updated_node
 
     def leave_FunctionDef(
-        self, original_node: cst.FunctionDef, updated_node: cst.FunctionDef
-    ) -> cst.FunctionDef:
+        self, original_node: FunctionDef, updated_node: FunctionDef
+    ) -> FunctionDef:
         return self._strip_docstring(updated_node)
 
     def leave_ClassDef(
-        self, original_node: cst.ClassDef, updated_node: cst.ClassDef
-    ) -> cst.ClassDef:
+        self, original_node: ClassDef, updated_node: ClassDef
+    ) -> ClassDef:
         return self._strip_docstring(updated_node)
 
     def _strip_docstring(self, node):
@@ -52,8 +58,8 @@ class CleanTransformer(cst.CSTTransformer):
         return node
 
     def leave_Comment(
-        self, original_node: cst.Comment, updated_node: cst.Comment
-    ) -> cst.RemovalSentinel | cst.Comment:
+        self, original_node: Comment, updated_node: Comment
+    ) -> RemovalSentinel | Comment:
         comment_text = original_node.value.strip()
         if (
             comment_text.startswith(("#!", "# fmt:", "# type:"))
@@ -86,7 +92,7 @@ def process_file(file_path: Path) -> tuple[Path, int, int, bool]:
         return file_path, 0, 0, False
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Remove comments & docstrings from Python files (preserves shebangs, # fmt, # type, module docstrings)"
     )

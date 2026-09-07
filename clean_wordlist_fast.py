@@ -7,9 +7,10 @@ import re
 import sys
 import tempfile
 from pathlib import Path
+from typing import Any
 
-THRESHOLD = 5 * 1024 * 1024
-RE_REPEAT = re.compile(r"^(.)\1+$", re.IGNORECASE)
+THRESHOLD: Any = 5 * 1024 * 1024
+RE_REPEAT: Any = re.compile(r"^(.)\1+$", re.IGNORECASE)
 
 
 def should_skip(line: str) -> bool:

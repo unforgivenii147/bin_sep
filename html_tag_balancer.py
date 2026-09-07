@@ -6,8 +6,9 @@ import contextlib
 import sys
 from html.parser import HTMLParser
 from pathlib import Path
+from typing import Any
 
-VOID_ELEMENTS = frozenset(
+VOID_ELEMENTS: Any = frozenset(
     {
         "area",
         "base",

@@ -13,10 +13,10 @@ from pathlib import Path
 import lz4.frame
 from dh import fsz, get_files
 
-MAX_WORKERS = 4
-CHUNK_SIZE = 524288
-LZ4_COMPRESS_LEVEL = 9
-LZ4_ACCELERATION = 1
+MAX_WORKERS: int = 4
+CHUNK_SIZE: int = 524288
+LZ4_COMPRESS_LEVEL: int = 9
+LZ4_ACCELERATION: int = 1
 
 
 def decompress_file(path: Path) -> bool:

@@ -10,10 +10,10 @@ from pathlib import Path
 
 
 class Colors:
-    GREEN = "\033[92m"
-    WHITE = "\033[97m"
-    YELLOW = "\033[93m"
-    RESET = "\033[0m"
+    GREEN: str = "\033[92m"
+    WHITE: str = "\033[97m"
+    YELLOW: str = "\033[93m"
+    RESET: str = "\033[0m"
 
 
 def should_skip_dir(path: Path) -> bool:

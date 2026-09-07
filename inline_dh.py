@@ -7,8 +7,9 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from dh import get_files
+from typing import Any
 
-DH_SRC_DIR = Path("~/projects/py/dh/src/dh").expanduser()
+DH_SRC_DIR: Any = Path("~/projects/py/dh/src/dh").expanduser()
 
 
 def build_dh_mapping(dh_path: Path) -> dict:
@@ -27,19 +28,19 @@ def build_dh_mapping(dh_path: Path) -> dict:
 
 
 class ModuleDependencyAnalyzer(ast.NodeVisitor):
-    def __init__(self, global_names):
+    def __init__(self, global_names) -> None:
         self.global_names = global_names
         self.references = set()
         self.imported_modules = []
 
-    def visit_Import(self, node):
+    def visit_Import(self, node) -> None:
         self.imported_modules.append(node)
 
-    def visit_ImportFrom(self, node):
+    def visit_ImportFrom(self, node) -> None:
         if node.module != "dh" and node.level == 0:
             self.imported_modules.append(node)
 
-    def visit_Name(self, node):
+    def visit_Name(self, node) -> None:
         if isinstance(node.ctx, ast.Load) and node.id in self.global_names:
             self.references.add(node.id)
 

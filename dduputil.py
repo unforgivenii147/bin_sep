@@ -13,6 +13,7 @@ from multiprocessing import Pool, cpu_count
 from pathlib import Path
 
 from loguru import logger
+from typing import Any
 
 try:
     import bz2
@@ -22,7 +23,7 @@ try:
     import zipfile
 except Exception:
     logger.exception("missing builtin archive modules (unexpected)")
-HAS_ZSTD = True
+HAS_ZSTD: bool = True
 try:
     import zstandard as zstd
 except Exception:

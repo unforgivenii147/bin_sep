@@ -7,8 +7,9 @@ import tempfile
 import zipfile
 from email.parser import Parser
 from pathlib import Path
+from typing import Any
 
-EXT_SUFFIXES = (".so", ".pyd", ".dll")
+EXT_SUFFIXES: Any = (".so", ".pyd", ".dll")
 
 
 def read_entry_points(root: Path) -> dict[str, list[str]]:

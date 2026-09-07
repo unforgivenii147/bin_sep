@@ -8,8 +8,9 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from dh import get_files
+from typing import Any
 
-DH_SRC_DIR = Path("~/projects/py/dh/src/dh").expanduser()
+DH_SRC_DIR: Any = Path("~/projects/py/dh/src/dh").expanduser()
 
 
 def build_dh_public_mapping(dh_path: Path) -> dict[str, Path]:

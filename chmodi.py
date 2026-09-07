@@ -9,12 +9,13 @@ from multiprocessing import Pool, cpu_count
 from pathlib import Path
 
 from dh import is_binary
+from typing import Any
 
-DIR_PERM = 0o755
-FILE_PERM = 0o664
-EXEC_PERM = 0o755
-SKIP_NAMES = {".git", "__pycache__", ".idea", "node_modules", ".venv", "venv"}
-EXECUTABLE_DIRS = {"bin", "sbin", ".bin", "libexec", "scripts", "tools"}
+DIR_PERM: int = 0o755
+FILE_PERM: int = 0o664
+EXEC_PERM: int = 0o755
+SKIP_NAMES: Any = {".git", "__pycache__", ".idea", "node_modules", ".venv", "venv"}
+EXECUTABLE_DIRS: Any = {"bin", "sbin", ".bin", "libexec", "scripts", "tools"}
 
 
 def is_executable(mode: int) -> bool:
@@ -266,7 +267,7 @@ def normalize_permissions(cwd: str = ".", verbose: bool = False) -> None:
     print("\n✅ Done!")
 
 
-def main():
+def main() -> None:
     import argparse
 
     parser = argparse.ArgumentParser(

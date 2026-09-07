@@ -9,8 +9,9 @@ import re
 import sys
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
+from typing import Any
 
-DH_SOURCE_DIR = Path.home() / "projects/py/dh/src/dh"
+DH_SOURCE_DIR: Any = Path.home() / "projects/py/dh/src/dh"
 
 
 def _sha256(text: str) -> str:

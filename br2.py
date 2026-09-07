@@ -7,9 +7,10 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import brotli
+from typing import Any
 
-BROTLI_QUALITY = 11
-CHUNK_SIZE = 1024 * 64
+BROTLI_QUALITY: int = 11
+CHUNK_SIZE: Any = 1024 * 64
 
 
 def compress_stream(input_stream, output_file_path: Path):
@@ -48,7 +49,7 @@ def process_file(file_path: Path):
         print(f"❌ Failed to open file {file_path.name}: {e}")
 
 
-def main():
+def main() -> None:
     current_dir = Path(".")
     subdirs = [
         d for d in current_dir.iterdir() if d.is_dir() and not d.name.startswith(".")

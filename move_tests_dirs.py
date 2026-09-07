@@ -7,10 +7,11 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 
 from dh import cprint
+from typing import Any
 
-DRY_RUN = "-d" in sys.argv
-EXCLUDED = ["numpy", "pandas", "scipy"]
-SRC = Path.home() / ".local" / "lib" / "python3.12" / "site-packages"
+DRY_RUN: Any = "-d" in sys.argv
+EXCLUDED: Any = ["numpy", "pandas", "scipy"]
+SRC: Any = Path.home() / ".local" / "lib" / "python3.12" / "site-packages"
 
 
 def move_tests_folder(

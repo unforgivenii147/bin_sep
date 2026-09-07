@@ -92,7 +92,7 @@ def autofix_filename(file_path: Path, current_ext: str, true_ext: str) -> Path:
     return file_path
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Recursively detect and optionally fix file extension mismatches based on file headers (magic numbers)."
     )

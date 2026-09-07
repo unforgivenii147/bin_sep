@@ -6,11 +6,12 @@ from pathlib import Path
 import tree_sitter_python as tsp
 from dh import get_files, mpf3, unique_path
 from tree_sitter import Language, Parser
+from typing import Any
 
-OUTPUT_DIR = Path.home() / "tmp" / "output"
-parser = Parser()
+OUTPUT_DIR: Any = Path.home() / "tmp" / "output"
+parser: Any = Parser()
 parser.language = Language(tsp.language())
-VALID = {"import_statement", "import_from_statement"}
+VALID: Any = {"import_statement", "import_from_statement"}
 
 
 def process_file(path):

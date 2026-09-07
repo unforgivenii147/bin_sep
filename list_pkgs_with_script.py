@@ -3,9 +3,10 @@ from __future__ import annotations
 
 import site
 from pathlib import Path
+from typing import Any
 
-u = Path(site.getusersitepackages())
-nl = []
+u: Any = Path(site.getusersitepackages())
+nl: Any = []
 for p in u.iterdir():
     if p.is_dir() and (not p.name.endswith((".dist-info", ".egg-info"))):
         for d in u.glob(f"{p.name}*.dist-info"):
@@ -19,6 +20,6 @@ for p in u.iterdir():
                     print(p.name)
                     nl.append(d.name)
                     break
-outfile = Path("/sdcard/data/pkgs_with_scripts")
-content = "\n".join(nl)
+outfile: Any = Path("/sdcard/data/pkgs_with_scripts")
+content: Any = "\n".join(nl)
 outfile.write_text(content, encoding="utf-8")

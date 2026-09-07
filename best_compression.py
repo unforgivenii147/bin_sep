@@ -24,9 +24,9 @@ try:
     import huffman as huffman_lib
 except Exception:
     huffman_lib = None
-_HASH_TABLE_SIZE = 1 << 14
-_MAX_OFFSET_1 = 2047
-_MAX_OFFSET_2 = 65535
+_HASH_TABLE_SIZE: Any = 1 << 14
+_MAX_OFFSET_1: int = 2047
+_MAX_OFFSET_2: int = 65535
 
 
 def _encode_varint(value: int) -> bytes:
@@ -280,7 +280,7 @@ def run_single(algo: str, in_path: Path, tmpdir: Path) -> Result:
         )
 
 
-WORKER_ALGOS = {"gz", "bz2", "lzma", "zstd", "brotli", "snappy"}
+WORKER_ALGOS: Any = {"gz", "bz2", "lzma", "zstd", "brotli", "snappy"}
 
 
 def _chunk_compressor(algo: str):

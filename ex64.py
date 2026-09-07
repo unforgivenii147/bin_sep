@@ -5,8 +5,9 @@ import base64
 import hashlib
 import re
 from pathlib import Path
+from typing import Any
 
-BASE64_IMG_REGEX = re.compile(
+BASE64_IMG_REGEX: Any = re.compile(
     r"data:image/(?P<ext>[a-zA-Z0-9+]+);base64,(?P<data>[A-Za-z0-9+/=\n\r]+)"
 )
 

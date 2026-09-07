@@ -9,15 +9,16 @@ from pathlib import Path
 from dh import cprint
 from packaging.utils import parse_wheel_filename
 from packaging.version import Version
+from typing import Any
 
-WHL_DIR = Path("/sdcard/whl")
-DEST_DIR = Path("/sdcard/installed")
-DEST_DIR2 = Path("/sdcard/invalid")
+WHL_DIR: Any = Path("/sdcard/whl")
+DEST_DIR: Any = Path("/sdcard/installed")
+DEST_DIR2: Any = Path("/sdcard/invalid")
 if not DEST_DIR.exists():
     DEST_DIR.mkdir()
 if not DEST_DIR2.exists():
     DEST_DIR2.mkdir()
-EXCLUDED_PACKAGES = {
+EXCLUDED_PACKAGES: Any = {
     "pybind11",
     "dh",
     "pip",

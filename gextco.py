@@ -10,11 +10,12 @@ from multiprocessing import Pool, cpu_count
 from pathlib import Path
 
 from tqdm import tqdm
+from typing import Any
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
-logger = logging.getLogger(__name__)
+logger: Any = logging.getLogger(__name__)
 
 
 @dataclass
@@ -34,7 +35,7 @@ class ExtractionResult:
 
 
 class EntityExtractor(ast.NodeVisitor):
-    def __init__(self, file_path: Path):
+    def __init__(self, file_path: Path) -> None:
         self.file_path = file_path
         self.classes: list[Entity] = []
         self.functions: list[Entity] = []

@@ -51,7 +51,7 @@ def group_similar_files(hashes, threshold: int):
     return groups
 
 
-def copy_groups(groups, output_dir="output") -> None:
+def copy_groups(groups, output_dir: str = "output") -> None:
     Path(output_dir).mkdir(exist_ok=True, parents=True)
     for idx, group in enumerate(groups, start=1):
         group_dir = os.path.join(output_dir, f"group_{idx}")

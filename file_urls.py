@@ -4,8 +4,9 @@ from __future__ import annotations
 from pathlib import Path
 
 from dh import BIN_EXT, TXT_EXT
+from typing import Any
 
-EXCLUDED = {
+EXCLUDED: Any = {
     ".net",
     ".ai",
     ".org",
@@ -22,7 +23,7 @@ EXCLUDED = {
     ".bmp",
     ".gif",
 }
-ALL_EXT = set(list(TXT_EXT) + list(BIN_EXT))
+ALL_EXT: Any = set(list(TXT_EXT) + list(BIN_EXT))
 ALL_EXT = [p for p in ALL_EXT if p not in EXCLUDED]
 
 

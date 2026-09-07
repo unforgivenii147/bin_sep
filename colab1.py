@@ -7,29 +7,30 @@ import zipfile
 from pathlib import Path
 
 from google.colab import drive
+from typing import Any
 
 drive.mount("/content/drive")
-site_pkgs = Path(site.getsitepackages()[0])
-out_dir = Path("/content/drive/MyDrive/wheels")
+site_pkgs: Any = Path(site.getsitepackages()[0])
+out_dir: Any = Path("/content/drive/MyDrive/wheels")
 out_dir.mkdir(parents=True, exist_ok=True)
-EXCLUDE_PREFIXES = "setuptools", "pip"
+EXCLUDE_PREFIXES: Any = "setuptools", "pip"
 
 
 def excluded(name: str) -> bool:
     return name.startswith(EXCLUDE_PREFIXES)
 
 
-copied_files = 0
-zipped_dirs = 0
+copied_files: int = 0
+zipped_dirs: int = 0
 for entry in site_pkgs.iterdir():
-    name = entry.name
+    name: Any = entry.name
     if excluded(name):
         continue
     if entry.is_file():
         shutil.copy2(entry, out_dir / name)
         copied_files += 1
     elif entry.is_dir():
-        zip_path = out_dir / f"{name}.zip"
+        zip_path: Any = out_dir / f"{name}.zip"
         with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
             for path in entry.rglob("*"):
                 if path.is_file() and path.suffix != ".pyc":

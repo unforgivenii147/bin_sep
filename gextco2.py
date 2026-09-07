@@ -10,12 +10,12 @@ import zipfile
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List, Optional, Set, Tuple
+from typing import Any
 
-SKIP_DIRS = frozenset(
+SKIP_DIRS: Any = frozenset(
     {".git", "__pycache__", ".venv", "node_modules", ".env", ".pytest_cache"}
 )
-COMMON_IMPORTS = {
+COMMON_IMPORTS: Any = {
     "typing": {
         "List",
         "Dict",
@@ -267,7 +267,7 @@ class ImportAnalyzer:
 
 
 class EntityVisitor(ast.NodeVisitor):
-    def __init__(self, source_lines: list[str], filepath: str):
+    def __init__(self, source_lines: list[str], filepath: str) -> None:
         self.source_lines = source_lines
         self.filepath = filepath
         self.entities: list[Entity] = []

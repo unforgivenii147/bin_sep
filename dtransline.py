@@ -6,12 +6,12 @@ import logging
 import multiprocessing as mp
 import time
 from pathlib import Path
-from typing import Final
+from typing import Any, Final
 
 from deep_translator import GoogleTranslator
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
-logger = logging.getLogger(__name__)
+logger: Any = logging.getLogger(__name__)
 SKIP_DIRS: Final[frozenset[str]] = frozenset(
     {"lazy", ".git", "__pycache__", ".mypy_cache", ".ruff_cache", ".pytest_cache"}
 )

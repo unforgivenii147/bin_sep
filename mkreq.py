@@ -42,7 +42,7 @@ def is_stdlib(module_name):
         return False
 
 
-def get_local_modules(cwd="."):
+def get_local_modules(cwd: str = "."):
     root = Path(cwd)
     local_modules = set()
     for py_file in root.glob("**/*.py"):
@@ -51,7 +51,7 @@ def get_local_modules(cwd="."):
     return local_modules
 
 
-def collect_requirements(cwd: str = ".", exclude_dirs=None, verbose=False):
+def collect_requirements(cwd: str = ".", exclude_dirs=None, verbose: bool = False):
     if exclude_dirs is None:
         exclude_dirs = {
             ".venv",

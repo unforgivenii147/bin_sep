@@ -49,7 +49,7 @@ def compare_versions(pkg_version_tuple):
     return None
 
 
-def main():
+def main() -> None:
     print("Getting installed packages...")
     installed_packages = get_installed_packages()
     if not installed_packages:

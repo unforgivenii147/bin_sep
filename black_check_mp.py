@@ -5,9 +5,10 @@ import ast
 import shutil
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
+from typing import Any
 
-ERROR_DIR = Path("error")
-OK_DIR = Path("ok")
+ERROR_DIR: Any = Path("error")
+OK_DIR: Any = Path("ok")
 
 
 def ensure_dirs() -> None:

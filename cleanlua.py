@@ -145,7 +145,7 @@ def find_lua_files(directories: list[Path]) -> list[Path]:
     return sorted(set(lua_files))
 
 
-def main():
+def main() -> None:
     if len(sys.argv) > 1:
         directories = [Path(d).resolve() for d in sys.argv[1:]]
     else:

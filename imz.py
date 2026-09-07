@@ -16,7 +16,7 @@ import xxhash
 from dh import PKG_MAPPING, STDLIB
 from tqdm import tqdm
 
-CACHE_FILE = ".reqcache.json"
+CACHE_FILE: str = ".reqcache.json"
 
 
 def fast_hash(path: Path) -> str:

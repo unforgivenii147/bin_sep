@@ -11,12 +11,13 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 import py7zr
-from dh import fsz, get_files
+from dh import fsz
+from typing import Any
 
-MAX_WORKERS = 2
-CHUNK_SIZE = 524288
-TEMP_DIR = Path(tempfile.gettempdir()) / "py7zr_temp"
-SEVENZ_SETTINGS = {
+MAX_WORKERS: int = 2
+CHUNK_SIZE: int = 524288
+TEMP_DIR: Any = Path(tempfile.gettempdir()) / "py7zr_temp"
+SEVENZ_SETTINGS: Any = {
     "filters": [{"id": py7zr.FILTER_LZMA2, "preset": 9}],
     "dictionary_size": 256 * 1024 * 1024,
     "solid": True,

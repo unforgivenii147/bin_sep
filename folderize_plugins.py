@@ -5,8 +5,9 @@ import re
 import shutil
 from collections import defaultdict
 from pathlib import Path
+from typing import Any
 
-PLUGIN_PATTERNS = {
+PLUGIN_PATTERNS: Any = {
     "lazy.nvim": [
         r"lazy\.setup",
         r"lazy\.nvim",
@@ -399,7 +400,7 @@ def detect_plugins(file_path):
     return detected
 
 
-def organize_files(dry_run=False):
+def organize_files(dry_run: bool = False) -> None:
     current_dir = Path.cwd()
     lua_files = list(current_dir.rglob("*.lua"))
     if not lua_files:
@@ -489,7 +490,7 @@ def organize_files(dry_run=False):
     print(f"\n✅ Completed! Moved {moved_count} files.")
 
 
-def main():
+def main() -> None:
     import argparse
 
     parser = argparse.ArgumentParser(

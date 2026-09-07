@@ -19,7 +19,7 @@ def blink(directory: Path) -> None:
                     print(f" - {f} (rerun without -d to remove")
 
 
-def main():
+def main() -> None:
     cwd = Path.cwd()
     blink(cwd)
 

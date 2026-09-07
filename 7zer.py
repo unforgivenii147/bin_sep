@@ -6,16 +6,17 @@ import multiprocessing as mp
 import shutil
 import tarfile
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 import py7zr
 from dh import fsz, gsz
+from collections.abc import Iterable
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
-ROOT = Path.cwd()
-LOG_FILE = ROOT / "compress.log"
-PY7ZR_PRESET = 9
+ROOT: Any = Path.cwd()
+LOG_FILE: Any = ROOT / "compress.log"
+PY7ZR_PRESET: int = 9
 
 
 def setup_logging() -> None:

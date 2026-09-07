@@ -4,9 +4,10 @@ from __future__ import annotations
 import shutil
 from multiprocessing import Pool, cpu_count
 from pathlib import Path
+from typing import Any
 
-FILE_EXTENSIONS = [".pyc", ".log", ".bak"]
-DIR_NAMES = ["__pycache__", ".ruff_cache", ".mypy_cache"]
+FILE_EXTENSIONS: Any = [".pyc", ".log", ".bak"]
+DIR_NAMES: Any = ["__pycache__", ".ruff_cache", ".mypy_cache"]
 
 
 def remove_path(path: Path) -> None:

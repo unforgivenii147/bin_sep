@@ -5,7 +5,7 @@ import ast
 import sys
 
 
-def get_function_names(filename, skip_main=True):
+def get_function_names(filename, skip_main: bool = True):
     try:
         with open(filename) as file:
             tree = ast.parse(file.read())

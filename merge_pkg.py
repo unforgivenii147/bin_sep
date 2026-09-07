@@ -7,10 +7,11 @@ import json
 import os
 import sys
 from pathlib import Path
+from typing import Any
 
 
 class Module:
-    def __init__(self, name: str, filepath: Path):
+    def __init__(self, name: str, filepath: Path) -> None:
         self.name = name
         self.filepath = filepath
         self.imports = []

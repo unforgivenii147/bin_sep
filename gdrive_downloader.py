@@ -9,8 +9,9 @@ from google.auth.transport.requests import Request
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import Resource, build
 from googleapiclient.http import MediaIoBaseDownload
+from typing import Any
 
-SCOPES = ["https://www.googleapis.com/auth/drive.readonly"]
+SCOPES: Any = ["https://www.googleapis.com/auth/drive.readonly"]
 
 
 def authenticate() -> Resource:

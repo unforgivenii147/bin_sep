@@ -7,7 +7,7 @@ import sys
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from lib2to3.refactor import RefactoringTool, get_fixers_from_package
 from pathlib import Path
-from typing import list, tuple
+from typing import Any, list, tuple
 
 logging.getLogger("lib2to3").setLevel(logging.WARNING)
 

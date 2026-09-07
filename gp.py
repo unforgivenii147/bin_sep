@@ -11,8 +11,6 @@ from git import GitCommandError, InvalidGitRepositoryError, Repo
 def copy_global_gitignore() -> None:
     home_gitignore = Path.home() / ".gitignore"
     local_gitignore = Path(".gitignore")
-    if local_gitignore.exists():
-        return
     try:
         data = home_gitignore.read_text(encoding="utf-8")
         local_gitignore.write_text(data, encoding="utf-8")

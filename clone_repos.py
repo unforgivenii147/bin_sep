@@ -58,7 +58,7 @@ def clone_repo(repo: str, base_dir: Path) -> tuple[str, bool, str]:
         return repo, False, f"Error: {e!s}"
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Clone GitHub repositories in parallel from a text file"
     )

@@ -268,7 +268,7 @@ def read_json_with_mmap(filepath: Path):
         sys.exit(1)
 
 
-def main():
+def main() -> None:
     if len(sys.argv) != 2:
         print("Usage: python script_name.py <input_json_file>")
         sys.exit(1)

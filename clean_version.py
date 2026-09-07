@@ -4,8 +4,9 @@ from __future__ import annotations
 import argparse
 import re
 from pathlib import Path
+from typing import Any
 
-PKG_NAME_RE = re.compile(
+PKG_NAME_RE: Any = re.compile(
     r"""
     ^\s*
     (?:

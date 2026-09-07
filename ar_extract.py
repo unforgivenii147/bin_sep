@@ -8,6 +8,7 @@ import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 
 @dataclass
@@ -20,7 +21,7 @@ class ExtractionStats:
     error_message: str | None = None
     original_size: int = 0
 
-    def __str__(self):
+    def __str__(self) -> str:
         size_mb = self.original_size / (1024 * 1024)
         status_icon = (
             "✓" if self.status == "success" else "✗" if self.status == "failed" else "○"
@@ -38,7 +39,7 @@ class ExtractionStats:
 
 
 class ArchiveExtractor:
-    EXTRACTION_COMMANDS = {
+    EXTRACTION_COMMANDS: Any = {
         ".7z": ["7z", "x", "-y", "-o"],
         ".zip": ["unzip", "-o"],
         ".rar": ["unrar", "x", "-y"],
@@ -59,9 +60,9 @@ class ArchiveExtractor:
         ".arj": ["arj", "x", "-y"],
         ".ace": ["unace", "x"],
     }
-    SINGLE_FILE_EXTENSIONS = {".gz", ".bz2", ".xz", ".lz4", ".lzma", ".zst"}
+    SINGLE_FILE_EXTENSIONS: Any = {".gz", ".bz2", ".xz", ".lz4", ".lzma", ".zst"}
 
-    def __init__(self, current_dir: Path):
+    def __init__(self, current_dir: Path) -> None:
         self.current_dir = current_dir
         self._check_available_tools()
 
@@ -312,7 +313,7 @@ def find_archives(directory: Path) -> list[Path]:
     return archives
 
 
-def main():
+def main() -> None:
     current_dir = Path.cwd()
     print(f"Scanning for archives in: {current_dir}")
     archives = find_archives(current_dir)

@@ -5,7 +5,7 @@ import ast
 import os
 from pathlib import Path
 
-OUTPUT_FILE = "found.txt"
+OUTPUT_FILE: str = "found.txt"
 
 
 def is_probably_python(path: str) -> bool:

@@ -8,10 +8,11 @@ from urllib.parse import urlparse
 
 import requests
 from dh import runcmd
+from typing import Any
 
-GITHUB_API_URL = "https://api.github.com/repos"
-remained = []
-GITHUB_TOKEN = None
+GITHUB_API_URL: str = "https://api.github.com/repos"
+remained: Any = []
+GITHUB_TOKEN: Any = None
 
 
 def parse_repo_url(url_or_path):

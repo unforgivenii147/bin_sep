@@ -8,14 +8,14 @@ from collections.abc import Generator
 from datetime import datetime
 from functools import lru_cache
 from pathlib import Path
-from typing import NamedTuple
+from typing import Any, NamedTuple
 from urllib.parse import quote
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
-logger = logging.getLogger(__name__)
-FONTEXT = frozenset({".ttf", ".otf", ".woff", ".woff2", ".eot", ".svg"})
-SAMPLE_TEXT = "Lorem ipsum dolor sit amet\nهنر برتر از گوهر آمد پدید"
-OUTPUT_FILE = "fontpreview.html"
+logger: Any = logging.getLogger(__name__)
+FONTEXT: Any = frozenset({".ttf", ".otf", ".woff", ".woff2", ".eot", ".svg"})
+SAMPLE_TEXT: str = "Lorem ipsum dolor sit amet\nهنر برتر از گوهر آمد پدید"
+OUTPUT_FILE: str = "fontpreview.html"
 
 
 class FontInfo(NamedTuple):
@@ -356,7 +356,7 @@ def main(input_paths: list[str] | None = None, output_file: str = OUTPUT_FILE) -
         return 1
 
 
-def cli_main():
+def cli_main() -> None:
     import argparse
 
     parser = argparse.ArgumentParser(

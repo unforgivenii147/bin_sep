@@ -16,10 +16,10 @@ from binaryornot import is_binary
 from langdetect import DetectorFactory, detect_langs
 
 DetectorFactory.seed = 0
-_print_lock = threading.Lock()
-_results_lock = threading.Lock()
+_print_lock: Any = threading.Lock()
+_results_lock: Any = threading.Lock()
 _results: list[dict[str, Any]] = []
-_gcld3_detector = gcld3.NNetLanguageIdentifier(min_num_bytes=0, max_num_bytes=1000)
+_gcld3_detector: Any = gcld3.NNetLanguageIdentifier(min_num_bytes=0, max_num_bytes=1000)
 
 
 def iter_files(paths: Iterable[Path]) -> Iterator[Path]:

@@ -4,8 +4,9 @@ from __future__ import annotations
 import re
 import sys
 from pathlib import Path
+from typing import Any
 
-_VERSION_OP_RE = re.compile(r"\s*(?:===|==|!=|>=|<=|~=|>|<)\s*")
+_VERSION_OP_RE: Any = re.compile(r"\s*(?:===|==|!=|>=|<=|~=|>|<)\s*")
 
 
 def clean_requirement(line: str) -> str:

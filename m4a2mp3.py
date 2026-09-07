@@ -8,7 +8,7 @@ from pathlib import Path
 from dh import runcmd
 
 
-def convert_m4a_to_mp3(input_file, bitrate="64k"):
+def convert_m4a_to_mp3(input_file, bitrate: str = "64k") -> None:
     if not os.path.exists(input_file):
         print(f"Error: Input file '{input_file}' not found.")
         sys.exit(1)

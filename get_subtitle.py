@@ -9,11 +9,12 @@ import babelfish
 from subliminal import download_best_subtitles, save_subtitles
 from subliminal.providers import ProviderError
 from subliminal.video import scan_video
+from typing import Any
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
-logger = logging.getLogger(__name__)
+logger: Any = logging.getLogger(__name__)
 
 
 def get_english_subtitles(mkv_path, output_dir=None):
@@ -62,7 +63,7 @@ def get_english_subtitles(mkv_path, output_dir=None):
         return False
 
 
-def main():
+def main() -> None:
     if len(sys.argv) < 2:
         print(
             "Usage: python subtitle_downloader.py <path_to_mkv_file> [output_directory]"

@@ -68,7 +68,7 @@ def check_package(pkg_name: str) -> dict:
     }
 
 
-def main():
+def main() -> None:
     packages = get_installed_packages()
     print(f"Found {len(packages)} installed packages")
     with Pool(cpu_count()) as pool:

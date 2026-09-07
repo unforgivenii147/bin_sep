@@ -6,11 +6,12 @@ import re
 import sys
 from multiprocessing import Pool
 from pathlib import Path
+from typing import Any
 
-PERSIAN_CHARS = set("ابپتثجچحخدذرزژسشصضطظعغفقکگلمنوهیءآاًهٔة")
-PERSIAN_SPECIFIC = set("پچژگکی")
-ARABIC_SPECIFIC = set("ثحصضطظعق")
-PERSIAN_COMMON_WORDS = {
+PERSIAN_CHARS: Any = set("ابپتثجچحخدذرزژسشصضطظعغفقکگلمنوهیءآاًهٔة")
+PERSIAN_SPECIFIC: Any = set("پچژگکی")
+ARABIC_SPECIFIC: Any = set("ثحصضطظعق")
+PERSIAN_COMMON_WORDS: Any = {
     "و",
     "در",
     "به",
@@ -68,7 +69,7 @@ PERSIAN_COMMON_WORDS = {
     "دیروز",
     "فردا",
 }
-PERSIAN_AFFIXES = {
+PERSIAN_AFFIXES: Any = {
     "می",
     "نمی",
     "بی",
@@ -266,7 +267,7 @@ def process_chunk(chunk):
     return transliterated, cleaned
 
 
-def parallel_process(data_dict, num_workers=8):
+def parallel_process(data_dict, num_workers: int = 8):
     items = list(data_dict.items())
     chunk_size = max(1, len(items) // (num_workers * 4))
     chunks = [items[i : i + chunk_size] for i in range(0, len(items), chunk_size)]
@@ -280,7 +281,7 @@ def parallel_process(data_dict, num_workers=8):
     return transliterated, cleaned
 
 
-def main():
+def main() -> None:
     if len(sys.argv) != 2:
         print("Usage: python script.py <input.json>")
         sys.exit(1)

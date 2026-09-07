@@ -10,8 +10,9 @@ from pathlib import Path
 import chardet
 from dh import is_binary
 from loguru import logger
+from typing import Any
 
-TARGET_EXTENSIONS = {
+TARGET_EXTENSIONS: Any = {
     ".tar.gz",
     ".pdf",
     ".zip",
@@ -22,14 +23,22 @@ TARGET_EXTENSIONS = {
     ".whl",
     ".html",
 }
-COMPRESSED_ARCHIVES = {".tar.xz", ".tar.gz", ".tar.zst", ".7z", ".br", ".zip", ".whl"}
-GITHUB_REPO_REGEX = re.compile(
+COMPRESSED_ARCHIVES: Any = {
+    ".tar.xz",
+    ".tar.gz",
+    ".tar.zst",
+    ".7z",
+    ".br",
+    ".zip",
+    ".whl",
+}
+GITHUB_REPO_REGEX: Any = re.compile(
     r"https?://(?:www\.)?github\.com/[a-zA-Z0-9\-]+/[a-zA-Z0-9\-]+"
 )
-URL_REGEX = re.compile(
+URL_REGEX: Any = re.compile(
     r"(http|ftp|https)://([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:/~+#-]*[\w@?^=%&/~+#-])?"
 )
-MAX_WORKERS = 4
+MAX_WORKERS: int = 4
 
 
 def extract_links_from_text(text: str, file_path: Path | str):

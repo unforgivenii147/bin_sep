@@ -9,12 +9,13 @@ from datetime import timedelta
 from pathlib import Path
 
 from dh import fsz
+from typing import Any
 
-BUFFER_SIZE = 256 * 1024
+BUFFER_SIZE: Any = 256 * 1024
 
 
 class CompressionStats:
-    def __init__(self):
+    def __init__(self) -> None:
         self.total_files = 0
         self.successful = 0
         self.failed = 0
@@ -27,7 +28,7 @@ class CompressionStats:
         self.total_original_size += original_size
         self.total_compressed_size += compressed_size
 
-    def add_failure(self):
+    def add_failure(self) -> None:
         self.total_files += 1
         self.failed += 1
 
@@ -81,7 +82,7 @@ def format_ratio(original: int, compressed: int) -> str:
     return f"{ratio:.1f}%"
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Compress files recursively with gzip (maximum compression)",
         formatter_class=argparse.RawDescriptionHelpFormatter,

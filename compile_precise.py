@@ -18,7 +18,7 @@ def get_font_b64_or_fallback(filename):
     return b64_encoded
 
 
-def build_precise_css():
+def build_precise_css() -> None:
     print("Parsing typography file tree...")
     reg_b64 = get_font_b64_or_fallback("Inter-Regular.ttf")
     bold_b64 = get_font_b64_or_fallback("Inter-Bold.ttf")

@@ -5,7 +5,6 @@ import subprocess
 import sys
 from multiprocessing import Pool, cpu_count
 from pathlib import Path
-from typing import Optional
 
 
 def get_repo_status(repo_path: Path) -> tuple[Path, bool, str | None]:
@@ -63,7 +62,7 @@ def print_result(result: tuple[Path, bool, str | None]) -> None:
             print(f"  └─ {info}")
 
 
-def main():
+def main() -> None:
     root_dir = Path.cwd()
     print(f"Scanning for git repositories in: {root_dir}\n")
     repos = find_git_repos(root_dir)

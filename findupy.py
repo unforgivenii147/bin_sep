@@ -8,8 +8,9 @@ from collections import defaultdict
 from pathlib import Path
 
 from tqdm import tqdm
+from typing import Any
 
-SKIPPED_PATHS = []
+SKIPPED_PATHS: Any = []
 
 
 def hash_file(path: Path, chunk_size: int = 8192) -> str:
@@ -74,7 +75,7 @@ def print_duplicates(dups: dict) -> None:
         print("-" * 40)
 
 
-def export_to_json(dups: dict, output_path="duplicates.json") -> None:
+def export_to_json(dups: dict, output_path: str = "duplicates.json") -> None:
     with Path(output_path).open("w", encoding="utf-8") as f:
         json.dump(dups, f, indent=2)
     print(f"📦 Results exported to {output_path}")

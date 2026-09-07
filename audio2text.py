@@ -10,17 +10,19 @@ import time
 import speech_recognition as sr
 from pydub import AudioSegment
 
-interrupted = False
-output_file_global = "out.txt"
+interrupted: bool = False
+output_file_global: str = "out.txt"
 
 
-def signal_handler(sig, frame):
+def signal_handler(sig, frame) -> None:
     global interrupted
     print("\n\n⚠️  Interrupt received. Saving progress and exiting...")
     interrupted = True
 
 
-def wav_to_text_chunked(input_file, output_file="out.txt", chunk_duration_ms=30000):
+def wav_to_text_chunked(
+    input_file, output_file: str = "out.txt", chunk_duration_ms: int = 30000
+) -> None:
     global output_file_global
     output_file_global = output_file
     signal.signal(signal.SIGINT, signal_handler)

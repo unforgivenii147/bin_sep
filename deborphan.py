@@ -3,8 +3,9 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
+from typing import Any
 
-STATUS_PATH = Path("/var/lib/dpkg/status")
+STATUS_PATH: Any = Path("/var/lib/dpkg/status")
 
 
 def parse_installed_packages(status_text: str):
@@ -72,7 +73,7 @@ def find_orphans(installed, reverse):
     return sorted(orphans)
 
 
-def main():
+def main() -> None:
     if not STATUS_PATH.exists():
         raise SystemExit(
             f"Missing {STATUS_PATH}. This script expects a Debian-style dpkg database.\n"

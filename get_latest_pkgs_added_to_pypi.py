@@ -82,7 +82,7 @@ def save_to_text(packages: list[dict[str, str]], filename: str) -> None:
     print(f"Saved {len(packages)} packages to {filename}")
 
 
-def main():
+def main() -> None:
     import argparse
 
     parser = argparse.ArgumentParser(

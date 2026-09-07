@@ -12,9 +12,9 @@ from pathlib import Path
 
 from dh import fsz, get_files
 
-MAX_WORKERS = 4
-CHUNK_SIZE = 524288
-GZIP_COMPRESS_LEVEL = 9
+MAX_WORKERS: int = 4
+CHUNK_SIZE: int = 524288
+GZIP_COMPRESS_LEVEL: int = 9
 
 
 def decompress_file(path: Path) -> bool:

@@ -42,7 +42,7 @@ def update_bashrc_with_path(bashrc_content, new_path_entries):
     return updated_content
 
 
-def main():
+def main() -> None:
     bashrc_path = Path.home() / ".bashrc"
     path_entries = get_path_entries()
     print(f"Current PATH entries: {len(path_entries)}")

@@ -90,7 +90,7 @@ def fix_file(file_path: Path, missing_imports: list[str]) -> None:
         f.write("\n".join(lines))
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Check Python files for missing imports recursively."
     )

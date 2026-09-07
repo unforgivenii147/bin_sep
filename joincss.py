@@ -4,14 +4,15 @@ from __future__ import annotations
 import re
 import sys
 from pathlib import Path
+from typing import Any
 
-LOCAL_FONT_BASE = Path("/sdcard/_static/fonts")
-FONTEXTS = {".woff", ".woff2", ".ttf", ".otf", ".eot"}
-IMGEXTS = {".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp"}
-IMPORT_RE = re.compile(
+LOCAL_FONT_BASE: Any = Path("/sdcard/_static/fonts")
+FONTEXTS: Any = {".woff", ".woff2", ".ttf", ".otf", ".eot"}
+IMGEXTS: Any = {".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp"}
+IMPORT_RE: Any = re.compile(
     "@import\\s+url\\([^)]+fonts\\.googleapis[^)]+\\);?", re.IGNORECASE
 )
-FAMILY_RULES = {
+FAMILY_RULES: Any = {
     "roboto": "roboto",
     "lato": "lato",
     "opensans": "opensans",
@@ -19,7 +20,7 @@ FAMILY_RULES = {
     "fontawesome": "fa",
     "fa-": "fa",
 }
-URL_RE = re.compile(
+URL_RE: Any = re.compile(
     "url\\(([\\\"\\']?)(https?://[^)]+?\\.(?:woff2?|ttf|otf|eot))\\1\\)", re.IGNORECASE
 )
 

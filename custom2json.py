@@ -29,7 +29,7 @@ def parse_magic_line(line: str):
     }
 
 
-def parse_magic_file(filepath: str, encoding="latin-1"):
+def parse_magic_file(filepath: str, encoding: str = "latin-1"):
     result = {}
     current_mimetype = None
     with open(filepath, "rb") as f:

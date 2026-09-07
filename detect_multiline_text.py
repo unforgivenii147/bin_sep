@@ -12,10 +12,11 @@ from pathlib import Path
 
 from dh import TXT_EXT as TEXT_EXTENSIONS, get_nobinary
 from joblib import Parallel, delayed
+from typing import Any
 
-LICENSE_FILE = Path("/sdcard/lic")
-WORKERS = 8
-CHUNK_SIZE = 8192
+LICENSE_FILE: Any = Path("/sdcard/lic")
+WORKERS: int = 8
+CHUNK_SIZE: int = 8192
 
 
 @dataclass
@@ -27,7 +28,7 @@ class FileStats:
     error: str | None = None
     modified: bool = False
 
-    def __str__(self):
+    def __str__(self) -> str:
         rel = self.path.relative_to(Path.cwd())
         if self.error:
             return f"{rel}: ERROR - {self.error}"

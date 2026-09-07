@@ -5,14 +5,15 @@ from pathlib import Path
 
 import tree_sitter_python as tsp
 from tree_sitter import Language, Parser
+from typing import Any
 
-LANG = Language(tsp)
-parser = Parser()
+LANG: Any = Language(tsp)
+parser: Any = Parser()
 parser.set_language(LANG)
-ROOT_DIR = Path.cwd()
-OUTPUT_DIR = Path("output")
+ROOT_DIR: Any = Path.cwd()
+OUTPUT_DIR: Any = Path("output")
 OUTPUT_DIR.mkdir(exist_ok=True)
-VALID_TOP_LEVEL_NODES = {
+VALID_TOP_LEVEL_NODES: Any = {
     "function_definition",
     "class_definition",
     "import_statement",

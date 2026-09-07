@@ -8,8 +8,9 @@ from pathlib import Path
 
 import regex as re
 from dh import unique_path
+from typing import Any
 
-USER_STOPWORDS_FILE = Path("/sdcard/stopwords")
+USER_STOPWORDS_FILE: Any = Path("/sdcard/stopwords")
 
 
 def load_user_stopwords(path: Path):
@@ -25,7 +26,7 @@ def load_user_stopwords(path: Path):
     return stopwords
 
 
-EXCLUDE = load_user_stopwords(USER_STOPWORDS_FILE)
+EXCLUDE: Any = load_user_stopwords(USER_STOPWORDS_FILE)
 
 
 def extract_words(text: str):

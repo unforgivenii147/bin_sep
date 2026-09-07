@@ -7,8 +7,9 @@ import sys
 from dataclasses import dataclass
 from multiprocessing import Pool, cpu_count
 from pathlib import Path
+from typing import Any
 
-RE_FUNCTIONS = {
+RE_FUNCTIONS: Any = {
     "compile",
     "search",
     "match",
@@ -19,7 +20,7 @@ RE_FUNCTIONS = {
     "sub",
     "subn",
 }
-REGEX_INDICATORS = {
+REGEX_INDICATORS: Any = {
     "\\d",
     "\\w",
     "\\s",
@@ -54,7 +55,18 @@ REGEX_INDICATORS = {
     "\\8",
     "\\9",
 }
-STRING_ESCAPES = {"\\n", "\\t", "\\r", "\\f", "\\v", "\\\\", "\\'", '\\"', "\\a", "\\b"}
+STRING_ESCAPES: Any = {
+    "\\n",
+    "\\t",
+    "\\r",
+    "\\f",
+    "\\v",
+    "\\\\",
+    "\\'",
+    '\\"',
+    "\\a",
+    "\\b",
+}
 
 
 @dataclass
@@ -224,7 +236,7 @@ def parse_arguments():
     return (paths, create_backup, num_workers)
 
 
-def main():
+def main() -> None:
     paths, create_backup, num_workers = parse_arguments()
     python_files = collect_python_files(paths)
     if not python_files:

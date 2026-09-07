@@ -10,9 +10,9 @@ import pycurl
 from dh import cprint, get_installed_packages
 from packaging.version import Version
 
-MAX_WORKERS = 8
-TIMEOUT = 15
-RESULTS_FILE = "/sdcard/upgradable.json"
+MAX_WORKERS: int = 8
+TIMEOUT: int = 15
+RESULTS_FILE: str = "/sdcard/upgradable.json"
 
 
 def get_latest_version(pkg_name: str) -> str | None:

@@ -13,7 +13,7 @@ import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Final
+from typing import Any, Final
 
 import blosc2
 import brotli
@@ -72,7 +72,7 @@ class CompressionResult:
 
 
 class CompressionManager:
-    __slots__ = "output_dir", "temp_dir"
+    __slots__: Any = "output_dir", "temp_dir"
 
     def __init__(
         self, output_dir: str | Path = ".", *, keep_temp: bool = False
@@ -109,7 +109,7 @@ class CompressionManager:
     def compress_single(
         self,
         name: str,
-        compress_func: CompressorFunc,
+        compress_func: "CompressorFunc",
         extension: str,
         data: bytes,
         base_name: str,

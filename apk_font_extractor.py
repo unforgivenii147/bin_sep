@@ -9,16 +9,16 @@ import zipfile
 from concurrent.futures import TimeoutError
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
 
 from fontTools.ttLib import TTFont
+from typing import Any
 
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
-logger = logging.getLogger(__name__)
+logger: Any = logging.getLogger(__name__)
 
 
 @dataclass
@@ -35,7 +35,7 @@ class APKFontExtractor:
     FONT_EXTENSIONS: set[str] = {".ttf", ".otf", ".woff", ".woff2", ".ttc", ".eot"}
     FONT_DIRS: set[str] = {"font", "fonts", "assets/fonts", "res/font", "assets"}
 
-    def __init__(self, output_dir: Path = Path("fonts"), workers: int = 8):
+    def __init__(self, output_dir: Path = Path("fonts"), workers: int = 8) -> None:
         self.output_dir = Path(output_dir)
         self.workers = workers
         self.output_dir.mkdir(parents=True, exist_ok=True)

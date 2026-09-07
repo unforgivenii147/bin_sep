@@ -9,6 +9,7 @@ from pathlib import Path
 
 import pycld2
 from dh import is_binary
+from typing import Any
 
 
 class LanguageDetector:
@@ -44,7 +45,10 @@ class LanguageDetector:
             return False, f"ERROR: {e}", None, None
 
     def scan_directory(
-        self, directory, show_progress=True, only_report_non_english=True
+        self,
+        directory,
+        show_progress: bool = True,
+        only_report_non_english: bool = True,
     ) -> None:
         directory = Path(directory)
         if not directory.exists():
@@ -96,7 +100,7 @@ class LanguageDetector:
         print("\n" + "=" * 40)
         self.report_results(only_report_non_english)
 
-    def report_results(self, only_report_non_english=True) -> None:
+    def report_results(self, only_report_non_english: bool = True) -> None:
         print("\n📊 SCAN RESULTS")
         print("-" * 40)
         print(f"📁 Total files processed: {self.stats['total_files']}")

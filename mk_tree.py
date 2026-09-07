@@ -6,14 +6,15 @@ import itertools
 import re
 import sys
 from pathlib import Path
+from typing import Any
 
-NODE_MARKERS = ("\u251c\u2500\u2500", "\u2514\u2500\u2500", "|--", "`--")
-FOOTER_RE = re.compile(
+NODE_MARKERS: Any = ("\u251c\u2500\u2500", "\u2514\u2500\u2500", "|--", "`--")
+FOOTER_RE: Any = re.compile(
     r"^\d+\s+(directories|files|dirs|items)(,\s*\d+\s+(directories|files|dirs|items))?$"
 )
-JUNK_LINE_CHARS = set(" \u2502\u251c\u2514\u2500|+-`")
-JUNK_TOKEN_RE = re.compile(r"^[\u2502\u251c\u2514\u2500|+\-]+$")
-LEAD_JUNK_RE = re.compile(
+JUNK_LINE_CHARS: Any = set(" \u2502\u251c\u2514\u2500|+-`")
+JUNK_TOKEN_RE: Any = re.compile(r"^[\u2502\u251c\u2514\u2500|+\-]+$")
+LEAD_JUNK_RE: Any = re.compile(
     r"^([\u2502\u251c\u2514\u2500|+`\-]{2,}|[\u2502\u251c\u2514\u2500|+`\-]+\s+)"
 )
 
@@ -25,7 +26,7 @@ def strip_leading_junk(left, text):
     return left + len(m.group(0)), text[m.end() :]
 
 
-IMG_EXTS = {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".gif", ".tif", ".tiff"}
+IMG_EXTS: Any = {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".gif", ".tif", ".tiff"}
 
 
 def find_node_marker(line):
@@ -37,7 +38,7 @@ def find_node_marker(line):
     return best, best_len
 
 
-def clean_name(raw, keep_suffix=False):
+def clean_name(raw, keep_suffix: bool = False):
     raw = raw.strip()
     raw = re.sub(r"\s+#.*$", "", raw).strip()
     if not raw or raw.startswith("#"):
@@ -79,7 +80,7 @@ def cluster_means(values, min_gap=None):
     return [sum(c) / len(c) for c in clusters]
 
 
-def parse_tree_text(text, keep_suffix=False, warn=print):
+def parse_tree_text(text, keep_suffix: bool = False, warn=print):
     lines = text.splitlines()
     flat_list = not any(find_node_marker(line)[0] is not None for line in lines)
     candidates = []
@@ -245,7 +246,7 @@ def detect_marker_xs(img, rows, pitch, char_width):
     return out
 
 
-def image_to_entries(path, keep_suffix=False, engine="auto"):
+def image_to_entries(path, keep_suffix: bool = False, engine: str = "auto"):
     from PIL import Image, ImageOps, ImageStat
 
     try:
@@ -343,7 +344,7 @@ def image_to_entries(path, keep_suffix=False, engine="auto"):
     return engine_name, entries, {"tokens": raw_count, "rows": len(rows)}
 
 
-def finalize(entries, assume_dir=False):
+def finalize(entries, assume_dir: bool = False) -> None:
     for i, e in enumerate(entries):
         if e["name"] == ".":
             e["is_dir"] = True
@@ -358,7 +359,7 @@ def finalize(entries, assume_dir=False):
             e["is_dir"] = False
 
 
-def ambiguous_notes(entries, assume_dir=False):
+def ambiguous_notes(entries, assume_dir: bool = False):
     notes = []
     ambiguous = [
         e["name"]
@@ -393,7 +394,7 @@ def _unsafe_name(name):
     )
 
 
-def create_tree(entries, base_dir: Path, dry_run=False):
+def create_tree(entries, base_dir: Path, dry_run: bool = False):
     base_dir = base_dir.resolve()
     if not dry_run:
         base_dir.mkdir(parents=True, exist_ok=True)
@@ -472,7 +473,7 @@ def detect_mode(path: Path):
     return "text"
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         prog="tree2fs",
         description="Recreate a directory tree from a `tree` listing (text) or a screenshot of one (OCR).",

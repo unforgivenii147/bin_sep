@@ -80,7 +80,7 @@ def get_desired_extension(path: Path) -> tuple[str | None, str]:
     return None, "none"
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Rename files based on their detected MIME type or shebang",
         epilog="Without --apply, this runs in dry-run mode (only shows what would be renamed).",

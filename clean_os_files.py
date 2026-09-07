@@ -3,9 +3,10 @@ from __future__ import annotations
 
 import argparse
 import os
+from typing import Any
 
-WINDOWS_FILES = {".exe", ".dll", ".bat", ".com", ".msi", ".vbs", ".ps1"}
-MACOS_FILES = {".dmg", ".app", ".DS_Store", ".plist", ".pkg"}
+WINDOWS_FILES: Any = {".exe", ".dll", ".bat", ".com", ".msi", ".vbs", ".ps1"}
+MACOS_FILES: Any = {".dmg", ".app", ".DS_Store", ".plist", ".pkg"}
 
 
 def find_target_files(root_dir):
@@ -21,7 +22,7 @@ def find_target_files(root_dir):
     return target_files
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Search for Windows/macOS files in the current directory and optionally remove them."
     )

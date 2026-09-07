@@ -20,7 +20,7 @@ def process_file(cli_app, cli_args, file_path):
         return f"❌ Error processing {file_path.name}: {e!s}"
 
 
-def main():
+def main() -> None:
     if len(sys.argv) < 3:
         print("Usage: python run_script.py <extension> <cli_app> [args...]")
         print("Example: python run_script.py .svg svgo")

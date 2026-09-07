@@ -7,7 +7,7 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
-prefix = "/data/data/com.termux/files"
+prefix: str = "/data/data/com.termux/files"
 
 
 def get_path_dirs() -> list[str]:
@@ -160,7 +160,7 @@ def suggest_fixes(alias_conflicts, func_conflicts) -> None:
     print("\nTo see all conflicts in detail, run with --verbose flag")
 
 
-def main():
+def main() -> None:
     verbose = "--verbose" in sys.argv or "-v" in sys.argv
     config_dir = Path.home() / ".config/bash.d"
     aliases_file = config_dir / "aliases.sh"

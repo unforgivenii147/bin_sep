@@ -2,9 +2,10 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
-TARGET_SHEBANG = "#!/data/data/com.termux/files/usr/bin/bash"
-cwd = Path.cwd()
+TARGET_SHEBANG: str = "#!/data/data/com.termux/files/usr/bin/bash"
+cwd: Any = Path.cwd()
 
 
 def process_file(path: Path) -> None:

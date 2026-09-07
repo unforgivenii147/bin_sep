@@ -5,14 +5,15 @@ import argparse
 import re
 import sys
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
+from PIL.Image import Image
 
 try:
     import cv2
     import pytesseract
     from PIL import Image
 
-    HAS_OCR = True
+    HAS_OCR: bool = True
 except ImportError:
     HAS_OCR = False
 

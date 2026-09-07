@@ -10,15 +10,16 @@ from pathlib import Path
 
 import requests
 from dotenv import load_dotenv
+from typing import Any
 
-env_path = Path.home() / ".env"
+env_path: Any = Path.home() / ".env"
 if env_path.exists():
     load_dotenv(env_path)
     print(f"✅ Loaded environment from {env_path}")
 else:
     print("⚠️  ~/.env not found, using system environment variables")
-SIZE_CACHE_FILE = "repo_sizes.json"
-CACHE_EXPIRY_DAYS = 7
+SIZE_CACHE_FILE: str = "repo_sizes.json"
+CACHE_EXPIRY_DAYS: int = 7
 
 
 def get_github_token():
@@ -57,7 +58,7 @@ def load_size_cache():
     return {}
 
 
-def save_size_cache(cache_data):
+def save_size_cache(cache_data) -> None:
     cache_data["_cache_date"] = datetime.now().isoformat()
     cache_data["_cache_version"] = "1.0"
     try:
@@ -137,7 +138,7 @@ def clone_repo(repo):
         return False
 
 
-def display_cached_stats(cache_data):
+def display_cached_stats(cache_data) -> None:
     if not cache_data or len(cache_data) <= 1:
         return
     repos = {
@@ -161,7 +162,7 @@ def display_cached_stats(cache_data):
     print(f"  📅 Cached on: {cache_data.get('_cache_date', 'Unknown')}")
 
 
-def main():
+def main() -> None:
     repos_file = Path("repos.txt")
     if not repos_file.exists():
         print("❌ repos.txt not found in current directory")

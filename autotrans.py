@@ -5,7 +5,7 @@ import logging
 import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-from typing import Final
+from typing import Any, Final
 
 from deep_translator import GoogleTranslator
 from dh import is_binary
@@ -19,13 +19,13 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(message)s",
     datefmt="%H:%M:%S",
 )
-logger = logging.getLogger(__name__)
+logger: Any = logging.getLogger(__name__)
 try:
     from fastwalk import walk_files
 
-    HAS_FASTWALK = True
+    HAS_FASTWALK: bool = True
 except ImportError:
-    HAS_FASTWALK = False
+    HAS_FASTWALK: bool = False
 NON_ENGLISH_PATTERN: Final[re.Pattern] = re.compile(r"[^\x00-\x7F]")
 
 

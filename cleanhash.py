@@ -6,8 +6,10 @@ from pathlib import Path
 
 from dh import should_skip
 from fastwalk import walk_files
+from collections.abc import Generator
+from typing import Any
 
-EXT = {
+EXT: Any = {
     ".zsh",
     ".fish",
     ".csh",
@@ -32,7 +34,7 @@ EXT = {
 }
 
 
-def get_files(root_dir):
+def get_files(root_dir) -> Generator[Any]:
     for p in walk_files(root_dir):
         if should_skip(p):
             continue
@@ -75,7 +77,7 @@ def process_file(path) -> int:
         return 0
 
 
-def main():
+def main() -> None:
     cwd = Path.cwd()
     args = sys.argv[1:]
     total = 0

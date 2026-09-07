@@ -2,14 +2,15 @@
 from __future__ import annotations
 
 from urllib.parse import urlparse
+from typing import Any
 
-seen = set()
-gl = []
+seen: Any = set()
+gl: Any = []
 with open("urls.txt") as f:
-    lines = f.readlines()
+    lines: Any = f.readlines()
     for line in lines:
         try:
-            orig = urlparse(line.strip()).netloc
+            orig: Any = urlparse(line.strip()).netloc
             if orig == "github.com":
                 gl.append(line)
             if orig not in seen:

@@ -6,7 +6,7 @@ import zipfile
 from pathlib import Path
 
 
-def inspect_and_move_wheels(root_dir="."):
+def inspect_and_move_wheels(root_dir: str = ".") -> None:
     root_path = Path(root_dir).resolve()
     target_dir = root_path / "suspicious"
     print(f"Scanning for .whl files recursively in: {root_path}\n")

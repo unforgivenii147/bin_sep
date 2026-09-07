@@ -17,10 +17,11 @@ import brotlicffi as brotli
 import lzma_mt
 import zstandard as zstd
 from loguru import logger
+from typing import Any
 
-HAS_ZST = True
-HAS_BR = True
-ARCHIVE_EXTENSIONS = {
+HAS_ZST: bool = True
+HAS_BR: bool = True
+ARCHIVE_EXTENSIONS: Any = {
     ".zip",
     ".tar",
     ".gz",
@@ -36,7 +37,7 @@ UTILS_MAP: dict[str, str] = {
     "class": "classes.py",
     "const": "const.py",
 }
-CONSTANT_CALL_NAMES = {"TypeVar", "NewType", "ParamSpec", "TypeVarTuple"}
+CONSTANT_CALL_NAMES: Any = {"TypeVar", "NewType", "ParamSpec", "TypeVarTuple"}
 
 
 @dataclass

@@ -4,9 +4,10 @@ from __future__ import annotations
 import multiprocessing as mp
 import re
 from pathlib import Path
+from typing import Any
 
-MD_IMAGE_PATTERN = re.compile(r"!\[.*?\]\(.*?\)")
-HTML_BADGE_BLOCK_PATTERN = re.compile(
+MD_IMAGE_PATTERN: Any = re.compile(r"!\[.*?\]\(.*?\)")
+HTML_BADGE_BLOCK_PATTERN: Any = re.compile(
     r"<p\b[^>]*>[\s\S]*?<img\b[\s\S]*?</p>|"
     r"<a\b[^>]*>\s*<img\b[\s\S]*?</a>|"
     r"<img\b[^>]*\/?>",
@@ -27,7 +28,7 @@ def clean_file(file_path: Path):
         return f"Error processing {file_path}: {e}"
 
 
-def main():
+def main() -> None:
     target_dir = Path(".")
     md_files = list(target_dir.rglob("*.md")) + list(target_dir.rglob("*.markdown"))
     if not md_files:

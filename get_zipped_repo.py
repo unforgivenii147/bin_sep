@@ -10,12 +10,13 @@ import requests
 from dotenv import load_dotenv
 from github import Github
 from tqdm import tqdm
+from typing import Any
 
-env_path = Path.home() / ".env"
+env_path: Any = Path.home() / ".env"
 load_dotenv(env_path)
 
 
-def download_repo_zip(username, repo, branch="main", output_name=None):
+def download_repo_zip(username, repo, branch: str = "main", output_name=None):
     g = Github(os.getenv("GITHUB_TOKEN"))
     repo_obj = g.get_repo(f"{username}/{repo}")
     zip_url = repo_obj.get_zipball_url(branch)
@@ -44,7 +45,7 @@ def download_repo_zip(username, repo, branch="main", output_name=None):
     return output_name
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description="Download a GitHub repository as ZIP")
     parser.add_argument("repo", help='Repository in format "username/repo"')
     parser.add_argument(

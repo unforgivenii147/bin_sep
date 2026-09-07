@@ -10,8 +10,8 @@ from pathlib import Path
 
 import zstandard as zstd
 
-ZSTD_LEVEL = 9
-WORKERS = 8
+ZSTD_LEVEL: int = 9
+WORKERS: int = 8
 
 
 def dir_size(path: Path) -> int:

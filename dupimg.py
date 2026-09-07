@@ -10,9 +10,11 @@ from pathlib import Path
 
 import cv2
 import numpy as np
+from numpy import ndarray
+from typing import Any
 
-IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tif", ".tiff", ".gif"}
-HASH_SIZE = 16
+IMAGE_EXTS: Any = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tif", ".tiff", ".gif"}
+HASH_SIZE: int = 16
 
 
 def log_verbose(msg: str, level: str = "INFO") -> None:
@@ -28,7 +30,7 @@ def is_image(path: Path) -> bool:
     return path.suffix.lower() in IMAGE_EXTS
 
 
-def load_image_cv2(path: str) -> np.ndarray | None:
+def load_image_cv2(path: str) -> ndarray | None:
     try:
         img = cv2.imread(path)
         if img is None:
@@ -40,7 +42,7 @@ def load_image_cv2(path: str) -> np.ndarray | None:
         return None
 
 
-def phash_cv2(img: np.ndarray, hash_size: int = HASH_SIZE) -> str:
+def phash_cv2(img: ndarray, hash_size: int = HASH_SIZE) -> str:
     if img is None:
         return None
     resized = cv2.resize(img, (hash_size, hash_size), interpolation=cv2.INTER_AREA)
@@ -139,7 +141,7 @@ def move_duplicates_to_folders(
     return folders_created, files_moved
 
 
-def main():
+def main() -> None:
     threshold = int(os.environ.get("DUP_HASH_THRESHOLD", "4"))
     num_workers = int(os.environ.get("NUM_WORKERS", cpu_count()))
     verbose = os.environ.get("VERBOSE", "1") == "1"

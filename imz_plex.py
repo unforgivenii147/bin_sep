@@ -10,13 +10,14 @@ from collections import defaultdict
 from pathlib import Path
 
 from dh import STDLIB
+from typing import Any
 
-SHEBANG_PATTERNS = [
+SHEBANG_PATTERNS: Any = [
     "#!/data/data/com.termux/files/usr/bin/python",
     "#!/usr/bin/env python",
     "#! */python",
 ]
-COMPRESSED_EXTS = {
+COMPRESSED_EXTS: Any = {
     ".tar.gz",
     ".tgz",
     ".tar.xz",
@@ -26,8 +27,8 @@ COMPRESSED_EXTS = {
     ".whl",
     ".7z",
 }
-PIP_LIST_PATH = Path("/sdcard/pip.txt")
-KNOWN_PACKAGES = set()
+PIP_LIST_PATH: Any = Path("/sdcard/pip.txt")
+KNOWN_PACKAGES: Any = set()
 STDLIB_MODULES = STDLIB
 
 

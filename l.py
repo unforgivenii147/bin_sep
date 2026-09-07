@@ -5,8 +5,9 @@ import datetime
 from pathlib import Path
 
 from dh import fsz, gsz
+from typing import Any
 
-EXCLUDED = {".mypy_cache", ".ruff_cache", ".git", "__pycache__"}
+EXCLUDED: Any = {".mypy_cache", ".ruff_cache", ".git", "__pycache__"}
 if __name__ == "__main__":
     cwd = Path.cwd()
     for path in sorted(cwd.rglob("*"), key=lambda e: e.stat().st_mtime):

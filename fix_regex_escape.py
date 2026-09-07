@@ -6,8 +6,9 @@ from ast import Call
 from pathlib import Path
 
 from dh import get_pyfiles
+from typing import Any
 
-TARGET_FUNCS = {
+TARGET_FUNCS: Any = {
     "compile",
     "search",
     "match",
@@ -21,7 +22,7 @@ TARGET_FUNCS = {
 
 
 class RegexFixer(ast.NodeTransformer):
-    def visit_Call(self, node: ast.Call) -> Call:
+    def visit_Call(self, node: ast.Call) -> ast.Call:
         self.generic_visit(node)
         if isinstance(node.func, ast.Attribute) and (
             isinstance(node.func.value, ast.Name)

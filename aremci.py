@@ -8,8 +8,9 @@ from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 
 from dh import DOC_TH1, DOC_TH2, get_pyfiles
+from typing import Any
 
-COMMENT_AND_DOCSTRING_REGEX = re.compile(
+COMMENT_AND_DOCSTRING_REGEX: Any = re.compile(
     f"(?:^(\\s*)#.*$)|(?:^(\\s*)({DOC_TH2}).*?(\\3)|^(\\s*)({
         DOC_TH1
     }).*?(\\5))|(?:\\b(def|class)\\s+\\w+[^():]*\\([^)]*\\)\\s*:\\s*)(\\s*)((DOC_TH2).*?(\\7)|({
@@ -17,10 +18,10 @@ COMMENT_AND_DOCSTRING_REGEX = re.compile(
     }).*?(\\9))",
     re.MULTILINE | re.DOTALL,
 )
-DOCSTRING_START_REGEX = re.compile(
+DOCSTRING_START_REGEX: Any = re.compile(
     f"^\\s*({DOC_TH2}|{DOC_TH1}).*?(\\1)\\s*", re.MULTILINE | re.DOTALL
 )
-MAX_WORKERS = 4
+MAX_WORKERS: int = 4
 
 
 def strip_comments_and_docstrings(file_path_str) -> bool:

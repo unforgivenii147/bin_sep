@@ -11,11 +11,12 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 
 from dh import fsz
+from typing import Any
 
 try:
     import lzmamt
 
-    HAS_LZMAMT = True
+    HAS_LZMAMT: bool = True
 except ImportError:
     HAS_LZMAMT = False
 LARGE_FILE_THRESHOLD = 5 * 1024 * 1024

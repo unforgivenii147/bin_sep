@@ -25,7 +25,7 @@ def get_file_hash(filepath):
         return filepath, None
 
 
-def remove_duplicates(root_dir, dry_run=True):
+def remove_duplicates(root_dir, dry_run: bool = True):
     root = pathlib.Path(root_dir)
     size_map = defaultdict(list)
     print("Scanning directory tree...")

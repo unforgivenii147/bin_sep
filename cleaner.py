@@ -5,7 +5,7 @@ import re
 import sys
 
 
-def clean_terminal_transcript(filepath):
+def clean_terminal_transcript(filepath) -> None:
     with open(filepath, encoding="utf-8", errors="replace") as f:
         content = f.read()
     ansi_escape = re.compile(

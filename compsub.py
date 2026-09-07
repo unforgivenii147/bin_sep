@@ -13,7 +13,7 @@ import zstandard as zstd
 from dh import fsz
 
 
-def iter_target_dirs(paths, recursive=True):
+def iter_target_dirs(paths, recursive: bool = True):
     out = []
     for p in paths:
         p = Path(p)
@@ -114,7 +114,7 @@ def is_within_directory(directory, target):
     return directory == target or directory in target.parents
 
 
-def safe_extract_stream(tar, dest_dir):
+def safe_extract_stream(tar, dest_dir) -> None:
     dest_dir = Path(dest_dir)
     dest_dir.mkdir(parents=True, exist_ok=True)
     for member in tar:
@@ -163,7 +163,7 @@ def decompress_archive(archive_path):
         return {"success": False, "name": archive_path.name, "error": str(e)}
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Compress/decompress subdirectories with tar+zstd"
     )

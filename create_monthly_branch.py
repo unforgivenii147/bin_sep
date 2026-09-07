@@ -5,9 +5,10 @@ import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
-REPO_PATH = Path.home() / "bin"
-MAIN_BRANCH = "main"
+REPO_PATH: Any = Path.home() / "bin"
+MAIN_BRANCH: str = "main"
 
 
 def get_branch_name() -> str:

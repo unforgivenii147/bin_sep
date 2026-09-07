@@ -6,10 +6,11 @@ import sys
 from urllib.parse import quote
 
 import requests
+from typing import Any
 
 
 class SubtitleDownloader:
-    def __init__(self):
+    def __init__(self) -> None:
         self.session = requests.Session()
         self.session.headers.update(
             {
@@ -130,7 +131,7 @@ class SubtitleDownloader:
             return False
 
 
-def main():
+def main() -> None:
     if len(sys.argv) < 2:
         print('Usage: python get_sub.py "movie_or_series_name"')
         print("Example: python get_sub.py outcast_s01")

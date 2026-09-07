@@ -9,9 +9,10 @@ from urllib.parse import urljoin, urlparse
 import requests
 from bs4 import BeautifulSoup
 from requests.sessions import Session
+import requests.sessions
 
 
-def create_session() -> Session:
+def create_session() -> requests.sessions.Session:
     session = requests.Session()
     session.headers.update(
         {

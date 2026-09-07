@@ -8,7 +8,7 @@ from pathlib import Path
 from dh import cprint, fsz, gsz
 from xxhash import xxh64
 
-CHUNKSIZE = 32768
+CHUNKSIZE: int = 32768
 
 
 def should_skip(path: Path) -> bool:

@@ -5,8 +5,9 @@ import os
 from pathlib import Path
 
 import magic
+from typing import Any
 
-MIME_TO_EXT = {
+MIME_TO_EXT: Any = {
     "text/html": "html",
     "application/json": "json",
     "application/javascript": "js",

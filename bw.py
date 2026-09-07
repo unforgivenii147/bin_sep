@@ -8,7 +8,7 @@ from PIL import Image
 
 
 def analyze_image(
-    path: Path, dark_threshold=50, ratio_threshold=0.6
+    path: Path, dark_threshold: int = 50, ratio_threshold: float = 0.6
 ) -> tuple[str, float]:
     with Image.open(path) as img:
         img = img.convert("RGB")

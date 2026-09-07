@@ -9,14 +9,14 @@ import numpy as np
 from imutils import paths
 
 
-def dhash(image, hashSize=8) -> int:
+def dhash(image, hashSize: int = 8) -> int:
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     resized = cv2.resize(gray, (hashSize + 1, hashSize))
     diff = resized[:, 1:] > resized[:, :-1]
     return sum(2**i for i, v in enumerate(diff.flatten()) if v)
 
 
-def compute_hashes(dataset_path, hashSize=8):
+def compute_hashes(dataset_path, hashSize: int = 8):
     hashes = {}
     imagePaths = list(paths.list_images(dataset_path))
     for imagePath in imagePaths:

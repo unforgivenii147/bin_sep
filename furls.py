@@ -17,13 +17,14 @@ from zipfile import ZipFile
 
 import zstd
 from dh import append_text, is_valid_url
+from typing import Any
 
-DEFAULT_MAX_MB = 15
-EXCLUDE_DIRS = {".git", "__pycache__"}
-URL_RE = re.compile(r"https?://[^\s'\"<>()]+", flags=re.IGNORECASE)
-GIT_FILE = Path("gitlinks.txt")
-REPO_FILE = Path("repos.txt")
-ARCHIVE_SUFFIXES = (
+DEFAULT_MAX_MB: int = 15
+EXCLUDE_DIRS: Any = {".git", "__pycache__"}
+URL_RE: Any = re.compile(r"https?://[^\s'\"<>()]+", flags=re.IGNORECASE)
+GIT_FILE: Any = Path("gitlinks.txt")
+REPO_FILE: Any = Path("repos.txt")
+ARCHIVE_SUFFIXES: Any = (
     ".tar.gz",
     ".tgz",
     ".tar.xz",
@@ -111,7 +112,7 @@ def open_tar_from_zst_path(path):
 
 
 def process_zipfile_zipped(
-    zipf: ZipFile, max_bytes, exts, found, recursion_depth, max_recursion
+    zipf: zipfile.ZipFile, max_bytes, exts, found, recursion_depth, max_recursion
 ) -> None:
     for zi in zipf.infolist():
         if zi.is_dir():
@@ -133,7 +134,7 @@ def process_zipfile_zipped(
 
 
 def process_tarfile_obj(
-    tarf: TarFile, max_bytes, exts, found, recursion_depth, max_recursion
+    tarf: tarfile.TarFile, max_bytes, exts, found, recursion_depth, max_recursion
 ) -> None:
     for member in tarf.getmembers():
         if not member.isfile():
@@ -231,7 +232,9 @@ def process_bytes_as_archive(
         found.update(scan_bytes_for_urls(b, max_bytes, exts, name_hint=name))
 
 
-def process_path(path: str, max_bytes: int, exts, found, recursion_limit=999) -> None:
+def process_path(
+    path: str, max_bytes: int, exts, found, recursion_limit: int = 999
+) -> None:
     p = Path(path)
     try:
         size = p.stat().st_size

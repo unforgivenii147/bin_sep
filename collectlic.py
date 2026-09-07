@@ -2,9 +2,10 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
-EXCLUDE_DIRS = {".git"}
-OUTPUT_FILE = Path("/sdcard/all2.txt")
+EXCLUDE_DIRS: Any = {".git"}
+OUTPUT_FILE: Any = Path("/sdcard/all2.txt")
 
 
 def read_file(path: Path) -> str | None:

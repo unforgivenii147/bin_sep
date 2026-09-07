@@ -6,8 +6,9 @@ import keyword
 import os
 import sys
 from pathlib import Path
+from typing import Any
 
-STDLIB_MODULES = {
+STDLIB_MODULES: Any = {
     "abc",
     "aifc",
     "argparse",
@@ -345,7 +346,7 @@ def get_stdlib_names() -> dict[str, set[str]]:
 
 
 class ImportChecker(ast.NodeVisitor):
-    def __init__(self, stdlib_names: dict[str, set[str]]):
+    def __init__(self, stdlib_names: dict[str, set[str]]) -> None:
         self.stdlib_names = stdlib_names
         self.imports = {}
         self.used_names = set()

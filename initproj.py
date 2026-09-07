@@ -11,7 +11,7 @@ def create_file(path: Path, content: str):
     print(f"Created: {path}")
 
 
-def main():
+def main() -> None:
     project_name = (
         input("Enter project name (e.g., my-cli-tool): ").strip().replace(" ", "-")
     )

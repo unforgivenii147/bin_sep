@@ -7,6 +7,7 @@ import tree_sitter_python as tsp
 from dh import cprint, should_skip
 from rapidfuzz import fuzz
 from tree_sitter import Language, Parser
+from typing import Any
 
 
 def get_filez(root_dir: str | Path):
@@ -31,10 +32,10 @@ def get_filez(root_dir: str | Path):
         yield root_dir
 
 
-cwd = Path.cwd()
-parser = Parser()
+cwd: Any = Path.cwd()
+parser: Any = Parser()
 parser.language = Language(tsp.language())
-VALID = {"import_statement", "import_from_statement"}
+VALID: Any = {"import_statement", "import_from_statement"}
 
 
 def process_file(path: Path) -> None:

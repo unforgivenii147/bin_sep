@@ -10,12 +10,13 @@ import subprocess
 import sys
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
+from typing import Any
 
-RST2HTML_OPTIONS = "--no-toc-backlinks --strip-comments --language en --date"
-VALID_EXTENSIONS = {".rst", ".txt", ".md"}
-MD_LINK_PATTERN = re.compile(r"\[([^\]]+)\]\(([^)]+)\)")
-MD_HEADING_PATTERN = re.compile(r"^(#{1,6})\s+(.+)$", re.MULTILINE)
-MD_CODE_BLOCK_PATTERN = re.compile(r"```(\w+)?\n(.*?)```", re.DOTALL)
+RST2HTML_OPTIONS: str = "--no-toc-backlinks --strip-comments --language en --date"
+VALID_EXTENSIONS: Any = {".rst", ".txt", ".md"}
+MD_LINK_PATTERN: Any = re.compile(r"\[([^\]]+)\]\(([^)]+)\)")
+MD_HEADING_PATTERN: Any = re.compile(r"^(#{1,6})\s+(.+)$", re.MULTILINE)
+MD_CODE_BLOCK_PATTERN: Any = re.compile(r"```(\w+)?\n(.*?)```", re.DOTALL)
 
 
 def find_rst2html_script():
@@ -178,7 +179,7 @@ def publish_parallel(root_dir: Path | None = None, max_workers: int | None = Non
     print(f"\nConversion complete: {converted} converted, {errors} errors")
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Convert all .rst, .txt, and .md files to HTML recursively"
     )

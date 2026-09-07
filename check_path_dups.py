@@ -6,8 +6,9 @@ from collections import defaultdict
 from pathlib import Path
 
 from dh import cprint
+from typing import Any
 
-CHUNK_SIZE = 1024 * 1024
+CHUNK_SIZE: Any = 1024 * 1024
 
 
 def get_sha256(path: str | Path) -> str:

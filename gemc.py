@@ -9,10 +9,11 @@ from pathlib import Path
 
 import tree_sitter_python as tspython
 from tree_sitter import Language, Parser, Query, QueryCursor
+from typing import Any
 
-PY_LANGUAGE = Language(tspython.language())
-parser = Parser(PY_LANGUAGE)
-QUERY_STRING = """
+PY_LANGUAGE: Any = Language(tspython.language())
+parser: Any = Parser(PY_LANGUAGE)
+QUERY_STRING: str = """
 (comment) @comment
 (block
   . (expression_statement

@@ -42,7 +42,7 @@ def check_package_files(pkg_name):
         return pkg_name, None
 
 
-def main():
+def main() -> None:
     output_file = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("missing_files.json")
     result = subprocess.run(["dpkg", "-l"], capture_output=True, text=True, check=False)
     packages = [

@@ -11,8 +11,9 @@ from datetime import datetime
 from pathlib import Path
 
 from dh import PY_KEYWORDS
+from typing import Any
 
-COMMON_SUBSTITUTIONS = {
+COMMON_SUBSTITUTIONS: Any = {
     "0": "p",
     "1": "q",
     "2": "w",
@@ -34,7 +35,7 @@ COMMON_SUBSTITUTIONS = {
     "u": "i",
     "z": "x",
 }
-QWERTY_ADJACENT = {
+QWERTY_ADJACENT: Any = {
     "q": "w",
     "w": "qe",
     "e": "wr",

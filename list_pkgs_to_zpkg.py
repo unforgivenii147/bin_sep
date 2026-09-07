@@ -62,7 +62,7 @@ def check_package(dist) -> str | None:
     return dist.name
 
 
-def main():
+def main() -> None:
     dists = list(distributions())
     with ProcessPoolExecutor() as executor:
         results = [r for r in executor.map(check_package, dists) if r is not None]

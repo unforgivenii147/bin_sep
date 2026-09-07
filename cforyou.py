@@ -8,12 +8,12 @@ import time
 from pathlib import Path
 
 import requests
-from dh import cprint, get_installed_pkgs
+from dh import cprint
 from packaging.version import Version
 
-MAX_WORKERS = 8
-TIMEOUT = 15
-RESULTS_FILE = "/sdcard/c4u.json"
+MAX_WORKERS: int = 8
+TIMEOUT: int = 15
+RESULTS_FILE: str = "/sdcard/c4u.json"
 
 
 def save_output(text: str, pkg: str) -> None:

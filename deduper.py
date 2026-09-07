@@ -18,12 +18,13 @@ from collections import defaultdict
 from pathlib import Path
 
 from loguru import logger
+from typing import Any
 
 try:
     import tree_sitter_python
     from tree_sitter import Language, Parser
 
-    TREE_SITTER_AVAILABLE = True
+    TREE_SITTER_AVAILABLE: bool = True
 except Exception:
     TREE_SITTER_AVAILABLE = False
 try:

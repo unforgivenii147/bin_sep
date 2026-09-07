@@ -4,8 +4,9 @@ from __future__ import annotations
 import argparse
 import sys
 from pathlib import Path
+from typing import Any
 
-MORSE_CODE_DICT = {
+MORSE_CODE_DICT: Any = {
     "A": ".-",
     "B": "-...",
     "C": "-.-.",
@@ -44,7 +45,7 @@ MORSE_CODE_DICT = {
     "0": "-----",
     " ": "/",
 }
-REVERSE_MORSE_DICT = {v: k for k, v in MORSE_CODE_DICT.items()}
+REVERSE_MORSE_DICT: Any = {v: k for k, v in MORSE_CODE_DICT.items()}
 
 
 def text_to_morse(text: str) -> str:

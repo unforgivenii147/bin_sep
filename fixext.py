@@ -10,9 +10,10 @@ from collections.abc import Iterable
 from pathlib import Path
 
 from dh import MIME2EXT, SHEBANG_MAP, get_files
+from typing import Any
 
-LOGGER = logging.getLogger(__name__)
-PROTECTED_EXTENSIONS = {
+LOGGER: Any = logging.getLogger(__name__)
+PROTECTED_EXTENSIONS: Any = {
     ".css",
     ".js",
     ".min.js",

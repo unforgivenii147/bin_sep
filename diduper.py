@@ -7,9 +7,10 @@ from pathlib import Path
 
 import tree_sitte_python as tsp
 from tree_sitter import Language, Node, Parser
+from typing import Any
 
-OUTPUT_FILE = "utils.py"
-SKIP_FILES = {OUTPUT_FILE, Path(__file__).name}
+OUTPUT_FILE: str = "utils.py"
+SKIP_FILES: Any = {OUTPUT_FILE, Path(__file__).name}
 
 
 @dataclass(frozen=True)

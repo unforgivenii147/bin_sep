@@ -9,9 +9,10 @@ from collections.abc import Iterable
 from pathlib import Path
 
 from dh import MIME2EXT, get_nobinary
+from typing import Any
 
-OUTPUT_DIR = Path("extracted_base64")
-DATA_URL_RE = re.compile(
+OUTPUT_DIR: Any = Path("extracted_base64")
+DATA_URL_RE: Any = re.compile(
     "data:(?P<mime>[-\\w.+/]+);base64,(?P<data>[A-Za-z0-9+/=\\s]+)", re.IGNORECASE
 )
 

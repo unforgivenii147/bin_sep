@@ -7,10 +7,11 @@ from collections import Counter, defaultdict
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+from typing import Any
 
-BIN_DIR = Path.home() / "bin"
-REPORT = Path.home() / "dh_usage.txt"
-PACKAGE = "dh"
+BIN_DIR: Any = Path.home() / "bin"
+REPORT: Any = Path.home() / "dh_usage.txt"
+PACKAGE: str = "dh"
 
 
 def get_stdlib_modules() -> set[str]:

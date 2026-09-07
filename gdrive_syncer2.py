@@ -11,10 +11,11 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import Resource, build
 from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaIoBaseDownload
+from typing import Any
 
-env_path = Path.home() / ".env"
+env_path: Any = Path.home() / ".env"
 load_dotenv(dotenv_path=env_path)
-SCOPES = ["https://www.googleapis.com/auth/drive.readonly"]
+SCOPES: Any = ["https://www.googleapis.com/auth/drive.readonly"]
 
 
 class GoogleDriveSyncer:

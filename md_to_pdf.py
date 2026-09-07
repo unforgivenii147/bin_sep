@@ -7,7 +7,7 @@ from pathlib import Path
 import markdown
 import weasyprint
 
-CSS_TEMPLATE = """
+CSS_TEMPLATE: str = """
 /* ==========================================================================
    1. PAGE SETUP & PAGED MEDIA
    ========================================================================== */

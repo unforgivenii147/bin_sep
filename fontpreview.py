@@ -5,10 +5,11 @@ import os
 from pathlib import Path
 
 from dh import FONTEXT
+from typing import Any
 
-FONTEXTENSIONS = tuple(FONTEXT)
-OUTPUT_HTML = "fonts_preview.html"
-FONT_SIZES = [14, 22]
+FONTEXTENSIONS: Any = tuple(FONTEXT)
+OUTPUT_HTML: str = "fonts_preview.html"
+FONT_SIZES: Any = [14, 22]
 
 
 def find_fonts(cwd: str = "."):

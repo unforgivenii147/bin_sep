@@ -7,8 +7,9 @@ from os.path import commonpath
 from pathlib import Path
 
 from dh import colored
+from typing import Any
 
-REGEX_RULES = [
+REGEX_RULES: Any = [
     r"\bOutcast\b",
     r"\bS\d{2}\b",
     r"\b720p\b",
@@ -17,7 +18,7 @@ REGEX_RULES = [
     r"\bx264\b",
     "-REWARD_HI",
 ]
-EXTENSIONS = {".srt", ".mkv", ".mp4", ".avi"}
+EXTENSIONS: Any = {".srt", ".mkv", ".mp4", ".avi"}
 
 
 def common_prefix(strings):

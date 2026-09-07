@@ -8,10 +8,11 @@ from pathlib import Path
 
 import requests
 from bs4 import BeautifulSoup
+from typing import Any
 
-BASE_URL = "https://github.com/trending/python"
-TIMEFRAMES = ["daily", "weekly", "monthly"]
-OUTPUT_DIR = Path("trending_repos")
+BASE_URL: str = "https://github.com/trending/python"
+TIMEFRAMES: Any = ["daily", "weekly", "monthly"]
+OUTPUT_DIR: Any = Path("trending_repos")
 
 
 @dataclass

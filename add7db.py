@@ -7,7 +7,6 @@ import os
 import sqlite3
 import sys
 from pathlib import Path
-from sqlite3 import Cursor
 
 import py7zr
 
@@ -24,14 +23,14 @@ def get_user_folder_name(default_name: str):
         return user_input
 
 
-def folder_exists_in_db(cursor: Cursor, folder_name):
+def folder_exists_in_db(cursor: sqlite3.Cursor, folder_name):
     cursor.execute(
         "SELECT name FROM sqlite_master WHERE type='table' AND name=?", (folder_name,)
     )
     return cursor.fetchone() is not None
 
 
-def create_folder_table(cursor: Cursor, folder_name) -> None:
+def create_folder_table(cursor: sqlite3.Cursor, folder_name) -> None:
     cursor.execute(f"""
         CREATE TABLE IF NOT EXISTS "{folder_name}" (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -58,7 +57,7 @@ def compress_data(data_bytes) -> str | None:
         return None
 
 
-def read_file_contents(filepath: str):
+def read_file_contents(filepath: str) -> dict[str, Any]:
     try:
         encodings = ["utf-8", "latin-1", "cp1252", "iso-8859-1"]
         get_size = Path(filepath).stat().st_size
@@ -75,9 +74,9 @@ def read_file_contents(filepath: str):
                         "is_binary": False,
                         "original_size": len(content.encode("utf-8", errors="replace")),
                     }
-            except (UnicodeDecodeError, UnicodeError):
+            except (UnicodeDecodeError, PermissionError):
                 continue
-        with Path(filepath).open("rb") as f:
+        with open(filepath, "rb") as f:
             content = f.read()
             return {
                 "content": content,
@@ -85,12 +84,14 @@ def read_file_contents(filepath: str):
                 "original_size": len(content),
             }
     except PermissionError:
+        error_msg = f"[Permission denied: {filepath}]"
         return {
             "content": error_msg,
             "is_binary": False,
             "original_size": len(error_msg),
         }
-    except Exception:
+    except Exception as e:
+        error_msg = f"[Error reading {filepath}: {e}]"
         return {
             "content": error_msg,
             "is_binary": False,
@@ -157,7 +158,7 @@ def get_files_in_cwd():
     return files
 
 
-def insert_files(cursor: Cursor, folder_name, files) -> None:
+def insert_files(cursor: sqlite3.Cursor, folder_name, files) -> None:
     for file_info in files:
         cursor.execute(
             f"""

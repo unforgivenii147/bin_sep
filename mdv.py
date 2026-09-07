@@ -74,7 +74,7 @@ def paginate(console: Console, lines: list[str], page_size):
             console.print("[red]Unknown command. Use n, p, or q.[/red]")
 
 
-def main():
+def main() -> None:
     if len(sys.argv) != 2:
         print("Usage: python mdview.py <file.md>")
         sys.exit(1)

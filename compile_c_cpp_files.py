@@ -30,7 +30,7 @@ def compile_file(args):
         return (str(file_path), False, f"✗ Error: {file_path.name} - {e!s}")
 
 
-def main():
+def main() -> None:
     root_dir = Path.cwd()
     print(f"Scanning directory: {root_dir}\n")
     c_files = list(root_dir.rglob("*.c"))

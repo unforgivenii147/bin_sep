@@ -9,7 +9,7 @@ from pathlib import Path
 
 from dh import cprint
 
-CHUNK_SIZE = 32768
+CHUNK_SIZE: int = 32768
 
 
 def get_sha256(path: str | Path) -> str:

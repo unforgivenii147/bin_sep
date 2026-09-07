@@ -82,7 +82,7 @@ def process_file(file_path: Path, auto_fix: bool = False) -> dict:
     return result
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Find and optionally fix invalid escape sequences in Python files using parallel processing."
     )

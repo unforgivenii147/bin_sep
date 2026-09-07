@@ -54,7 +54,7 @@ def serialize_value(value: Any) -> Any:
         return str(value)
 
 
-def main():
+def main() -> None:
     cwd = Path.cwd()
     args = sys.argv[1:]
     input_file = ".coverage"

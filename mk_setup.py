@@ -144,7 +144,7 @@ setup(
     return setup_content
 
 
-def main():
+def main() -> None:
     if len(sys.argv) != 2:
         print("Usage: python create_setup.py <project_directory>")
         sys.exit(1)

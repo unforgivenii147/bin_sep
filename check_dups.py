@@ -99,7 +99,10 @@ def build_decl_for_assign(node, lines):
 
 
 def build_decl(
-    node: AsyncFunctionDef | ClassDef | FunctionDef, kind: str, name: str, lines
+    node: ast.AsyncFunctionDef | ast.ClassDef | ast.FunctionDef,
+    kind: str,
+    name: str,
+    lines,
 ) -> Decl:
     return Decl(
         kind=kind,

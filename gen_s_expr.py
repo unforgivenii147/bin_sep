@@ -3,9 +3,10 @@ from __future__ import annotations
 
 import tree_sitter_python as tsp
 from tree_sitter import Language, Parser
+from typing import Any
 
-PY_LANGUAGE = Language(tsp.language())
-parser = Parser(PY_LANGUAGE)
+PY_LANGUAGE: Any = Language(tsp.language())
+parser: Any = Parser(PY_LANGUAGE)
 
 
 def get_ast_sexp(node, source: bytes, depth: int = 0) -> str:
@@ -23,5 +24,5 @@ def parse_and_generate(code: str) -> str:
     return get_ast_sexp(tree.root_node, code.encode("utf-8"))
 
 
-result = parse_and_generate(code)
+result: Any = parse_and_generate(code)
 print(result)

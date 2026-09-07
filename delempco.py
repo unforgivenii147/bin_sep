@@ -13,16 +13,16 @@ from dh import is_binary, should_skip
 
 
 class ANSI:
-    RESET = "\x1b[0m"
-    BOLD = "\x1b[1m"
-    DIM = "\x1b[2m"
-    CYAN = "\x1b[36m"
-    GREEN = "\x1b[32m"
-    YELLOW = "\x1b[33m"
-    RED = "\x1b[31m"
+    RESET: str = "\x1b[0m"
+    BOLD: str = "\x1b[1m"
+    DIM: str = "\x1b[2m"
+    CYAN: str = "\x1b[36m"
+    GREEN: str = "\x1b[32m"
+    YELLOW: str = "\x1b[33m"
+    RED: str = "\x1b[31m"
 
     @classmethod
-    def disable(cls):
+    def disable(cls) -> None:
         for attr in dir(cls):
             if not attr.startswith("_") and attr != "disable":
                 setattr(cls, attr, "")
@@ -127,7 +127,7 @@ def discover_files(directories: list[str]) -> tuple[list[Path], int]:
     return (files, skipped_dirs)
 
 
-def print_header():
+def print_header() -> None:
     print(f"\n{ANSI.CYAN}╔════════════════════════════════════════════╗{ANSI.RESET}")
     print(
         f"{ANSI.CYAN}║{ANSI.RESET}         Blank Line Remover              {ANSI.CYAN}║{ANSI.RESET}"
@@ -156,7 +156,7 @@ def print_progress(current: int, total: int):
     print(f"\r  Progress: {current}/{total} ({pct:.0f}%)", end="", flush=True)
 
 
-def print_separator():
+def print_separator() -> None:
     print(f"\n{ANSI.CYAN}{'─' * 40}{ANSI.RESET}\n")
 
 

@@ -1,7 +1,6 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
 
-import html.parser
 import re
 import sys
 from pathlib import Path
@@ -12,10 +11,11 @@ from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import inch
 from reportlab.platypus import PageBreak, Paragraph, SimpleDocTemplate, Spacer
+from typing import Any
 
 
 class CHMToPDF:
-    def __init__(self, chm_file, output_file):
+    def __init__(self, chm_file, output_file) -> None:
         self.chm_file = chm_file
         self.output_file = output_file
         self.chm_obj = None
@@ -192,7 +192,7 @@ class CHMToPDF:
             return False
 
 
-def main():
+def main() -> None:
     if len(sys.argv) != 2:
         print("Usage: python chm_to_pdf.py <chm_file>")
         print("Example: python chm_to_pdf.py document.chm")

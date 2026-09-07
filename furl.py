@@ -6,9 +6,10 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 
 from tqdm import tqdm
+from typing import Any
 
-URL_PATTERN = re.compile(r'https?://[^\s<>r"{}|\^`\[\]]*', re.IGNORECASE)
-GIT_DOMAINS = {
+URL_PATTERN: Any = re.compile(r'https?://[^\s<>r"{}|\^`\[\]]*', re.IGNORECASE)
+GIT_DOMAINS: Any = {
     "github.com",
     "gitlab.com",
     "gitea.io",
@@ -48,7 +49,7 @@ def extract_urls_from_file(file_path: Path) -> tuple[set[str], set[str]]:
     return regular_urls, git_urls
 
 
-def main():
+def main() -> None:
     current_dir = Path.cwd()
     exclude_dirs = {
         ".git",

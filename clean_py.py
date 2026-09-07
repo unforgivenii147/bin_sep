@@ -7,6 +7,7 @@ import multiprocessing as mp
 import shutil
 import traceback
 from pathlib import Path
+from typing import Any
 
 
 class UsageAnalyzer(ast.NodeVisitor):

@@ -10,9 +10,10 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from joblib import Parallel, delayed
+from typing import Any
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)-8s %(message)s")
-logger = logging.getLogger(__name__)
+logger: Any = logging.getLogger(__name__)
 
 
 @dataclass

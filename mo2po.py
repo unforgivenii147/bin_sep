@@ -152,7 +152,7 @@ def process_directory(
     print(f"\nSummary: {success_count} converted, {fail_count} failed")
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Convert .mo files to .po files in-place",
         formatter_class=argparse.RawDescriptionHelpFormatter,

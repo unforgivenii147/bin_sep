@@ -6,9 +6,10 @@ import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
+from typing import Any
 
-DEB_DIR = Path.home() / "debs"
-EXCLUDED_PKGS = {
+DEB_DIR: Any = Path.home() / "debs"
+EXCLUDED_PKGS: Any = {
     "llvm",
     "clang",
     "libllvm",
@@ -24,13 +25,13 @@ EXCLUDED_PKGS = {
     "rust-analyzer",
     "cargo-c",
 }
-LOG_FILE = Path.home() / "make_deb.log"
+LOG_FILE: Any = Path.home() / "make_deb.log"
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
     handlers=[logging.FileHandler(LOG_FILE), logging.StreamHandler()],
 )
-logger = logging.getLogger(__name__)
+logger: Any = logging.getLogger(__name__)
 
 
 def should_exclude(pkg_name: str) -> bool:
@@ -112,7 +113,7 @@ def process_packages(packages: list[str], max_workers: int = 4) -> tuple[int, in
     return successful, failed
 
 
-def main():
+def main() -> None:
     if len(sys.argv) > 1:
         packages = sys.argv[1:]
         logger.info(f"Processing specified packages: {', '.join(packages)}")

@@ -8,7 +8,7 @@ import requests
 from dotenv import load_dotenv
 
 
-def search_python_repos():
+def search_python_repos() -> None:
     load_dotenv(Path.home() / ".env")
     token = os.getenv("GITHUB_TOKEN")
     headers = {"Authorization": f"Bearer {token}"}

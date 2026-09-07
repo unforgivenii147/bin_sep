@@ -6,7 +6,7 @@ import shutil
 from pathlib import Path
 
 
-def calculate_hash(filepath: Path, chunk_size=8192):
+def calculate_hash(filepath: Path, chunk_size: int = 8192):
     sha256 = hashlib.sha256()
     try:
         with filepath.open("rb") as f:
@@ -75,7 +75,7 @@ def check_and_move_files(system_hashes):
     return (matches, moved)
 
 
-def main():
+def main() -> None:
     print("-" * 40)
     print("🔐 File Hash Comparison & Move Tool")
     print("-" * 40)

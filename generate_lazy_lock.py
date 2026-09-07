@@ -60,7 +60,7 @@ def generate_lazy_lock():
         return False
 
 
-def main():
+def main() -> None:
     print("Generating lazy-lock.json for Neovim plugins...")
     print(f"Scanning: {Path.home() / '.local' / 'share' / 'nvim' / 'lazy'}")
     print(f"Output: {Path.home() / '.config' / 'nvim' / 'lazy-lock.json'}")

@@ -8,11 +8,12 @@ from pathlib import Path
 import babelfish
 from subliminal import download_best_subtitles, save_subtitles
 from subliminal.video import scan_video
+from typing import Any
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
-logger = logging.getLogger(__name__)
+logger: Any = logging.getLogger(__name__)
 
 
 def download_subtitles_advanced(mkv_path, output_dir=None):

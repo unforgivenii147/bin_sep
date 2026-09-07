@@ -10,8 +10,9 @@ from pathlib import Path
 import apt
 import apt_pkg
 import unix_ar
+from typing import Any
 
-BASE_DIR = Path.home() / "debs"
+BASE_DIR: Any = Path.home() / "debs"
 BASE_DIR.mkdir(parents=True, exist_ok=True)
 apt_pkg.init_system()
 

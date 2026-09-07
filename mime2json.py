@@ -4,8 +4,9 @@ from __future__ import annotations
 import json
 from collections import defaultdict
 from pathlib import Path
+from typing import Any
 
-OUTPUT_FILE = Path("mime_to_ext.json")
+OUTPUT_FILE: Any = Path("mime_to_ext.json")
 
 
 def extract_mime_and_extensions(obj):

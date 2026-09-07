@@ -9,8 +9,8 @@ from collections import defaultdict
 from pathlib import Path
 from typing import dict, list, set, tuple
 
-MIN_LINES = 3
-MIN_CHARS = 100
+MIN_LINES: int = 3
+MIN_CHARS: int = 100
 
 
 def find_multiline_strings(

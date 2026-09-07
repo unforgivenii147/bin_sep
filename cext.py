@@ -12,13 +12,13 @@ import zipfile
 from collections import defaultdict
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
-from typing import NamedTuple
+from typing import Any, NamedTuple
 
 try:
     import tree_sitter
     import tree_sitter_python as tspython
 
-    HAS_TREE_SITTER = True
+    HAS_TREE_SITTER: bool = True
 except ImportError:
     HAS_TREE_SITTER = False
 try:

@@ -8,9 +8,9 @@ from pathlib import Path
 
 from dh import get_pyfiles, mpf_async
 
-REMOVE_ORIG = False
-LEGACY_MODE = False
-OPTIMIZE_LEVEL = 0
+REMOVE_ORIG: bool = False
+LEGACY_MODE: bool = False
+OPTIMIZE_LEVEL: int = 0
 
 
 def process_file(path) -> bool | None:

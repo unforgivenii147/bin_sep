@@ -12,11 +12,12 @@ from urllib.parse import urldefrag, urljoin, urlparse
 import requests
 from bs4 import BeautifulSoup
 from PIL import Image
+from typing import Any
 
-MIN_WIDTH = 300
-MIN_HEIGHT = 400
-OUTPUT_FILE = Path("img_urls.txt")
-DOWNLOAD_DIR = Path("images")
+MIN_WIDTH: int = 300
+MIN_HEIGHT: int = 400
+OUTPUT_FILE: Any = Path("img_urls.txt")
+DOWNLOAD_DIR: Any = Path("images")
 
 
 def normalize_url(url: str) -> str:

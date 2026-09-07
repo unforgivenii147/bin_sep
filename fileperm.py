@@ -6,15 +6,17 @@ import os
 import stat
 
 from tqdm import tqdm
+from collections.abc import Generator
+from typing import Any
 
-SKIP_DIRS = {".git", ".ruff_cache", "__pycache__"}
+SKIP_DIRS: Any = {".git", ".ruff_cache", "__pycache__"}
 
 
 def should_skip_dir(dirname):
     return dirname in SKIP_DIRS
 
 
-def walk_files(root_path="."):
+def walk_files(root_path: str = ".") -> Generator[Any]:
     for dirpath, dirnames, filenames in os.walk(root_path):
         dirnames[:] = [d for d in dirnames if not should_skip_dir(d)]
         for filename in filenames:
@@ -69,7 +71,7 @@ def analyze_file(filepath):
         return ("skip_correct", filepath, current_mode, target_mode)
 
 
-def process_file(filepath, target_mode, dry_run=False):
+def process_file(filepath, target_mode, dry_run: bool = False):
     if dry_run:
         return True
     try:
@@ -80,7 +82,7 @@ def process_file(filepath, target_mode, dry_run=False):
         return False
 
 
-def scan_and_report(root_path="."):
+def scan_and_report(root_path: str = "."):
     stats = {
         "total": 0,
         "skip_executable": [],
@@ -108,7 +110,7 @@ def scan_and_report(root_path="."):
     return stats
 
 
-def apply_changes(stats, dry_run=False):
+def apply_changes(stats, dry_run: bool = False):
     changes = stats["make_executable"] + stats["set_standard"]
     if not changes:
         print("\nNo changes needed!")
@@ -126,7 +128,7 @@ def apply_changes(stats, dry_run=False):
     return (success, failed)
 
 
-def print_report(stats, success=None, failed=None):
+def print_report(stats, success=None, failed=None) -> None:
     print(f"\n{'=' * 40}")
     print("Scan Results:")
     print(f"  Total files scanned: {stats['total']}")
@@ -144,7 +146,7 @@ def print_report(stats, success=None, failed=None):
     print(f"{'=' * 40}")
 
 
-def show_examples(stats, num=5):
+def show_examples(stats, num: int = 5) -> None:
     if stats["make_executable"]:
         print("\nExamples of files to make executable (+x):")
         for path, current, target in stats["make_executable"][:num]:
@@ -165,7 +167,7 @@ def show_examples(stats, num=5):
             print(f"  ... and {len(stats['skip_executable']) - num} more")
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Fix file permissions with smart rules using generator-based scanning",
         formatter_class=argparse.RawDescriptionHelpFormatter,

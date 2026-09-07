@@ -8,11 +8,12 @@ from collections import defaultdict
 from pathlib import Path
 
 import xxhash
+from typing import Any
 
-CACHE_PATH = Path.home() / ".cache" / "dups_cache.json"
-DUPS_DIR = Path.home() / ".cache" / "dups"
-MANIFEST_PATH = DUPS_DIR / "manifest.json"
-READ_CHUNK = 1024 * 8
+CACHE_PATH: Any = Path.home() / ".cache" / "dups_cache.json"
+DUPS_DIR: Any = Path.home() / ".cache" / "dups"
+MANIFEST_PATH: Any = DUPS_DIR / "manifest.json"
+READ_CHUNK: Any = 1024 * 8
 
 
 def load_json(path: Path):
@@ -69,7 +70,7 @@ def build_groups(root: Path, cache: dict):
     return groups
 
 
-def dedupe(root: Path, dry_run=False, force=False) -> None:
+def dedupe(root: Path, dry_run: bool = False, force: bool = False) -> None:
     cache = load_json(CACHE_PATH) if CACHE_PATH.exists() else {}
     groups = build_groups(root, cache)
     save_json(CACHE_PATH, cache)

@@ -14,10 +14,11 @@ from pathlib import Path
 from dh import fsz
 from joblib import Parallel, delayed
 from loguru import logger
+from typing import Any
 
-DEFAULT_WORKERS = 4
+DEFAULT_WORKERS: int = 4
 SOURCE_EXTENSIONS: set[str] = {".css", ".html", ".htm", ".js"}
-TOOL_TIMEOUT = 300
+TOOL_TIMEOUT: int = 300
 TOOL_COMMANDS: dict[str, object] = {
     "png": lambda p: ["pngq", str(p)],
     "jpg": lambda p: ["jpegoptim", str(p)],
@@ -52,7 +53,7 @@ TYPE_TO_NEW_MIME: dict[str, str] = {
     "css": "text/css",
     "js": "application/javascript",
 }
-DATA_URI_RE = re.compile(
+DATA_URI_RE: Any = re.compile(
     r"data:"
     r"(?P<mime>"
     r"image/(?:png|jpe?g|webp|svg\+xml)"

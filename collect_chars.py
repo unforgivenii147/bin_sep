@@ -5,8 +5,9 @@ import mimetypes
 import sys
 from multiprocessing import Pool
 from pathlib import Path
+from typing import Any
 
-TEXT_EXTENSIONS = {
+TEXT_EXTENSIONS: Any = {
     ".txt",
     ".md",
     ".py",
@@ -54,7 +55,7 @@ TEXT_EXTENSIONS = {
     ".eslintrc",
     ".prettierrc",
 }
-BINARY_EXTENSIONS = {
+BINARY_EXTENSIONS: Any = {
     ".bin",
     ".exe",
     ".dll",
@@ -80,7 +81,7 @@ BINARY_EXTENSIONS = {
     ".wav",
     ".flac",
 }
-SKIP_DIRS = {
+SKIP_DIRS: Any = {
     ".git",
     ".svn",
     "__pycache__",

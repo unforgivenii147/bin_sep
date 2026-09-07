@@ -6,11 +6,12 @@ import re
 from pathlib import Path
 
 from dh import mpf3
+from typing import Any
 
-LOG_EXT = ".log"
-MMAP_THRESHOLD = 1 * 1024 * 1024
-NUM_WORKERS = 4
-PATTERNS = [
+LOG_EXT: str = ".log"
+MMAP_THRESHOLD: Any = 1 * 1024 * 1024
+NUM_WORKERS: int = 4
+PATTERNS: Any = [
     r"\^\[",
     r"\[[\dA-Z;]+m",
     r"\[\d+[A-Z]",
@@ -24,7 +25,7 @@ PATTERNS = [
     r"\x0f",
     r"\x0e",
 ]
-COMPILED_PATTERNS = [re.compile(pattern) for pattern in PATTERNS]
+COMPILED_PATTERNS: Any = [re.compile(pattern) for pattern in PATTERNS]
 
 
 def clean_line(line: str) -> str:

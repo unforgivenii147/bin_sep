@@ -10,8 +10,9 @@ from pathlib import Path
 from urllib.parse import unquote, urlparse
 
 import requests
+from typing import Any
 
-ALLOWED_EXTENSIONS = {".css", ".ttf", ".woff", ".woff2", ".pdf"}
+ALLOWED_EXTENSIONS: Any = {".css", ".ttf", ".woff", ".woff2", ".pdf"}
 
 
 def clean_url(url: str) -> str:

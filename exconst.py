@@ -4,9 +4,10 @@ from __future__ import annotations
 import sys
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
-from typing import NamedTuple
+from typing import Any, NamedTuple
 
 import libcst as cst
+from libcst import Assign, BaseExpression, CSTVisitor
 
 
 class Constant(NamedTuple):
@@ -16,11 +17,11 @@ class Constant(NamedTuple):
 
 
 class ConstantExtractor(cst.CSTVisitor):
-    def __init__(self, file_path: Path):
+    def __init__(self, file_path: Path) -> None:
         self.file_path = file_path
         self.constants: list[Constant] = []
 
-    def visit_Assign(self, node: cst.Assign) -> None:
+    def visit_Assign(self, node: Assign) -> None:
         for target in node.targets:
             if isinstance(target.target, cst.Name):
                 name = target.target.value
@@ -28,7 +29,7 @@ class ConstantExtractor(cst.CSTVisitor):
                     value = self._extract_value(node.value)
                     self.constants.append(Constant(name, value, self.file_path))
 
-    def _extract_value(self, node: cst.BaseExpression) -> str:
+    def _extract_value(self, node: BaseExpression) -> str:
         return (
             node.deep_clone().deep_replace(lambda n: n).deep_equals(node)
             and node.visit(cst.CSTCodeGenerator())

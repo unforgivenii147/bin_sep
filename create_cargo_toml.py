@@ -118,7 +118,7 @@ def find_package(packages: list[dict], name: str) -> dict | None:
     return None
 
 
-def main():
+def main() -> None:
     lock_file = "Cargo.lock"
     if len(sys.argv) > 1:
         lock_file = sys.argv[1]

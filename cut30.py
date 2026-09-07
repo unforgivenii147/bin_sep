@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from git import Repo
 
 
-def remove_old_commits(repo_path=".", days=30):
+def remove_old_commits(repo_path: str = ".", days: int = 30) -> None:
     repo = Repo(repo_path)
     cutoff_date = datetime.now() - timedelta(days=days)
     cutoff_timestamp = int(cutoff_date.timestamp())
@@ -86,7 +86,9 @@ def remove_old_commits(repo_path=".", days=30):
             print("6. git branch -m temp_branch main  # rename temp to main")
 
 
-def remove_commits_older_than_days(repo_path=".", days=30, auto_confirm=False):
+def remove_commits_older_than_days(
+    repo_path: str = ".", days: int = 30, auto_confirm: bool = False
+) -> None:
     repo = Repo(repo_path)
     cutoff_timestamp = int((datetime.now() - timedelta(days=days)).timestamp())
     commits = list(repo.iter_commits("HEAD"))

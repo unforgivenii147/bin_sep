@@ -5,8 +5,9 @@ import sys
 from pathlib import Path
 
 from dh import fsz
+from typing import Any
 
-DARWIN_PATTERNS = {
+DARWIN_PATTERNS: Any = {
     ".DS_Store",
     ".AppleDouble",
     ".LSOverride",
@@ -16,7 +17,7 @@ DARWIN_PATTERNS = {
     "._*",
     ".com.apple.*",
 }
-WINDOWS_PATTERNS = {
+WINDOWS_PATTERNS: Any = {
     "*.exe",
     "*.dll",
     "*.sys",
@@ -124,7 +125,7 @@ def print_report(stats: dict) -> None:
     print("-" * 40)
 
 
-def main():
+def main() -> None:
     import argparse
 
     parser = argparse.ArgumentParser(

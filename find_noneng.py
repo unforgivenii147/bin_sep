@@ -12,9 +12,10 @@ from cld import (
     read_file_bytes,
     safe_text_from_bytes,
 )
+from typing import Any
 
-DEFAULT_MAX_PROBE = 4096
-DEFAULT_READ_BYTES = 2 * 1024 * 1024
+DEFAULT_MAX_PROBE: int = 4096
+DEFAULT_READ_BYTES: Any = 2 * 1024 * 1024
 
 
 def find_files(

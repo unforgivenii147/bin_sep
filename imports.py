@@ -11,11 +11,12 @@ from collections import defaultdict
 from pathlib import Path
 
 from dh import STDLIB, get_installed_pkgs
+from typing import Any
 
 try:
     from joblib import Parallel, delayed
 
-    HAS_JOBLIB = True
+    HAS_JOBLIB: bool = True
 except ImportError:
     HAS_JOBLIB = False
 SKIP_DIRS = {

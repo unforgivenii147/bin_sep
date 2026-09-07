@@ -9,8 +9,9 @@ from pathlib import Path
 import requests
 from dotenv import load_dotenv
 from requests.models import Response
+from typing import Any
 
-env_path = Path.home() / ".env"
+env_path: Any = Path.home() / ".env"
 if env_path.exists():
     load_dotenv(dotenv_path=env_path)
 
@@ -114,7 +115,7 @@ class GoogleDriveSync:
             response = requests.request(method, url, **kwargs)
         return response
 
-    def list_files(self, folder_id="root", page_token=None):
+    def list_files(self, folder_id: str = "root", page_token=None):
         url = "https://www.googleapis.com/drive/v3/files"
         params = {
             "q": f"'{folder_id}' in parents and trashed=false",
@@ -180,7 +181,7 @@ class GoogleDriveSync:
         drive_folder_id: str,
         local_folder_path,
         folder_name: str = "root",
-        depth=0,
+        depth: int = 0,
     ) -> None:
         indent = "  " * depth
         print(f"{indent}📁 Syncing: {folder_name}")

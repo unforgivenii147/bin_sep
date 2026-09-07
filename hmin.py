@@ -13,6 +13,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from colorama import Fore, Style, init
+from typing import Any
 
 init(autoreset=True)
 
@@ -37,7 +38,7 @@ class MinifyStats:
 
 
 class HTMLMinifier:
-    DEFAULT_CONFIG = {
+    DEFAULT_CONFIG: Any = {
         "collapseBooleanAttributes": True,
         "collapseInlineTagWhitespace": True,
         "collapseWhitespace": True,
@@ -67,7 +68,7 @@ class HTMLMinifier:
         "useShortDoctype": True,
     }
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.config = self.DEFAULT_CONFIG.copy()
         self._check_dependencies()
 
@@ -274,7 +275,7 @@ class HTMLMinifier:
         print(f"{Fore.CYAN}{'=' * 40}{Style.RESET_ALL}\n")
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Minify HTML files recursively using html-minifier-terser",
         formatter_class=argparse.RawDescriptionHelpFormatter,

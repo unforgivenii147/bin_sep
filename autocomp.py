@@ -16,8 +16,19 @@ import brotli
 import lz4.frame
 import py7zr
 import zstandard as zstd
+from typing import Any, NamedTuple
 
-ALGORITHMS = [
+
+class CompressionResult(NamedTuple):
+    name: Any
+    ext: Any
+    size: Any
+    ratio: Any
+    elapsed: Any
+    output_path: Any
+
+
+ALGORITHMS: Any = [
     ("brotli", ".br", compress_brotli),
     ("zstd", ".zst", compress_zstd),
     ("xz", ".xz", compress_xz),
@@ -164,7 +175,7 @@ def run_benchmark(target: Path) -> None:
             print(f"⚠ Could not delete {r.name}: {e}")
 
 
-def main():
+def main() -> None:
     if len(sys.argv) != 2:
         print(f"Usage: python {sys.argv[0]} <file_or_directory>")
         sys.exit(1)

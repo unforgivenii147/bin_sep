@@ -10,14 +10,13 @@ from argparse import ArgumentParser, RawDescriptionHelpFormatter
 from dataclasses import dataclass, field
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Optional
 
 try:
     import zstandard as zstd
 
-    HAS_ZSTD = True
+    HAS_ZSTD: bool = True
 except ImportError:
-    HAS_ZSTD = False
+    HAS_ZSTD: bool = False
 
 
 @dataclass
@@ -38,22 +37,22 @@ class FileReport:
 
 
 class Colors:
-    BOLD = "\x1b[1m"
-    CYAN = "\x1b[36m"
-    YELLOW = "\x1b[33m"
-    RED = "\x1b[31m"
-    GREEN = "\x1b[32m"
-    RESET = "\x1b[0m"
+    BOLD: str = "\x1b[1m"
+    CYAN: str = "\x1b[36m"
+    YELLOW: str = "\x1b[33m"
+    RED: str = "\x1b[31m"
+    GREEN: str = "\x1b[32m"
+    RESET: str = "\x1b[0m"
 
     @classmethod
-    def disable(cls):
+    def disable(cls) -> None:
         for attr in dir(cls):
             if not attr.startswith("_") and attr != "disable":
                 setattr(cls, attr, "")
 
 
 class ImportVisitor(ast.NodeVisitor):
-    def __init__(self):
+    def __init__(self) -> None:
         self.imports: dict[str, tuple[int, int, str]] = {}
         self.type_checking_imports: set[str] = set()
         self.future_imports: set[str] = set()
@@ -116,7 +115,7 @@ class ImportVisitor(ast.NodeVisitor):
 
 
 class NameVisitor(ast.NodeVisitor):
-    def __init__(self):
+    def __init__(self) -> None:
         self.used_names: set[str] = set()
         self.in_annotation = False
 

@@ -7,15 +7,17 @@ import stat
 from pathlib import Path
 
 from tqdm import tqdm
+from collections.abc import Generator
+from typing import Any
 
-SKIP_DIRS = {".git", ".ruff_cache", "__pycache__"}
+SKIP_DIRS: Any = {".git", ".ruff_cache", "__pycache__"}
 
 
 def should_skip_dir(dirname):
     return dirname in SKIP_DIRS
 
 
-def walk_all(root_path="."):
+def walk_all(root_path: str = ".") -> Generator[Any, Any]:
     root = Path(root_path)
 
     def walk(p: Path):
@@ -36,13 +38,13 @@ def walk_all(root_path="."):
     yield from walk(root)
 
 
-def walk_dirs(root_path="."):
+def walk_dirs(root_path: str = ".") -> Generator[Any]:
     for item_type, path in walk_all(root_path):
         if item_type == "dir":
             yield path
 
 
-def walk_files(root_path="."):
+def walk_files(root_path: str = ".") -> Generator[Any]:
     for item_type, path in walk_all(root_path):
         if item_type == "file":
             yield path
@@ -100,7 +102,7 @@ def analyze_item(item_type, path):
         return ("skip_correct", path, current_mode, target_mode)
 
 
-def process_item(path, target_mode, dry_run=False):
+def process_item(path, target_mode, dry_run: bool = False):
     if dry_run:
         return True
     try:
@@ -111,7 +113,7 @@ def process_item(path, target_mode, dry_run=False):
         return False
 
 
-def apply_changes(stats, dry_run=False):
+def apply_changes(stats, dry_run: bool = False):
     all_changes = (
         stats["dirs_to_change"]
         + stats["files_make_executable"]
@@ -133,7 +135,7 @@ def apply_changes(stats, dry_run=False):
     return (success, failed)
 
 
-def print_report(stats, success=None, failed=None):
+def print_report(stats, success=None, failed=None) -> None:
     total_items = stats["total_dirs"] + stats["total_files"]
     total_changes = (
         len(stats["dirs_to_change"])
@@ -165,7 +167,7 @@ def print_report(stats, success=None, failed=None):
     print(f"{'=' * 40}")
 
 
-def show_examples(stats, num=5):
+def show_examples(stats, num: int = 5) -> None:
     if stats["dirs_to_change"]:
         print("\nExamples of directories to change to 0775:")
         for path, current, target in stats["dirs_to_change"][:num]:
@@ -192,7 +194,7 @@ def show_examples(stats, num=5):
             print(f"  ... and {len(stats['files_skip_executable']) - num} more")
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Fix directory and file permissions with smart rules",
         formatter_class=argparse.RawDescriptionHelpFormatter,

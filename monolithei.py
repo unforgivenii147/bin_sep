@@ -10,10 +10,11 @@ from urllib.parse import urljoin, urlparse
 
 import requests
 from bs4 import BeautifulSoup
+from typing import Any
 
 
 class Monolith:
-    MIME_TYPES = {
+    MIME_TYPES: Any = {
         ".css": "text/css",
         ".js": "application/javascript",
         ".svg": "image/svg+xml",
@@ -29,8 +30,12 @@ class Monolith:
     }
 
     def __init__(
-        self, ignore_errors=False, no_images=False, timeout=10, encoding="utf-8"
-    ):
+        self,
+        ignore_errors: bool = False,
+        no_images: bool = False,
+        timeout: int = 10,
+        encoding: str = "utf-8",
+    ) -> None:
         self.ignore_errors = ignore_errors
         self.no_images = no_images
         self.timeout = timeout
@@ -67,7 +72,7 @@ class Monolith:
         b64 = base64.b64encode(content).decode("ascii")
         return f"data:{mime_type};base64,{b64}"
 
-    def inline_css(self, soup):
+    def inline_css(self, soup) -> None:
         for link in soup.find_all("link", rel="stylesheet"):
             href = link.get("href")
             if not href:
@@ -101,7 +106,7 @@ class Monolith:
 
         return re.sub(r'url\([\'"]?([^\)]+)[\'"]?\)', replace_url, css)
 
-    def inline_scripts(self, soup):
+    def inline_scripts(self, soup) -> None:
         for script in soup.find_all("script", src=True):
             src = script.get("src")
             if not src:
@@ -116,7 +121,7 @@ class Monolith:
                     raise
                 print(f"⚠ Skipping script: {url}", file=sys.stderr)
 
-    def inline_images(self, soup):
+    def inline_images(self, soup) -> None:
         if self.no_images:
             for img in soup.find_all("img"):
                 img.decompose()
@@ -155,7 +160,7 @@ class Monolith:
             if new_srcset:
                 element["srcset"] = ", ".join(new_srcset)
 
-    def inline_fonts(self, soup):
+    def inline_fonts(self, soup) -> None:
         for style in soup.find_all("style"):
             if not style.string:
                 continue
@@ -202,7 +207,7 @@ class Monolith:
         return self.process_html(html, file_url)
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Save webpages as single HTML files with embedded resources",
         prog="monolith",

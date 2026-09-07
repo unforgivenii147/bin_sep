@@ -10,8 +10,9 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 
 from fastwalk import walk_files
+from typing import Any
 
-EXCLUDED = {
+EXCLUDED: Any = {
     ".py",
     ".h",
     ".c",
@@ -28,10 +29,10 @@ EXCLUDED = {
     ".pm",
     ".syntax",
 }
-IS_TERMUX = os.environ.get(
+IS_TERMUX: Any = os.environ.get(
     "TERMUX_VERSION"
 ) is not None or "com.termux" in os.environ.get("PREFIX", "")
-DEFAULT_WORKERS = 6 if IS_TERMUX else 8
+DEFAULT_WORKERS: Any = 6 if IS_TERMUX else 8
 
 
 def is_bash_script(file_path: Path) -> bool:

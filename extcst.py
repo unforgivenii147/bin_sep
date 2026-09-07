@@ -12,13 +12,23 @@ from datetime import datetime
 from pathlib import Path
 
 import libcst as cst
-from libcst import MetadataWrapper
+from libcst import (
+    Assign,
+    CSTNode,
+    CSTTransformer,
+    ClassDef,
+    FunctionDef,
+    Import,
+    ImportFrom,
+    MetadataWrapper,
+)
 from libcst.metadata import PositionProvider
+from typing import Any
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
-logger = logging.getLogger(__name__)
+logger: Any = logging.getLogger(__name__)
 
 
 @dataclass
@@ -36,7 +46,7 @@ class Entity:
 
 
 class EntityExtractor(cst.CSTTransformer):
-    def __init__(self, file_path: str, source_lines: list[str]):
+    def __init__(self, file_path: str, source_lines: list[str]) -> None:
         self.file_path = file_path
         self.source_lines = source_lines
         self.entities: list[Entity] = []
@@ -65,14 +75,14 @@ class EntityExtractor(cst.CSTTransformer):
         else:
             return cst.Module(body=[cst.SimpleStatementLine(body=[node])]).code
 
-    def visit_Import(self, node: cst.Import) -> bool:
+    def visit_Import(self, node: Import) -> bool:
         if not self.current_class:
             import_code = cst.Module(body=[cst.SimpleStatementLine(body=[node])]).code
             if import_code not in self.module_imports:
                 self.module_imports.append(import_code)
         return True
 
-    def visit_ImportFrom(self, node: cst.ImportFrom) -> bool:
+    def visit_ImportFrom(self, node: ImportFrom) -> bool:
         if not self.current_class:
             import_code = cst.Module(body=[cst.SimpleStatementLine(body=[node])]).code
             if import_code not in self.module_imports:
@@ -80,8 +90,8 @@ class EntityExtractor(cst.CSTTransformer):
         return True
 
     def leave_ClassDef(
-        self, original_node: cst.ClassDef, updated_node: cst.ClassDef
-    ) -> cst.CSTNode:
+        self, original_node: ClassDef, updated_node: ClassDef
+    ) -> CSTNode:
         class_name = original_node.name.value
         start_line, end_line = self._get_node_position(original_node)
         source_code = self._get_source_code(original_node, start_line, end_line)
@@ -112,8 +122,8 @@ class EntityExtractor(cst.CSTTransformer):
         return updated_node
 
     def leave_FunctionDef(
-        self, original_node: cst.FunctionDef, updated_node: cst.FunctionDef
-    ) -> cst.CSTNode:
+        self, original_node: FunctionDef, updated_node: FunctionDef
+    ) -> CSTNode:
         func_name = original_node.name.value
         start_line, end_line = self._get_node_position(original_node)
         source_code = self._get_source_code(original_node, start_line, end_line)
@@ -142,7 +152,7 @@ class EntityExtractor(cst.CSTTransformer):
         )
         return updated_node
 
-    def visit_Assign(self, node: cst.Assign) -> bool:
+    def visit_Assign(self, node: Assign) -> bool:
         if self.current_class:
             return True
         for target in node.targets:
@@ -338,7 +348,7 @@ def process_entity_extraction(
     logger.info("=" * 40)
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Extract entities (functions, classes, constants) from Python files."
     )

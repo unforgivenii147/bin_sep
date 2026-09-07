@@ -9,16 +9,17 @@ from pathlib import Path
 
 from binaryornot import is_binary
 from dh import fsz
+from typing import Any
 
-MMAP_THRESHOLD = 1024 * 1024
-BOLD = "\x1b[1m"
-GREEN = "\x1b[32m"
-YELLOW = "\x1b[33m"
-CYAN = "\x1b[36m"
-RED = "\x1b[31m"
-RESET = "\x1b[0m"
-DIM = "\x1b[2m"
-BINARY_SIGNATURES = (
+MMAP_THRESHOLD: Any = 1024 * 1024
+BOLD: str = "\x1b[1m"
+GREEN: str = "\x1b[32m"
+YELLOW: str = "\x1b[33m"
+CYAN: str = "\x1b[36m"
+RED: str = "\x1b[31m"
+RESET: str = "\x1b[0m"
+DIM: str = "\x1b[2m"
+BINARY_SIGNATURES: Any = (
     b"\x00",
     b"\xff\xd8\xff",
     b"\x89PNG",
@@ -53,10 +54,10 @@ BINARY_SIGNATURES = (
     b"\xd4\xc3\xb2\xa1",
     b"\xa1\xb2\xc3\xd4",
 )
-_TEXT_CHARS = bytearray(
+_TEXT_CHARS: Any = bytearray(
     {7, 8, 9, 10, 12, 13, 27} | set(range(32, 127)) | set(range(128, 256))
 )
-_BINARY_CHECK_SIZE = 8192
+_BINARY_CHECK_SIZE: int = 8192
 
 
 def remove_all_blank_lines(text: str) -> str:
@@ -260,7 +261,7 @@ def print_results(
     print(f"{BOLD}{CYAN}{'─' * 40}{RESET}\n")
 
 
-def main():
+def main() -> None:
     global MMAP_THRESHOLD
     parser = argparse.ArgumentParser(
         description="Remove blank lines from files recursively using parallel processing (with mmap support)",

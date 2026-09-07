@@ -13,8 +13,9 @@ import brotli
 import lz4.frame
 import py7zr
 import zstandard as zstd
+from typing import Any
 
-SUPPORTED_EXTENSIONS = {
+SUPPORTED_EXTENSIONS: Any = {
     "gz": gzip.open,
     "xz": lzma.open,
     "bz2": bz2.open,
@@ -25,7 +26,7 @@ SUPPORTED_EXTENSIONS = {
     "zip": zipfile.ZipFile,
     "whl": zipfile.ZipFile,
 }
-TAR_EXTENSIONS = [
+TAR_EXTENSIONS: Any = [
     "tar.gz",
     "tar.xz",
     "tar.bz2",
@@ -37,7 +38,7 @@ TAR_EXTENSIONS = [
 ]
 
 
-def extract_file(file_path):
+def extract_file(file_path) -> None:
     print(f"Extracting: {file_path}")
     try:
         if file_path.suffix in SUPPORTED_EXTENSIONS:
@@ -87,7 +88,7 @@ def extract_file(file_path):
         print(f"Failed to extract {file_path}: {e}")
 
 
-def main():
+def main() -> None:
     current_dir = pathlib.Path(".")
     archive_files = list(current_dir.rglob("*.*"))
     archive_files = [

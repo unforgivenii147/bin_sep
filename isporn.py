@@ -5,10 +5,11 @@ from pathlib import Path
 
 from dh import cprint, get_files, mpf3
 from nudenet import NudeDetector
+from typing import Any
 
-safe_path = Path("safe")
-sexy_path = Path("sexy")
-porn_path = Path("porn")
+safe_path: Any = Path("safe")
+sexy_path: Any = Path("sexy")
+porn_path: Any = Path("porn")
 safe_path.mkdir(exist_ok=True)
 sexy_path.mkdir(exist_ok=True)
 porn_path.mkdir(exist_ok=True)

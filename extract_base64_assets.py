@@ -14,10 +14,10 @@ from datetime import datetime
 from functools import lru_cache
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 try:
-    TREE_SITTER_AVAILABLE = True
+    TREE_SITTER_AVAILABLE: bool = True
 except ImportError:
     TREE_SITTER_AVAILABLE = False
     logging.warning("tree-sitter not available, using regex fallback")

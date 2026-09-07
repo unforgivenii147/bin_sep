@@ -5,9 +5,10 @@ import ast
 import multiprocessing as mp
 from ast import AST
 from pathlib import Path
+from typing import Any
 
-OUTPUT_DIR = Path("output")
-EXCLUDE_DIRS = {"test", "tests", "examples", "output"}
+OUTPUT_DIR: Any = Path("output")
+EXCLUDE_DIRS: Any = {"test", "tests", "examples", "output"}
 
 
 def is_python_script(path: Path) -> bool:
@@ -32,7 +33,7 @@ def discover_python_files() -> list[Path]:
     return files
 
 
-def mark_parents(node: ast.AST, parent: AST | None = None) -> None:
+def mark_parents(node: ast.AST, parent: ast.AST | None = None) -> None:
     for child in ast.iter_child_nodes(node):
         child._parent = node
         mark_parents(child, node)

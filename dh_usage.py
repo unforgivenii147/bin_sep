@@ -5,10 +5,11 @@ import ast
 import sys
 from collections import Counter
 from pathlib import Path
+from typing import Any
 
-BIN_DIR = Path.home() / "bin"
-REPORT = Path.home() / "dh_usage.txt"
-PACKAGE = "dh"
+BIN_DIR: Any = Path.home() / "bin"
+REPORT: Any = Path.home() / "dh_usage.txt"
+PACKAGE: str = "dh"
 
 
 def extract_dh_imports(filepath: Path) -> list[str]:

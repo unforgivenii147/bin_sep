@@ -8,8 +8,8 @@ from subprocess import CompletedProcess
 
 
 def run_git_command(
-    cmd: str, check=True, capture_output=True
-) -> CompletedProcess[str] | None:
+    cmd: str, check: bool = True, capture_output: bool = True
+) -> subprocess.CompletedProcess[str] | None:
     try:
         return subprocess.run(
             cmd, shell=True, check=check, capture_output=capture_output, text=True

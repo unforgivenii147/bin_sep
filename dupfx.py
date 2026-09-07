@@ -8,9 +8,9 @@ from pathlib import Path
 
 from xxhash import xxh64
 
-DEFAULT_BLOCK = 32768
-QUICK_READ = 4096
-CHUNK_SIZE = 65536
+DEFAULT_BLOCK: int = 32768
+QUICK_READ: int = 4096
+CHUNK_SIZE: int = 65536
 
 
 def file_stat_key(p: Path) -> tuple[int, int] | None:

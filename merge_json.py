@@ -44,7 +44,7 @@ def merge_json_files(input_paths):
     return merged_data
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description="Объединение JSON-файлов.")
     parser.add_argument(
         "input_paths",

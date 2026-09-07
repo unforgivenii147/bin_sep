@@ -9,13 +9,13 @@ import sys
 from pathlib import Path
 from typing import Any
 
-CM_PATTERN = re.compile(
+CM_PATTERN: Any = re.compile(
     r"\bwith\s+(?:ThreadPoolExecutor|ProcessPoolExecutor)\s*"
     r"\([^()]* (?: \( [^()]* \) [^()]* )* \)\s*"
     r"as\s+(\w+)\s*:",
     re.DOTALL | re.VERBOSE,
 )
-IGNORE_DIRS = {
+IGNORE_DIRS: Any = {
     ".git",
     "__pycache__",
     "venv",
@@ -98,7 +98,7 @@ def collect_python_files(paths: list[Path]) -> list[Path]:
     return files
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Migrate concurrent.futures to multiprocessing.Pool."
     )

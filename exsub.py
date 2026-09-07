@@ -10,6 +10,7 @@ from pathlib import Path
 import cv2
 import numpy as np
 import pytesseract
+from numpy import ndarray
 
 
 def _ocr_worker(frame_data: tuple, ocr_config: str) -> tuple[float, str]:
@@ -25,7 +26,7 @@ def _ocr_worker(frame_data: tuple, ocr_config: str) -> tuple[float, str]:
         return time_pos, ""
 
 
-def _frames_are_similar(a: np.ndarray, b: np.ndarray, threshold: float = 0.97) -> bool:
+def _frames_are_similar(a: ndarray, b: ndarray, threshold: float = 0.97) -> bool:
     small_a = cv2.resize(a, (64, 32))
     small_b = cv2.resize(b, (64, 32))
     diff = cv2.absdiff(small_a, small_b)
@@ -39,7 +40,7 @@ def extract_frames(
     subtitle_top_ratio: float = 0.75,
     start_time: float | None = None,
     end_time: float | None = None,
-) -> list[tuple[float, np.ndarray]]:
+) -> list[tuple[float, ndarray]]:
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
         raise OSError(f"Cannot open video: {video_path}")

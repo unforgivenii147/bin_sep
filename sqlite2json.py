@@ -15,7 +15,7 @@ from typing import Any
 
 
 def json_serializer(obj: Any) -> Any:
-
+    """Custom JSON serializer for objects not serializable by default json code"""
     if isinstance(obj, (datetime, date)):
         return obj.isoformat()
     if isinstance(obj, bytes):
@@ -28,7 +28,7 @@ def json_serializer(obj: Any) -> Any:
 
 
 def get_tables(conn: sqlite3.Connection) -> list[str]:
-
+    """Get all table names from the SQLite database"""
     cursor = conn.cursor()
     cursor.execute("""
         SELECT name FROM sqlite_master 
@@ -41,15 +41,18 @@ def get_tables(conn: sqlite3.Connection) -> list[str]:
 
 
 def table_to_json(conn: sqlite3.Connection, table_name: str) -> list[dict]:
-
+    """Convert a table to a list of dictionaries (JSON format)"""
     cursor = conn.cursor()
 
+    # Get column names
     cursor.execute(f'SELECT * FROM "{table_name}" LIMIT 1')
     columns = [description[0] for description in cursor.description]
 
+    # Fetch all rows
     cursor.execute(f'SELECT * FROM "{table_name}"')
     rows = cursor.fetchall()
 
+    # Convert to list of dictionaries
     result = []
     for row in rows:
         row_dict = {}
@@ -67,7 +70,7 @@ def save_json(
     indent: int = 2,
     ensure_ascii: bool = False,
 ) -> Path:
-
+    """Save data as JSON file"""
     output_file = output_dir / f"{table_name}.json"
 
     with open(output_file, "w", encoding="utf-8") as f:
@@ -81,10 +84,23 @@ def save_json(
 def convert_sqlite_to_json(
     db_path: str, output_dir: str | None = None, indent: int = 2, verbose: bool = True
 ) -> dict:
+    """
+    Convert SQLite database to JSON files
 
+    Args:
+        db_path: Path to SQLite database file
+        output_dir: Directory to save JSON files (default: same as database name)
+        indent: JSON indentation (default: 2)
+        verbose: Print progress information
+
+    Returns:
+        Dictionary with conversion statistics
+    """
+    # Validate database file exists
     if not os.path.exists(db_path):
         raise FileNotFoundError(f"Database file not found: {db_path}")
 
+    # Set up output directory
     if output_dir is None:
         db_stem = Path(db_path).stem
         output_dir = Path(f"{db_stem}_json")
@@ -104,6 +120,7 @@ def convert_sqlite_to_json(
     }
 
     try:
+        # Connect to database
         conn = sqlite3.connect(db_path)
 
         if verbose:
@@ -111,19 +128,23 @@ def convert_sqlite_to_json(
             print(f"📂 Output directory: {output_dir}")
             print("-" * 50)
 
+        # Get all tables
         tables = get_tables(conn)
         stats["tables_found"] = len(tables)
 
         if verbose:
             print(f"Found {len(tables)} tables")
 
+        # Convert each table
         for table_name in tables:
             try:
                 if verbose:
                     print(f"\n🔄 Converting table: '{table_name}'...")
 
+                # Convert table to JSON
                 data = table_to_json(conn, table_name)
 
+                # Save to file
                 output_file = save_json(data, table_name, output_dir, indent)
 
                 stats["tables_converted"] += 1
@@ -149,6 +170,7 @@ def convert_sqlite_to_json(
         if verbose:
             print(f"❌ {error_msg}")
 
+    # Print summary
     if verbose:
         print("\n" + "=" * 50)
         print("📊 Conversion Summary:")
@@ -165,7 +187,7 @@ def convert_sqlite_to_json(
 
 
 def main():
-
+    """Main function with command-line argument parsing"""
     import argparse
 
     parser = argparse.ArgumentParser(
@@ -199,6 +221,7 @@ Examples:
             args.database, args.output, indent, verbose=not args.no_verbose
         )
 
+        # Exit with error code if any table failed
         if stats["tables_failed"] > 0:
             sys.exit(1)
         else:

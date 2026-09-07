@@ -8,8 +8,9 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 
 import lzma_mt
+from typing import Any
 
-ARCHIVE_EXTENSIONS = {
+ARCHIVE_EXTENSIONS: Any = {
     ".zip",
     ".br",
     ".xz",
@@ -29,7 +30,7 @@ ARCHIVE_EXTENSIONS = {
     ".lzma",
     ".xza",
 }
-EXCLUDE_DIRS = {".git", "__pycache__", ".venv", "venv", ".env", "node_modules"}
+EXCLUDE_DIRS: Any = {".git", "__pycache__", ".venv", "venv", ".env", "node_modules"}
 
 
 def should_exclude(path: Path) -> bool:
@@ -137,7 +138,7 @@ def process_files(
     print(f"Total failed: {total_failed}")
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Compress or decompress files using lzma_mt with parallel processing",
         formatter_class=argparse.RawDescriptionHelpFormatter,

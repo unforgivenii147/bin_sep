@@ -13,6 +13,7 @@ from io import BytesIO
 from pathlib import Path
 
 from dh import fsz
+from typing import Any
 
 try:
     import zstandard as zstd
@@ -35,7 +36,7 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(message)s",
     handlers=[logging.StreamHandler()],
 )
-log = logging.getLogger(__name__)
+log: Any = logging.getLogger(__name__)
 
 
 def read_file(path: Path) -> bytes:
@@ -118,7 +119,7 @@ def _make_algorithms():
     return algos
 
 
-ALGORITHMS = _make_algorithms()
+ALGORITHMS: Any = _make_algorithms()
 
 
 def best_for_algo(
@@ -199,7 +200,7 @@ def _worker(args) -> Path | None:
         return None
 
 
-SKIP_EXTENSIONS = {
+SKIP_EXTENSIONS: Any = {
     ".zst",
     ".br",
     ".gz",

@@ -77,7 +77,7 @@ def process_file(path):
         return False
 
 
-def main():
+def main() -> None:
     cwd = Path.cwd()
     args = sys.argv[1:]
     files = []

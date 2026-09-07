@@ -11,8 +11,8 @@ from multiprocessing import Pool, cpu_count
 from pathlib import Path
 from typing import Any
 
-OUTPUT_DIR = Path("output")
-ARCHIVE_EXTENSIONS = (
+OUTPUT_DIR: Any = Path("output")
+ARCHIVE_EXTENSIONS: Any = (
     ".whl",
     ".zip",
     ".tar.gz",
@@ -22,11 +22,11 @@ ARCHIVE_EXTENSIONS = (
     ".tar",
     ".zst",
 )
-ALLOWED_PYTHON_EXTENSIONS = (".py", "")
+ALLOWED_PYTHON_EXTENSIONS: Any = (".py", "")
 
 
 class EntityExtractor(ast.NodeVisitor):
-    def __init__(self, source_content: str, original_path: Path):
+    def __init__(self, source_content: str, original_path: Path) -> None:
         self.entities = []
         self.source_lines = source_content.splitlines(keepends=True)
         self.original_path = original_path
@@ -221,7 +221,7 @@ def worker_process(path_str: str) -> list[dict[str, Any]]:
     return process_single_file(path)
 
 
-def main():
+def main() -> None:
     print(f"Starting analysis in {Path.cwd()}...")
     if OUTPUT_DIR.exists():
         shutil.rmtree(OUTPUT_DIR)

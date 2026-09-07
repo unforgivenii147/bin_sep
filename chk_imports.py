@@ -6,13 +6,14 @@ import ast
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
+from typing import Any
 
 
 class ParentMapper(ast.NodeVisitor):
-    def __init__(self):
+    def __init__(self) -> None:
         self.parents = {}
 
-    def visit(self, node):
+    def visit(self, node) -> None:
         for child in ast.iter_child_nodes(node):
             self.parents[child] = node
         self.generic_visit(node)
@@ -162,7 +163,7 @@ def save_report(
             f.write(f"  Files with errors: {len(report_data) - fixed}\n")
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Find .py files with imports not at the head of the file"
     )

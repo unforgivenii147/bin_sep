@@ -8,7 +8,7 @@ from pathlib import Path
 
 from dh import get_files
 
-MAX_QUEUE = 16
+MAX_QUEUE: int = 16
 
 
 def process_file(fn: Path) -> bool:

@@ -8,22 +8,24 @@ from pathlib import Path
 import numpy as np
 from joblib import Parallel, delayed
 from PIL import Image, UnidentifiedImageError
+from numpy import ndarray
+from typing import Any
 
-SEARCH_ROOT = Path(".")
-JPEG_QUALITY = 90
-SIMILARITY_THRESHOLD = 8.0
-MIN_CHANGED_PIXEL_FRACTION = 0.005
-N_JOBS = -1
+SEARCH_ROOT: Any = Path(".")
+JPEG_QUALITY: int = 90
+SIMILARITY_THRESHOLD: float = 8.0
+MIN_CHANGED_PIXEL_FRACTION: float = 0.005
+N_JOBS: int = -1
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s  %(levelname)-8s  %(message)s",
     datefmt="%H:%M:%S",
     stream=sys.stdout,
 )
-log = logging.getLogger(__name__)
+log: Any = logging.getLogger(__name__)
 
 
-def frames_are_similar(arr_a: np.ndarray, arr_b: np.ndarray) -> bool:
+def frames_are_similar(arr_a: ndarray, arr_b: ndarray) -> bool:
     if arr_a.shape != arr_b.shape:
         return False
     diff = np.abs(arr_a.astype(np.int16) - arr_b.astype(np.int16))
@@ -35,7 +37,7 @@ def frames_are_similar(arr_a: np.ndarray, arr_b: np.ndarray) -> bool:
     )
 
 
-def extract_unique_frames(gif_path: Path) -> list[np.ndarray]:
+def extract_unique_frames(gif_path: Path) -> list[ndarray]:
     frames: list[np.ndarray] = []
     try:
         with Image.open(gif_path) as img:

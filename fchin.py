@@ -5,7 +5,7 @@ import shutil
 import sys
 from pathlib import Path
 
-TARGET_SUBDIR = "chinese_files"
+TARGET_SUBDIR: str = "chinese_files"
 
 
 def has_chinese_chars_in_text(text: str) -> bool:

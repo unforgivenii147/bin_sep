@@ -9,6 +9,7 @@ from collections.abc import Generator
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 
 @dataclass
@@ -23,7 +24,7 @@ class FileStats:
 
 
 class FileAnalyzer:
-    def __init__(self, filepath: Path):
+    def __init__(self, filepath: Path) -> None:
         self.filepath = filepath
         self.tree = None
         self.content = ""
@@ -186,7 +187,7 @@ def report_stats(stats_list: list[FileStats], cwd: Path, apply: bool) -> None:
                 print(f"     {stats.error}\n")
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Analyze Python files and suggest meaningful filenames",
         formatter_class=argparse.RawDescriptionHelpFormatter,

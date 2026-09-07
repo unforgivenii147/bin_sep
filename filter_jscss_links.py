@@ -4,10 +4,11 @@ from __future__ import annotations
 import re
 from pathlib import Path
 from urllib.parse import urlparse
+from typing import Any
 
-INPUT_FILE = Path("urls.txt")
-OUTPUT_FILE = Path("filtered_urls.txt")
-EXT_PATTERN = re.compile(r"\.(min\.)?(js|css)$", re.IGNORECASE)
+INPUT_FILE: Any = Path("urls.txt")
+OUTPUT_FILE: Any = Path("filtered_urls.txt")
+EXT_PATTERN: Any = re.compile(r"\.(min\.)?(js|css)$", re.IGNORECASE)
 
 
 def is_static_asset(url: str) -> bool:

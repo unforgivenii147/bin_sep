@@ -5,8 +5,9 @@ import sys
 from pathlib import Path
 
 from dh import get_pyfiles, mpf3, runcmd
+from typing import Any
 
-fixes = [
+fixes: Any = [
     "apply",
     "asserts",
     "basestring",

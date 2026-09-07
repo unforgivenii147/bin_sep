@@ -5,8 +5,9 @@ import datetime
 import sys
 from os import scandir as _scandir
 from pathlib import Path
+from typing import Any
 
-REVERSE = "-r" in sys.argv
+REVERSE: Any = "-r" in sys.argv
 
 
 def fsz(sz: float) -> str:

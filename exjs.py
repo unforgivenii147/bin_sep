@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup
 from bs4.element import PageElement
 from dh import cprint, get_files, get_random_filename, mpf3
 
-MAX_QUEUE = 16
+MAX_QUEUE: int = 16
 
 
 def save_script(str1: list[PageElement]) -> bool:

@@ -5,12 +5,15 @@ import re
 import sys
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
+from typing import Any
 
-SHEBANG_PATTERN = re.compile(r"^#!.*python[23]?(?:\.\d+)?(?:[ \t]+.*)?$", re.MULTILINE)
-NEW_SHEBANG12 = "#!/data/data/com.termux/files/home/.local/bin/python"
-NEW_SHEBANG14 = "#!/data/data/com.termux/files/usr/bin/python"
-PYTHON_EXTENSIONS = {".py"}
-COMMON_PYTHON_NAMES = {
+SHEBANG_PATTERN: Any = re.compile(
+    r"^#!.*python[23]?(?:\.\d+)?(?:[ \t]+.*)?$", re.MULTILINE
+)
+NEW_SHEBANG12: str = "#!/data/data/com.termux/files/home/.local/bin/python"
+NEW_SHEBANG14: str = "#!/data/data/com.termux/files/usr/bin/python"
+PYTHON_EXTENSIONS: Any = {".py"}
+COMMON_PYTHON_NAMES: Any = {
     "setup",
     "setup.py",
     "manage",
@@ -135,7 +138,7 @@ def process_file(path: Path, root_dir: Path) -> tuple[Path, bool, str | None, st
         return (path, False, str(e), rel_path, "error")
 
 
-def main():
+def main() -> None:
     current_dir = Path.cwd()
     print(f"📁 Scanning directory: {current_dir}")
     print("-" * 40)

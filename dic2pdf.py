@@ -5,9 +5,9 @@ import re
 
 from weasyprint import HTML
 
-INPUT_FILE = "dictionary.txt"
-OUTPUT_FILE = "dictionary.pdf"
-CUSTOM_FONT = "custom.ttf"
+INPUT_FILE: str = "dictionary.txt"
+OUTPUT_FILE: str = "dictionary.pdf"
+CUSTOM_FONT: str = "custom.ttf"
 
 
 def convert_entry_to_html(raw_line: str) -> str | None:

@@ -4,15 +4,16 @@ from __future__ import annotations
 import sys
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Optional
 
 from dh import is_binary, should_skip
+from collections.abc import Generator
+from typing import Any
 
-WORKERS = 8
-CHUNK_SIZE = 64
+WORKERS: int = 8
+CHUNK_SIZE: int = 64
 
 
-def _iter_files(paths):
+def _iter_files(paths) -> Generator[Any, Any]:
     for raw in paths:
         p = Path(raw).expanduser().resolve()
         if p.is_dir():

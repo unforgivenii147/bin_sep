@@ -5,9 +5,9 @@ import os
 import re
 import sys
 from collections import defaultdict
-from typing import dict, list, set, tuple
+from typing import Any, dict, list, set, tuple
 
-VULTURE_LINE_PATTERN = re.compile(
+VULTURE_LINE_PATTERN: Any = re.compile(
     r"^(.+?):(\d+):\s+(unused\s+(function|variable|class|attribute|method|import)\s+'([^']+)'|unreachable code after '(\w+)'|redundant if-condition|unreachable 'else' block|unused import '([^']+)'\s+\(\d+% confidence\))$"
 )
 
@@ -200,7 +200,7 @@ def _cleanup_blank_lines(lines: list[str]) -> list[str]:
     return cleaned
 
 
-def main():
+def main() -> None:
     if len(sys.argv) > 1:
         vulture_file = sys.argv[1]
         try:

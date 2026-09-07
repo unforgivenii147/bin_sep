@@ -43,7 +43,7 @@ def wrap_file_content(file_path: Path, width: int) -> None:
         sys.exit(1)
 
 
-def main():
+def main() -> None:
     if len(sys.argv) != 2:
         print(f"Usage: {sys.argv[0]} <file_path>", file=sys.stderr)
         sys.exit(1)

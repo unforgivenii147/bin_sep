@@ -6,7 +6,7 @@ import subprocess
 import sys
 
 
-def main():
+def main() -> None:
     if len(sys.argv) < 2:
         print("Usage: python beautify-html.py <filename>")
         print("Example: python beautify-html.py index.html")

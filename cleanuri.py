@@ -8,8 +8,9 @@ import re
 from pathlib import Path
 
 from dh import MIME2EXT
+from typing import Any
 
-DATA_URI_PATTERN = re.compile(
+DATA_URI_PATTERN: Any = re.compile(
     r"data:(?P<mime>[^;,]*)(?P<params>(?:;[^;,]+=[^;,]+)*?);base64,\s*(?P<data>[A-Za-z0-9+/=]+)"
 )
 

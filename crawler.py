@@ -10,10 +10,10 @@ import requests
 from bs4 import BeautifulSoup
 from dh import cprint
 
-BASE_URL = "https://dls2.aparatchi-dlcenter.top/DonyayeSerial/"
-OUTPUT_FILE = "movies.txt"
-STATE_FILE = "crawler_state.json"
-MAX_SIZE_MB = 300
+BASE_URL: str = "https://dls2.aparatchi-dlcenter.top/DonyayeSerial/"
+OUTPUT_FILE: str = "movies.txt"
+STATE_FILE: str = "crawler_state.json"
+MAX_SIZE_MB: int = 300
 visited: set[str] = set()
 found_movies: list[str] = []
 
@@ -49,7 +49,7 @@ def is_valid_movie(filename: str, size_mb: float | None) -> bool:
     return True
 
 
-def save_state():
+def save_state() -> None:
     state = {"visited": list(visited), "found_movies": found_movies}
     with open(STATE_FILE, "w", encoding="utf-8") as f:
         json.dump(state, f, indent=2)
@@ -122,7 +122,7 @@ def crawl(url: str, depth: int = 0) -> None:
                 save_state()
 
 
-def main():
+def main() -> None:
     global found_movies
     print("🎬 Movie Crawler with Resume Support")
     print("=" * 40)

@@ -8,10 +8,11 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 from googleapiclient.discovery import Resource, build
+from typing import Any
 
 load_dotenv()
-API_KEY = os.getenv("YOUTUBE_API_KEY")
-CHANNELS = {
+API_KEY: Any = os.getenv("YOUTUBE_API_KEY")
+CHANNELS: Any = {
     "Blueprint_CoC": "UCQJJGSWnPUCb8uKV_MoJeOA",
     "iTzu": "UCLKKvlo0yK8OgWvjCiZQ3sA",
     "Clash_Champs": "UC_mD8S6pWpSstY3mXJ9nEqw",

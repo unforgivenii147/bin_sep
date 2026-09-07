@@ -7,10 +7,11 @@ from pathlib import Path
 
 import cv2
 from tqdm import tqdm
+from typing import Any
 
 
 class ImageDownscaler:
-    def __init__(self, root_dir: str = ".", scale_factor: float = 0.5):
+    def __init__(self, root_dir: str = ".", scale_factor: float = 0.5) -> None:
         self.root_dir = Path(root_dir)
         self.scale_factor = scale_factor
         self.supported_formats = {
@@ -125,7 +126,7 @@ class ImageDownscaler:
         print("-" * 40)
 
 
-def main():
+def main() -> None:
     scale_factor = 0.5
     if len(sys.argv) > 1:
         try:

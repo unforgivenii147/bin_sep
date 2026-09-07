@@ -9,17 +9,18 @@ from pathlib import Path
 import requests
 from bs4 import BeautifulSoup
 from bs4.element import AttributeValueList
+from typing import Any
 
-cwd = Path.cwd()
+cwd: Any = Path.cwd()
 INPUT_DIR = cwd
-OUTPUT_DIR = cwd / "output"
-ASSETS_DIR = cwd / "output" / "assets"
-DOWNLOAD_REMOTE = False
-TIMEOUT = 10
+OUTPUT_DIR: Any = cwd / "output"
+ASSETS_DIR: Any = cwd / "output" / "assets"
+DOWNLOAD_REMOTE: bool = False
+TIMEOUT: int = 10
 ASSETS_DIR.mkdir(parents=True, exist_ok=True)
 
 
-def save_asset(content: bytes, mime_type: str, file_hint="asset") -> Path:
+def save_asset(content: bytes, mime_type: str, file_hint: str = "asset") -> Path:
     ext = mimetypes.guess_extension(mime_type) or ""
     counter = 0
     while True:

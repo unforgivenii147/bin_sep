@@ -8,7 +8,7 @@ from pathlib import Path
 from pyppeteer import launch
 
 
-async def main():
+async def main() -> None:
     url = sys.argv[1]
     browser = await launch()
     page = await browser.newPage()

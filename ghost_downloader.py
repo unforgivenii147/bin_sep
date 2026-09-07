@@ -9,8 +9,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import requests
 from tqdm import tqdm
 
-DEFAULT_CHUNKS = 8
-DEFAULT_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+DEFAULT_CHUNKS: int = 8
+DEFAULT_USER_AGENT: str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
 
 def parse_args():
@@ -48,7 +48,7 @@ def download_chunk(url, start_byte, end_byte, chunk_id, headers, filename):
     return (part_filename, start_byte)
 
 
-def main():
+def main() -> None:
     args = parse_args()
     url = args.url
     num_chunks = args.chunks

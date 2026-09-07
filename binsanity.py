@@ -2,14 +2,16 @@
 from __future__ import annotations
 
 import concurrent.futures
+import os
 import subprocess
 from pathlib import Path
+from typing import Generator
 
 from binaryornot import is_binary
 from dh import should_skip
 
 
-def get_filez(root_dir: str | Path):
+def get_filez(root_dir: str | Path) -> Generator[Path, None, None]:
     from os import walk as os_walk
 
     visited_dirs: set[Path] = set()

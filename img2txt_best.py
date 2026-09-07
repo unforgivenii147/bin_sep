@@ -8,12 +8,13 @@ from pathlib import Path
 
 import pytesseract
 from PIL import Image
+from typing import Any
 
-TESSDATA_DIRS = [
+TESSDATA_DIRS: Any = [
     Path.home() / ".local" / "share" / "tessdata_best",
     Path.home() / ".local" / "share" / "tessdata_fast",
 ]
-IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".bmp", ".tiff", ".webp", ".gif"}
+IMAGE_EXTS: Any = {".png", ".jpg", ".jpeg", ".bmp", ".tiff", ".webp", ".gif"}
 
 
 def get_images(path: str | Path | None = None) -> list[Path]:

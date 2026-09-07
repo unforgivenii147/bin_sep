@@ -5,8 +5,9 @@ import argparse
 import os
 import re
 from pathlib import Path
+from typing import Any
 
-PATTERNS = {
+PATTERNS: Any = {
     "import_stmt": re.compile(
         r"^(import pkg_resources|from pkg_resources import .*)", re.MULTILINE
     ),
@@ -37,7 +38,7 @@ def fix_content(content):
     return new_content
 
 
-def process_files(autofix=False):
+def process_files(autofix: bool = False) -> None:
     count_found = 0
     python_files = list(Path(".").rglob("*.py"))
     for file_path in python_files:

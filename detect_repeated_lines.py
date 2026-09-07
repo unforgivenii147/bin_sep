@@ -47,7 +47,7 @@ def process_file(
     file_path,
     duplicates,
     dry_run: bool = False,
-    auto_yes=False,
+    auto_yes: bool = False,
     skip_blanks: bool = True,
 ):
     if not duplicates:

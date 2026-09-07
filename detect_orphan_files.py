@@ -10,9 +10,10 @@ from multiprocessing import Pool
 from pathlib import Path
 
 from loguru import logger
+from typing import Any
 
 logger.remove()
-log_path = Path.home() / "tmp" / "apps" / "orphan_files.log"
+log_path: Any = Path.home() / "tmp" / "apps" / "orphan_files.log"
 logger.add(log_path)
 
 
@@ -129,7 +130,7 @@ def should_skip_file(file_path: str) -> bool:
 
 
 class OrphanFileDetector:
-    def __init__(self):
+    def __init__(self) -> None:
         self.site_dirs = self._get_site_dirs()
         self.package_files: set[str] = set()
         self.package_dirs: set[str] = set()
@@ -150,7 +151,7 @@ class OrphanFileDetector:
     def get_installed_packages(self) -> list[importlib.metadata.Distribution]:
         return list(importlib.metadata.distributions())
 
-    def collect_package_files(self):
+    def collect_package_files(self) -> None:
         logger.info("Collecting package files...")
         packages = self.get_installed_packages()
         package_infos = []
@@ -278,7 +279,7 @@ class OrphanFileDetector:
         logger.info(f"\nOrphan files list exported to: {output_file}")
 
 
-def main():
+def main() -> None:
     import argparse
 
     parser = argparse.ArgumentParser(

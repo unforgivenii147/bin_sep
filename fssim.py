@@ -14,7 +14,7 @@ from ppdeep import compare, hash_from_file
 try:
     from tabulate import tabulate
 
-    USE_TABULATE = True
+    USE_TABULATE: bool = True
 except ImportError:
     USE_TABULATE = False
 try:

@@ -6,7 +6,7 @@ import ast
 import multiprocessing as mp
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
+from typing import Any
 
 
 @dataclass
@@ -33,7 +33,7 @@ def _is_const_name(name: str) -> bool:
 
 
 class DefinitionCollector(ast.NodeVisitor):
-    def __init__(self, file: Path):
+    def __init__(self, file: Path) -> None:
         self.file = file
         self.defs: list[Definition] = []
 
@@ -99,7 +99,7 @@ class DefinitionCollector(ast.NodeVisitor):
 
 
 class UsageCollector(ast.NodeVisitor):
-    def __init__(self):
+    def __init__(self) -> None:
         self.used: set[str] = set()
 
     def visit_Name(self, node: ast.Name):
@@ -129,7 +129,7 @@ def analyze_file(file: Path) -> FileAnalysis:
     )
 
 
-DUNDER_SKIP = {"__all__", "__version__", "__author__"}
+DUNDER_SKIP: Any = {"__all__", "__version__", "__author__"}
 
 
 def find_unused(analyses: list[FileAnalysis]) -> list[Definition]:
@@ -156,7 +156,7 @@ def find_unused(analyses: list[FileAnalysis]) -> list[Definition]:
     return unused
 
 
-KIND_DIR = {"func": "func", "class": "classes", "const": "const"}
+KIND_DIR: Any = {"func": "func", "class": "classes", "const": "const"}
 
 
 def extract_definition(item: tuple[Definition, str]) -> str:
@@ -176,7 +176,7 @@ def extract_definition(item: tuple[Definition, str]) -> str:
     return str(out_file)
 
 
-WORKERS = 8
+WORKERS: int = 8
 
 
 def gather_py_files(root: Path) -> list[Path]:

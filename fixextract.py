@@ -59,7 +59,7 @@ def fix_mis_extracted(root_dir: Path, dry_run: bool = True, verbose: bool = True
     return fixed
 
 
-def main():
+def main() -> None:
     import argparse
 
     parser = argparse.ArgumentParser(

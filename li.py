@@ -8,13 +8,14 @@ import sys
 from pathlib import Path
 
 from dh import fsz, gsz
+from typing import Any
 
-CYAN = "\x1b[36m"
-BLUE = "\x1b[34m"
-GREEN = "\x1b[32m"
-RED = "\x1b[31m"
-RESET = "\x1b[0m"
-COMPRESSED_EXTS = {".zip", ".tar", ".gz", ".bz2", ".xz", ".rar", ".7z"}
+CYAN: str = "\x1b[36m"
+BLUE: str = "\x1b[34m"
+GREEN: str = "\x1b[32m"
+RED: str = "\x1b[31m"
+RESET: str = "\x1b[0m"
+COMPRESSED_EXTS: Any = {".zip", ".tar", ".gz", ".bz2", ".xz", ".rar", ".7z"}
 
 
 def list_dir(path: str = ".") -> None:

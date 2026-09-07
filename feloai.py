@@ -7,9 +7,10 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+from typing import Any
 
-LOG_DIR = Path.home() / "tmp" / "apps"
-REAL_FELO = "/data/data/com.termux/files/home/.npm-global/bin/felo"
+LOG_DIR: Any = Path.home() / "tmp" / "apps"
+REAL_FELO: str = "/data/data/com.termux/files/home/.npm-global/bin/felo"
 
 
 def find_real_felo():
@@ -38,7 +39,7 @@ def create_log_file():
     return log_file
 
 
-def write_log_header(log_file, command_args):
+def write_log_header(log_file, command_args) -> None:
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
     cwd = os.getcwd()
     with open(log_file, "a") as f:
@@ -48,7 +49,7 @@ def write_log_header(log_file, command_args):
         f.write("================================\n\n")
 
 
-def write_log_footer(log_file, exit_code):
+def write_log_footer(log_file, exit_code) -> None:
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
     with open(log_file, "a") as f:
         f.write("\n================================\n")
@@ -57,7 +58,7 @@ def write_log_footer(log_file, exit_code):
         f.write("================================\n")
 
 
-def main():
+def main() -> None:
     real_felo = find_real_felo()
     if not real_felo:
         print("Error: Could not find the real felo binary", file=sys.stderr)

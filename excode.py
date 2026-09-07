@@ -3,8 +3,9 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
+from typing import Any
 
-LANG_TO_EXT = {
+LANG_TO_EXT: Any = {
     "python": ".py",
     "py": ".py",
     "javascript": ".js",
@@ -47,7 +48,7 @@ LANG_TO_EXT = {
     "txt": ".txt",
     "plain": ".txt",
 }
-CODE_BLOCK_RE = re.compile(
+CODE_BLOCK_RE: Any = re.compile(
     r"```(?P<lang>[A-Za-z0-9_+\-.]*)[ \t]*\n(?P<code>.*?)(?<=\n)```",
     re.DOTALL | re.IGNORECASE,
 )

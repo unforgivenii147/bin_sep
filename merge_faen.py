@@ -5,13 +5,14 @@ import json
 import logging
 import os
 from pathlib import Path
+from typing import Any
 
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
-logger = logging.getLogger(__name__)
+logger: Any = logging.getLogger(__name__)
 
 
 def load_existing_translations(json_path: str) -> dict[str, str]:

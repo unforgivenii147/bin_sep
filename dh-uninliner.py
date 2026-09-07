@@ -9,8 +9,9 @@ import re
 import sys
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
+from typing import Any
 
-DH_DIR = Path.home() / "projects/py/dh/src/dh"
+DH_DIR: Any = Path.home() / "projects/py/dh/src/dh"
 
 
 def hash_string(s: str) -> str:

@@ -8,12 +8,13 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import py7zr
+from typing import Any, Generator
 
-BASE_DIR = Path.cwd()
-LOG_FILE = BASE_DIR / "compress.log"
-SCRIPT_NAME = Path(__file__).name if "__file__" in globals() else None
-MAX_WORKERS = max(1, mp.cpu_count() - 1)
-PREFERRED_METHODS = ["LZMA2", "LZMA", "PPMd"]
+BASE_DIR: Any = Path.cwd()
+LOG_FILE: Any = BASE_DIR / "compress.log"
+SCRIPT_NAME: Any = Path(__file__).name if "__file__" in globals() else None
+MAX_WORKERS: Any = max(1, mp.cpu_count() - 1)
+PREFERRED_METHODS: Any = ["LZMA2", "LZMA", "PPMd"]
 
 
 def setup_logging() -> None:
@@ -27,10 +28,10 @@ def setup_logging() -> None:
     )
 
 
-def choose_best_py7zr_method():
+def choose_best_py7zr_method() -> Any:
     comp = getattr(py7zr, "compressor", None)
     if comp is None:
-        raise RuntimeError(msg)
+        raise RuntimeError("py7zr.compressor is not available")
     for name in PREFERRED_METHODS:
         if hasattr(comp, name):
             return getattr(comp, name)
@@ -40,10 +41,10 @@ def choose_best_py7zr_method():
     raise RuntimeError(msg)
 
 
-BEST_METHOD = choose_best_py7zr_method()
+BEST_METHOD: Any = choose_best_py7zr_method()
 
 
-def iter_top_level_entries(base_dir: Path):
+def iter_top_level_entries(base_dir: Path) -> Generator[Path, None, None]:
     for p in base_dir.iterdir():
         if p.name == LOG_FILE.name:
             continue
@@ -98,7 +99,7 @@ def process_directory(src_dir: Path) -> TaskResult:
     tar_path = dir_to_tar_path(src_dir)
     try:
         if tar_path.exists():
-            raise FileExistsError(msg)
+            raise FileExistsError(f"Tar path already exists: {tar_path}")
         create_tar_from_dir(src_dir, tar_path)
         safe_remove_path(src_dir)
         return TaskResult(str(src_dir), str(tar_path), True)
@@ -109,10 +110,9 @@ def process_directory(src_dir: Path) -> TaskResult:
 
 def process_file(src_file: Path) -> TaskResult:
     out_path = file_to_7z_path(src_file)
-    Path(path)
     try:
         if out_path.exists():
-            raise FileExistsError(msg)
+            raise FileExistsError(f"Output path already exists: {out_path}")
         compress_file_to_7z(src_file, out_path)
         safe_remove_path(src_file)
         return TaskResult(str(src_file), str(out_path), True)

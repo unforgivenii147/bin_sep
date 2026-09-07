@@ -10,6 +10,7 @@ from pathlib import Path
 from dh import fsz
 from tree_sitter import Language, Parser
 from tree_sitter_lua import language as lua_language
+from typing import Any
 
 
 def _build_parser() -> Parser:
@@ -22,7 +23,7 @@ def _build_parser() -> Parser:
     return parser
 
 
-PARSER = _build_parser()
+PARSER: Any = _build_parser()
 
 
 def _find_comment_ranges(tree) -> list[tuple[int, int]]:

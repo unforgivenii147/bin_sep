@@ -6,9 +6,10 @@ import sys
 from pathlib import Path
 
 from dh import cprint, fsz, get_files, gsz, mpf3
+from typing import Any
 
-blank_line = "\n"
-IMAGE_RE = re.compile(r"^\s*(\.\.\s+image::|:target:|:alt:)", re.IGNORECASE)
+blank_line: str = "\n"
+IMAGE_RE: Any = re.compile(r"^\s*(\.\.\s+image::|:target:|:alt:)", re.IGNORECASE)
 
 
 def process_file(path: str | Path) -> None:

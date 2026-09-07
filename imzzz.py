@@ -9,12 +9,13 @@ import zipfile
 from pathlib import Path
 
 from dh import PKG_MAPPING, STDLIB
+from typing import Any
 
 STD_LIB = STDLIB
 MAPPING = PKG_MAPPING
 try:
     with Path("/sdcard/pip.txt").open("r", encoding="utf-8") as f:
-        PIP_PACKAGES = {
+        PIP_PACKAGES: Any = {
             line.strip().split("==")[0].split("[")[0] for line in f if line.strip()
         }
 except FileNotFoundError:

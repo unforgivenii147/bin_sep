@@ -7,8 +7,9 @@ from multiprocessing import Lock, Pool
 from pathlib import Path
 
 from fastwalk import walk_files
+from typing import Any
 
-print_lock = Lock()
+print_lock: Any = Lock()
 
 
 def is_python_file(path: Path) -> bool:
@@ -35,9 +36,10 @@ def run_command(cmd: list[str]) -> tuple[int, str, str]:
         return -1, "", str(e)
 
 
-def process_file(file_path) -> None:
+def process_file(file_path: Path | str) -> None:
+    file_path = Path(file_path)
     print(f"[OK] {file_path.name}")
-    path = Path(path)
+    path = file_path
     check_cmd = [
         "ruff",
         "check",
@@ -74,8 +76,8 @@ def process_file(file_path) -> None:
             sys.stdout.flush()
 
 
-def get_all_files(cwd: Path):
-    py_files = []
+def get_all_files(cwd: Path) -> list[Path]:
+    py_files: list[Path] = []
     for pth in walk_files(cwd):
         path = Path(pth)
         if path.is_file() and is_python_file(path):

@@ -7,10 +7,11 @@ from pathlib import Path
 import tree_sitter_python as tsp
 from dh import cprint, get_installed_pkgs
 from tree_sitter import Language, Parser
+from typing import Any
 
-parser = Parser()
+parser: Any = Parser()
 parser.language = Language(tsp.language())
-VALID = {"import_statement", "import_from_statement"}
+VALID: Any = {"import_statement", "import_from_statement"}
 
 
 def process_file(path: Path) -> list[str]:

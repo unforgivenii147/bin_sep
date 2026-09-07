@@ -102,7 +102,7 @@ def create_env_template():
     return True
 
 
-def main():
+def main() -> None:
     if len(sys.argv) < 2:
         print("Usage: python script.py user/repo")
         print("Example: python script.py octocat/Hello-World")

@@ -6,12 +6,13 @@ from pathlib import Path
 
 import tree_sitter_python as tsp
 from tree_sitter import Language, Parser, Tree
+from typing import Any
 
-parser = Parser()
+parser: Any = Parser()
 parser.language = Language(tsp.language())
-OUT_DIR = Path("output")
+OUT_DIR: Any = Path("output")
 OUT_DIR.mkdir(exist_ok=True)
-VALID = {"function_definition", "class_definition"}
+VALID: Any = {"function_definition", "class_definition"}
 
 
 def get_node_text(src: bytes, node) -> str:
@@ -62,22 +63,22 @@ def get_relative_path(file_path: Path, base_path: Path) -> Path:
         return file_path
 
 
-folder_definitions = defaultdict(lambda: defaultdict(list))
-processed_files_count = 0
-folders_found = set()
-total_definitions = 0
+folder_definitions: Any = defaultdict(lambda: defaultdict(list))
+processed_files_count: int = 0
+folders_found: Any = set()
+total_definitions: int = 0
 for py in Path().rglob("*.py"):
     if any(part.startswith(".") for part in py.parts) or "site-packages" in py.parts:
         continue
     if OUT_DIR in py.parents:
         continue
     try:
-        src = py.read_bytes()
-        tree = parser.parse(src)
-        definitions = extract_functions_and_classes(src, tree)
+        src: Any = py.read_bytes()
+        tree: Any = parser.parse(src)
+        definitions: Any = extract_functions_and_classes(src, tree)
         if definitions:
-            folder_path = py.parent
-            relative_folder = get_relative_path(folder_path, Path())
+            folder_path: Any = py.parent
+            relative_folder: Any = get_relative_path(folder_path, Path())
             folders_found.add(str(relative_folder))
             folder_definitions[relative_folder][py.name] = {
                 "definitions": definitions,
@@ -90,13 +91,13 @@ for py in Path().rglob("*.py"):
 for folder, files_dict in folder_definitions.items():
     if not files_dict:
         continue
-    out_file = OUT_DIR / folder / "definitions.py"
+    out_file: Any = OUT_DIR / folder / "definitions.py"
     out_file.parent.mkdir(parents=True, exist_ok=True)
-    content_parts = []
+    content_parts: Any = []
     content_parts.extend(("#" + "=" * 78, "# TABLE OF CONTENTS", "#" + "=" * 78, ""))
     for file_name, file_data in sorted(files_dict.items()):
         content_parts.append(f"# File: {file_name}")
-        def_counts = {"function": 0, "class": 0}
+        def_counts: Any = {"function": 0, "class": 0}
         for d in file_data["definitions"]:
             def_counts[d["type"]] += 1
         if def_counts["function"] > 0:
@@ -114,8 +115,10 @@ for folder, files_dict in folder_definitions.items():
                 f"# {'=' * 76}\n",
             )
         )
-        classes = [d for d in file_data["definitions"] if d["type"] == "class"]
-        functions = [d for d in file_data["definitions"] if d["type"] == "function"]
+        classes: Any = [d for d in file_data["definitions"] if d["type"] == "class"]
+        functions: Any = [
+            d for d in file_data["definitions"] if d["type"] == "function"
+        ]
         if classes:
             content_parts.extend(("#" + "-" * 40, "# CLASSES", "#" + "-" * 40, ""))
             for i, cls in enumerate(classes):
@@ -139,10 +142,10 @@ for folder, files_dict in folder_definitions.items():
                     content_parts.append(f"# Function: {func['name']}")
                 content_parts.append(func["text"])
         content_parts.append("\n" + "#" + "=" * 78 + "\n")
-    content = "\n".join(content_parts)
-    header = "#!/usr/bin/env python\n"
+    content: Any = "\n".join(content_parts)
+    header: str = "#!/usr/bin/env python\n"
     out_file.write_text(header + content)
-    total_defs_in_folder = sum(len(f["definitions"]) for f in files_dict.values())
+    total_defs_in_folder: Any = sum(len(f["definitions"]) for f in files_dict.values())
     print(f"✅ saved: {out_file}")
     print(f"   📊 {len(files_dict)} files, {total_defs_in_folder} definitions")
     print(f"   📁 {folder}")
@@ -151,8 +154,8 @@ print(f"""
 if folders_found:
     print("📁 Folders:")
     for folder in sorted(folders_found):
-        def_count = sum(
+        def_count: Any = sum(
             len(f["definitions"]) for f in folder_definitions[Path(folder)].values()
         )
-        file_count = len(folder_definitions[Path(folder)])
+        file_count: Any = len(folder_definitions[Path(folder)])
         print(f"   • {folder}: {file_count} files, {def_count} definitions")

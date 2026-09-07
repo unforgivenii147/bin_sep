@@ -4,7 +4,7 @@ from __future__ import annotations
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from re import sub
-from subprocess import PIPE, run
+from subprocess import run
 
 
 def convert_info_file(info_path: Path) -> None:
@@ -22,7 +22,7 @@ def convert_info_file(info_path: Path) -> None:
         info_path.unlink()
 
 
-def main():
+def main() -> None:
     cwd = Path.cwd()
     info_files = list(cwd.glob("*.info*"))
     with ThreadPoolExecutor(max_workers=4) as executor:

@@ -4,11 +4,11 @@ from __future__ import annotations
 import re
 import sqlite3
 
-DB_NAME = "ruff_rules.db"
-MD_FILE = "ruff.md"
+DB_NAME: str = "ruff_rules.db"
+MD_FILE: str = "ruff.md"
 
 
-def create_database():
+def create_database() -> None:
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     cursor.execute("""

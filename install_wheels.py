@@ -70,7 +70,7 @@ def get_wheel_type(wheel_path: Path) -> str:
     return "Unknown"
 
 
-def main():
+def main() -> None:
     current_dir = Path.cwd()
     wheel_files = list(current_dir.glob("*.whl"))
     if not wheel_files:

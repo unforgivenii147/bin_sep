@@ -17,7 +17,7 @@ except ModuleNotFoundError:
     import tomli as tomllib
 from setuptools import find_packages, setup
 
-ROOT = Path.cwd()
+ROOT: Any = Path.cwd()
 
 
 def raise_exception(error: OSError) -> None:

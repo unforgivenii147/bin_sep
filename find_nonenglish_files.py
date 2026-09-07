@@ -8,11 +8,12 @@ from pathlib import Path
 
 import pycld2
 from dh import TXT_EXT
+from typing import Any
 
-MIN_TEXT_LENGTH = 20
+MIN_TEXT_LENGTH: int = 20
 SUPPORTED_EXTENSIONS = TXT_EXT
-ENGLISH_LANGUAGES = {"en", "en_US", "en_GB"}
-MAX_FILE_SIZE = 1024 * 1024
+ENGLISH_LANGUAGES: Any = {"en", "en_US", "en_GB"}
+MAX_FILE_SIZE: Any = 1024 * 1024
 
 
 def detect_language(text: str) -> tuple[str | None, float]:

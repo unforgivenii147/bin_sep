@@ -7,10 +7,11 @@ from pathlib import Path
 
 import cv2
 from tqdm import tqdm
+from typing import Any
 
 
 class ImageDimensionRenamer:
-    def __init__(self, root_dir: str = ".", separator: str = "_"):
+    def __init__(self, root_dir: str = ".", separator: str = "_") -> None:
         self.root_dir = Path(root_dir)
         self.separator = separator
         self.supported_formats = {
@@ -143,7 +144,7 @@ class ImageDimensionRenamer:
         print("-" * 40)
 
 
-def main():
+def main() -> None:
     separator = "_"
     if len(sys.argv) > 1:
         separator = sys.argv[1]

@@ -6,7 +6,9 @@ from pathlib import Path
 
 
 def merge_translation_files(
-    base_dir=".", output_file="dic_en_fa.json", failed_file="failed-en.txt"
+    base_dir: str = ".",
+    output_file: str = "dic_en_fa.json",
+    failed_file: str = "failed-en.txt",
 ):
     base_path = Path(base_dir)
     existing_dictionary = {}

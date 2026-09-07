@@ -5,8 +5,9 @@ import argparse
 import re
 from multiprocessing import Pool
 from pathlib import Path
+from typing import Any
 
-REPLACEMENTS = {
+REPLACEMENTS: Any = {
     (
         r"pkg_resources\.resource_filename\(",
         "importlib.resources.files(",
@@ -134,7 +135,7 @@ def collect_python_files(paths: list[str]) -> list[Path]:
     return sorted(set(py_files))
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Detect and autofix deprecated pkg_resources usage.",
         formatter_class=argparse.RawDescriptionHelpFormatter,

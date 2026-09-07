@@ -6,11 +6,12 @@ from pathlib import Path
 
 import dh
 from PIL import Image
+from typing import Any
 
-IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
-HASH_FUNC = dh.phash
-MAX_DISTANCE = 10
-OUT_PREFIX = "group_"
+IMAGE_EXTS: Any = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
+HASH_FUNC: Any = dh.phash
+MAX_DISTANCE: int = 10
+OUT_PREFIX: str = "group_"
 
 
 def is_image(path: Path) -> bool:

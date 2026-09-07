@@ -76,7 +76,7 @@ def process_file(file_path):
 
 def save_exact_duplicates(
     all_objects,
-    output_file="exact_duplicates.json",
+    output_file: str = "exact_duplicates.json",
 ):
     hash_groups = defaultdict(list)
     for obj in all_objects:
@@ -178,7 +178,9 @@ def refactor_duplicates(hash_groups):
     print(f"[+] Refactored {len(file_imports)} files.")
 
 
-def generate_fuzzy_report(all_objects, output_file="fuzzy_duplicates.json"):
+def generate_fuzzy_report(
+    all_objects, output_file: str = "fuzzy_duplicates.json"
+) -> None:
     report = []
     n = len(all_objects)
     print(
@@ -217,7 +219,7 @@ def generate_fuzzy_report(all_objects, output_file="fuzzy_duplicates.json"):
     print(f"[+] Saved {len(report)} fuzzy duplicate pairs to {output_file}")
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Detect and refactor duplicate Python objects."
     )

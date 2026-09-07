@@ -7,7 +7,7 @@ import typing as T
 from copy import deepcopy
 from pathlib import Path
 
-T_None = type(None)
+T_None: typing.Any = type(None)
 root: dict
 
 

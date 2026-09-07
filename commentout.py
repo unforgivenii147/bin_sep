@@ -6,8 +6,9 @@ import sys
 from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 from tempfile import NamedTemporaryFile
+from typing import Any
 
-COMMENT_MAP = {
+COMMENT_MAP: Any = {
     ".vim": '"',
     ".lua": "--",
     ".py": "#",
@@ -37,7 +38,7 @@ def process_chunk(lines, comment_char):
     return processed
 
 
-def main():
+def main() -> None:
     if len(sys.argv) < 3 or len(sys.argv) > 4:
         print("Usage: python commentout.py <filename> <start_line> [end_line]")
         sys.exit(1)

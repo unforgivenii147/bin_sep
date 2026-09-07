@@ -90,7 +90,7 @@ def crawl_for_ext(start_url: str, max_pages: int, delay: float, ext: str):
     return sorted(found_urls)
 
 
-def save_urls(urls, filename="urls.txt") -> None:
+def save_urls(urls, filename: str = "urls.txt") -> None:
     with open(filename, "w", encoding="utf-8") as f:
         f.writelines(url + "\n" for url in urls)
     print(f"\n✅ Saved {len(urls)} URLs to '{filename}'")

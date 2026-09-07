@@ -8,9 +8,10 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import brotli
+from typing import Any
 
-BROTLI_QUALITY = 11
-CHUNK_SIZE = 1024 * 64
+BROTLI_QUALITY: int = 11
+CHUNK_SIZE: Any = 1024 * 64
 
 
 def decompress_stream(input_path: Path, output_path: Path) -> bool:
@@ -96,7 +97,7 @@ def decompress_file(br_path: Path):
         print(f"⚠️  Skipping non-br file: {br_path.name}")
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description="Compress/Decompress with Brotli")
     parser.add_argument(
         "-c", "--compress", action="store_true", help="Compress mode (default)"

@@ -7,7 +7,7 @@ from datetime import datetime
 from pathlib import Path
 
 
-def get_file_creation_time(filepath: str) -> datetime | None:
+def get_file_creation_time(filepath: str) -> datetime.datetime | None:
     try:
         stat = os.stat(filepath)
         if sys.platform == "win32":

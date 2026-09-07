@@ -3,8 +3,9 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
+from typing import Any
 
-LANG_EXT = {
+LANG_EXT: Any = {
     "python": ".py",
     "py": ".py",
     "javascript": ".js",
@@ -50,7 +51,7 @@ LANG_EXT = {
     "md": ".md",
     "markdown": ".md",
 }
-FENCE_RE = re.compile(
+FENCE_RE: Any = re.compile(
     r"```(?P<lang>[A-Za-z0-9_+\-\.]*)[ \t]*\n(?P<code>.*?)(?<=\n)```", re.DOTALL
 )
 

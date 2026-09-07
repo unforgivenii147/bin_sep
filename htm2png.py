@@ -5,7 +5,7 @@ import cairosvg
 from weasyprint import HTML
 
 
-def html_to_png_cairo(html_content, output_path, width=None):
+def html_to_png_cairo(html_content, output_path, width=None) -> None:
     if html_content.startswith(("<", "<!DOCTYPE")):
         html = HTML(string=html_content)
     else:

@@ -9,12 +9,12 @@ import sys
 from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
+from typing import Any
 
-WORKERS = 8
-MAX_FILE_SIZE = 1024 * 1024
-PYTHON_EXTENSIONS = {".py", ".pyw", ".pyi"}
-IMPORT_PATTERNS = [
+WORKERS: int = 8
+MAX_FILE_SIZE: Any = 1024 * 1024
+PYTHON_EXTENSIONS: Any = {".py", ".pyw", ".pyi"}
+IMPORT_PATTERNS: Any = [
     re.compile(
         r"^(\s*)from\s+concurrent\.futures\s+import\s+"
         r"([^#\n]*ThreadPoolExecutor[^#\n]*)$",
@@ -32,33 +32,39 @@ IMPORT_PATTERNS = [
         re.MULTILINE,
     ),
 ]
-THREAD_POOL_PATTERN = re.compile(
+THREAD_POOL_PATTERN: Any = re.compile(
     r"(\bThreadPoolExecutor\s*\()\s*"
     r"(?:max_workers\s*=\s*)?(\d+)?\s*\)?",
     re.MULTILINE,
 )
-PROCESS_POOL_PATTERN = re.compile(
+PROCESS_POOL_PATTERN: Any = re.compile(
     r"(\bProcessPoolExecutor\s*\()\s*"
     r"(?:max_workers\s*=\s*)?(\d+)?\s*\)?",
     re.MULTILINE,
 )
-SUBMIT_PATTERN = re.compile(
+SUBMIT_PATTERN: Any = re.compile(
     r"(\w+)\s*\.\s*submit\s*\(\s*"
     r"([^,]+)\s*(?:,\s*([^)]*?))?\)",
     re.MULTILINE,
 )
-EXECUTOR_MAP_PATTERN = re.compile(r"(\w+)\s*\.\s*map\s*\(", re.MULTILINE)
-AS_COMPLETED_PATTERN = re.compile(r"(\b)as_completed\s*\(", re.MULTILINE)
-WITH_EXECUTOR_PATTERN = re.compile(
+EXECUTOR_MAP_PATTERN: Any = re.compile(r"(\w+)\s*\.\s*map\s*\(", re.MULTILINE)
+AS_COMPLETED_PATTERN: Any = re.compile(r"(\b)as_completed\s*\(", re.MULTILINE)
+WITH_EXECUTOR_PATTERN: Any = re.compile(
     r"with\s+(ThreadPoolExecutor|ProcessPoolExecutor)\s*\([^)]*\)\s+as\s+(\w+)\s*:",
     re.MULTILINE,
 )
-SHUTDOWN_PATTERN = re.compile(r"(\w+)\s*\.\s*shutdown\s*\([^)]*\)\s*", re.MULTILINE)
-FUTURE_RESULT_PATTERN = re.compile(r"(\w+)\s*\.\s*result\s*\(\s*\)", re.MULTILINE)
-FUTURE_DONE_PATTERN = re.compile(r"(\w+)\s*\.\s*done\s*\(\s*\)", re.MULTILINE)
-FUTURE_CANCELLED_PATTERN = re.compile(r"(\w+)\s*\.\s*cancelled\s*\(\s*\)", re.MULTILINE)
-FUTURE_CANCEL_PATTERN = re.compile(r"(\w+)\s*\.\s*cancel\s*\(\s*\)", re.MULTILINE)
-FUTURE_EXCEPTION_PATTERN = re.compile(r"(\w+)\s*\.\s*exception\s*\(\s*\)", re.MULTILINE)
+SHUTDOWN_PATTERN: Any = re.compile(
+    r"(\w+)\s*\.\s*shutdown\s*\([^)]*\)\s*", re.MULTILINE
+)
+FUTURE_RESULT_PATTERN: Any = re.compile(r"(\w+)\s*\.\s*result\s*\(\s*\)", re.MULTILINE)
+FUTURE_DONE_PATTERN: Any = re.compile(r"(\w+)\s*\.\s*done\s*\(\s*\)", re.MULTILINE)
+FUTURE_CANCELLED_PATTERN: Any = re.compile(
+    r"(\w+)\s*\.\s*cancelled\s*\(\s*\)", re.MULTILINE
+)
+FUTURE_CANCEL_PATTERN: Any = re.compile(r"(\w+)\s*\.\s*cancel\s*\(\s*\)", re.MULTILINE)
+FUTURE_EXCEPTION_PATTERN: Any = re.compile(
+    r"(\w+)\s*\.\s*exception\s*\(\s*\)", re.MULTILINE
+)
 
 
 @dataclass

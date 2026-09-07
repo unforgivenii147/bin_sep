@@ -84,7 +84,7 @@ def filter_latest_for_armv7(urls_file=None):
     return results
 
 
-def main():
+def main() -> None:
     import argparse
 
     parser = argparse.ArgumentParser(

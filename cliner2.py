@@ -3,9 +3,10 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
+from typing import Any
 
-LOG_EXT = ".log"
-PATTERNS = [
+LOG_EXT: str = ".log"
+PATTERNS: Any = [
     r"\^\[",
     r"\[[\dA-Z;]+m",
     r"\[\d+[A-Z]",

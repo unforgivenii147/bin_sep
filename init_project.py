@@ -130,7 +130,7 @@ if __name__ == "__main__":
     print("  - tests/ directory with a smoke test")
 
 
-_GITIGNORE_CONTENT = """\
+_GITIGNORE_CONTENT: str = """\
 __pycache__/
 *.py[cod]
 *.egg-info/

@@ -5,13 +5,14 @@ import shutil
 import sys
 from collections import defaultdict
 from pathlib import Path
+from typing import Any
 
 try:
     from PIL import Image
 except ImportError:
     print("Error: This script requires Pillow. Install it with: pip install Pillow")
     sys.exit(1)
-IMAGE_EXTENSIONS = {
+IMAGE_EXTENSIONS: Any = {
     ".jpg",
     ".jpeg",
     ".png",

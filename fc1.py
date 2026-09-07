@@ -9,6 +9,7 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 
 from dh import fsz
+from typing import Any
 
 try:
     from fontTools.ttLib import TTFont
@@ -16,9 +17,7 @@ except ImportError:
     sys.stderr.write("fonttools is not installed.\n  pip install fonttools\n")
     sys.exit(1)
 try:
-    import brotli
-
-    _HAS_BROTLI = True
+    _HAS_BROTLI: bool = True
 except ImportError:
     try:
         _HAS_BROTLI = True

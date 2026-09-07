@@ -6,15 +6,16 @@ import logging
 import sys
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
+from typing import Any
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
-logger = logging.getLogger(__name__)
+logger: Any = logging.getLogger(__name__)
 
 
 class DocstringRemover(ast.NodeTransformer):
-    def __init__(self):
+    def __init__(self) -> None:
         self.is_module = True
         self.preserve_module_docstring = True
 
@@ -132,7 +133,7 @@ def find_python_files(paths: list[Path]) -> list[Path]:
     return sorted(set(python_files))
 
 
-def main():
+def main() -> None:
     if len(sys.argv) > 1:
         input_paths = [Path(arg) for arg in sys.argv[1:]]
     else:

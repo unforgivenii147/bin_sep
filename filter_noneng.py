@@ -56,7 +56,7 @@ def process_file_lines(input_path: Path, move_mode: bool):
             print(f"❌ Error during file write operations: {e}")
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Scan text files and isolate non-English strings using Google CLD3."
     )

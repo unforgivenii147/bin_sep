@@ -8,12 +8,14 @@ from pathlib import Path
 import cv2
 import numpy as np
 from tqdm import tqdm
+from numpy import ndarray
+from typing import Any
 
 
 class ImageSimilarityOrganizer:
     def __init__(
         self, root_dir: str, similarity_threshold: float = 0.95, hash_size: int = 8
-    ):
+    ) -> None:
         self.root_dir = Path(root_dir)
         self.similarity_threshold = similarity_threshold
         self.hash_size = hash_size
@@ -35,7 +37,7 @@ class ImageSimilarityOrganizer:
     @staticmethod
     def compute_perceptual_hash(
         image_path: Path, hash_size: int = 8
-    ) -> tuple[Path, np.ndarray]:
+    ) -> tuple[Path, ndarray]:
         try:
             img = cv2.imread(str(image_path), cv2.IMREAD_GRAYSCALE)
             if img is None:
@@ -48,7 +50,7 @@ class ImageSimilarityOrganizer:
             print(f"[ERROR] Failed to hash {image_path}: {e!s}")
             return image_path, None
 
-    def compute_hashes(self, image_paths: list[Path]) -> dict[Path, np.ndarray]:
+    def compute_hashes(self, image_paths: list[Path]) -> dict[Path, ndarray]:
         print(f"\n[HASH] Computing perceptual hashes using {cpu_count()} processes...")
         hashes = {}
         with Pool(processes=cpu_count()) as pool:
@@ -72,12 +74,10 @@ class ImageSimilarityOrganizer:
         return hashes
 
     @staticmethod
-    def hamming_distance(hash1: np.ndarray, hash2: np.ndarray) -> int:
+    def hamming_distance(hash1: ndarray, hash2: ndarray) -> int:
         return np.sum(hash1 != hash2)
 
-    def find_similar_images(
-        self, hashes: dict[Path, np.ndarray]
-    ) -> dict[int, list[Path]]:
+    def find_similar_images(self, hashes: dict[Path, ndarray]) -> dict[int, list[Path]]:
         print(
             f"\n[GROUP] Grouping similar images (threshold: {self.similarity_threshold})..."
         )

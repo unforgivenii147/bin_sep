@@ -9,10 +9,11 @@ from urllib.parse import urlparse
 
 from bs4 import BeautifulSoup
 from bs4.element import AttributeValueList
+from typing import Any
 
 
 class HTMLStandaloneMaker:
-    MIME_MAP = {
+    MIME_MAP: Any = {
         ".png": "image/png",
         ".jpg": "image/jpeg",
         ".jpeg": "image/jpeg",
@@ -32,7 +33,7 @@ class HTMLStandaloneMaker:
         ".txt": "text/plain",
     }
 
-    def __init__(self, verbose: bool = False):
+    def __init__(self, verbose: bool = False) -> None:
         self.verbose = verbose
         self.embedded_count = 0
         self.warning_count = 0

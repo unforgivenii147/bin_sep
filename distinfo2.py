@@ -6,11 +6,15 @@ import sys
 from pathlib import Path
 
 from dh import cprint
+from typing import Any
+
+major: Any
+minor: Any
 
 major, minor, _, _, _ = sys.version_info
-py_version = f"{major}.{minor}"
-ALLOWED = ["METADATA", "RECORD", "WHEEL", "top_level.txt"]
-NOT_ALLOWED = [
+py_version: Any = f"{major}.{minor}"
+ALLOWED: Any = ["METADATA", "RECORD", "WHEEL", "top_level.txt"]
+NOT_ALLOWED: Any = [
     "REQUESTED",
     "INSTALLER",
     "direct_url.json",

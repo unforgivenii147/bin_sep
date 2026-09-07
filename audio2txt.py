@@ -9,7 +9,7 @@ import speech_recognition as sr
 from pydub import AudioSegment
 
 
-def m4a_to_text(input_file, output_file="out.txt"):
+def m4a_to_text(input_file, output_file: str = "out.txt") -> None:
     if not os.path.exists(input_file):
         print(f"Error: Input file '{input_file}' not found.")
         sys.exit(1)

@@ -20,7 +20,7 @@ def deep_merge(dict1, dict2):
     return merged
 
 
-def merge_json_files(input_files, output_file):
+def merge_json_files(input_files, output_file) -> None:
     merged_data = None
     for file_path in input_files:
         try:

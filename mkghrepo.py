@@ -25,7 +25,7 @@ def load_env_file(env_path):
         sys.exit(1)
 
 
-def create_github_repo(token, repo_name, description, public=True):
+def create_github_repo(token, repo_name, description, public: bool = True):
     url = "https://api.github.com/user/repos"
     headers = {
         "Authorization": f"token {token}",
@@ -51,7 +51,7 @@ def create_github_repo(token, repo_name, description, public=True):
         return None
 
 
-def main():
+def main() -> None:
     if len(sys.argv) < 2:
         print("Usage: python create_repo.py <repo_name>")
         print("Example: python create_repo.py my-new-project")

@@ -1,6 +1,7 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
 
+import argparse
 import contextlib
 import datetime
 import json
@@ -12,22 +13,23 @@ import requests
 from pygments import highlight
 from pygments.formatters import TerminalFormatter
 from pygments.lexers import JsonLexer
+from typing import Any
 
-IDN = True
+IDN: bool = True
 try:
     import idna
 except:
-    IDN = False
-VERSION = "0.1.0"
-MYNAME = sys.argv[0].replace("./", "")
-RC_FILE_LOCS = [
+    IDN: bool = False
+VERSION: str = "0.1.0"
+MYNAME: Any = sys.argv[0].replace("./", "")
+RC_FILE_LOCS: Any = [
     ".bestwhoisrc",
     Path("~/.bestwhoisrc").expanduser(),
     "data/data/com.termux/files/usr/etc/bestwhois/bestwhoisrc",
 ]
 
 
-def valid_date(s):
+def valid_date(s: str) -> str:
     try:
         _ = datetime.datetime.strptime(s, "%Y-%m-%d")
         return s
@@ -69,7 +71,7 @@ def purge_empty_fields(structure):
     return structure
 
 
-ARGS_PARSER = ArgumentParser(
+ARGS_PARSER: Any = ArgumentParser(
     description="Command-line utility to query domains in the WhoisXML API WHOIS service similarly to the whois command.",
     prog=MYNAME,
 )
@@ -168,7 +170,7 @@ ARGS_PARSER.add_argument(
     metavar="YYYY-MM-DD",
     type=valid_date,
 )
-ARGS = ARGS_PARSER.parse_args()
+ARGS: Any = ARGS_PARSER.parse_args()
 if ARGS.rcfile is not None:
     RC_FILE_LOCS = [ARGS.rcfile] + RC_FILE_LOCS
 apiKey = None

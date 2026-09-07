@@ -84,7 +84,7 @@ def collect_pyfiles(paths: list[str]):
             yield from get_pyfiles_iter(path)
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Run code checkers and append outputs to Python files.",
         formatter_class=argparse.RawDescriptionHelpFormatter,

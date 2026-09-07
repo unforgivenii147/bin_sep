@@ -7,7 +7,7 @@ from datetime import datetime
 
 import requests
 
-PYPI_RSS_URL = "https://pypi.org/rss/packages.xml"
+PYPI_RSS_URL: str = "https://pypi.org/rss/packages.xml"
 
 
 def fetch_rss_feed(url: str) -> str | None:
@@ -95,7 +95,7 @@ def save_to_file(packages: list[dict[str, str]], filename: str = "pypi_packages.
         print(f"Error saving to file: {e}", file=sys.stderr)
 
 
-def main():
+def main() -> None:
     limit = None
     save_output = False
     if len(sys.argv) > 1:

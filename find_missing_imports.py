@@ -9,12 +9,13 @@ import sys
 import textwrap
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
+from typing import Any
 
-STDLIB_MODULES = set(sys.builtin_module_names)
+STDLIB_MODULES: Any = set(sys.builtin_module_names)
 for module_name in list(sys.modules.keys()):
     if hasattr(importlib.util, "find_spec"):
         try:
-            spec = importlib.util.find_spec(module_name)
+            spec: Any = importlib.util.find_spec(module_name)
             if spec and spec.origin and ("site-packages" not in spec.origin):
                 STDLIB_MODULES.add(module_name.split(".")[0])
         except (ImportError, ModuleNotFoundError, ValueError):
@@ -22,7 +23,7 @@ for module_name in list(sys.modules.keys()):
 
 
 class ImportAnalyzer(ast.NodeVisitor):
-    def __init__(self):
+    def __init__(self) -> None:
         self.imported_names: set[str] = set()
         self.used_names: set[str] = set()
         self.assigned_names: set[str] = set()
@@ -473,7 +474,7 @@ def autofix_imports(filepath: Path, missing_imports: list[tuple[str, int]]) -> b
         return False
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Find and fix missing stdlib imports in Python files",
         formatter_class=argparse.RawDescriptionHelpFormatter,

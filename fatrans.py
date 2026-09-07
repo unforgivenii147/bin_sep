@@ -9,10 +9,10 @@ import sys
 from collections.abc import Iterable
 from difflib import get_close_matches
 from pathlib import Path
-from typing import Final
+from typing import Any, Final
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
-logger = logging.getLogger(__name__)
+logger: Any = logging.getLogger(__name__)
 DICT_FILE: Final[str] = "/sdcard/isaac/dic.json"
 
 

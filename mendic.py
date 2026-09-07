@@ -35,7 +35,7 @@ def check_file_format(data):
     return is_correct, sample_keys, sample_values
 
 
-def merge_json_files(directory=".", output_file="enfa.json"):
+def merge_json_files(directory: str = ".", output_file: str = "enfa.json"):
     merged_data = OrderedDict()
     duplicate_keys = {}
     skipped_files = []
@@ -129,7 +129,7 @@ def merge_json_files(directory=".", output_file="enfa.json"):
     print("\n✅ Merge complete!")
 
 
-def main():
+def main() -> None:
     if len(sys.argv) > 1:
         directory = sys.argv[1]
     else:

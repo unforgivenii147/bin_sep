@@ -11,8 +11,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-MARKDOWN_SUFFIXES = {".md", ".markdown", ".mdown", ".mkdn"}
-PYTHON_SOURCE_SUFFIXES = {".py", ".pyi"}
+MARKDOWN_SUFFIXES: Any = {".md", ".markdown", ".mdown", ".mkdn"}
+PYTHON_SOURCE_SUFFIXES: Any = {".py", ".pyi"}
 
 
 @dataclass(frozen=True)

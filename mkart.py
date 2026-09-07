@@ -927,7 +927,7 @@ def detect_script(text):
     return "english"
 
 
-def main():
+def main() -> None:
     print("Text Art Generator (English & Arabic)")
     print("=" * 40)
     print("Enter text to convert to art")

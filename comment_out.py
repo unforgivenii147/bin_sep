@@ -3,8 +3,9 @@ from __future__ import annotations
 
 import os
 import sys
+from typing import Any
 
-EXTENSION_COMMENTS = {
+EXTENSION_COMMENTS: Any = {
     ".py": "#",
     ".sh": "#",
     ".yaml": "#",
@@ -21,7 +22,7 @@ EXTENSION_COMMENTS = {
 }
 
 
-def main():
+def main() -> None:
     if len(sys.argv) < 4:
         print(
             "Error: Missing arguments.\nUsage: python comment_range.py <filename> <start_line> <end_line>"

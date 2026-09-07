@@ -83,7 +83,7 @@ def crawl_for_pdfs(start_url: str, max_pages: int = 100, delay: float = 1.0):
     return sorted(pdf_urls)
 
 
-def save_urls(urls, filename="urls.txt") -> None:
+def save_urls(urls, filename: str = "urls.txt") -> None:
     with open(filename, "w", encoding="utf-8") as f:
         f.writelines(url + "\n" for url in urls)
     print(f"\n✅ Saved {len(urls)} PDF URLs to '{filename}'")

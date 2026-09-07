@@ -103,7 +103,7 @@ def check_package_location(
 
 
 def analyze_wheels(
-    source_dir, dest_dir_name: str = "empty_wheels", check_installed=True
+    source_dir, dest_dir_name: str = "empty_wheels", check_installed: bool = True
 ) -> None:
     source_path = Path(source_dir)
     dest_path = source_path / dest_dir_name

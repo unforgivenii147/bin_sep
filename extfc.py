@@ -6,12 +6,13 @@ from pathlib import Path
 
 import tree_sitter_python as tsp
 from tree_sitter import Language, Parser, Tree
+from typing import Any
 
-parser = Parser()
+parser: Any = Parser()
 parser.language = Language(tsp.language())
-OUT_DIR = Path("output")
+OUT_DIR: Any = Path("output")
 OUT_DIR.mkdir(exist_ok=True)
-VALID = {
+VALID: Any = {
     """
 (expression_statement
   (assignment_expression
@@ -73,11 +74,11 @@ def format_definition_with_metadata(
     return "\n".join(lines)
 
 
-folder_definitions = defaultdict(list)
-processed_files_count = 0
-folders_found = set()
-total_definitions = 0
-cwd = Path.cwd()
+folder_definitions: Any = defaultdict(list)
+processed_files_count: int = 0
+folders_found: Any = set()
+total_definitions: int = 0
+cwd: Any = Path.cwd()
 for py in cwd.rglob("*.py"):
     if any(part.startswith(".") for part in py.parts) or "site-packages" in py.parts:
         continue
@@ -85,14 +86,14 @@ for py in cwd.rglob("*.py"):
         continue
     try:
         print(f"processing ... {py}")
-        src = py.read_bytes()
-        tree = parser.parse(src)
-        definitions = extract_functions_and_classes(src, tree)
+        src: Any = py.read_bytes()
+        tree: Any = parser.parse(src)
+        definitions: Any = extract_functions_and_classes(src, tree)
         if definitions:
-            folder_path = py.parent
-            relative_folder = get_relative_path(folder_path, Path())
+            folder_path: Any = py.parent
+            relative_folder: Any = get_relative_path(folder_path, Path())
             folders_found.add(str(relative_folder))
-            file_header = f"\n# {'=' * 40}\n# File: {py.name}\n# {'=' * 40}\n"
+            file_header: Any = f"\n# {'=' * 40}\n# File: {py.name}\n# {'=' * 40}\n"
             folder_definitions[relative_folder].append(file_header)
             for i, def_text in enumerate(definitions, 1):
                 folder_definitions[relative_folder].append(def_text)
@@ -107,12 +108,12 @@ for py in cwd.rglob("*.py"):
 for folder, defs_list in folder_definitions.items():
     if not defs_list:
         continue
-    out_file = OUT_DIR / folder / "definitions.py"
+    out_file: Any = OUT_DIR / folder / "definitions.py"
     out_file.parent.mkdir(parents=True, exist_ok=True)
-    content = "\n".join(defs_list)
-    header = "#!/usr/bin/env python\n"
+    content: Any = "\n".join(defs_list)
+    header: str = "#!/usr/bin/env python\n"
     out_file.write_text(header + content)
-    folder_def_count = len(
+    folder_def_count: Any = len(
         [
             d
             for d in defs_list

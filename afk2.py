@@ -17,9 +17,9 @@ from pathlib import Path
 try:
     import zstandard as zstd
 
-    HAS_ZSTD = True
+    HAS_ZSTD: bool = True
 except ImportError:
-    HAS_ZSTD = False
+    HAS_ZSTD: bool = False
 
 
 @dataclass
@@ -37,7 +37,7 @@ class FileReport:
     error: str | None = None
 
 
-_USE_COLOR = True
+_USE_COLOR: bool = True
 
 
 def _c(code: str, text: str) -> str:

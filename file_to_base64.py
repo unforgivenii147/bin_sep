@@ -11,7 +11,7 @@ def font_to_base64(font_path):
     return base64.b64encode(font_data).decode("utf-8")
 
 
-def main():
+def main() -> None:
     fname = Path(sys.argv[1].strip())
     b64_str = font_to_base64(fname)
     b64_path = fname.with_suffix(".txt")

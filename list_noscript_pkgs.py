@@ -3,11 +3,12 @@ from __future__ import annotations
 
 import site
 from pathlib import Path
+from typing import Any
 
-u = Path(site.getusersitepackages())
+u: Any = Path(site.getusersitepackages())
 for p in u.iterdir():
     if p.is_dir() and not p.name.endswith((".dist-info", ".egg-info")):
-        has_entry = False
+        has_entry: bool = False
         for pattern in [f"{p.name}*.dist-info", f"{p.name}*.egg-info"]:
             for d in u.glob(pattern):
                 if (d / "entry_points.txt").exists():

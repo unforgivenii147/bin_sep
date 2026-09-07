@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 
 
-def file_hash(path: Path, block_size=65536) -> str:
+def file_hash(path: Path, block_size: int = 65536) -> str:
     h = hashlib.sha256()
     with path.open("rb") as f:
         while chunk := f.read(block_size):

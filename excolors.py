@@ -5,6 +5,7 @@ import re
 from pathlib import Path
 
 from dh import cprint, is_binary, should_skip
+from typing import Any
 
 
 def get_filez(root_dir: str | Path):
@@ -29,7 +30,7 @@ def get_filez(root_dir: str | Path):
         yield root_dir
 
 
-COLOR_RE = re.compile("#([a-fA-F0-9]{6}|[a-fA-F0-9]{3})\\b")
+COLOR_RE: Any = re.compile("#([a-fA-F0-9]{6}|[a-fA-F0-9]{3})\\b")
 
 
 def pf(path: Path):

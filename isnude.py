@@ -7,10 +7,11 @@ from pathlib import Path
 import cv2
 import nude
 from dh import cprint, get_files, mpf3
+from typing import Any
 
-nude_path = Path("nude")
+nude_path: Any = Path("nude")
 nude_path.mkdir(exist_ok=True)
-RESIZE = "-r" in sys.argv
+RESIZE: Any = "-r" in sys.argv
 
 
 def check_nude(path: str) -> bool:

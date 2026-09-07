@@ -14,12 +14,13 @@ from urllib.parse import urljoin, urlparse
 import requests
 from bs4 import BeautifulSoup
 from loguru import logger
+from typing import Any
 
 logger.remove()
 logger.add(
     sys.stderr, level="WARNING", format="<red>{level}</red> | <cyan>{message}</cyan>"
 )
-IMAGE_EXTENSIONS = {
+IMAGE_EXTENSIONS: Any = {
     ".png",
     ".jpg",
     ".jpeg",
@@ -31,8 +32,8 @@ IMAGE_EXTENSIONS = {
     ".bmp",
     ".tiff",
 }
-CSS_URL_PATTERN = re.compile(r'url\((["\']?)([^)"\']+)\1\)')
-TIMEOUT = 15
+CSS_URL_PATTERN: Any = re.compile(r'url\((["\']?)([^)"\']+)\1\)')
+TIMEOUT: int = 15
 
 
 def is_remote(url: str) -> bool:
@@ -260,7 +261,7 @@ def process_file(path: Path) -> dict:
     }
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description="Standalone HTML/CSS Bundler Tool")
     parser.add_argument(
         "paths",

@@ -11,8 +11,8 @@ from multiprocessing import cpu_count
 from pathlib import Path
 from typing import Any
 
-OUTPUT_DIR = Path("output")
-ARCHIVE_EXTENSIONS = (
+OUTPUT_DIR: Any = Path("output")
+ARCHIVE_EXTENSIONS: Any = (
     ".whl",
     ".zip",
     ".tar.gz",
@@ -22,7 +22,7 @@ ARCHIVE_EXTENSIONS = (
     ".tar",
     ".zst",
 )
-ALLOWED_PYTHON_EXTENSIONS = ".py", ""
+ALLOWED_PYTHON_EXTENSIONS: Any = ".py", ""
 
 
 class EntityExtractor(ast.NodeVisitor):

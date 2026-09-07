@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 
-def convert_codepen_html(html_content, title="Document", charset="UTF-8"):
+def convert_codepen_html(html_content, title: str = "Document", charset: str = "UTF-8"):
     full_html = f'<!DOCTYPE html>\n<html lang="en">\n<head>\n    <meta charset="{
         charset
     }">\n    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n    <title>{
@@ -42,7 +42,7 @@ def process_file(input_file, output_file=None, title=None):
         return False
 
 
-def main():
+def main() -> None:
     if len(sys.argv) < 2:
         print(
             "Usage: python codepen_converter.py <input_file> [output_file] [--title 'Page Title']"

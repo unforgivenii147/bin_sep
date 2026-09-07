@@ -11,7 +11,7 @@ from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from fastwalk import walk_files
 
-AES_BLOCK_SIZE = 128
+AES_BLOCK_SIZE: int = 128
 
 
 def random_key(length: int = 32) -> str:

@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 
 
-def html_to_png(html_content, output_path, dpi=150):
+def html_to_png(html_content, output_path, dpi: int = 150) -> None:
     if html_content.startswith(("<", "<!DOCTYPE")):
         html = HTML(string=html_content)
     else:
@@ -28,7 +28,7 @@ def html_to_png(html_content, output_path, dpi=150):
     print(f"Full page PNG saved to: {output_path}")
 
 
-def batch_convert(input_dir, output_dir, width=1200):
+def batch_convert(input_dir, output_dir, width: int = 1200) -> None:
     os.makedirs(output_dir, exist_ok=True)
     for html_file in Path(input_dir).glob("*.html"):
         output_name = html_file.stem + ".png"

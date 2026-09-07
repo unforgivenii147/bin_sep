@@ -5,18 +5,19 @@ import re
 import sys
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
+from typing import Any
 
-TARGET_NAMES = {"PKGINFO", "METADATA", "PKG-INFO"}
-TARGET_EXTENSIONS = {".md", ".txt", ".html"}
-PY_CODE_BLOCK = re.compile(
+TARGET_NAMES: Any = {"PKGINFO", "METADATA", "PKG-INFO"}
+TARGET_EXTENSIONS: Any = {".md", ".txt", ".html"}
+PY_CODE_BLOCK: Any = re.compile(
     r"```python\s*\n(.*?)```" r"\"\"\"(.*?)\"\"\"",
     re.DOTALL | re.IGNORECASE,
 )
-INLINE_PY = re.compile(
+INLINE_PY: Any = re.compile(
     r"(?:^|\n)((?:import\s+\w+|from\s+\w+\s+import|def\s+\w+|class\s+\w+).*?)(?=\n\s*\n|\Z)",
     re.DOTALL | re.MULTILINE,
 )
-REPL_SESSION = re.compile(
+REPL_SESSION: Any = re.compile(
     r"(?:^|\n)((?:>>>|\.\.\.).*?)(?=\n\s*\n|\Z)",
     re.DOTALL | re.MULTILINE,
 )
@@ -98,7 +99,7 @@ def process_file(file_path, output_dir):
     return file_path, saved
 
 
-def main():
+def main() -> None:
     if len(sys.argv) > 1:
         input_paths = sys.argv[1:]
     else:

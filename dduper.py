@@ -20,9 +20,10 @@ import tree_sitter_python
 import zstandard as zstd
 from loguru import logger
 from tree_sitter import Language, Parser
+from typing import Any
 
-TREE_SITTER_AVAILABLE = True
-SUPPORTED_ARCHIVES = (
+TREE_SITTER_AVAILABLE: bool = True
+SUPPORTED_ARCHIVES: Any = (
     ".zip",
     ".tar",
     ".tar.gz",

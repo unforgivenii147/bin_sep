@@ -6,7 +6,7 @@ import contextlib
 import multiprocessing as mp
 import os
 import sys
-from collections.abc import Iterable
+from collections.abc import Generator, Iterable
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -15,6 +15,7 @@ import tree_sitter_html
 import tree_sitter_javascript
 import tree_sitter_typescript
 from tree_sitter import Language, Parser
+from typing import Any
 
 SUPPORTED_SUFFIXES: dict[str, str] = {
     ".html": "html",
@@ -27,8 +28,8 @@ SUPPORTED_SUFFIXES: dict[str, str] = {
     ".ts": "typescript",
     ".tsx": "tsx",
 }
-DEFAULT_WORKERS = 8
-CHUNK_SIZE = 32
+DEFAULT_WORKERS: int = 8
+CHUNK_SIZE: int = 32
 
 
 @dataclass(frozen=True, slots=True)
@@ -56,7 +57,7 @@ def build_parser(language_name: str) -> Parser:
         return parser
 
 
-def iter_nodes(node):
+def iter_nodes(node) -> Generator[Any]:
     stack = [node]
     while stack:
         current = stack.pop()

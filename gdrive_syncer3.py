@@ -10,8 +10,9 @@ from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import Resource, build
 from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaIoBaseDownload
+from typing import Any
 
-SCOPES = ["https://www.googleapis.com/auth/drive.readonly"]
+SCOPES: Any = ["https://www.googleapis.com/auth/drive.readonly"]
 
 
 class GoogleDriveSyncer:

@@ -5,8 +5,9 @@ import argparse
 import re
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from typing import Any
 
-PART_RE = re.compile(r"^(?P<prefix>.+)\.part(?P<num>\d+)$")
+PART_RE: Any = re.compile(r"^(?P<prefix>.+)\.part(?P<num>\d+)$")
 
 
 def collect_paths(inputs: list[str]) -> list[Path]:

@@ -9,9 +9,9 @@ import sqlite3
 from pathlib import Path
 from typing import Any
 
-OUTPUT_DIR = Path("output")
-DB_PATH = Path("/sdcard/ext.db")
-ALLOWED_PYTHON_EXTENSIONS = ".py", ""
+OUTPUT_DIR: Any = Path("output")
+DB_PATH: Any = Path("/sdcard/ext.db")
+ALLOWED_PYTHON_EXTENSIONS: Any = ".py", ""
 
 
 class EntityExtractor(ast.NodeVisitor):

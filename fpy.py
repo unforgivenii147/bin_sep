@@ -6,8 +6,9 @@ import sys
 import tokenize
 from io import StringIO
 from pathlib import Path
+from typing import Any
 
-python_keywords = {
+python_keywords: Any = {
     "def",
     "class",
     "import",

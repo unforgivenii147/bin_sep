@@ -5,8 +5,9 @@ import concurrent.futures
 import os
 import stat
 from pathlib import Path
+from typing import Any
 
-TEXT_SUFFIXES = {".py", ".sh", ".bash", ".pl", ".rb", ".pyw", ".txt"}
+TEXT_SUFFIXES: Any = {".py", ".sh", ".bash", ".pl", ".rb", ".pyw", ".txt"}
 
 
 def check_and_make_executable(file_path: Path) -> dict:
@@ -36,7 +37,7 @@ def check_and_make_executable(file_path: Path) -> dict:
     return result
 
 
-def main():
+def main() -> None:
     current_dir = Path(".")
     print("🔍 Gathering directory contents recursively...")
     all_files = list(current_dir.rglob("*"))

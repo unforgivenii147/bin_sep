@@ -11,17 +11,18 @@ from pathlib import Path
 
 import chm.chm as pychm
 from weasyprint import HTML
+from typing import Any
 
 
 class CHMHTMLParser(HTMLParser):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.content = []
         self.in_body = False
         self.skip_tags = {"script", "style", "meta", "link", "iframe"}
         self.current_skip_tag = None
 
-    def handle_starttag(self, tag, attrs):
+    def handle_starttag(self, tag, attrs) -> None:
         if tag in self.skip_tags:
             self.current_skip_tag = tag
         elif tag == "body":
@@ -32,7 +33,7 @@ class CHMHTMLParser(HTMLParser):
             )
             self.content.append(f"<{tag}{attrs_str}>")
 
-    def handle_endtag(self, tag):
+    def handle_endtag(self, tag) -> None:
         if tag == self.current_skip_tag:
             self.current_skip_tag = None
         elif tag == "body":
@@ -40,11 +41,11 @@ class CHMHTMLParser(HTMLParser):
         elif not self.current_skip_tag and self.in_body:
             self.content.append(f"</{tag}>")
 
-    def handle_data(self, data):
+    def handle_data(self, data) -> None:
         if not self.current_skip_tag and self.in_body:
             self.content.append(data)
 
-    def handle_startendtag(self, tag, attrs):
+    def handle_startendtag(self, tag, attrs) -> None:
         if tag not in self.skip_tags and self.in_body:
             attrs_str = "".join(
                 f' {k}="{v}"' for k, v in attrs if k != "href" and k != "src"
@@ -188,7 +189,7 @@ def clean_html(html_content):
         return html_content
 
 
-def convert_chm_to_pdf(input_path, output_path):
+def convert_chm_to_pdf(input_path, output_path) -> None:
     print(f"Converting {input_path} to {output_path}...")
     print("Extracting HTML content from CHM...")
     html_content = extract_html_content(input_path)
@@ -310,7 +311,7 @@ def convert_chm_to_pdf(input_path, output_path):
             os.unlink(temp_html_path)
 
 
-def main():
+def main() -> None:
     if len(sys.argv) != 2:
         print("Usage: python chm_to_pdf.py <input_file.chm>")
         print("Example: python chm_to_pdf.py documentation.chm")

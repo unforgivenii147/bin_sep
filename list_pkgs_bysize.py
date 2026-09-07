@@ -38,7 +38,7 @@ def get_packages_with_size():
         return []
 
 
-def main():
+def main() -> None:
     print("Fetching package sizes...")
     packages = get_packages_with_size()
     if not packages:

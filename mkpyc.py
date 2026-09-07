@@ -9,7 +9,7 @@ from pathlib import Path
 
 from dh import fsz, get_files, gsz
 
-MAX_QUEUE = 4
+MAX_QUEUE: int = 4
 
 
 def process_file(path) -> bool | None:

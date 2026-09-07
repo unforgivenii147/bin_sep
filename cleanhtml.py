@@ -6,6 +6,7 @@ import sys
 from multiprocessing import Pool
 from pathlib import Path
 from typing import Any
+from tree_sitter import Language, Parser
 
 try:
     import tree_sitter_css
@@ -20,10 +21,10 @@ except ImportError as e:
         "pip install tree-sitter tree-sitter-html tree-sitter-css tree-sitter-javascript tree-sitter-typescript"
     )
     sys.exit(1)
-HTML_LANG = Language(tree_sitter_html.language())
-CSS_LANG = Language(tree_sitter_css.language())
-JS_LANG = Language(tree_sitter_javascript.language())
-TS_LANG = Language(tree_sitter_typescript.language_typescript())
+HTML_LANG: Any = Language(tree_sitter_html.language())
+CSS_LANG: Any = Language(tree_sitter_css.language())
+JS_LANG: Any = Language(tree_sitter_javascript.language())
+TS_LANG: Any = Language(tree_sitter_typescript.language_typescript())
 
 
 def _get_parser(lang: Language) -> Parser:
@@ -32,10 +33,10 @@ def _get_parser(lang: Language) -> Parser:
     return parser
 
 
-HTML_PARSER = _get_parser(HTML_LANG)
-CSS_PARSER = _get_parser(CSS_LANG)
-JS_PARSER = _get_parser(JS_LANG)
-TS_PARSER = _get_parser(TS_LANG)
+HTML_PARSER: Any = _get_parser(HTML_LANG)
+CSS_PARSER: Any = _get_parser(CSS_LANG)
+JS_PARSER: Any = _get_parser(JS_LANG)
+TS_PARSER: Any = _get_parser(TS_LANG)
 
 
 def _find_comment_ranges(node, ranges: list[tuple[int, int]]) -> None:
@@ -187,7 +188,7 @@ def collect_files(paths: list[str]) -> list[Path]:
     return sorted(files)
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Strip comments from HTML, CSS, JS, and TS files using tree-sitter."
     )

@@ -35,7 +35,7 @@ def analyze_files(
     pass
 
 
-def main():
+def main() -> None:
     import argparse
 
     parser = argparse.ArgumentParser(

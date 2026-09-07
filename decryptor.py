@@ -10,7 +10,7 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
-AES_BLOCK_SIZE = 16
+AES_BLOCK_SIZE: int = 16
 
 
 def random_key(length: int = 32) -> LiteralString:

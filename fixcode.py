@@ -4,11 +4,12 @@ from __future__ import annotations
 import ast
 import re
 from pathlib import Path
+from typing import Any
 
-INDENT = " " * 4
-DEF_CLASS = re.compile(r"^\s*(def|class)\s+")
-MAIN_GUARD = re.compile(r"^\s*if\s+__name__\s*==\s*['\"]__main__['\"]\s*:")
-BLOCK_START = re.compile(
+INDENT: Any = " " * 4
+DEF_CLASS: Any = re.compile(r"^\s*(def|class)\s+")
+MAIN_GUARD: Any = re.compile(r"^\s*if\s+__name__\s*==\s*['\"]__main__['\"]\s*:")
+BLOCK_START: Any = re.compile(
     r"""
     ^\s*
     (

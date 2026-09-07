@@ -7,9 +7,10 @@ from os import chdir as os_chdir
 from pathlib import Path
 
 from dh import get_files, mpf3
+from typing import Any
 
-START_DIR = Path.cwd()
-NUM_PROCESSES = 4
+START_DIR: Any = Path.cwd()
+NUM_PROCESSES: int = 4
 
 
 def process_file(path) -> None:

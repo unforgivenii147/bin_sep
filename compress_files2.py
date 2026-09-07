@@ -8,8 +8,9 @@ from collections.abc import Generator
 from pathlib import Path
 
 import lzma_mt
+from typing import Any
 
-ARCHIVE_EXTENSIONS = {
+ARCHIVE_EXTENSIONS: Any = {
     ".zip",
     ".br",
     ".xz",
@@ -29,7 +30,7 @@ ARCHIVE_EXTENSIONS = {
     ".lzma",
     ".xza",
 }
-MEDIA_EXTENSIONS = {
+MEDIA_EXTENSIONS: Any = {
     ".mkv",
     ".mp4",
     ".webm",
@@ -74,7 +75,7 @@ MEDIA_EXTENSIONS = {
     ".iso",
     ".img",
 }
-EXCLUDE_DIRS = {".git", "__pycache__", ".venv", "venv", ".env", "node_modules"}
+EXCLUDE_DIRS: Any = {".git", "__pycache__", ".venv", "venv", ".env", "node_modules"}
 
 
 def should_exclude(path: Path) -> bool:
@@ -214,7 +215,7 @@ def process_files(
             print(f"Disk space freed: {format_bytes(total_space_freed)}")
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Recursively compress or decompress files using lzma_mt",
         formatter_class=argparse.RawDescriptionHelpFormatter,

@@ -137,7 +137,7 @@ def analyze_package_versions(
     return versions
 
 
-def main():
+def main() -> None:
     print("Python Package Duplicate Checker")
     print("-" * 40)
     try:

@@ -20,11 +20,12 @@ from rich.progress import (
     TimeRemainingColumn,
     TransferSpeedColumn,
 )
+from typing import Any
 
-console = Console()
-CHUNK_SIZE = 1024 * 1024 * 5
-MAX_WORKERS = 4
-STATE_SUFFIX = ".progress"
+console: Any = Console()
+CHUNK_SIZE: Any = 1024 * 1024 * 5
+MAX_WORKERS: int = 4
+STATE_SUFFIX: str = ".progress"
 
 
 class Downloader:

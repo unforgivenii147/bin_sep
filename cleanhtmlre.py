@@ -5,6 +5,7 @@ import re
 import sys
 import urllib.request
 from pathlib import Path
+from typing import Any
 
 
 def strip_html_comments(html: str) -> str:
@@ -133,17 +134,19 @@ def load_asset(src: str, base_dir: Path) -> str | None:
     return None
 
 
-LINK_CSS_RE = re.compile(
+LINK_CSS_RE: Any = re.compile(
     r'<link\b[^>]*rel=["\']stylesheet["\'][^>]*>',
     re.IGNORECASE,
 )
-HREF_RE = re.compile(r'href=["\']([^"\']+)["\']', re.IGNORECASE)
-SCRIPT_SRC_RE = re.compile(
+HREF_RE: Any = re.compile(r'href=["\']([^"\']+)["\']', re.IGNORECASE)
+SCRIPT_SRC_RE: Any = re.compile(
     r'<script\b([^>]*)\bsrc=["\']([^"\']+)["\']([^>]*)>\s*</script>',
     re.IGNORECASE,
 )
-STYLE_TAG_RE = re.compile(r"<style\b[^>]*>(.*?)</style>", re.IGNORECASE | re.DOTALL)
-SCRIPT_TAG_RE = re.compile(
+STYLE_TAG_RE: Any = re.compile(
+    r"<style\b[^>]*>(.*?)</style>", re.IGNORECASE | re.DOTALL
+)
+SCRIPT_TAG_RE: Any = re.compile(
     r"<script\b(?![^>]*\bsrc=)([^>]*)>(.*?)</script>",
     re.IGNORECASE | re.DOTALL,
 )

@@ -8,8 +8,20 @@ from pathlib import Path
 
 import imagehash
 from PIL import Image
+from typing import Any
 
-SUPPORTED_EXTS = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tif", ".tiff", ".gif"}
+from collections.abc import Generator
+
+SUPPORTED_EXTS: set[str] = {
+    ".jpg",
+    ".jpeg",
+    ".png",
+    ".webp",
+    ".bmp",
+    ".tif",
+    ".tiff",
+    ".gif",
+}
 
 
 @dataclass(frozen=True)
@@ -18,7 +30,7 @@ class HashedImage:
     h: imagehash.ImageHash
 
 
-def iter_image_paths(root: Path):
+def iter_image_paths(root: Path) -> Generator[Path, None, None]:
     for p in root.rglob("*"):
         if p.is_file() and p.suffix.lower() in SUPPORTED_EXTS:
             yield p
@@ -35,7 +47,7 @@ def compute_hash(path: Path, hash_func: str, hash_size: int) -> HashedImage | No
             elif hash_func == "ahash":
                 h = imagehash.average_hash(img, hash_size=hash_size)
             else:
-                raise ValueError(msg)
+                raise ValueError(f"Unsupported hash function: {hash_func}")
             return HashedImage(path=path, h=h)
     except Exception as e:
         print(f"[WARN] Skipping {path} ({e})")
@@ -61,7 +73,7 @@ def folderize_by_similarity(
     if not images:
         print("No images found.")
         return
-    groups: list[dict] = []
+    groups: list[dict[str, Any]] = []
     for item in images:
         placed = False
         for g in groups:
@@ -97,7 +109,7 @@ def folderize_by_similarity(
             moved += 1
 
 
-def main() -> None:
+def main() -> int:
     parser = argparse.ArgumentParser(
         description="Folderize images by similarity using imagehash."
     )
@@ -125,6 +137,7 @@ def main() -> None:
         hash_size=args.hash_size,
         threshold=args.threshold,
     )
+    return 0
 
 
 if __name__ == "__main__":

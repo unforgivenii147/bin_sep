@@ -7,8 +7,9 @@ from pathlib import Path
 
 from dh import get_dirs
 from xxhash import xxh64
+from typing import Any
 
-CHUNK_SIZE = 1024 * 1024
+CHUNK_SIZE: Any = 1024 * 1024
 
 
 def is_nested(path1: Path, path2: Path) -> bool:

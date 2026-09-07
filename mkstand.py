@@ -12,11 +12,12 @@ from urllib.parse import unquote, urldefrag, urljoin, urlparse
 
 import requests
 from bs4 import BeautifulSoup
+from typing import Any
 
-WORKERS = 8
-REMOTE_SIZE_LIMIT = 5 * 1024 * 1024
-USER_AGENT = "Mozilla/5.0 (compatible; StandaloneHTML/2.0)"
-REMOTE_IMAGE_EXTENSIONS = {
+WORKERS: int = 8
+REMOTE_SIZE_LIMIT: Any = 5 * 1024 * 1024
+USER_AGENT: str = "Mozilla/5.0 (compatible; StandaloneHTML/2.0)"
+REMOTE_IMAGE_EXTENSIONS: Any = {
     ".apng",
     ".avif",
     ".bmp",
@@ -28,8 +29,8 @@ REMOTE_IMAGE_EXTENSIONS = {
     ".svg",
     ".webp",
 }
-HTML_EXTENSIONS = {".html", ".htm"}
-ASSET_ATTRIBUTES = {
+HTML_EXTENSIONS: Any = {".html", ".htm"}
+ASSET_ATTRIBUTES: Any = {
     "link": ("href",),
     "script": ("src",),
     "img": ("src",),
@@ -187,11 +188,11 @@ def download_remote_assets(
     return cache
 
 
-CSS_URL_RE = re.compile(
+CSS_URL_RE: Any = re.compile(
     r"url\(\s*[\"']?([^\"')]+?)[\"']?\s*\)",
     flags=re.IGNORECASE,
 )
-CSS_IMPORT_RE = re.compile(
+CSS_IMPORT_RE: Any = re.compile(
     r"@import\s+" r"(?:url\(\s*)?" r"[\"']?([^\"')\s;]+)" r"[\"']?\s*\)?",
     flags=re.IGNORECASE,
 )

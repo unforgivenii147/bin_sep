@@ -68,7 +68,7 @@ def download_repo_zip(repo: str, base_dir: Path) -> tuple[str, bool, str]:
         return repo, False, f"Error: {e!s}"
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Download GitHub repositories as ZIP archives"
     )

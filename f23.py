@@ -5,10 +5,11 @@ import argparse
 import re
 import shutil
 from pathlib import Path
+from typing import Any
 
-PRINT_PATTERN = re.compile(r"^\s*print\s+(?!\()(.+)$")
-PRINT_BARE_PATTERN = re.compile(r"^\s*print\s*$")
-EXCEPT_PATTERN = re.compile(r"^\s*except\s+(\S+)\s*,\s*(\S+)\s*:")
+PRINT_PATTERN: Any = re.compile(r"^\s*print\s+(?!\()(.+)$")
+PRINT_BARE_PATTERN: Any = re.compile(r"^\s*print\s*$")
+EXCEPT_PATTERN: Any = re.compile(r"^\s*except\s+(\S+)\s*,\s*(\S+)\s*:")
 
 
 def fix_py2_to_py3_all(line):
@@ -57,11 +58,11 @@ def apply_all_fixes(text: str):
     return "".join(new_lines), changed
 
 
-changed_files = []
-error_files = []
+changed_files: Any = []
+error_files: Any = []
 
 
-def process_file(path: Path, force=False, apply_all=False) -> None:
+def process_file(path: Path, force: bool = False, apply_all: bool = False) -> None:
     path = Path(path)
     try:
         original = path.read_text(encoding="utf-8")

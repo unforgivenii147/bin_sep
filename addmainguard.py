@@ -38,7 +38,7 @@ def add_main_guard(content):
     return content + guard_code
 
 
-def process_file(filepath, add=False, dry_run=False):
+def process_file(filepath, add: bool = False, dry_run: bool = False):
     try:
         path = Path(filepath)
         content = path.read_text(encoding="utf-8")
@@ -86,7 +86,7 @@ def find_python_files(directory, exclude_patterns=None):
     return filtered
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Find and optionally add main guard to Python files",
         formatter_class=argparse.RawDescriptionHelpFormatter,

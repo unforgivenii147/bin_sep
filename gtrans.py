@@ -7,12 +7,12 @@ import re
 import sys
 import time
 from pathlib import Path
-from typing import Final
+from typing import Any, Final
 
 try:
     from googletrans import Translator
 
-    HAS_GOOGLETRANS = True
+    HAS_GOOGLETRANS: bool = True
 except ImportError:
     HAS_GOOGLETRANS = False
 try:

@@ -11,9 +11,10 @@ from dh import fsz
 from dulwich import porcelain
 from dulwich.errors import NotGitRepository
 from dulwich.repo import Repo
+from typing import Any
 
-MAX_SIZE_MB = 5
-MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024
+MAX_SIZE_MB: int = 5
+MAX_SIZE_BYTES: Any = MAX_SIZE_MB * 1024 * 1024
 
 
 def read_repos(file_path: Path) -> list[str]:
@@ -85,7 +86,7 @@ def remove_from_repos_file(file_path: Path, repos_to_remove: set[str]):
     print(f"\nRemoved {len(repos_to_remove)} repos from {file_path}")
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Clone GitHub repositories using pure Python (dulwich)"
     )

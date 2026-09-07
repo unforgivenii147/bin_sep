@@ -7,8 +7,9 @@ import sys
 from collections import defaultdict
 from functools import partial
 from pathlib import Path
+from typing import Any
 
-TEXT_EXTENSIONS = {
+TEXT_EXTENSIONS: Any = {
     ".py",
     ".txt",
     ".md",
@@ -53,7 +54,7 @@ TEXT_EXTENSIONS = {
     ".clj",
     ".groovy",
 }
-EXCLUDED_EXTENSIONS = {
+EXCLUDED_EXTENSIONS: Any = {
     ".pyc",
     ".pyo",
     ".pyd",

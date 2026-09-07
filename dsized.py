@@ -7,8 +7,9 @@ import urllib.request
 from pathlib import Path
 
 from dh import fsz
+from typing import Any
 
-MAX_DOWNLOAD_SIZE = 1 * 1024 * 1024
+MAX_DOWNLOAD_SIZE: Any = 1 * 1024 * 1024
 
 
 def fetch_content_length(url: str) -> int | None:

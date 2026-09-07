@@ -4,9 +4,10 @@ from __future__ import annotations
 from pathlib import Path
 
 from dh import get_files, is_binary, mpf3
+from typing import Any
 
-cwd = Path.cwd()
-bin_dir = Path(f"{cwd}/binary")
+cwd: Any = Path.cwd()
+bin_dir: Any = Path(f"{cwd}/binary")
 bin_dir.mkdir(exist_ok=True)
 
 

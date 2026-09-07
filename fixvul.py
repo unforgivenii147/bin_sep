@@ -31,7 +31,7 @@ def parse_vulture_output(filepath):
     return skip_dirs_fixes
 
 
-def find_file(filename, search_root="."):
+def find_file(filename, search_root: str = "."):
     for root, dirs, files in os.walk(search_root):
         dirs[:] = [d for d in dirs if not d.startswith(".")]
         if filename in files:
@@ -39,7 +39,7 @@ def find_file(filename, search_root="."):
     return None
 
 
-def main():
+def main() -> None:
     if len(sys.argv) != 2:
         print("Usage: python comment_skip_dirs.py <vulture_output_file>")
         print("Example: python comment_skip_dirs.py vulture_output.txt")

@@ -7,8 +7,9 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from dh import is_binary
+from typing import Any
 
-HEX_RE = re.compile(
+HEX_RE: Any = re.compile(
     r"""
     (?<![0-9A-Fa-f])
     (?:
@@ -20,7 +21,7 @@ HEX_RE = re.compile(
     """,
     re.VERBOSE,
 )
-RGBA_RE = re.compile(
+RGBA_RE: Any = re.compile(
     r"""
     \b
     rgba?
@@ -158,7 +159,7 @@ def ansi_rgb_fg(r: int, g: int, b: int) -> str:
     return f"\x1b[38;2;{r};{g};{b}m"
 
 
-ANSI_RESET = "\x1b[0m"
+ANSI_RESET: str = "\x1b[0m"
 
 
 def best_text_color(c: Color) -> tuple[int, int, int]:

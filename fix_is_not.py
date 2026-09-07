@@ -55,7 +55,7 @@ def process_file(file_path: Path, auto_fix: bool = False) -> dict:
     return result
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Recursively find and optionally replace 'is not' with '!=' in Python files."
     )

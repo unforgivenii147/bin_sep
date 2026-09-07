@@ -41,7 +41,7 @@ def get_whl_info(whl_path):
     return basename, "unknown"
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Find .whl files that contain entry_points.txt"
     )

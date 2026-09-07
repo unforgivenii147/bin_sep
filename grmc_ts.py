@@ -9,8 +9,9 @@ from pathlib import Path
 
 import tree_sitter_python as tspython
 from tree_sitter import Language, Parser
+from typing import Any
 
-PY_LANGUAGE = Language(tspython.language())
+PY_LANGUAGE: Any = Language(tspython.language())
 
 
 def get_parser() -> Parser:
@@ -102,7 +103,7 @@ def gather_files(inputs) -> list[Path]:
     return files
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Strip comments and docstrings using Tree-Sitter safely."
     )

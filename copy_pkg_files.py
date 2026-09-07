@@ -9,7 +9,7 @@ from pathlib import Path
 from loguru import logger
 
 
-def clean_records():
+def clean_records() -> None:
     for dist_info in Path(".").glob("*.dist-info"):
         record_file = dist_info / "RECORD"
         if record_file.exists():
@@ -24,7 +24,7 @@ def clean_records():
             record_file.write_text("\n".join(filtered) + ("\n" if filtered else ""))
 
 
-def copy_file(file_path_str, base_dir, dest_dir):
+def copy_file(file_path_str, base_dir, dest_dir) -> None:
     try:
         src = Path(file_path_str)
         if not src.is_absolute():
@@ -38,7 +38,7 @@ def copy_file(file_path_str, base_dir, dest_dir):
         logger.error(f"Error copying {file_path_str}: {e}")
 
 
-def main():
+def main() -> None:
     base_dir = Path.cwd()
     dest_dir = Path("~/tmp/packages").expanduser().resolve()
     dest_dir.mkdir(parents=True, exist_ok=True)

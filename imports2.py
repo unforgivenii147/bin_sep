@@ -9,13 +9,14 @@ import zipfile
 from collections import defaultdict
 from multiprocessing import Pool, cpu_count
 from pathlib import Path
+from typing import Any
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
-logger = logging.getLogger(__name__)
+logger: Any = logging.getLogger(__name__)
 
 
 class PythonImportExtractor:
-    def __init__(self, pip_packages_file: str = "/sdcard/data/pip.txt"):
+    def __init__(self, pip_packages_file: str = "/sdcard/data/pip.txt") -> None:
         self.pip_packages = self._load_pip_packages(pip_packages_file)
         self.stdlib_modules = self._get_stdlib_modules()
         self.local_modules = set()
@@ -441,7 +442,7 @@ def process_single_file(
     return (filepath, filtered)
 
 
-def main():
+def main() -> None:
     import argparse
 
     parser = argparse.ArgumentParser(

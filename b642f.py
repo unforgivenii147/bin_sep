@@ -6,6 +6,7 @@ import sys
 from pathlib import Path
 
 from dh import cprint
+from typing import Any
 
 
 def content_hash(data: bytes) -> str:
@@ -16,9 +17,9 @@ def content_hash(data: bytes) -> str:
     return sha256(data).hexdigest()
 
 
-cleanup = True
-cwd = Path.cwd()
-out_dir = Path("output")
+cleanup: bool = True
+cwd: Any = Path.cwd()
+out_dir: Any = Path("output")
 if not out_dir.exists():
     out_dir.mkdir(exist_ok=True)
 

@@ -7,10 +7,12 @@ import sys
 from textual.app import App, ComposeResult
 from textual.containers import Grid
 from textual.widgets import Button, Static
+from textual.widgets.Button import Pressed
+from typing import Any
 
 
 class Display(Static):
-    DEFAULT_CSS = "\n    Display {\n        width: 1fr;\n        height: 3;\n        content-align: right middle;\n        background: $surface;\n        border: solid $primary;\n        text-style: bold;\n    }\n    "
+    DEFAULT_CSS: str = "\n    Display {\n        width: 1fr;\n        height: 3;\n        content-align: right middle;\n        background: $surface;\n        border: solid $primary;\n        text-style: bold;\n    }\n    "
 
     def __init__(self) -> None:
         super().__init__("0")
@@ -22,7 +24,7 @@ class Display(Static):
 
 
 class Calculator(Static):
-    DEFAULT_CSS = "\n    Calculator {\n        width: 50;\n        height: auto;\n        border: solid $accent;\n        background: $panel;\n    }\n\n    #button-grid {\n        width: 1fr;\n        height: auto;\n        grid-size: 4 5;\n        grid-gutter: 1 1;\n        padding: 1;\n    }\n\n    Button {\n        width: 1fr;\n        height: 3;\n    }\n\n    Button.operator {\n        background: $accent 80%;\n    }\n\n    Button.equals {\n        background: $success 80%;\n    }\n\n    Button.clear {\n        background: $error 80%;\n    }\n    "
+    DEFAULT_CSS: str = "\n    Calculator {\n        width: 50;\n        height: auto;\n        border: solid $accent;\n        background: $panel;\n    }\n\n    #button-grid {\n        width: 1fr;\n        height: auto;\n        grid-size: 4 5;\n        grid-gutter: 1 1;\n        padding: 1;\n    }\n\n    Button {\n        width: 1fr;\n        height: 3;\n    }\n\n    Button.operator {\n        background: $accent 80%;\n    }\n\n    Button.equals {\n        background: $success 80%;\n    }\n\n    Button.clear {\n        background: $error 80%;\n    }\n    "
 
     def __init__(self) -> None:
         super().__init__()
@@ -53,7 +55,7 @@ class Calculator(Static):
             yield Button("0", id="zero")
             yield Button("", disabled=True)
 
-    def on_button_pressed(self, event: Button.Pressed) -> None:
+    def on_button_pressed(self, event: Pressed) -> None:
         button_id = event.button.id
         button_label = str(event.button.label)
         if button_id == "clear":

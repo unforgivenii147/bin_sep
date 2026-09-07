@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 
 
-def flatten_directory(directory="."):
+def flatten_directory(directory: str = ".") -> None:
     root = Path(directory).resolve()
     if not root.is_dir():
         print(f"Error: {root} is not a valid directory")
@@ -53,7 +53,7 @@ def flatten_directory(directory="."):
     print("Flattening complete!")
 
 
-def main():
+def main() -> None:
     target_dir = sys.argv[1] if len(sys.argv) > 1 else "."
     flatten_directory(target_dir)
 

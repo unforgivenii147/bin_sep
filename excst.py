@@ -7,11 +7,13 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 
 import libcst as cst
+from libcst import Assign, CSTVisitor, ClassDef, FunctionDef, Import, ImportFrom, Module
+from typing import Any
 
-OUTPUT_DIR = Path("output")
-FUNCTIONS_DIR = OUTPUT_DIR / "functions"
-CLASSES_DIR = OUTPUT_DIR / "classes"
-CONSTANTS_DIR = OUTPUT_DIR / "constants"
+OUTPUT_DIR: Any = Path("output")
+FUNCTIONS_DIR: Any = OUTPUT_DIR / "functions"
+CLASSES_DIR: Any = OUTPUT_DIR / "classes"
+CONSTANTS_DIR: Any = OUTPUT_DIR / "constants"
 for directory in [FUNCTIONS_DIR, CLASSES_DIR, CONSTANTS_DIR]:
     directory.mkdir(parents=True, exist_ok=True)
 
@@ -26,7 +28,7 @@ def validate_python_code(code: str, filename: str) -> bool:
 
 
 class TopLevelExtractor(cst.CSTVisitor):
-    def __init__(self, original_path: Path, module: cst.Module):
+    def __init__(self, original_path: Path, module: Module) -> None:
         super().__init__()
         self.original_path = original_path
         self.module = module
@@ -63,13 +65,13 @@ class TopLevelExtractor(cst.CSTVisitor):
             except Exception as e:
                 print(f"Error writing to {filepath}: {e}")
 
-    def visit_Import(self, node: cst.Import) -> None:
+    def visit_Import(self, node: Import) -> None:
         self.imports.add(cst.Module([node]).code.strip())
 
-    def visit_ImportFrom(self, node: cst.ImportFrom) -> None:
+    def visit_ImportFrom(self, node: ImportFrom) -> None:
         self.imports.add(cst.Module([node]).code.strip())
 
-    def visit_FunctionDef(self, node: cst.FunctionDef) -> None:
+    def visit_FunctionDef(self, node: FunctionDef) -> None:
         if not self._is_top_level(node):
             return
         try:
@@ -81,7 +83,7 @@ class TopLevelExtractor(cst.CSTVisitor):
         except Exception as e:
             print(f"Error extracting function {node.name.value}: {e}")
 
-    def visit_ClassDef(self, node: cst.ClassDef) -> None:
+    def visit_ClassDef(self, node: ClassDef) -> None:
         if not self._is_top_level(node):
             return
         try:
@@ -93,7 +95,7 @@ class TopLevelExtractor(cst.CSTVisitor):
         except Exception as e:
             print(f"Error extracting class {node.name.value}: {e}")
 
-    def visit_Assign(self, node: cst.Assign) -> None:
+    def visit_Assign(self, node: Assign) -> None:
         if not self._is_top_level(node):
             return
         if node.semicolon:

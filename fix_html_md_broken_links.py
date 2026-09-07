@@ -5,7 +5,7 @@ import os
 import re
 from pathlib import Path
 
-static_dir = "/sdcard/_static"
+static_dir: str = "/sdcard/_static"
 
 
 def fix_links(file_path: Path) -> None:

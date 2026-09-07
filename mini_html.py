@@ -1,11 +1,10 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-import os
 import sys
 
 import minify_html as mh
 
 
-def main():
+def main() -> None:
     fn = sys.argv[1]
     data = ""
     with open(fn, encoding="utf-8") as f:

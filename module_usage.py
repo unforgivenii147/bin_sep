@@ -6,10 +6,11 @@ import pkgutil
 import sys
 from collections import Counter, defaultdict
 from pathlib import Path
+from typing import Any
 
-BIN_DIR = Path.home() / "bin"
-REPORT = Path.home() / "dh_usage.txt"
-PACKAGE = "dh"
+BIN_DIR: Any = Path.home() / "bin"
+REPORT: Any = Path.home() / "dh_usage.txt"
+PACKAGE: str = "dh"
 
 
 def get_stdlib_modules() -> set[str]:
@@ -290,7 +291,7 @@ def generate_report(
     return "\n".join(lines)
 
 
-def main():
+def main() -> None:
     if not BIN_DIR.is_dir():
         print(f"❌ {BIN_DIR} does not exist or is not a directory.")
         sys.exit(1)

@@ -7,8 +7,9 @@ import sys
 from pathlib import Path
 
 from dh import get_nobinary
+from typing import Any
 
-HTML_ENTITIES = {
+HTML_ENTITIES: Any = {
     "&lt;": "<",
     "&gt;": ">",
     "&amp;": "&",
@@ -33,7 +34,7 @@ HTML_ENTITIES = {
     "&ldquo;": '"',
     "&rdquo;": '"',
 }
-ENTITY_PATTERN = re.compile("|".join(re.escape(k) for k in HTML_ENTITIES))
+ENTITY_PATTERN: Any = re.compile("|".join(re.escape(k) for k in HTML_ENTITIES))
 
 
 def replace_entities(text: str) -> str:

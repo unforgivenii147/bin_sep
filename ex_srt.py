@@ -48,7 +48,7 @@ def extract_subtitle(input_file, stream_index, output_file):
         return False
 
 
-def main():
+def main() -> None:
     if len(sys.argv) != 2:
         print(f"Usage: {sys.argv[0]} <video.mkv|video.mp4>")
         sys.exit(1)

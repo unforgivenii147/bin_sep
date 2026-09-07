@@ -7,14 +7,14 @@ import multiprocessing as mp
 import re
 import sys
 from pathlib import Path
-from typing import Final
+from typing import Any, Final
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
-logger = logging.getLogger(__name__)
+logger: Any = logging.getLogger(__name__)
 try:
     from googletrans import Translator
 
-    HAS_GOOGLETRANS = True
+    HAS_GOOGLETRANS: bool = True
 except ImportError:
     HAS_GOOGLETRANS = False
 try:

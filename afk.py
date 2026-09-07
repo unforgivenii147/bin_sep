@@ -12,12 +12,12 @@ import zipfile
 from dataclasses import dataclass, field
 from pathlib import Path
 
-RESET = "\x1b[0m"
-BOLD = "\x1b[1m"
-YELLOW = "\x1b[33m"
-RED = "\x1b[31m"
-CYAN = "\x1b[36m"
-GREEN = "\x1b[32m"
+RESET: str = "\x1b[0m"
+BOLD: str = "\x1b[1m"
+YELLOW: str = "\x1b[33m"
+RED: str = "\x1b[31m"
+CYAN: str = "\x1b[36m"
+GREEN: str = "\x1b[32m"
 
 
 @dataclass

@@ -3,8 +3,9 @@ from __future__ import annotations
 
 import os
 import sys
+from typing import Any
 
-SHEBANG_MAP = {
+SHEBANG_MAP: Any = {
     "python": ".py",
     "python3": ".py",
     "python2": ".py",
@@ -14,7 +15,7 @@ SHEBANG_MAP = {
     "ksh": ".sh",
     "dash": ".sh",
 }
-TARGET_EXTENSIONS = {".py", ".sh"}
+TARGET_EXTENSIONS: Any = {".py", ".sh"}
 
 
 def detect_shebang(filepath):
@@ -62,7 +63,7 @@ def rename_file(filepath, target_ext):
     return None
 
 
-def main():
+def main() -> None:
     dry_run = "--dry-run" in sys.argv or "-n" in sys.argv
     verbose = "--verbose" in sys.argv or "-v" in sys.argv
     if dry_run:

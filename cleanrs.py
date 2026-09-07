@@ -5,12 +5,13 @@ import multiprocessing as mp
 import sys
 import time
 from pathlib import Path
+from typing import Any
 
 try:
     import tree_sitter_rust
     from tree_sitter import Language, Parser
 
-    TREE_SITTER_AVAILABLE = True
+    TREE_SITTER_AVAILABLE: bool = True
 except ImportError:
     TREE_SITTER_AVAILABLE = False
     print("Error: tree-sitter and tree-sitter-rust are required.")

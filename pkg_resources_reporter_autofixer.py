@@ -8,11 +8,8 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from pathlib import Path
 
-
-IMPORT_RE = re.compile(
-    r"""^(?P<indent>\s*)(?P<stmt>(?:import|from)\s+pkg_resources(?:\s+import\s+(?P<names>[^\n#]+))?)\s*(?P<comment>#.*)?$""",
-    re.VERBOSE,
-)
+# fmt: off
+IMPORT_RE = re.compile(r"""^(?P<indent>\s*)(?P<stmt>(?:import|from)\s+pkg_resources(?:\s+import\s+(?P<names>[^\n#]+))?)\s*(?P<comment>#.*)?$""", re.VERBOSE,)
 USAGE_PATTERNS: list[tuple[re.Pattern, str, bool, bool]] = [
     (
         re.compile(r"pkg_resources\.get_distribution\(\s*([^)]+?)\s*\)\.version"),
@@ -39,9 +36,7 @@ USAGE_PATTERNS: list[tuple[re.Pattern, str, bool, bool]] = [
         True,
     ),
     (
-        re.compile(
-            r"pkg_resources\.resource_filename\(\s*([^,]+?)\s*,\s*([^)]+?)\s*\)"
-        ),
+        re.compile(r"pkg_resources\.resource_filename\(\s*([^,]+?)\s*,\s*([^)]+?)\s*\)"),
         r"str(importlib.resources.files(\1).joinpath(\2))",
         False,
         True,
@@ -66,8 +61,6 @@ USAGE_PATTERNS: list[tuple[re.Pattern, str, bool, bool]] = [
     ),
 ]
 GENERIC_USAGE_RE = re.compile(r"pkg_resources\.([A-Za-z_][A-Za-z0-9_]*)")
-
-
 @dataclass
 class Finding:
     path: Path
@@ -77,8 +70,6 @@ class Finding:
     kind: str
     pattern: str = ""
     autofixable: bool = False
-
-
 @dataclass
 class FileReport:
     path: Path
@@ -86,12 +77,9 @@ class FileReport:
     needs_metadata: bool = False
     needs_resources: bool = False
     has_pkg_resources_import: bool = False
-
     @property
     def has_findings(self) -> bool:
         return bool(self.findings)
-
-
 def scan_file(path: Path) -> FileReport:
     report = FileReport(path=path)
     try:
@@ -163,8 +151,6 @@ def scan_file(path: Path) -> FileReport:
                     )
                 )
     return report
-
-
 def autofix_file(path: Path) -> tuple[bool, list[str]]:
     try:
         text = path.read_text(encoding="utf-8")
@@ -219,27 +205,13 @@ def autofix_file(path: Path) -> tuple[bool, list[str]]:
         return False, notes
     path.write_text(text, encoding="utf-8")
     return True, notes
-
-
 def iter_python_files(root: Path):
-    skipped_dirs = {
-        ".git",
-        "__pycache__",
-        ".venv",
-        "venv",
-        "env",
-        ".tox",
-        "build",
-        "dist",
-        ".eggs",
-    }
+    skipped_dirs = {".git", "__pycache__", ".venv", "venv", "env", ".tox", "build", "dist", ".eggs"}
     for p in root.rglob("*.py"):
         if any(part in skipped_dirs for part in p.parts):
             continue
         if p.is_file():
             yield p
-
-
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Report (and optionally autofix) deprecated pkg_resources usage in .py files."
@@ -289,7 +261,9 @@ def main(argv: list[str] | None = None) -> int:
             total_findings += 1
             tag = "AUTOFIX" if f.autofixable else "MANUAL"
             if not args.quiet:
-                print(f"  {f.lineno}:{f.col}  [{tag}] ({f.kind})  {f.pattern!r}")
+                print(
+                    f"  {f.lineno}:{f.col}  [{tag}] ({f.kind})  {f.pattern!r}"
+                )
                 print(f"      | {f.line.strip()}")
     print()
     print(f"scanned files      : {len(files)}")
@@ -298,11 +272,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.autofix:
         print("\n--autofix enabled--")
         with ProcessPoolExecutor(max_workers=max_workers) as ex:
-            futures = {
-                ex.submit(autofix_file, r.path): r.path
-                for r in reports
-                if r.has_findings
-            }
+            futures = {ex.submit(autofix_file, r.path): r.path for r in reports if r.has_findings}
             for fut in as_completed(futures):
                 p = futures[fut]
                 try:
@@ -321,10 +291,6 @@ def main(argv: list[str] | None = None) -> int:
                         for n in notes:
                             print(f"      - {n}")
         print(f"files autofixed    : {autofixed_files}")
-    return (
-        0 if total_findings == 0 or not args.autofix else (1 if total_findings else 0)
-    )
-
-
+    return 0 if total_findings == 0 or not args.autofix else (1 if total_findings else 0)
 if __name__ == "__main__":
     raise SystemExit(main())

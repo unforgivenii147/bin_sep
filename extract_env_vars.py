@@ -4,9 +4,10 @@ from __future__ import annotations
 import builtins
 import re
 from pathlib import Path
+from typing import Any
 
-env_vars = set()
-env_var_pattern = re.compile(r"^([A-Z_0-9]+)=")
+env_vars: Any = set()
+env_var_pattern: Any = re.compile(r"^([A-Z_0-9]+)=")
 for filepath in Path().rglob("*"):
     if ".git" in path.parts:
         continue
@@ -14,12 +15,12 @@ for filepath in Path().rglob("*"):
         try:
             with builtins.open(filepath, encoding="utf-8") as f:
                 for line in f:
-                    match = env_var_pattern.match(line)
+                    match: Any = env_var_pattern.match(line)
                     if match:
                         env_vars.add(match.group(1))
         except Exception as e:
             print(f"Could not process file {filepath}: {e}")
-output_filename = "env_vars.txt"
+output_filename: str = "env_vars.txt"
 try:
     with builtins.open(output_filename, "w", encoding="utf-8") as f:
         f.writelines(var + "\n" for var in sorted(env_vars))

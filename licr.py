@@ -4,8 +4,9 @@ from __future__ import annotations
 from pathlib import Path
 
 import dh
+from typing import Any
 
-EXT = [".md", ".txt", ".rst"]
+EXT: Any = [".md", ".txt", ".rst"]
 
 
 def find_license_files() -> None:

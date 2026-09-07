@@ -4,6 +4,11 @@ from __future__ import annotations
 import datetime
 
 from dh import georgian_to_hijri
+from typing import Any
+
+current_year: Any
+current_month: Any
+current_day: Any
 
 
 def get_current_ymd():

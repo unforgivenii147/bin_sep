@@ -8,16 +8,17 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 import zstandard as zstd
+from typing import Any
 
-GREEN = "\x1b[92m"
-YELLOW = "\x1b[93m"
-BLUE = "\x1b[94m"
-RED = "\x1b[91m"
-RESET = "\x1b[0m"
+GREEN: str = "\x1b[92m"
+YELLOW: str = "\x1b[93m"
+BLUE: str = "\x1b[94m"
+RED: str = "\x1b[91m"
+RESET: str = "\x1b[0m"
 
 
 class ProgressDisplay:
-    def __init__(self):
+    def __init__(self) -> None:
         self.lock = threading.Lock()
         self.total_files = 0
         self.processed_files = 0
@@ -25,7 +26,9 @@ class ProgressDisplay:
         self.compressed_size = 0
         self.start_time = time.time()
 
-    def update(self, file_path, original_size, compressed_size, status="compressed"):
+    def update(
+        self, file_path, original_size, compressed_size, status: str = "compressed"
+    ) -> None:
         with self.lock:
             self.processed_files += 1
             self.total_size += original_size
@@ -61,10 +64,10 @@ class ProgressDisplay:
                 flush=True,
             )
 
-    def set_total_files(self, count):
+    def set_total_files(self, count) -> None:
         self.total_files = count
 
-    def finish(self):
+    def finish(self) -> None:
         elapsed = time.time() - self.start_time
         print()
         print(f"\n{GREEN}✓ Compression complete!{RESET}")
@@ -111,7 +114,7 @@ def should_compress_file(file_path, threshold):
         return False
 
 
-def compress_file(file_path, progress, level=3):
+def compress_file(file_path, progress, level: int = 3):
     original_size = file_path.stat().st_size
     compressed_path = file_path.with_suffix(file_path.suffix + ".zst")
     temp_path = file_path.with_suffix(file_path.suffix + ".zst.tmp")
@@ -140,7 +143,7 @@ def compress_file(file_path, progress, level=3):
         return False, file_path, None, original_size
 
 
-def main():
+def main() -> None:
     if len(sys.argv) != 2:
         print(f"{RED}Usage: python {sys.argv[0]} <threshold_in_bytes>{RESET}")
         print(f"Example: python {sys.argv[0]} 1048576  # Compress files > 1MB")

@@ -11,13 +11,14 @@ from pathlib import Path
 from queue import Queue
 
 from fastwalk import walk_files
+from typing import Any
 
-pause_event = threading.Event()
+pause_event: Any = threading.Event()
 pause_event.set()
-results_queue = Queue()
-DEFAULT_EXCLUDED_DIRS = {".git"}
-DEFAULT_SKIPPED_EXTS = {".pyc", ".bak"}
-ARCHIVE_EXTENSIONS = (
+results_queue: Any = Queue()
+DEFAULT_EXCLUDED_DIRS: Any = {".git"}
+DEFAULT_SKIPPED_EXTS: Any = {".pyc", ".bak"}
+ARCHIVE_EXTENSIONS: Any = (
     ".tar.gz",
     ".tar",
     ".tar.xz",

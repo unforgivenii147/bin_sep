@@ -80,7 +80,7 @@ def decompress_file(file_path):
         return f"Error decompressing {file}: {e}"
 
 
-def print_compression_report(results):
+def print_compression_report(results) -> None:
     successful = [r for r in results if r.get("status") == "success"]
     errors = [r for r in results if r.get("status") == "error"]
     if not successful:
@@ -130,7 +130,7 @@ def print_compression_report(results):
     )
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Compress/decompress folders with LZ4",
         epilog="Default action: compress subfolders in current directory",

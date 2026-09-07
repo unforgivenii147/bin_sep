@@ -36,7 +36,7 @@ def get_packages_in_dir(dir_path):
     return packages
 
 
-def main():
+def main() -> None:
     user_dir = Path(site.getusersitepackages())
     system_dirs = []
     for path in sys.path:

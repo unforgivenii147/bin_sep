@@ -5,7 +5,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-TARGET_PREFIX = "2026-08-29"
+TARGET_PREFIX: str = "2026-08-29"
 
 
 def run_git(repo: Path, *args: str) -> str:

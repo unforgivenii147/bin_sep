@@ -5,7 +5,7 @@ import codecs
 import shutil
 
 
-def convert_in_place(filename):
+def convert_in_place(filename) -> None:
     backup = f"{filename}.bak"
     shutil.copy2(filename, backup)
     with codecs.open(backup, "r", encoding="iso-8859-1") as f:

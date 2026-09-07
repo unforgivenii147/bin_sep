@@ -50,7 +50,7 @@ def generate_init_content(modules: list[Path]) -> str:
     return "\n".join(lines)
 
 
-def main():
+def main() -> None:
     cwd = Path.cwd()
     print(f"Scanning directory: {cwd}")
     modules = get_python_modules(cwd)

@@ -7,7 +7,7 @@ from pathlib import Path
 import ffmpeg
 
 
-def extract_subtitles(input_file):
+def extract_subtitles(input_file) -> None:
     try:
         probe = ffmpeg.probe(input_file)
         subtitle_streams = [
@@ -36,7 +36,7 @@ def extract_subtitles(input_file):
         sys.exit(1)
 
 
-def main():
+def main() -> None:
     if len(sys.argv) != 2:
         print(f"Usage: {sys.argv[0]} <video.mkv|video.mp4>")
         sys.exit(1)

@@ -4,10 +4,11 @@ from __future__ import annotations
 import subprocess
 import sys
 from collections import defaultdict
+from typing import Any
 
 
 class TermuxDeborphan:
-    def __init__(self):
+    def __init__(self) -> None:
         self.all_packages = set()
         self.dependencies = defaultdict(set)
         self.keep_list = set()
@@ -95,7 +96,7 @@ class TermuxDeborphan:
         self.keep_list.discard(package)
 
 
-def interactive_mode():
+def interactive_mode() -> None:
     deborphan = TermuxDeborphan()
     deborphan.load_keep_list()
     orphans = deborphan.analyze()

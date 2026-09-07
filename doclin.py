@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from dh import fsz
+from typing import Any
 
 
 @dataclass
@@ -21,7 +22,7 @@ class FileStats:
     removed_refs: int
 
 
-RST_IMAGE_PATTERNS = [
+RST_IMAGE_PATTERNS: Any = [
     re.compile(r"^\s*\.\.\s+image::\s+https?://[^\s]+", re.IGNORECASE | re.MULTILINE),
     re.compile(r"^\s*\.\.\s+figure::\s+https?://[^\s]+", re.IGNORECASE | re.MULTILINE),
     re.compile(
@@ -38,7 +39,7 @@ RST_IMAGE_PATTERNS = [
         re.IGNORECASE | re.MULTILINE,
     ),
 ]
-MD_IMAGE_PATTERNS = [
+MD_IMAGE_PATTERNS: Any = [
     re.compile(r"^\[!\[.*?\]\(https?://[^\)]+\)\]\(https?://[^\)]+\)", re.MULTILINE),
     re.compile(r"!\[.*?\]\(https?://[^\)]+\)", re.MULTILINE),
     re.compile(r"!\[.*?\]\((?!https?://)[^\)]+\)", re.MULTILINE),
@@ -48,7 +49,7 @@ MD_IMAGE_PATTERNS = [
         re.IGNORECASE | re.MULTILINE,
     ),
 ]
-BADGE_DOMAINS = [
+BADGE_DOMAINS: Any = [
     "shields.io",
     "img.shields.io",
     "badge.fury.io",

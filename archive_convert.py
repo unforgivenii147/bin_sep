@@ -15,9 +15,10 @@ import lz4.frame
 import py7zr
 import zstandard as zstd
 from dh import fsz, gsz
+from typing import Any
 
-CHUNK = 1024 * 1024
-XZ_PRESET_9 = 9
+CHUNK: Any = 1024 * 1024
+XZ_PRESET_9: int = 9
 
 
 def parse_tar_codec(p: Path) -> tuple[str, str] | None:

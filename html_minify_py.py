@@ -8,6 +8,7 @@ from pathlib import Path
 from dh import get_files, mpf3
 from lxml import html as lxml_html
 from lxml.html import HtmlElement
+from typing import Any
 
 
 class HTMLMinifier:
@@ -19,7 +20,7 @@ class HTMLMinifier:
         remove_optional_tags: bool = False,
         minify_css: bool = False,
         minify_js: bool = False,
-    ):
+    ) -> None:
         self.remove_comments = remove_comments
         self.collapse_whitespace = collapse_whitespace
         self.remove_empty_attributes = remove_empty_attributes
@@ -118,7 +119,7 @@ def process_file(
     return minified
 
 
-def main():
+def main() -> None:
     cwd = Path.cwd()
     args = sys.argv[1:]
     files = [Path(p) for p in args] if args else get_files(cwd, ext=[".html"])

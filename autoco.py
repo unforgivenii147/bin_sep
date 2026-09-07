@@ -17,6 +17,18 @@ import brotli
 import lz4.frame
 import py7zr
 import zstandard as zstd
+from typing import Any, NamedTuple
+
+
+class CompressionResult(NamedTuple):
+    algorithm: Any
+    success: Any
+    compressed_size: Any
+    ratio: Any
+    time: Any
+    filepath: Any
+    error: Any
+
 
 CompressionResult = namedtuple(
     "CompressionResult",
@@ -69,7 +81,7 @@ def compress_7z(data: bytes, base_name: str) -> bytes:
 
 
 class __BytesIOProxy:
-    def __init__(self, buffer: bytearray):
+    def __init__(self, buffer: bytearray) -> None:
         self.buffer = buffer
 
     def write(self, data: bytes) -> int:
@@ -191,7 +203,7 @@ def cleanup_files(results: list[CompressionResult], keep_result: CompressionResu
     print(f"\n✓ Keeping best: {keep_result.algorithm} ({keep_result.filepath})")
 
 
-def main():
+def main() -> None:
     if len(sys.argv) != 2:
         print("Usage: python compression_benchmark.py <file_or_directory>")
         sys.exit(1)

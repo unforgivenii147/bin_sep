@@ -17,7 +17,7 @@ def create_tar_for_directory(dir_path):
     return tar_buffer.getvalue()
 
 
-def compress_file(file_path, output_dir, tar_subdirs_first=False):
+def compress_file(file_path, output_dir, tar_subdirs_first: bool = False):
     try:
         file_path = Path(file_path)
         if file_path.is_dir():
@@ -64,7 +64,7 @@ def decompress_file(file_path, output_dir):
 
 
 def process_files_parallel(
-    files, output_dir, mode, tar_subdirs_first=False, max_workers=None
+    files, output_dir, mode, tar_subdirs_first: bool = False, max_workers=None
 ):
     results = []
     with ProcessPoolExecutor(max_workers=max_workers) as executor:
@@ -88,7 +88,7 @@ def process_files_parallel(
     return results
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Compress/decompress files recursively using pylzma with parallel processing"
     )

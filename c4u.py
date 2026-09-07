@@ -30,7 +30,7 @@ def setup_logging(verbose: bool = True) -> logging.Logger:
     return logger
 
 
-logger = setup_logging(verbose=True)
+logger: Any = setup_logging(verbose=True)
 
 
 @dataclass
@@ -46,7 +46,7 @@ class PackageInfo:
         return asdict(self)
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> PackageInfo:
+    def from_dict(cls, data: dict[str, Any]) -> "PackageInfo":
         return cls(**data)
 
 

@@ -13,10 +13,10 @@ from pathlib import Path
 import brotli
 from dh import fsz, get_files
 
-MAX_WORKERS = 8
-CHUNK_SIZE = 524288
-BROTLI_QUALITY = 11
-BROTLI_LGWIN = 24
+MAX_WORKERS: int = 8
+CHUNK_SIZE: int = 524288
+BROTLI_QUALITY: int = 11
+BROTLI_LGWIN: int = 24
 
 
 def decompress_file(path: Path) -> bool:

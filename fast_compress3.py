@@ -11,8 +11,9 @@ from pathlib import Path
 
 import zstandard as zstd
 from dh import fsz
+from typing import Any
 
-SKIP_EXTENSIONS_COMPRESS = {
+SKIP_EXTENSIONS_COMPRESS: Any = {
     ".xz",
     ".gz",
     ".7z",
@@ -90,8 +91,8 @@ SKIP_EXTENSIONS_COMPRESS = {
     ".pkg",
     ".msi",
 }
-VALID_DECOMPRESS_EXTENSIONS = {".zst"}
-SKIP_DIRS = {
+VALID_DECOMPRESS_EXTENSIONS: Any = {".zst"}
+SKIP_DIRS: Any = {
     ".git",
     "__pycache__",
     ".pytest_cache",
@@ -104,11 +105,11 @@ SKIP_DIRS = {
     ".egg-info",
     "zstandard",
 }
-SKIP_DIR_PATTERNS = ["*.egg-info", "*.dist-info"]
+SKIP_DIR_PATTERNS: Any = ["*.egg-info", "*.dist-info"]
 
 
 class SpaceStats:
-    def __init__(self):
+    def __init__(self) -> None:
         self.original_size = 0
         self.compressed_size = 0
         self.lock = threading.Lock()
@@ -406,7 +407,7 @@ def process_files(
                 print("   Original files have been removed.")
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Recursively compress or decompress files using Zstandard"
     )

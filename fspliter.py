@@ -7,14 +7,15 @@ import os
 import re
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
+from typing import Any
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
-logger = logging.getLogger(__name__)
-DEFAULT_MIN_CHARS = 4900
-DEFAULT_MAX_CHARS = 4990
-TEXT_EXTENSIONS = {
+logger: Any = logging.getLogger(__name__)
+DEFAULT_MIN_CHARS: int = 4900
+DEFAULT_MAX_CHARS: int = 4990
+TEXT_EXTENSIONS: Any = {
     ".txt",
     ".md",
     ".rst",
@@ -137,7 +138,7 @@ def process_file_wrapper(args):
     return process_file(*args)
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Split text files into parts of 4900-4990 characters",
         formatter_class=argparse.RawDescriptionHelpFormatter,

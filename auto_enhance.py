@@ -97,7 +97,7 @@ def process_parallel(tasks, num_cores):
     return results
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Google Photos Style Auto-Enhancer (In-place replacement)",
         formatter_class=argparse.RawDescriptionHelpFormatter,

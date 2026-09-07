@@ -11,7 +11,7 @@ from PIL.Image import Image
 try:
     import cv2
 
-    HAS_CV2 = True
+    HAS_CV2: bool = True
 except ImportError:
     HAS_CV2 = False
     try:
