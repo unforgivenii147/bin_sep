@@ -1,0 +1,335 @@
+#!/data/data/com.termux/files/home/.local/bin/python
+from __future__ import annotations
+
+import shutil
+import tarfile
+import tempfile
+import zipfile
+from pathlib import Path
+
+
+def is_wheel_ok(path: Path) -> bool:
+    try:
+        with zipfile.ZipFile(path, "r") as wheel:
+            corrupt_file = wheel.testzip()
+            return not corrupt_file
+    except zipfile.BadZipFile:
+        return False
+    except FileNotFoundError:
+        return False
+    except Exception:
+        return False
+
+
+def is_valid_archive(path: str | Path) -> bool:
+    path = Path(path)
+    try:
+        if not path.is_file():
+            return False
+        if not path.stat().st_size:
+            return False
+        lower = path.name.lower()
+        if lower.endswith((".zip", ".whl")):
+            return is_wheel_ok(path)
+        if lower.endswith(".tar"):
+            return _check_tar(path, mode="r:")
+        if lower.endswith((".tar.gz", ".tgz")):
+            return _check_tar(path, mode="r:gz")
+        if lower.endswith((".tar.xz", ".txz")):
+            return _check_tar(path, mode="r:xz")
+        if lower.endswith((".tar.bz2", ".tbz2", ".tbz")):
+            return _check_tar(path, mode="r:bz2")
+        if lower.endswith(".tar.br"):
+            return _check_tar_with_brotli(path)
+        if lower.endswith(".tar.zst"):
+            return _check_tar_with_zstd(path)
+        if lower.endswith(".tar.lz4"):
+            return _check_tar_with_lz4(path)
+        if lower.endswith(".tar.lzma"):
+            return _check_tar_with_lzma(path)
+        if lower.endswith(".br"):
+            return _check_brotli_file(path)
+        if lower.endswith(".zst"):
+            return _check_zstd_file(path)
+        if lower.endswith(".lz4"):
+            return _check_lz4_file(path)
+        if lower.endswith(".lzma"):
+            return _check_lzma_file(path)
+        return False
+    except Exception:
+        return False
+
+
+def _check_tar(path: str | Path, mode: str) -> bool:
+    path = Path(path)
+    with tarfile.open(path, mode) as tf:
+        bad = tf.badfile()
+        if bad is not None:
+            return False
+        tf.getmembers()
+        return True
+
+
+def _check_brotli_file(path: str | Path) -> bool:
+    from brotlicffi import decompress as brotli_decompress
+
+    path = Path(path)
+    try:
+        data = Path(path).read_bytes()
+        _ = brotli_decompress(data)
+        return True
+    except:
+        return False
+
+
+def _check_zstd_file(path: str | Path) -> bool:
+    from zstandard import ZstdDecompressor as zstd_ZstdDecompressor
+
+    path = Path(path)
+    try:
+        dctx = zstd_ZstdDecompressor()
+        with open(path, "rb") as f:
+            _ = dctx.decompress(f.read())
+        return True
+    except:
+        return False
+
+
+def _check_lz4_file(path: str | Path) -> bool:
+    from lz4.frame import decompress as lz4_decompress
+
+    path = Path(path)
+    try:
+        with open(path, "rb") as f:
+            _ = lz4_decompress(f.read())
+        return True
+    except:
+        return False
+
+
+def _check_lzma_file(path: str | Path) -> bool:
+    from lzma import decompress as lzma_decompress
+
+    path = Path(path)
+    try:
+        with open(path, "rb") as f:
+            _ = lzma_decompress(f.read())
+        return True
+    except:
+        return False
+
+
+def _check_tar_with_brotli(path: str | Path) -> bool:
+    from brotlicffi import decompress as brotli_decompress
+
+    path = Path(path)
+    try:
+        with open(path, "rb") as f:
+            raw = brotli_decompress(f.read())
+        return _check_tar_bytes(raw)
+    except:
+        return False
+
+
+def _check_tar_with_zstd(path: str | Path) -> bool:
+    path = Path(path).resolve()
+    xpath = path.with_name(path.name.replace(".tar.zst", ""))
+    try:
+        with tarfile.open(path, "r:zst") as f:
+            f.extractall(path=xpath, filter="data")
+        return True
+    except:
+        return False
+
+
+def _check_tar_with_lz4(path: str | Path) -> bool:
+    from lz4.frame import decompress as lz4_decompress
+
+    path = Path(path)
+    try:
+        with open(path, "rb") as f:
+            raw = lz4_decompress(f.read())
+        return _check_tar_bytes(raw)
+    except:
+        return False
+
+
+def _check_tar_with_lzma(path: str | Path) -> bool:
+    from lzma import decompress as lzma_decompress
+
+    path = Path(path)
+    try:
+        with open(path, "rb") as f:
+            raw = lzma_decompress(f.read())
+        return _check_tar_bytes(raw)
+    except:
+        return False
+
+
+def _check_tar_bytes(raw: bytes) -> bool:
+    from io import BytesIO as io_BytesIO
+
+    try:
+        with tarfile.open(fileobj=io_BytesIO(raw), mode="r:") as tf:
+            tf.getmembers()
+        return True
+    except:
+        return False
+
+
+TARGET_FILES = {"METADATA", "PKGINFO", "PKG-INFO"}
+PREFIX = "Requires-Dist:"
+LOG_FILE = Path("/sdcard/reqz.txt")
+removed_lines_accumulator = []
+
+
+def clean_text(text: str) -> tuple[str, list[str]]:
+    lines = text.splitlines()
+    cleaned = []
+    removed = []
+    for line in lines:
+        if line.startswith(PREFIX):
+            removed.append(line)
+        else:
+            cleaned.append(line)
+    final_text = "\n".join(cleaned)
+    if text.endswith("\n"):
+        final_text += "\n"
+    return (final_text, removed)
+
+
+def clean_file(path: Path) -> None:
+    try:
+        original = path.read_text(encoding="utf-8", errors="ignore")
+    except Exception:
+        return
+    cleaned, removed = clean_text(original)
+    if removed:
+        removed_lines_accumulator.extend(removed)
+        path.write_text(cleaned, encoding="utf-8")
+
+
+def process_zip(path: Path) -> None:
+    with tempfile.NamedTemporaryFile(suffix=".zip", delete=False) as tmp_file:
+        tmp_path = Path(tmp_file.name)
+    try:
+        with zipfile.ZipFile(path, "r") as zin, zipfile.ZipFile(tmp_path, "w") as zout:
+            for item in zin.infolist():
+                data = zin.read(item.filename)
+                base = Path(item.filename).name
+                if base in TARGET_FILES:
+                    try:
+                        text = data.decode("utf-8", errors="ignore")
+                        cleaned, removed = clean_text(text)
+                        if removed:
+                            removed_lines_accumulator.extend(removed)
+                        data = cleaned.encode("utf-8")
+                    except Exception:
+                        pass
+                zout.writestr(item, data)
+        shutil.move(str(tmp_path), str(path))
+    finally:
+        tmp_path.unlink(missing_ok=True)
+
+
+def process_tar(path: Path) -> None:
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        temp_dir = Path(tmp_dir)
+        tmp_tar = temp_dir / "temp.tar.gz"
+        with tarfile.open(path, "r:*") as tar:
+            tar.extractall(temp_dir, filter="data")
+        for target_file in TARGET_FILES:
+            for file_path in temp_dir.rglob(target_file):
+                if file_path.is_file():
+                    clean_file(file_path)
+        with tarfile.open(tmp_tar, "w:gz") as tar:
+            tar.add(temp_dir, arcname="")
+        shutil.move(str(tmp_tar), str(path))
+
+
+def dispatch_archive(path: Path) -> None:
+    if not is_valid_archive(str(path)):
+        print(f"{path} is not valid archive")
+        return
+    path_str = str(path).lower()
+    if path_str.endswith(".whl"):
+        print(f"processing ... {path}")
+        process_zip(path)
+    elif path_str.endswith((".tar.gz", ".tgz", ".tar")):
+        process_tar(path)
+
+
+def find_files_to_process() -> list[Path]:
+    files_to_process = []
+    current_dir = Path.cwd()
+    for file_path in current_dir.rglob("*"):
+        if not file_path.is_file():
+            continue
+        file_name = file_path.name
+        file_name_lower = file_name.lower()
+        if (
+            file_name in TARGET_FILES
+            or file_name.endswith(".metadata")
+            or file_name_lower.endswith((".zip", ".whl", ".tar.gz", ".tgz", ".tar"))
+        ):
+            files_to_process.append(file_path)
+    return files_to_process
+
+
+def main() -> None:
+    files_to_process = find_files_to_process()
+    for file_path in files_to_process:
+        file_name = file_path.name
+        file_name_lower = file_name.lower()
+        if file_name in TARGET_FILES or file_name.endswith(".metadata"):
+            clean_file(file_path)
+        elif file_name_lower.endswith((".zip", ".whl", ".tar.gz", ".tgz", ".tar")):
+            dispatch_archive(file_path)
+    if removed_lines_accumulator:
+        try:
+            with LOG_FILE.open("a", encoding="utf-8") as f:
+                f.writelines(line + "\n" for line in removed_lines_accumulator)
+            print(f"--- Saved {len(removed_lines_accumulator)} lines to {LOG_FILE} ---")
+        except PermissionError:
+            pass
+        print("\nRemoved Lines:")
+        print("-" * 42)
+        for line in removed_lines_accumulator:
+            print(line)
+        print("-" * 42)
+    else:
+        print("No matching lines were found or removed.")
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+
+
+# 242 | |         encoding: str | None = ...,
+# info:   [Self](cls, name: str | bytes | PathLike[str] | PathLike[bytes] | None = None, mode: Literal["r", "r:*", "r:", "r:gz", "r:bz2", "r:xz"] = "r", fileobj: _Fileobj | None = None, bufsize: int = 10240, *, format: int | None = ..., tarinfo: type[TarInfo] | None = ..., dereference: bool | None = ..., ignore_zeros: bool | None = ..., encoding: str | None = ..., errors: str = ..., pax_headers: Mapping[str, str] | None = ..., debug: Literal[0, 1, 2, 3] | None = None, errorlevel: Literal[0, 1, 2] | None = None) -> Self
+# info:   [Self](cls, name: str | bytes | PathLike[str] | PathLike[bytes] | None, mode: Literal["x", "x:", "a", "a:", "w", "w:", "w:tar"], fileobj: _Fileobj | None = None, bufsize: int = 10240, *, format: int | None = ..., tarinfo: type[TarInfo] | None = ..., dereference: bool | None = ..., ignore_zeros: bool | None = ..., encoding: str | None = ..., errors: str = ..., pax_headers: Mapping[str, str] | None = ..., debug: Literal[0, 1, 2, 3] | None = None, errorlevel: Literal[0, 1, 2] | None = None) -> Self
+# info:   [Self](cls, name: str | bytes | PathLike[str] | PathLike[bytes] | None = None, *, mode: Literal["x", "x:", "a", "a:", "w", "w:", "w:tar"], fileobj: _Fileobj | None = None, bufsize: int = 10240, format: int | None = ..., tarinfo: type[TarInfo] | None = ..., dereference: bool | None = ..., ignore_zeros: bool | None = ..., encoding: str | None = ..., errors: str = ..., pax_headers: Mapping[str, str] | None = ..., debug: Literal[0, 1, 2, 3] | None = None, errorlevel: Literal[0, 1, 2] | None = None) -> Self
+# info:   [Self](cls, name: str | bytes | PathLike[str] | PathLike[bytes] | None, mode: Literal["x:gz", "x:bz2", "w:gz", "w:bz2"], fileobj: _Fileobj | None = None, bufsize: int = 10240, *, format: int | None = ..., tarinfo: type[TarInfo] | None = ..., dereference: bool | None = ..., ignore_zeros: bool | None = ..., encoding: str | None = ..., errors: str = ..., pax_headers: Mapping[str, str] | None = ..., debug: Literal[0, 1, 2, 3] | None = None, errorlevel: Literal[0, 1, 2] | None = None, compresslevel: int = 9) -> Self
+# info:   [Self](cls, name: str | bytes | PathLike[str] | PathLike[bytes] | None = None, *, mode: Literal["x:gz", "x:bz2", "w:gz", "w:bz2"], fileobj: _Fileobj | None = None, bufsize: int = 10240, format: int | None = ..., tarinfo: type[TarInfo] | None = ..., dereference: bool | None = ..., ignore_zeros: bool | None = ..., encoding: str | None = ..., errors: str = ..., pax_headers: Mapping[str, str] | None = ..., debug: Literal[0, 1, 2, 3] | None = None, errorlevel: Literal[0, 1, 2] | None = None, compresslevel: int = 9) -> Self
+# info:   [Self](cls, name: str | bytes | PathLike[str] | PathLike[bytes] | None, mode: Literal["x:xz", "w:xz"], fileobj: _Fileobj | None = None, bufsize: int = 10240, *, format: int | None = ..., tarinfo: type[TarInfo] | None = ..., dereference: bool | None = ..., ignore_zeros: bool | None = ..., encoding: str | None = ..., errors: str = ..., pax_headers: Mapping[str, str] | None = ..., debug: Literal[0, 1, 2, 3] | None = None, errorlevel: Literal[0, 1, 2] | None = None, preset: Literal[0, 1, 2, 3, 4, ... omitted 5 literals] | None = ...) -> Self
+# info:   [Self](cls, name: str | bytes | PathLike[str] | PathLike[bytes] | None = None, *, mode: Literal["x:xz", "w:xz"], fileobj: _Fileobj | None = None, bufsize: int = 10240, format: int | None = ..., tarinfo: type[TarInfo] | None = ..., dereference: bool | None = ..., ignore_zeros: bool | None = ..., encoding: str | None = ..., errors: str = ..., pax_headers: Mapping[str, str] | None = ..., debug: Literal[0, 1, 2, 3] | None = None, errorlevel: Literal[0, 1, 2] | None = None, preset: Literal[0, 1, 2, 3, 4, ... omitted 5 literals] | None = ...) -> Self
+# info:   [Self](cls, name: str | Buffer | PathLike[str] | PathLike[bytes] | None, mode: Literal["r|*", "r|", "r|gz", "r|bz2", "r|xz", "r|zst"], fileobj: _Fileobj | None = None, bufsize: int = 10240, *, format: int | None = ..., tarinfo: type[TarInfo] | None = ..., dereference: bool | None = ..., ignore_zeros: bool | None = ..., encoding: str | None = ..., errors: str = ..., pax_headers: Mapping[str, str] | None = ..., debug: Literal[0, 1, 2, 3] | None = None, errorlevel: Literal[0, 1, 2] | None = None) -> Self
+# info:   [Self](cls, name: str | Buffer | PathLike[str] | PathLike[bytes] | None = None, *, mode: Literal["r|*", "r|", "r|gz", "r|bz2", "r|xz", "r|zst"], fileobj: _Fileobj | None = None, bufsize: int = 10240, format: int | None = ..., tarinfo: type[TarInfo] | None = ..., dereference: bool | None = ..., ignore_zeros: bool | None = ..., encoding: str | None = ..., errors: str = ..., pax_headers: Mapping[str, str] | None = ..., debug: Literal[0, 1, 2, 3] | None = None, errorlevel: Literal[0, 1, 2] | None = None) -> Self
+# info:   [Self](cls, name: str | Buffer | PathLike[str] | PathLike[bytes] | None, mode: Literal["w|", "w|xz", "w|zst"], fileobj: _Fileobj | None = None, bufsize: int = 10240, *, format: int | None = ..., tarinfo: type[TarInfo] | None = ..., dereference: bool | None = ..., ignore_zeros: bool | None = ..., encoding: str | None = ..., errors: str = ..., pax_headers: Mapping[str, str] | None = ..., debug: Literal[0, 1, 2, 3] | None = None, errorlevel: Literal[0, 1, 2] | None = None) -> Self
+# info:   [Self](cls, name: str | Buffer | PathLike[str] | PathLike[bytes] | None = None, *, mode: Literal["w|", "w|xz", "w|zst"], fileobj: _Fileobj | None = None, bufsize: int = 10240, format: int | None = ..., tarinfo: type[TarInfo] | None = ..., dereference: bool | None = ..., ignore_zeros: bool | None = ..., encoding: str | None = ..., errors: str = ..., pax_headers: Mapping[str, str] | None = ..., debug: Literal[0, 1, 2, 3] | None = None, errorlevel: Literal[0, 1, 2] | None = None) -> Self
+# info:   [Self](cls, name: str | Buffer | PathLike[str] | PathLike[bytes] | None, mode: Literal["w|gz", "w|bz2"], fileobj: _Fileobj | None = None, bufsize: int = 10240, *, format: int | None = ..., tarinfo: type[TarInfo] | None = ..., dereference: bool | None = ..., ignore_zeros: bool | None = ..., encoding: str | None = ..., errors: str = ..., pax_headers: Mapping[str, str] | None = ..., debug: Literal[0, 1, 2, 3] | None = None, errorlevel: Literal[0, 1, 2] | None = None, compresslevel: int = 9) -> Self
+# info:   [Self](cls, name: str | Buffer | PathLike[str] | PathLike[bytes] | None = None, *, mode: Literal["w|gz", "w|bz2"], fileobj: _Fileobj | None = None, bufsize: int = 10240, format: int | None = ..., tarinfo: type[TarInfo] | None = ..., dereference: bool | None = ..., ignore_zeros: bool | None = ..., encoding: str | None = ..., errors: str = ..., pax_headers: Mapping[str, str] | None = ..., debug: Literal[0, 1, 2, 3] | None = None, errorlevel: Literal[0, 1, 2] | None = None, compresslevel: int = 9) -> Self
+# 242 | |         encoding: str | None = ...,
+# info:   [Self](cls, name: str | bytes | PathLike[str] | PathLike[bytes] | None = None, mode: Literal["r", "r:*", "r:", "r:gz", "r:bz2", "r:xz"] = "r", fileobj: _Fileobj | None = None, bufsize: int = 10240, *, format: int | None = ..., tarinfo: type[TarInfo] | None = ..., dereference: bool | None = ..., ignore_zeros: bool | None = ..., encoding: str | None = ..., errors: str = ..., pax_headers: Mapping[str, str] | None = ..., debug: Literal[0, 1, 2, 3] | None = None, errorlevel: Literal[0, 1, 2] | None = None) -> Self
+# info:   [Self](cls, name: str | bytes | PathLike[str] | PathLike[bytes] | None, mode: Literal["x", "x:", "a", "a:", "w", "w:", "w:tar"], fileobj: _Fileobj | None = None, bufsize: int = 10240, *, format: int | None = ..., tarinfo: type[TarInfo] | None = ..., dereference: bool | None = ..., ignore_zeros: bool | None = ..., encoding: str | None = ..., errors: str = ..., pax_headers: Mapping[str, str] | None = ..., debug: Literal[0, 1, 2, 3] | None = None, errorlevel: Literal[0, 1, 2] | None = None) -> Self
+# info:   [Self](cls, name: str | bytes | PathLike[str] | PathLike[bytes] | None = None, *, mode: Literal["x", "x:", "a", "a:", "w", "w:", "w:tar"], fileobj: _Fileobj | None = None, bufsize: int = 10240, format: int | None = ..., tarinfo: type[TarInfo] | None = ..., dereference: bool | None = ..., ignore_zeros: bool | None = ..., encoding: str | None = ..., errors: str = ..., pax_headers: Mapping[str, str] | None = ..., debug: Literal[0, 1, 2, 3] | None = None, errorlevel: Literal[0, 1, 2] | None = None) -> Self
+# info:   [Self](cls, name: str | bytes | PathLike[str] | PathLike[bytes] | None, mode: Literal["x:gz", "x:bz2", "w:gz", "w:bz2"], fileobj: _Fileobj | None = None, bufsize: int = 10240, *, format: int | None = ..., tarinfo: type[TarInfo] | None = ..., dereference: bool | None = ..., ignore_zeros: bool | None = ..., encoding: str | None = ..., errors: str = ..., pax_headers: Mapping[str, str] | None = ..., debug: Literal[0, 1, 2, 3] | None = None, errorlevel: Literal[0, 1, 2] | None = None, compresslevel: int = 9) -> Self
+# info:   [Self](cls, name: str | bytes | PathLike[str] | PathLike[bytes] | None = None, *, mode: Literal["x:gz", "x:bz2", "w:gz", "w:bz2"], fileobj: _Fileobj | None = None, bufsize: int = 10240, format: int | None = ..., tarinfo: type[TarInfo] | None = ..., dereference: bool | None = ..., ignore_zeros: bool | None = ..., encoding: str | None = ..., errors: str = ..., pax_headers: Mapping[str, str] | None = ..., debug: Literal[0, 1, 2, 3] | None = None, errorlevel: Literal[0, 1, 2] | None = None, compresslevel: int = 9) -> Self
+# info:   [Self](cls, name: str | bytes | PathLike[str] | PathLike[bytes] | None, mode: Literal["x:xz", "w:xz"], fileobj: _Fileobj | None = None, bufsize: int = 10240, *, format: int | None = ..., tarinfo: type[TarInfo] | None = ..., dereference: bool | None = ..., ignore_zeros: bool | None = ..., encoding: str | None = ..., errors: str = ..., pax_headers: Mapping[str, str] | None = ..., debug: Literal[0, 1, 2, 3] | None = None, errorlevel: Literal[0, 1, 2] | None = None, preset: Literal[0, 1, 2, 3, 4, ... omitted 5 literals] | None = ...) -> Self
+# info:   [Self](cls, name: str | bytes | PathLike[str] | PathLike[bytes] | None = None, *, mode: Literal["x:xz", "w:xz"], fileobj: _Fileobj | None = None, bufsize: int = 10240, format: int | None = ..., tarinfo: type[TarInfo] | None = ..., dereference: bool | None = ..., ignore_zeros: bool | None = ..., encoding: str | None = ..., errors: str = ..., pax_headers: Mapping[str, str] | None = ..., debug: Literal[0, 1, 2, 3] | None = None, errorlevel: Literal[0, 1, 2] | None = None, preset: Literal[0, 1, 2, 3, 4, ... omitted 5 literals] | None = ...) -> Self
+# info:   [Self](cls, name: str | Buffer | PathLike[str] | PathLike[bytes] | None, mode: Literal["r|*", "r|", "r|gz", "r|bz2", "r|xz", "r|zst"], fileobj: _Fileobj | None = None, bufsize: int = 10240, *, format: int | None = ..., tarinfo: type[TarInfo] | None = ..., dereference: bool | None = ..., ignore_zeros: bool | None = ..., encoding: str | None = ..., errors: str = ..., pax_headers: Mapping[str, str] | None = ..., debug: Literal[0, 1, 2, 3] | None = None, errorlevel: Literal[0, 1, 2] | None = None) -> Self
+# info:   [Self](cls, name: str | Buffer | PathLike[str] | PathLike[bytes] | None = None, *, mode: Literal["r|*", "r|", "r|gz", "r|bz2", "r|xz", "r|zst"], fileobj: _Fileobj | None = None, bufsize: int = 10240, format: int | None = ..., tarinfo: type[TarInfo] | None = ..., dereference: bool | None = ..., ignore_zeros: bool | None = ..., encoding: str | None = ..., errors: str = ..., pax_headers: Mapping[str, str] | None = ..., debug: Literal[0, 1, 2, 3] | None = None, errorlevel: Literal[0, 1, 2] | None = None) -> Self
+# info:   [Self](cls, name: str | Buffer | PathLike[str] | PathLike[bytes] | None, mode: Literal["w|", "w|xz", "w|zst"], fileobj: _Fileobj | None = None, bufsize: int = 10240, *, format: int | None = ..., tarinfo: type[TarInfo] | None = ..., dereference: bool | None = ..., ignore_zeros: bool | None = ..., encoding: str | None = ..., errors: str = ..., pax_headers: Mapping[str, str] | None = ..., debug: Literal[0, 1, 2, 3] | None = None, errorlevel: Literal[0, 1, 2] | None = None) -> Self
+# info:   [Self](cls, name: str | Buffer | PathLike[str] | PathLike[bytes] | None = None, *, mode: Literal["w|", "w|xz", "w|zst"], fileobj: _Fileobj | None = None, bufsize: int = 10240, format: int | None = ..., tarinfo: type[TarInfo] | None = ..., dereference: bool | None = ..., ignore_zeros: bool | None = ..., encoding: str | None = ..., errors: str = ..., pax_headers: Mapping[str, str] | None = ..., debug: Literal[0, 1, 2, 3] | None = None, errorlevel: Literal[0, 1, 2] | None = None) -> Self
+# info:   [Self](cls, name: str | Buffer | PathLike[str] | PathLike[bytes] | None, mode: Literal["w|gz", "w|bz2"], fileobj: _Fileobj | None = None, bufsize: int = 10240, *, format: int | None = ..., tarinfo: type[TarInfo] | None = ..., dereference: bool | None = ..., ignore_zeros: bool | None = ..., encoding: str | None = ..., errors: str = ..., pax_headers: Mapping[str, str] | None = ..., debug: Literal[0, 1, 2, 3] | None = None, errorlevel: Literal[0, 1, 2] | None = None, compresslevel: int = 9) -> Self
+# info:   [Self](cls, name: str | Buffer | PathLike[str] | PathLike[bytes] | None = None, *, mode: Literal["w|gz", "w|bz2"], fileobj: _Fileobj | None = None, bufsize: int = 10240, format: int | None = ..., tarinfo: type[TarInfo] | None = ..., dereference: bool | None = ..., ignore_zeros: bool | None = ..., encoding: str | None = ..., errors: str = ..., pax_headers: Mapping[str, str] | None = ..., debug: Literal[0, 1, 2, 3] | None = None, errorlevel: Literal[0, 1, 2] | None = None, compresslevel: int = 9) -> Self

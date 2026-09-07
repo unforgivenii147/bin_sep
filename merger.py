@@ -1,0 +1,56 @@
+#!/data/data/com.termux/files/home/.local/bin/python
+from __future__ import annotations
+
+from pathlib import Path
+
+from dh import get_nobinary, get_random_filename, should_skip
+
+
+def read_file(path: Path) -> str | None:
+    try:
+        return path.read_text(encoding="utf-8", errors="ignore")
+    except (OSError, UnicodeDecodeError):
+        return None
+
+
+def merge_files() -> Path | None:
+    cwd = Path.cwd()
+    output_file = cwd / f"{get_random_filename()}.txt"
+    files = [f for f in get_nobinary(cwd) if f != output_file]
+    files.sort()
+    if not files:
+        print("ℹ️  No non-binary files found to merge.")
+        return None
+    try:
+        total_size = 0
+        file_count = 0
+        with output_file.open("w", encoding="utf-8") as fo:
+            for file_path in files:
+                if should_skip(file_path):
+                    continue
+                content = read_file(file_path)
+                if content is None or not content.strip():
+                    continue
+                relative_path = file_path.relative_to(cwd)
+                fo.write(f"# File: {relative_path}\n")
+                fo.write(content)
+                fo.write("\n")
+                total_size += len(content)
+                file_count += 1
+        if total_size == 0:
+            output_file.unlink()
+            print("ℹ️  No content to merge (all files were empty or skipped).")
+            return None
+        print(
+            f"✅ Merged {file_count} files ({total_size:,} bytes) into: {output_file}"
+        )
+        return output_file
+    except OSError as e:
+        print(f"❌ Error writing output file: {e}")
+        if output_file.exists():
+            output_file.unlink()
+        return None
+
+
+if __name__ == "__main__":
+    merge_files()
