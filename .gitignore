@@ -1,27 +1,2 @@
-*$py.class
-*.bak
-*.db
-*.env
-*.json
-*.log
-*.py[cod]
-*.pyc
-*.pyi
-*.tmp
-*.txt
-*_api_key
-*_token
-.bash_secrets
-.env
-.git_token
-.github/
-.github_token
-.mypy_cache/
-.ropeproject/
-.venv/
-__pycache__/
-credential.json
-out/
-output/
-simz.json
-undo/
+*           # Ignore everything
+!/*.py      # EXCEPT .py files at top level only
