@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Optional
 
 
-def get_repo_status(repo_path: Path) -> tuple[Path, bool, Optional[str]]:
+def get_repo_status(repo_path: Path) -> tuple[Path, bool, str | None]:
     try:
         git_dir = repo_path / ".git"
         if not git_dir.exists() or not git_dir.is_dir():
@@ -51,7 +51,7 @@ def find_git_repos(directory: Path) -> list[Path]:
     return repos
 
 
-def print_result(result: tuple[Path, bool, Optional[str]]) -> None:
+def print_result(result: tuple[Path, bool, str | None]) -> None:
     path, has_changes, info = result
     if not has_changes:
         print(f"✓ {path.name}: No changes")
@@ -77,13 +77,13 @@ def main():
         results = pool.map(get_repo_status, repos)
     changed_count = sum(1 for _, has_changes, _ in results if has_changes)
     if changed_count > 0:
-        print("=" * 60)
+        print("=" * 40)
         print(f"⚠️  Found {changed_count} repository(ies) with changes")
-        print("=" * 60)
+        print("=" * 40)
     else:
-        print("=" * 60)
+        print("=" * 40)
         print("✅ All repositories are clean")
-        print("=" * 60)
+        print("=" * 40)
 
 
 if __name__ == "__main__":

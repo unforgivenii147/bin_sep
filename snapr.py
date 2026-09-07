@@ -34,7 +34,7 @@ def compress_file(file_path: Path, remove_original: bool = True) -> tuple[bool, 
             file_path.unlink()
         original_size = len(data)
         compressed_size = len(compressed_data)
-        ratio = (compressed_size / original_size * 100) if original_size > 0 else 0
+        ratio = (compressed_size / original_size * 40) if original_size > 0 else 0
         logger.info(
             f"Compressed: {file_path} -> {compressed_path} ({original_size} -> {compressed_size} bytes, {ratio:.1f}%)"
         )

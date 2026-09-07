@@ -191,25 +191,27 @@ def print_summary(results: list[ProcessResult], targets: list[Path]) -> None:
     total_final_size = sum(r.final_size for r in successful)
     total_backup_size = sum(r.backup_size for r in successful)
     total_space_used = total_final_size + total_backup_size
-    logger.info("=" * 42)
+    logger.info("=" * 40)
     logger.info("Processing Summary:")
     logger.info(f"  Files processed: {len(results)}")
     logger.info(f"  Successful: {len(successful)}")
     logger.info(f"  Failed: {len(failed)}")
     logger.info(f"  Total comments removed: {total_comments}")
     logger.info(f"  Total lines removed: {total_lines_removed}")
-    logger.info("=" * 42)
+    logger.info("=" * 40)
     logger.info("Disk Space Summary:")
     logger.info(f"  Space freed: {_format_bytes(total_space_freed)}")
     logger.info(f"  Final file size: {_format_bytes(total_final_size)}")
     logger.info(f"  Backup files size: {_format_bytes(total_backup_size)}")
     logger.info(f"  Total space used: {_format_bytes(total_space_used)}")
-    logger.info("=" * 42)
+    logger.info("=" * 40)
     if successful:
         logger.info("Successful files:")
         for result in successful:
             logger.info(
-                f"  {result.path.name}: {result.comments_removed} comments, {result.original_lines - result.final_lines} lines removed, freed {_format_bytes(result.space_freed)}"
+                f"  {result.path.name}: {result.comments_removed} comments, {
+                    result.original_lines - result.final_lines
+                } lines removed, freed {_format_bytes(result.space_freed)}"
             )
     if failed:
         logger.warning("Failed files:")

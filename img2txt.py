@@ -45,7 +45,7 @@ def extract_text(image_path: Path) -> str:
             if img.mode not in ("L", "RGB"):
                 img = img.convert("RGB")
             result = image_to_string(img, lang="eng", config="--oem 1 --psm 6")
-        print("-" * 42)
+        print("-" * 40)
         print(result.strip() or "[No text detected]")
         return result.strip()
     except Exception as e:

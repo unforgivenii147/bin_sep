@@ -153,9 +153,9 @@ def process_images(num_workers: int | None = None):
     moved = sum(1 for _, _, moved, _ in results if moved)
     noface_count = sum(1 for _, _, _, has_face in results if not has_face)
     has_face_count = total - noface_count
-    print("\n" + "=" * 42)
+    print("\n" + "=" * 40)
     print("📊 SUMMARY")
-    print("-" * 42)
+    print("-" * 40)
     print(f"Total images:     {total}")
     print(f"With faces:       {has_face_count}")
     print(f"Without faces:    {noface_count}")
@@ -164,7 +164,7 @@ def process_images(num_workers: int | None = None):
     print(f"Speed:            {total / elapsed_time:.1f} images/second")
     if moved > 0:
         print(f"\n📁 Moved to: {noface_dir}")
-    print("-" * 42)
+    print("-" * 40)
     return True
 
 
@@ -177,13 +177,13 @@ def main():
     print(f"✅ CASCADE FOUND: {cascade_path}")
     if not FACE_DETECTION_AVAILABLE:
         sys.exit(1)
-    print("\n" + "=" * 42)
+    print("\n" + "=" * 40)
     print("📸 FACE DETECTION IMAGE ORGANIZER")
-    print("-" * 42)
+    print("-" * 40)
     print(f"Working directory: {Path.cwd()}")
     print("Images WITH faces → stay in place")
     print("Images WITHOUT faces → moved to 'noface/'")
-    print("-" * 42)
+    print("-" * 40)
     num_workers = None
     if len(sys.argv) > 1:
         try:

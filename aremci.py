@@ -10,7 +10,11 @@ from pathlib import Path
 from dh import DOC_TH1, DOC_TH2, get_pyfiles
 
 COMMENT_AND_DOCSTRING_REGEX = re.compile(
-    f"(?:^(\\s*)#.*$)|(?:^(\\s*)({DOC_TH2}).*?(\\3)|^(\\s*)({DOC_TH1}).*?(\\5))|(?:\\b(def|class)\\s+\\w+[^():]*\\([^)]*\\)\\s*:\\s*)(\\s*)((DOC_TH2).*?(\\7)|({DOC_TH1}).*?(\\9))",
+    f"(?:^(\\s*)#.*$)|(?:^(\\s*)({DOC_TH2}).*?(\\3)|^(\\s*)({
+        DOC_TH1
+    }).*?(\\5))|(?:\\b(def|class)\\s+\\w+[^():]*\\([^)]*\\)\\s*:\\s*)(\\s*)((DOC_TH2).*?(\\7)|({
+        DOC_TH1
+    }).*?(\\9))",
     re.MULTILINE | re.DOTALL,
 )
 DOCSTRING_START_REGEX = re.compile(

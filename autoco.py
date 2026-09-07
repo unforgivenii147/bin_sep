@@ -143,21 +143,19 @@ def benchmark_compression(
 
 
 def print_header(target: str, original_size: int):
-    print("\n📦 Compressing: {}\n".format(target))
-    print("Original size: {:,} bytes\n".format(original_size))
+    print(f"\n📦 Compressing: {target}\n")
+    print(f"Original size: {original_size:,} bytes\n")
     print("COMPRESSION PROGRESS:")
-    print("-" * 70)
+    print("-" * 40)
 
 
 def print_result(result: CompressionResult):
     if result.success:
         print(
-            "✓ {:<10} | Size: {:>12,} | Ratio: {:.4f} | Time: {:.3f}s".format(
-                result.algorithm, result.compressed_size, result.ratio, result.time
-            )
+            f"✓ {result.algorithm:<10} | Size: {result.compressed_size:>12,} | Ratio: {result.ratio:.4f} | Time: {result.time:.3f}s"
         )
     else:
-        print("✗ {:<10} | Error: {}".format(result.algorithm, result.error))
+        print(f"✗ {result.algorithm:<10} | Error: {result.error}")
 
 
 def print_summary(results: list[CompressionResult], original_size: int):
@@ -166,17 +164,15 @@ def print_summary(results: list[CompressionResult], original_size: int):
         print("\n✗ All compression attempts failed!")
         return None
     sorted_results = sorted(successful, key=lambda r: r.ratio)
-    print("\n" + "=" * 70)
+    print("\n" + "=" * 40)
     print("TOP 3 COMPRESSION RESULTS")
-    print("=" * 70)
+    print("=" * 40)
     for idx, result in enumerate(sorted_results[:3], 1):
         bytes_saved = original_size - result.compressed_size
         print(
-            "{}\\. {:<10} | Size: {:>12,} | Ratio: {:.4f} | Saved: {:>12,} bytes".format(
-                idx, result.algorithm, result.compressed_size, result.ratio, bytes_saved
-            )
+            f"{idx}\\. {result.algorithm:<10} | Size: {result.compressed_size:>12,} | Ratio: {result.ratio:.4f} | Saved: {bytes_saved:>12,} bytes"
         )
-    print("=" * 70)
+    print("=" * 40)
     return sorted_results[0]
 
 
@@ -189,12 +185,10 @@ def cleanup_files(results: list[CompressionResult], keep_result: CompressionResu
         ):
             try:
                 os.remove(result.filepath)
-                print("✗ Deleted: {}".format(result.algorithm))
+                print(f"✗ Deleted: {result.algorithm}")
             except OSError as e:
-                print("⚠ Failed to delete {}: {}".format(result.algorithm, e))
-    print(
-        "\n✓ Keeping best: {} ({})".format(keep_result.algorithm, keep_result.filepath)
-    )
+                print(f"⚠ Failed to delete {result.algorithm}: {e}")
+    print(f"\n✓ Keeping best: {keep_result.algorithm} ({keep_result.filepath})")
 
 
 def main():

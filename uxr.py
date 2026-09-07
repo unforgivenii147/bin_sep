@@ -308,9 +308,9 @@ class ArchiveExtractor:
         failed = self.stats["failed"]
         skipped = self.stats["skipped"]
         print(f"📊 Total processed:  {total}")
-        print(f"✅ Successful:       {success} ({success / total * 100:.1f}%)")
-        print(f"❌ Failed:           {failed} ({failed / total * 100:.1f}%)")
-        print(f"⏭️  Skipped:          {skipped} ({skipped / total * 100:.1f}%)")
+        print(f"✅ Successful:       {success} ({success / total * 40:.1f}%)")
+        print(f"❌ Failed:           {failed} ({failed / total * 40:.1f}%)")
+        print(f"⏭️  Skipped:          {skipped} ({skipped / total * 40:.1f}%)")
         print(f"🗑️  Remove original:  {'Enabled' if self.remove_after else 'Disabled'}")
         if failed > 0:
             print("\n⚠️  Some archives failed to extract. Check errors above.")

@@ -55,7 +55,7 @@ def download_package(url, filename, output_dir="."):
                     f.write(chunk)
                     downloaded += len(chunk)
                     if total_size > 0:
-                        percent = downloaded / total_size * 100
+                        percent = downloaded / total_size * 40
                         print(
                             f"\rProgress: {percent:.1f}% ({downloaded}/{total_size} bytes)",
                             end="",

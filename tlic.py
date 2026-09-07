@@ -151,7 +151,7 @@ def remove_repeated_blocks(
     repeated: dict[str, list[tuple[Path, int, list[str]]]], root: Path, n_jobs: int = 8
 ) -> None:
     file_removals: dict[Path, list[tuple[int, list[str]]]] = defaultdict(list)
-    for _block_text, occurrences in repeated.items():
+    for occurrences in repeated.values():
         for filepath, start_lineno, original_lines in occurrences:
             file_removals[filepath].append((start_lineno, original_lines))
     if not file_removals:

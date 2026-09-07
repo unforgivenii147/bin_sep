@@ -120,7 +120,9 @@ def enhanced_shuffle_small_file(input_file_path: Path, output_file_path: Path) -
             lines = f.readlines()
     except MemoryError:
         print(
-            f"MemoryError: File '{input_file_path}' is too large to load into memory. Consider increasing 1mb or using a system with more RAM.",
+            f"MemoryError: File '{
+                input_file_path
+            }' is too large to load into memory. Consider increasing 1mb or using a system with more RAM.",
             file=sys.stderr,
         )
         return False

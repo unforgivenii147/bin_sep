@@ -246,13 +246,17 @@ def scan_directory(target_dir, auto_extract=False, test_integrity=False, verbose
                         else "\033[31m[FAIL]\033[0m"
                     )
                     print(
-                        f" -> Found: {res['filename']} | Type: {res['archive_type']} | Comp: {fsz(res['compressed_size'])} -> Ext: {fsz(res['extracted_size'])} | {status}"
+                        f" -> Found: {res['filename']} | Type: {
+                            res['archive_type']
+                        } | Comp: {fsz(res['compressed_size'])} -> Ext: {
+                            fsz(res['extracted_size'])
+                        } | {status}"
                     )
-    print("-" * 90)
+    print("-" * 40)
     print(
         f"\033[1;37m{'FILENAME':<32} {'ARCHIVE TYPE':<26} {'COMPRESSED':<12} {'EXTRACTED':<12} {'INTEGRITY':<10}\033[0m"
     )
-    print("-" * 90)
+    print("-" * 40)
     total_comp = sum(i["compressed_size"] for i in found_archives)
     total_ext = sum(i["extracted_size"] for i in found_archives)
     for item in found_archives:
@@ -264,9 +268,12 @@ def scan_directory(target_dir, auto_extract=False, test_integrity=False, verbose
             else "\033[90mSKIP\033[0m"
         )
         print(
-            f"{item['filename'][:31]:<32} {item['archive_type'][:25]:<26} {fsz(item['compressed_size']):<12} {fsz(item['extracted_size']):<12} {status}"
+            f"{item['filename'][:31]:<32} {item['archive_type'][:25]:<26} {
+                fsz(item['compressed_size']):<12} {fsz(item['extracted_size']):<12} {
+                status
+            }"
         )
-    print("=" * 90)
+    print("=" * 40)
     print(f"\033[1;36mSUMMARY:\033[0m Found {len(found_archives)} archive files.")
     print(f"Total Compressed Size : {fsz(total_comp)}")
     print(f"Total Extracted Size  : \033[1;32m{fsz(total_ext)}\033[0m")

@@ -32,12 +32,12 @@ class ProgressDisplay:
             self.compressed_size += compressed_size
             elapsed = time.time() - self.start_time
             if self.total_files > 0:
-                percent = self.processed_files / self.total_files * 100
+                percent = self.processed_files / self.total_files * 40
             else:
                 percent = 0
             if self.total_size > 0:
                 ratio = self.compressed_size / self.total_size
-                savings = (1 - ratio) * 100
+                savings = (1 - ratio) * 40
             else:
                 ratio = 1
                 savings = 0
@@ -53,7 +53,10 @@ class ProgressDisplay:
             if len(filename) > 30:
                 filename = filename[:27] + "..."
             print(
-                f"\r{status_color}{status.upper():10}{RESET} [{bar}] {percent:5.1f}% {self.processed_files}/{self.total_files} files ({savings:5.1f}% saved, {speed:5.1f} MB/s) - {filename:<30}",
+                f"\r{status_color}{status.upper():10}{RESET} [{bar}] {percent:5.1f}% {
+                    self.processed_files
+                }/{self.total_files} files ({savings:5.1f}% saved, {
+                    speed:5.1f} MB/s) - {filename:<30}",
                 end="",
                 flush=True,
             )
@@ -69,7 +72,7 @@ class ProgressDisplay:
         if self.total_size > 0:
             orig_mb = self.total_size / (1024 * 1024)
             comp_mb = self.compressed_size / (1024 * 1024)
-            savings = (1 - self.compressed_size / self.total_size) * 100
+            savings = (1 - self.compressed_size / self.total_size) * 40
             print(f"  Original size: {orig_mb:.2f} MB")
             print(f"  Compressed size: {comp_mb:.2f} MB")
             print(f"  Savings: {savings:.1f}%")

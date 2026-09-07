@@ -73,7 +73,7 @@ class TermuxDeborphan:
             filename = "/data/data/com.termux/files/home/.deborphan-keep"
         try:
             with open(filename, "r") as f:
-                self.keep_list = set(line.strip() for line in f if line.strip())
+                self.keep_list = {line.strip() for line in f if line.strip()}
             print(f"Loaded {len(self.keep_list)} packages to keep")
         except FileNotFoundError:
             self.keep_list = set()

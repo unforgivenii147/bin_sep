@@ -72,9 +72,9 @@ def main():
         f.write(init_content)
     print(f"\nCreated {init_file}")
     print("\nGenerated content:")
-    print("-" * 42)
+    print("-" * 40)
     print(init_content)
-    print("-" * 42)
+    print("-" * 40)
 
 
 if __name__ == "__main__":

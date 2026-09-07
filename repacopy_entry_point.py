@@ -101,7 +101,7 @@ def find_file_in_paths(
             "scripts/": lambda p: p,
             "data/": lambda p: p,
         }
-        for prefix, _transform in data_mappings.items():
+        for prefix in data_mappings:
             if data_subpath.startswith(prefix):
                 subpath = data_subpath[len(prefix) :]
                 for base_path in search_paths:
@@ -214,9 +214,9 @@ def main():
             except Exception as e:
                 logger.error(f"Exception processing {package_name}: {e}")
                 results.append((package_name, False, str(e)))
-    print("\n" + "=" * 42)
+    print("\n" + "=" * 40)
     print("SUMMARY")
-    print("-" * 42)
+    print("-" * 40)
     successful = [r for r in results if r[1]]
     failed = [r for r in results if not r[1]]
     print(f"\n✅ Successfully processed: {len(successful)} packages")
@@ -227,7 +227,7 @@ def main():
         for pkg_name, _, msg in failed:
             print(f"  - {pkg_name}: {msg}")
     print(f"\n📁 Packages copied to: {Path.home() / 'tmp' / 'packages'}")
-    print("-" * 42)
+    print("-" * 40)
 
 
 if __name__ == "__main__":

@@ -48,7 +48,7 @@ def parse_repl_block(block):
     in_code = False
     for line in lines:
         stripped = line.strip()
-        if stripped.startswith(">>>") or stripped.startswith("..."):
+        if stripped.startswith((">>>", "...")):
             code = stripped[3:].strip()
             result_lines.append(code)
             in_code = True

@@ -204,7 +204,7 @@ def process_files(
         for future in as_completed(futures):
             completed += 1
             filepath, success, message, orig_size, space_freed = future.result()
-            pct = completed / len(files) * 100
+            pct = completed / len(files) * 40
             print(f"[{pct:5.1f}%] {completed}/{len(files)}", end="\r", flush=True)
             if success:
                 total_success += 1
@@ -217,7 +217,7 @@ def process_files(
                 status = "✗"
             rel_path = filepath.relative_to(root_dir)
             print(f"\n{status} {rel_path}: {message}")
-    print(f"\n{'─' * 42}")
+    print(f"\n{'─' * 40}")
     print(f"Total successful: {total_success}")
     print(f"Total failed: {total_failed}")
     if compress and total_original_size > 0:

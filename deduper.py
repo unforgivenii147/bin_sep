@@ -464,7 +464,7 @@ def main() -> None:
         sys.exit(2)
     logger.remove()
     logger.add(sys.stderr, level=args.log_level.upper())
-    base = Path(".").resolve()
+    base = Path.cwd()
     files = collect_python_files(base)
     if not files:
         logger.info("No Python files found.")

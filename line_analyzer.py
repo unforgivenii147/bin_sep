@@ -12,7 +12,7 @@ def get_python_files(directory: Path) -> list[Path]:
 def read_lines(file_path: Path) -> list[str]:
     try:
         with open(file_path, "r", encoding="utf-8") as f:
-            return [line.rstrip("\n") for line in f.readlines()]
+            return [line.rstrip("\n") for line in f]
     except Exception as e:
         print(f"Warning: Could not read {file_path}: {e}", file=sys.stderr)
         return []

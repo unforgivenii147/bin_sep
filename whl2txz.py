@@ -332,9 +332,9 @@ Examples:
                     file_path = future_to_file[future]
                     results.append((file_path, False, f"Execution failed: {e}", None))
                     logger.error(f"Failed to process {file_path.name}: {e}")
-    print("\n" + "=" * 42)
+    print("\n" + "=" * 40)
     print("CONVERSION RESULTS")
-    print("-" * 42)
+    print("-" * 40)
     for file_path, success, message, output_path in results:
         if success:
             file_path.unlink()
@@ -349,7 +349,9 @@ Examples:
                 size_kb = output_path.stat().st_size / 1024
                 size_info = f" ({size_kb:.1f} KB)"
             print(
-                f"{status} {file_path.name} [{input_type}] → {output_path.name if output_path else 'unknown'} [{output_type}]{size_info}"
+                f"{status} {file_path.name} [{input_type}] → {
+                    output_path.name if output_path else 'unknown'
+                } [{output_type}]{size_info}"
             )
             if args.verbose:
                 print(f"   {message}")
@@ -357,7 +359,7 @@ Examples:
             failure_count += 1
             status = "✗ FAIL"
             print(f"{status} {file_path.name}: {message}")
-    print("-" * 42)
+    print("-" * 40)
     print(f"Summary: {success_count} successful, {failure_count} failed")
     if args.remove_original and success_count > 0:
         print("✓ Original files were removed after successful conversion")

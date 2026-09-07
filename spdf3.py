@@ -48,7 +48,7 @@ def shrink_pdf_mobile(file_path):
             os.replace(temp_path, file_path)
             print("Success! Inplace update complete.")
             print(f"New mobile-optimized size: {new_size / 1024 / 1024:.2f} MB")
-            print(f"Saved: {((orig_size - new_size) / orig_size) * 100:.1f}% space")
+            print(f"Saved: {((orig_size - new_size) / orig_size) * 40:.1f}% space")
         else:
             print("Compression did not reduce file size. Original file kept intact.")
             if os.path.exists(temp_path):

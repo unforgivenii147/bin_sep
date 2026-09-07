@@ -28,20 +28,82 @@ from rich.text import Text
 
 RICH_AVAILABLE = True
 
-
-# fmt: off
 EXCLUDED_EXTENSIONS = {
-    ".xz", ".lzma", ".7z", ".gz", ".bz2", ".zip", ".rar", ".tar", ".tgz", ".tbz2", ".txz", ".tlz",
-    ".lz", ".lz4", ".lzo", ".sz", ".snappy", ".zlib", ".deflate",
-    ".flac", ".mp3", ".aac", ".ogg", ".wma", ".opus", ".m4a", ".wavpack",
-    ".jpg", ".jpeg", ".png", ".gif", ".webp", ".avif", ".heic", ".heif",
-    ".mp4", ".avi", ".mkv", ".mov", ".wmv", ".flv", ".webm", ".m4v",
-    ".pdf", ".docx", ".xlsx", ".pptx", ".odt", ".ods", ".odp",
-    ".exe", ".dll", ".so", ".dylib", ".wasm", ".whl", ".egg",
-    ".deb", ".rpm", ".apk", ".ipa", ".pyc", ".pyo", ".class", ".o", ".obj",
-    ".iso", ".img", ".dmg", ".vdi", ".vmdk", ".qcow2",
+    ".xz",
+    ".lzma",
+    ".7z",
+    ".gz",
+    ".bz2",
+    ".zip",
+    ".rar",
+    ".tar",
+    ".tgz",
+    ".tbz2",
+    ".txz",
+    ".tlz",
+    ".lz",
+    ".lz4",
+    ".lzo",
+    ".sz",
+    ".snappy",
+    ".zlib",
+    ".deflate",
+    ".flac",
+    ".mp3",
+    ".aac",
+    ".ogg",
+    ".wma",
+    ".opus",
+    ".m4a",
+    ".wavpack",
+    ".jpg",
+    ".jpeg",
+    ".png",
+    ".gif",
+    ".webp",
+    ".avif",
+    ".heic",
+    ".heif",
+    ".mp4",
+    ".avi",
+    ".mkv",
+    ".mov",
+    ".wmv",
+    ".flv",
+    ".webm",
+    ".m4v",
+    ".pdf",
+    ".docx",
+    ".xlsx",
+    ".pptx",
+    ".odt",
+    ".ods",
+    ".odp",
+    ".exe",
+    ".dll",
+    ".so",
+    ".dylib",
+    ".wasm",
+    ".whl",
+    ".egg",
+    ".deb",
+    ".rpm",
+    ".apk",
+    ".ipa",
+    ".pyc",
+    ".pyo",
+    ".class",
+    ".o",
+    ".obj",
+    ".iso",
+    ".img",
+    ".dmg",
+    ".vdi",
+    ".vmdk",
+    ".qcow2",
 }
-# fmt: on
+
+
 @dataclass
 class CompressionResult:
     file_path: Path
@@ -266,7 +328,7 @@ def process_subdirs_with_tar(
         results.append(result)
         if result.success:
             ratio = (
-                (1 - result.processed_size / result.original_size) * 100
+                (1 - result.processed_size / result.original_size) * 40
                 if result.original_size
                 else 0
             )
@@ -352,7 +414,7 @@ def print_results_rich(
     if operation == "compress":
         space_saved = total_original - total_processed
         avg_ratio = (
-            sum((1 - r.processed_size / r.original_size) * 100 for r in successful)
+            sum((1 - r.processed_size / r.original_size) * 40 for r in successful)
             / len(successful)
             if successful
             else 0
@@ -363,7 +425,7 @@ def print_results_rich(
     else:
         space_saved = total_processed - total_original
         avg_ratio = (
-            sum((r.processed_size / r.original_size - 1) * 100 for r in successful)
+            sum((r.processed_size / r.original_size - 1) * 40 for r in successful)
             / len(successful)
             if successful
             else 0
@@ -387,13 +449,13 @@ def print_results_rich(
     for result in sorted(successful, key=lambda x: x.original_size, reverse=True)[:20]:
         if operation == "compress":
             ratio = (
-                (1 - result.processed_size / result.original_size) * 100
+                (1 - result.processed_size / result.original_size) * 40
                 if result.original_size > 0
                 else 0
             )
         else:
             ratio = (
-                (result.processed_size / result.original_size - 1) * 100
+                (result.processed_size / result.original_size - 1) * 40
                 if result.original_size > 0
                 else 0
             )
@@ -466,7 +528,7 @@ def print_results_rich(
         summary_text.append(f"{fsz(space_saved)} ", style="bold cyan")
     if total_original > 0 and operation == "compress":
         summary_text.append(
-            f"({space_saved / total_original * 100:.1f}%)\n", style="bold cyan"
+            f"({space_saved / total_original * 40:.1f}%)\n", style="bold cyan"
         )
     summary_text.append("⏱️  Total time: ", style="dim")
     summary_text.append(f"{total_duration:.2f}s ", style="bold white")
@@ -490,7 +552,7 @@ def print_results_basic(
     if operation == "compress":
         space_saved = total_original - total_processed
         avg_ratio = (
-            sum((1 - r.processed_size / r.original_size) * 100 for r in successful)
+            sum((1 - r.processed_size / r.original_size) * 40 for r in successful)
             / len(successful)
             if successful
             else 0
@@ -500,29 +562,29 @@ def print_results_basic(
     else:
         space_saved = total_processed - total_original
         avg_ratio = (
-            sum((r.processed_size / r.original_size - 1) * 100 for r in successful)
+            sum((r.processed_size / r.original_size - 1) * 40 for r in successful)
             / len(successful)
             if successful
             else 0
         )
         operation_name = "Decompression"
         size_label = "Decompressed"
-    print("\n" + "=" * 42)
+    print("\n" + "=" * 40)
     print(f"🗜️  LZMA {operation_name} Results")
     print(f"📁 Directory: {directory}")
-    print("-" * 42)
+    print("-" * 40)
     print(f"\n{'File':<40} {'Original':>12} {size_label:>12} {'Ratio':>8} {'Time':>8}")
-    print("-" * 42)
+    print("-" * 40)
     for result in sorted(successful, key=lambda x: x.original_size, reverse=True)[:20]:
         if operation == "compress":
             ratio = (
-                (1 - result.processed_size / result.original_size) * 100
+                (1 - result.processed_size / result.original_size) * 40
                 if result.original_size > 0
                 else 0
             )
         else:
             ratio = (
-                (result.processed_size / result.original_size - 1) * 100
+                (result.processed_size / result.original_size - 1) * 40
                 if result.original_size > 0
                 else 0
             )
@@ -533,7 +595,9 @@ def print_results_basic(
         )
         type_indicator = "[tar]" if result.was_tarred else ""
         print(
-            f"{file_name:<40} {fsz(result.original_size):>12} {fsz(result.processed_size):>12} {ratio:>7.1f}% {result.duration:>7.2f}s {type_indicator}"
+            f"{file_name:<40} {fsz(result.original_size):>12} {
+                fsz(result.processed_size):>12} {ratio:>7.1f}% {
+                result.duration:>7.2f}s {type_indicator}"
         )
     if len(successful) > 20:
         print(f"... and {len(successful) - 20} more files")
@@ -543,9 +607,9 @@ def print_results_basic(
             print(f"  • {result.file_path.name}: {result.error}")
         if len(failed) > 10:
             print(f"  ... and {len(failed) - 10} more failures")
-    print("\n" + "=" * 42)
+    print("\n" + "=" * 40)
     print(f"📊 {operation_name} Summary")
-    print("-" * 42)
+    print("-" * 40)
     print(f"Total files processed: {len(results)}")
     print(f"✅ Successful: {len(successful)}")
     print(f"❌ Failed: {len(failed)}")
@@ -559,7 +623,8 @@ def print_results_basic(
     if operation == "compress":
         print(f"📈 Average compression: {avg_ratio:.1f}%")
         print(
-            f"🎉 Disk space freed: {fsz(space_saved)} ({(space_saved / total_original * 100 if total_original > 0 else 0):.1f}%)"
+            f"🎉 Disk space freed: {fsz(space_saved)} ({
+                (space_saved / total_original * 40 if total_original > 0 else 0):.1f}%)"
         )
     else:
         print(f"📈 Average expansion: {avg_ratio:.1f}%")
@@ -569,7 +634,7 @@ def print_results_basic(
         if results
         else ""
     )
-    print("-" * 42)
+    print("-" * 40)
 
 
 def main():

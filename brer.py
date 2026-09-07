@@ -126,7 +126,7 @@ def compress_tar_to_br(tar_path: Path, br_path: Path) -> bool:
                 return False
             if br_size < tar_size:
                 tar_path.unlink()
-                reduction = (tar_size - br_size) / tar_size * 100
+                reduction = (tar_size - br_size) / tar_size * 40
                 print(
                     f"  ✓ Compressed archive: {reduction:.1f}% saved ({fsz(tar_size)} → {fsz(br_size)})"
                 )
@@ -189,7 +189,7 @@ def compress_file(path: Path) -> tuple[bool, int, int]:
                 return False, 0, 0
             if compressed_size < original_size:
                 path.unlink()
-                reduction = (original_size - compressed_size) / original_size * 100
+                reduction = (original_size - compressed_size) / original_size * 40
                 print(
                     f"  ✓ {path.name}: {reduction:.1f}% saved ({fsz(original_size)} → {fsz(compressed_size)})"
                 )
@@ -282,13 +282,13 @@ async def process_compress() -> None:
             total_compressed += comp_size
     if successful > 0:
         savings = total_original - total_compressed
-        savings_percent = savings / total_original * 100
-        print(f"\n{'=' * 42}")
+        savings_percent = savings / total_original * 40
+        print(f"\n{'=' * 40}")
         print(f"✅ Compressed {successful}/{len(files_to_compress)} files")
         print(f"📊 Original size:  {fsz(total_original)}")
         print(f"📦 Compressed size: {fsz(total_compressed)}")
         print(f"💾 Space saved:    {fsz(savings)} ({savings_percent:.1f}%)")
-        print(f"{'=' * 42}")
+        print(f"{'=' * 40}")
     elif files_to_compress:
         print("\n❌ No files were successfully compressed")
 
@@ -346,11 +346,11 @@ async def process_decompress() -> None:
             if out_path.exists():
                 total_decompressed += out_path.stat().st_size
     if successful > 0:
-        print(f"\n{'=' * 42}")
+        print(f"\n{'=' * 40}")
         print(f"✅ Decompressed {successful}/{len(files_to_decompress)} files")
         print(f"📦 Compressed size:   {fsz(total_original)}")
         print(f"📊 Decompressed size: {fsz(total_decompressed)}")
-        print(f"{'=' * 42}")
+        print(f"{'=' * 40}")
     elif files_to_decompress:
         print("\n❌ No files were successfully decompressed")
 

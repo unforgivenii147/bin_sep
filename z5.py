@@ -126,8 +126,8 @@ class OperationResult:
         if self.original_size == 0:
             return 0.0
         if self.operation == "compress":
-            return (1 - self.processed_size / self.original_size) * 100
-        return (self.processed_size / self.original_size - 1) * 100
+            return (1 - self.processed_size / self.original_size) * 40
+        return (self.processed_size / self.original_size - 1) * 40
 
 
 def compress_file(
@@ -234,8 +234,7 @@ def get_files(
     def _walker(root_dir):
         from fastwalk import walk_files
 
-        for pth in walk_files(root_dir):
-            yield pth
+        yield from walk_files(root_dir)
 
     walker = _walker(root)
     for p in walker:
@@ -296,7 +295,7 @@ def print_summary(results: list[OperationResult], root: Path, operation: str):
             f"Processed Size: {fsz(total_proc)}\n",
             ("Ratio: ", "dim"),
             (
-                f"{((1 - total_proc / total_orig) * 100 if total_orig > 0 else 0):.1f}%\n",
+                f"{((1 - total_proc / total_orig) * 40 if total_orig > 0 else 0):.1f}%\n",
                 "bold green",
             ),
             (f"Time: {total_time:.2f}s", "dim"),

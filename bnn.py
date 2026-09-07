@@ -108,7 +108,7 @@ def process_file_chunked(
                 stats.replacements = total_replacements
             except Exception as e:
                 temp_path.unlink()
-                raise e
+                raise
             temp_path.chmod(filepath.stat().st_mode)
         stats.new_size = temp_path.stat().st_size
         shutil.move(str(temp_path), str(filepath))
@@ -136,10 +136,10 @@ def main() -> int:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  %(prog)s                              # Process current directory recursively
-  %(prog)s file.txt                     # Process single file
-  %(prog)s dir1 dir2 file.txt          # Process multiple paths
-  %(prog)s --workers 8 --chunk-size 2M dir/  # Custom worker count and chunk size
+  %(prog)s
+  %(prog)s file.txt
+  %(prog)s dir1 dir2 file.txt
+  %(prog)s --workers 8 --chunk-size 2M dir/
         """,
     )
     parser.add_argument(
@@ -195,9 +195,9 @@ Examples:
     results = Parallel(n_jobs=args.workers, verbose=0)(
         delayed(process_file_chunked)(filepath, chunk_size) for filepath in files
     )
-    print("\n" + "=" * 70)
+    print("\n" + "=" * 40)
     print("PROCESSING RESULTS")
-    print("=" * 70)
+    print("=" * 40)
     successful = 0
     total_replacements = 0
     total_size_change = 0
@@ -208,13 +208,13 @@ Examples:
             total_replacements += stats.replacements
             total_size_change += stats.new_size - stats.original_size
     failed = len(results) - successful
-    print("=" * 70)
+    print("=" * 40)
     print(
         f"Summary: {successful} succeeded, {failed} failed out of {len(results)} files"
     )
     print(f"Total replacements: {total_replacements}")
     print(f"Total size change: {total_size_change:+d} bytes")
-    print("=" * 70 + "\n")
+    print("=" * 40 + "\n")
     return 0 if failed == 0 else 1
 
 

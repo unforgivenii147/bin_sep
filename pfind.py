@@ -129,8 +129,7 @@ def search(pattern, root_dirs=None, num_workers=None):
     work_items = [(item, pattern) for item in items]
     with Pool(num_workers) as pool:
         for results in pool.imap_unordered(process_path, work_items, chunksize=100):
-            for result in results:
-                yield result
+            yield from results
 
 
 def main():

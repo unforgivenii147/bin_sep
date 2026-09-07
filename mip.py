@@ -70,7 +70,9 @@ def main() -> None:
                     path.unlink()
                 elif v_installed > v_wheel:
                     print(
-                        f"🗑️  Installed version ({installed_version}) is newer than wheel ({pkg_version}), deleting {path.name}"
+                        f"🗑️  Installed version ({
+                            installed_version
+                        }) is newer than wheel ({pkg_version}), deleting {path.name}"
                     )
                     path.unlink()
 

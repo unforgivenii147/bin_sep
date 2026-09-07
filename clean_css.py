@@ -1,334 +1,211 @@
 #!/data/data/com.termux/files/home/.local/bin/python
+"""
+Remove CSS comments using Tree-sitter.
+
+Requirements:
+    pip install tree-sitter tree-sitter-css
+
+Usage:
+    python remove_css_comments.py
+    python remove_css_comments.py styles/ reset.css theme/site.css
+
+With no input paths, recursively processes .css files under the current
+directory. Changed files are updated in place.
+"""
 
 from __future__ import annotations
 
-import argparse
-import contextlib
-import multiprocessing as mp
 import os
-import shutil
 import sys
-import tempfile
-from dataclasses import dataclass
+from collections.abc import Iterable, Iterator
+from multiprocessing import Pool
 from pathlib import Path
-from typing import Iterator
 
-import tree_sitter_css
 from tree_sitter import Language, Parser
-
-DEFAULT_WORKERS = 8
-CSS_SUFFIXES = {".css"}
+import tree_sitter_css as tscss
 
 
-CSS_LANGUAGE = Language(tree_sitter_css.language())
+WORKERS = 8
+CSS_EXTENSION = ".css"
 
 
-def create_parser() -> Parser:
-    parser = Parser(CSS_LANGUAGE)
+def make_parser() -> Parser:
+
+    try:
+        language = Language(tscss.language())
+    except TypeError:
+        language = tscss.language()
+
+    parser = Parser()
+
+    try:
+        parser.language = language
+    except AttributeError:
+        parser.set_language(language)
+
     return parser
 
 
-_PARSER: Parser | None = None
+def is_css_file(path: Path) -> bool:
+
+    return path.is_file() and path.suffix.lower() == CSS_EXTENSION
 
 
-def worker_init() -> None:
-    global _PARSER
-    _PARSER = create_parser()
+def iter_css_files(inputs: Iterable[str]) -> Iterator[Path]:
 
-
-@dataclass(slots=True, frozen=True)
-class ProcessResult:
-    path: str
-    comments_removed: int
-    changed: bool
-    error: str | None = None
-
-
-def iter_css_files(inputs: list[Path]) -> Iterator[Path]:
     seen: set[Path] = set()
 
-    for input_path in inputs:
-        try:
-            path = input_path.resolve()
-        except OSError as exc:
-            print(
-                f"warning: cannot resolve {input_path}: {exc}",
-                file=sys.stderr,
-            )
-            continue
-
-        if path.is_file():
-            if path.suffix.lower() in CSS_SUFFIXES and path not in seen:
-                seen.add(path)
-                yield path
-            continue
-
-        if not path.is_dir():
-            print(
-                f"warning: not a file or directory: {input_path}",
-                file=sys.stderr,
-            )
-            continue
+    for raw_input in inputs:
+        path = Path(raw_input)
 
         try:
-            for candidate in path.rglob("*"):
-                if not candidate.is_file():
-                    continue
+            if path.is_symlink():
+                print(f"warning: skipping symlink: {path}", file=sys.stderr)
+                continue
 
-                if candidate.suffix.lower() not in CSS_SUFFIXES:
+            if path.is_file():
+                candidates: Iterable[Path] = (path,)
+            elif path.is_dir():
+                candidates = (
+                    child
+                    for child in path.rglob("*")
+                    if not child.is_symlink() and is_css_file(child)
+                )
+            else:
+                print(f"warning: path not found: {path}", file=sys.stderr)
+                continue
+
+            for candidate in candidates:
+                if not is_css_file(candidate):
                     continue
 
                 try:
-                    resolved = candidate.resolve()
+                    identity = candidate.resolve()
                 except OSError:
+                    identity = candidate.absolute()
+
+                if identity in seen:
                     continue
 
-                if resolved in seen:
-                    continue
-
-                seen.add(resolved)
-                yield resolved
+                seen.add(identity)
+                yield candidate
 
         except OSError as exc:
-            print(
-                f"warning: cannot scan {input_path}: {exc}",
-                file=sys.stderr,
-            )
+            print(f"warning: cannot scan {path}: {exc}", file=sys.stderr)
 
 
-def find_comment_ranges(
-    source: bytes,
-) -> list[tuple[int, int]]:
-    global _PARSER
+def collect_comment_ranges(node, ranges: list[tuple[int, int]]) -> None:
 
-    if _PARSER is None:
-        _PARSER = create_parser()
+    if node.type == "comment":
+        ranges.append((node.start_byte, node.end_byte))
+        return
 
-    tree = _PARSER.parse(source)
-
-    ranges: list[tuple[int, int]] = []
-
-    cursor = tree.walk()
-
-    visited_children = False
-
-    while True:
-        node = cursor.node
-
-        if node.type == "comment":
-            ranges.append((node.start_byte, node.end_byte))
-
-        if not visited_children and cursor.goto_first_child():
-            visited_children = False
-            continue
-
-        if cursor.goto_next_sibling():
-            visited_children = False
-            continue
-
-        while True:
-            if not cursor.goto_parent():
-                return ranges
-
-            if cursor.goto_next_sibling():
-                visited_children = False
-                break
-
-        continue
+    for child in node.children:
+        collect_comment_ranges(child, ranges)
 
 
-def remove_ranges(
-    source: bytes,
-    ranges: list[tuple[int, int]],
-) -> bytes:
-    if not ranges:
-        return source
+def remove_comment_ranges(source: bytes, ranges: list[tuple[int, int]]) -> bytes:
 
-    removed_bytes = sum(end - start for start, end in ranges)
-    output = bytearray(len(source) - removed_bytes)
-
-    source_pos = 0
-    output_pos = 0
+    output = bytearray()
+    previous_end = 0
 
     for start, end in ranges:
-        chunk = source[source_pos:start]
-        output[output_pos : output_pos + len(chunk)] = chunk
-        output_pos += len(chunk)
-        source_pos = end
+        output.extend(source[previous_end:start])
 
-    tail = source[source_pos:]
-    output[output_pos : output_pos + len(tail)] = tail
+        output.extend(
+            byte for byte in source[start:end] if byte in (ord("\n"), ord("\r"))
+        )
 
+        previous_end = end
+
+    output.extend(source[previous_end:])
     return bytes(output)
 
 
-def atomic_replace(path: Path, data: bytes) -> None:
-    directory = path.parent
+def write_in_place(path: Path, content: bytes) -> None:
 
-    fd, tmp_name = tempfile.mkstemp(
-        prefix=f".{path.name}.",
-        suffix=".tmp",
-        dir=directory,
-    )
-
-    tmp_path = Path(tmp_name)
+    original_stat = path.stat()
+    temporary = path.with_name(f".{path.name}.{os.getpid()}.tmp")
 
     try:
-        with os.fdopen(fd, "wb") as tmp:
-            tmp.write(data)
-            tmp.flush()
-            os.fsync(tmp.fileno())
+        with temporary.open("wb") as file:
+            file.write(content)
+            file.flush()
+            os.fsync(file.fileno())
 
-        with contextlib.suppress(OSError):
-            shutil.copymode(path, tmp_path)
-
-        os.replace(tmp_path, path)
+        os.chmod(temporary, original_stat.st_mode)
+        os.replace(temporary, path)
 
     except BaseException:
-        with contextlib.suppress(OSError):
-            tmp_path.unlink(missing_ok=True)
+        try:
+            temporary.unlink(missing_ok=True)
+        except OSError:
+            pass
         raise
 
 
-def process_file(path_str: str) -> ProcessResult:
-    path = Path(path_str)
+def process_file(path_text: str) -> tuple[str, int, str | None]:
+
+    path = Path(path_text)
 
     try:
         source = path.read_bytes()
+        parser = make_parser()
+        tree = parser.parse(source)
 
-        ranges = find_comment_ranges(source)
+        comment_ranges: list[tuple[int, int]] = []
+        collect_comment_ranges(tree.root_node, comment_ranges)
 
-        if not ranges:
-            return ProcessResult(
-                path=str(path),
-                comments_removed=0,
-                changed=False,
-            )
+        if not comment_ranges:
+            return str(path), 0, None
 
-        cleaned = remove_ranges(source, ranges)
+        updated = remove_comment_ranges(source, comment_ranges)
 
-        if cleaned == source:
-            return ProcessResult(
-                path=str(path),
-                comments_removed=0,
-                changed=False,
-            )
+        if updated != source:
+            write_in_place(path, updated)
 
-        atomic_replace(path, cleaned)
+        return str(path), len(comment_ranges), None
 
-        return ProcessResult(
-            path=str(path),
-            comments_removed=len(ranges),
-            changed=True,
-        )
-
-    except (OSError, UnicodeError, ValueError, RuntimeError) as exc:
-        return ProcessResult(
-            path=str(path),
-            comments_removed=0,
-            changed=False,
-            error=f"{type(exc).__name__}: {exc}",
-        )
-
-    except Exception as exc:
-        return ProcessResult(
-            path=str(path),
-            comments_removed=0,
-            changed=False,
-            error=f"{type(exc).__name__}: {exc}",
-        )
-
-
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description="Strip CSS comments using tree-sitter.",
-    )
-
-    parser.add_argument(
-        "inputs",
-        nargs="*",
-        type=Path,
-        metavar="PATH",
-        help=(
-            "CSS files/directories to process. Directories are searched "
-            "recursively. Defaults to the current directory."
-        ),
-    )
-
-    parser.add_argument(
-        "-j",
-        "--workers",
-        type=int,
-        default=DEFAULT_WORKERS,
-        metavar="N",
-        help=f"number of worker processes (default: {DEFAULT_WORKERS})",
-    )
-
-    return parser.parse_args()
+    except (OSError, TypeError, ValueError) as exc:
+        return str(path), 0, str(exc)
 
 
 def main() -> int:
-    args = parse_args()
+    input_paths = sys.argv[1:] or ["."]
+    files = list(iter_css_files(input_paths))
 
-    if args.workers < 1:
-        print(
-            "error: --workers must be >= 1",
-            file=sys.stderr,
-        )
-        return 2
+    if not files:
+        print("No CSS files found.", file=sys.stderr)
+        return 0
 
-    inputs = args.inputs or [Path.cwd()]
-
-    files = iter_css_files(inputs)
-
-    total_files = 0
     changed_files = 0
-    total_comments = 0
-    failed_files = 0
+    total_comments_removed = 0
+    failures = 0
 
-    with mp.Pool(
-        processes=args.workers,
-        initializer=worker_init,
-    ) as pool:
-        for result in pool.imap_unordered(
-            process_file,
-            (str(path) for path in files),
-            chunksize=1,
-        ):
-            total_files += 1
+    with Pool(processes=WORKERS) as pool:
+        jobs = [pool.apply_async(process_file, (str(path),)) for path in files]
 
-            if result.error is not None:
-                failed_files += 1
-                print(
-                    f"{result.path}: ERROR: {result.error}",
-                    file=sys.stderr,
-                )
+        for job in jobs:
+            path, removed_count, error = job.get()
+
+            if error is not None:
+                failures += 1
+                print(f"error: {path}: {error}", file=sys.stderr)
                 continue
 
-            if result.changed:
+            if removed_count:
                 changed_files += 1
+                total_comments_removed += removed_count
+                print(f"{path}: removed {removed_count} comment(s)")
 
-            total_comments += result.comments_removed
+    print(
+        f"\nFiles scanned: {len(files)}"
+        f"\nChanged files: {changed_files}"
+        f"\nComments removed: {total_comments_removed}"
+    )
 
-            print(
-                f"{result.path}: "
-                f"{result.comments_removed} "
-                f"comment{'s' if result.comments_removed != 1 else ''} "
-                f"removed"
-            )
-
-    print()
-    print(f"Files processed: {total_files}")
-    print(f"Files changed:   {changed_files}")
-    print(f"Total comments removed: {total_comments}")
-
-    if failed_files:
-        print(f"Files failed:    {failed_files}", file=sys.stderr)
-        return 1
-
-    return 0
+    return 1 if failures else 0
 
 
 if __name__ == "__main__":
-    mp.freeze_support()
     raise SystemExit(main())

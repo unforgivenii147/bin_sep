@@ -191,7 +191,7 @@ elif not all(ord(char) < 128 for char in ARGS.domainName):
     sys.stderr.write("""Please install the "idna" Python package to query non-ASCII unicode domain names.
 Exiting.
 """)
-    exit(3)
+    sys.exit(3)
 else:
     domain_name = ARGS.domainName
 if ARGS.history or (
@@ -240,7 +240,7 @@ except Exception as e:
         "Error invoking API. The API key or the domain name is probably invalid.\n"
     )
     sys.stderr.write(f"Error text: {e!s}\n")
-    exit(1)
+    sys.exit(1)
 if ARGS.history:
     try:
         recordCount = result["recordsCount"]
@@ -249,14 +249,14 @@ if ARGS.history:
     if recordCount == 0:
         print("No records found. The output of the API was:")
         print(json.dumps(result, indent=1, sort_keys=False))
-        exit(2)
+        sys.exit(2)
 else:
     try:
         theRecord = result["WhoisRecord"]
     except:
         print("No records found. The output of the API was:")
         print(json.dumps(result, indent=1, sort_keys=False))
-        exit(2)
+        sys.exit(2)
     result["records"] = [theRecord.copy()]
 recordno = 0
 for whoisRecord in result["records"]:
@@ -307,4 +307,4 @@ for whoisRecord in result["records"]:
         print(json_str)
     else:
         print(highlight(json_str, JsonLexer(), TerminalFormatter()))
-exit(0)
+sys.exit(0)

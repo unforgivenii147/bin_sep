@@ -107,11 +107,11 @@ def main():
                 continue
         remaining_lines.append(line)
     urls_file.write_text("\n".join(remaining_lines) + "\n", encoding="utf-8")
-    print("\n" + "=" * 42)
+    print("\n" + "=" * 40)
     print("Download session completed!")
     print(f"✅ Successfully downloaded : {removed_count} files")
     print(f"❌ Remaining in urls.txt   : {len(download_tasks) - removed_count} files")
-    print("-" * 42)
+    print("-" * 40)
 
 
 if __name__ == "__main__":

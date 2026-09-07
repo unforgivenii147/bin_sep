@@ -104,7 +104,6 @@ def find_and_remove_files(root_dir: Path | None = None) -> dict:
         results.append(result)
     total_freed = sum((size for _, size in results))
     successful = sum((1 for _, size in results if size > 0))
-
     stats = {
         "files_removed": successful,
         "total_freed_bytes": total_freed,
@@ -115,14 +114,14 @@ def find_and_remove_files(root_dir: Path | None = None) -> dict:
 
 
 def print_report(stats: dict) -> None:
-    print("\n" + "=" * 42)
+    print("\n" + "=" * 40)
     print("REMOVAL REPORT")
-    print("-" * 42)
+    print("-" * 40)
     print(f"Files removed: {stats['files_removed']}")
     print(
         f"Total disk space freed: {stats['total_freed_human']} ({stats['total_freed_bytes']} bytes)"
     )
-    print("-" * 42)
+    print("-" * 40)
 
 
 def main():

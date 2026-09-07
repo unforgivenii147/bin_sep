@@ -57,11 +57,7 @@ def main():
     extensions = []
     repo_urls = []
     for arg in args:
-        if (
-            arg.startswith("http://")
-            or arg.startswith("https://")
-            or arg.endswith(".git")
-        ):
+        if arg.startswith(("http://", "https://")) or arg.endswith(".git"):
             repo_urls.append(arg)
         else:
             extensions.append(arg)

@@ -24,7 +24,7 @@ def process_file(path: str | Path) -> None:
         if not dz:
             print(f"✅ : {path.name} : (no change)")
             return
-        ratio = after / before * 100
+        ratio = after / before * 40
         print(f"✅ : {path.name}", end=" | ")
         cprint(f"{ratio:.1f} %")
         return

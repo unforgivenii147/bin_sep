@@ -223,7 +223,7 @@ class FileSorter(LineProcessor):
         print(f"Input file: {input_path}")
         print(f"Output file: {output_path_obj}")
         print(f"Mode: {('DRY RUN' if self.dry_run else 'NORMAL')}")
-        print("-" * 42)
+        print("-" * 40)
         start_time = time.time()
         try:
             original_size = self.get_file_size(input_path)
@@ -269,7 +269,7 @@ class FileSorter(LineProcessor):
                 "after": fsz(after),
                 "duplicate_lines": unique_count if unique else 0,
                 "size_reduction": original_size - after if original_size > 0 else 0,
-                "size_reduction_pct": (original_size - after) / original_size * 100
+                "size_reduction_pct": (original_size - after) / original_size * 40
                 if original_size > 0
                 else 0,
                 "processing_time": elapsed_time,
@@ -282,14 +282,14 @@ class FileSorter(LineProcessor):
             raise RuntimeError(msg)
 
     def print_stats(self, stats: dict) -> None:
-        print("\n" + "=" * 42)
+        print("\n" + "=" * 40)
         print("STATISTICS")
-        print("-" * 42)
+        print("-" * 40)
         print(f"Original lines: {stats['original_lines']:,}")
         print(f"Final lines: {stats['final_lines']:,}")
         if stats["duplicate_lines"] > 0:
             dup_pct = (
-                stats["duplicate_lines"] / stats["original_lines"] * 100
+                stats["duplicate_lines"] / stats["original_lines"] * 40
                 if stats["original_lines"] > 0
                 else 0
             )
@@ -306,7 +306,7 @@ class FileSorter(LineProcessor):
         print()
         print(f"Processing time: {stats['processing_time']:.2f} seconds")
         print(f"Speed: {stats['lines_per_second']:,.0f} lines/second")
-        print("-" * 42)
+        print("-" * 40)
 
     def save_report(self, stats: dict, report_file: str | None = None) -> None:
         if report_file is None:
@@ -340,7 +340,7 @@ class FileAnalyzer(LineProcessor):
             "total_lines": len(lines),
             "unique_lines": len(line_counts),
             "duplicate_lines": duplicate_count,
-            "duplicate_percentage": duplicate_count / len(lines) * 100 if lines else 0,
+            "duplicate_percentage": duplicate_count / len(lines) * 40 if lines else 0,
             "max_line_length": max_length,
             "avg_line_length": avg_length,
             "most_common_lines": most_common,
@@ -348,9 +348,9 @@ class FileAnalyzer(LineProcessor):
 
     def print_analysis(self, file_path: Path, encoding: str = "utf-8") -> None:
         analysis = self.analyze_file(file_path, encoding)
-        print(f"\n{'=' * 42}")
+        print(f"\n{'=' * 40}")
         print(f"File Analysis: {file_path.name}")
-        print(f"{'=' * 42}")
+        print(f"{'=' * 40}")
         print("\nBasic Statistics:")
         print(f"  Size: {analysis['size']}")
         print(f"  Total lines: {analysis['total_lines']:,}")
@@ -366,7 +366,7 @@ class FileAnalyzer(LineProcessor):
             for line, count in analysis["most_common_lines"]:
                 display_line = line[:47] + "..." if len(line) > 50 else line
                 print(f"  ({count}x) {display_line}")
-        print(f"{'=' * 42}\n")
+        print(f"{'=' * 40}\n")
 
 
 def main() -> None:

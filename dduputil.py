@@ -424,7 +424,7 @@ def main() -> None:
         logger.add(sys.stderr, level="INFO")
     if not (args.move or args.copy):
         parser.error("one of --move or --copy required")
-    root = Path(".").resolve()
+    root = Path.cwd()
     logger.info("scanning for Python sources under {}", root)
     sources = list(iter_python_sources(root))
     logger.info("found {} candidate sources", len(sources))

@@ -1,4 +1,6 @@
 #!/data/data/com.termux/files/home/.local/bin/python
+from __future__ import annotations
+
 import sys
 from pathlib import Path
 
@@ -11,16 +13,13 @@ def sort_by_length(lines: list[str], reverse: bool = False) -> list[str]:
 
 if __name__ == "__main__":
     args = sys.argv[1:]
-
     reverse = False
     if "-r" in args:
         reverse = True
         args.remove("-r")
-
     if not args:
         print("Usage: python script.py [-r] <file_path>")
         sys.exit(1)
-
     path = Path(args[0].strip())
     lines = read_lines(path, ke=True)
     sorted_lines = sort_by_length(lines, reverse=reverse)

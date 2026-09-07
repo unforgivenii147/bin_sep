@@ -8,8 +8,8 @@ import time
 from dataclasses import asdict, dataclass
 from multiprocessing import Pool, cpu_count
 from pathlib import Path
-from subprocess import CalledProcessError, run
 from typing import Any
+
 from dh import get_installed_packages
 
 
@@ -151,9 +151,9 @@ def _is_upgradable(installed: str, latest: str) -> bool:
 
 
 def main() -> None:
-    logger.info("=" * 42)
+    logger.info("=" * 40)
     logger.info("🚀 PyPI Package Update Checker (Multiprocessing Enabled)")
-    logger.info("=" * 42)
+    logger.info("=" * 40)
     state_manager = PackageStateManager()
     installed = get_installed_packages()
     all_package_names = [name for name, _ in installed]
@@ -189,12 +189,12 @@ def main() -> None:
         logger.info(f"📝 {len(upgradable)} upgradable packages saved to {req_file}")
     else:
         logger.info("✓ All packages are up-to-date!")
-    logger.info("=" * 42)
+    logger.info("=" * 40)
     logger.info("📈 SUMMARY")
     logger.info(f"   Total packages: {len(state_manager.state)}")
     logger.info(f"   Upgradable: {len(upgradable)}")
     logger.info(f"   Up-to-date: {len(state_manager.state) - len(upgradable)}")
-    logger.info("=" * 42)
+    logger.info("=" * 40)
 
 
 if __name__ == "__main__":

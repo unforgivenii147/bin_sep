@@ -7,8 +7,6 @@ import os
 import shutil
 from pathlib import Path
 
-from dh import fsz
-
 
 def get_all_files_in_root_only(root_path: Path):
     files_info = []
@@ -55,9 +53,9 @@ def analyze_size_distribution(files_info):
 def organize_files_in_root(
     root_path: str = ".", target_folders: int = 4, max_get_size_mb=None
 ) -> None:
-    print("-" * 42)
+    print("-" * 40)
     print("File Organization - Direct to Root Path (No Subdirectories)")
-    print("-" * 42)
+    print("-" * 40)
     root_path = Path(root_path).resolve()
     print(f"\nRoot directory: {root_path}")
     print("Mode: Files will be moved into organized folders in root path")
@@ -148,7 +146,7 @@ def organize_files_in_root(
         except Exception as e:
             print(f"  Error creating folder {folder_name}: {e}")
             error_count += len(folder_files)
-    print("\n" + "=" * 42)
+    print("\n" + "=" * 40)
     print("✓ Organization complete!")
     print(f"  Root directory: {root_path}")
     print(f"  Folders created: {len(created_folders)}")
@@ -157,7 +155,7 @@ def organize_files_in_root(
     print("\nCreated folders:")
     for folder in created_folders:
         print(f"  - {folder}")
-    print("-" * 42)
+    print("-" * 40)
 
 
 def main() -> None:

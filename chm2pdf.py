@@ -1,5 +1,4 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-
 from __future__ import annotations
 
 import html
@@ -61,7 +60,6 @@ def extract_html_content(chm_file):
         chm = pychm.CHMFile()
         if not chm.LoadCHM(str(chm_file)):
             raise Exception(f"Failed to load CHM file: {chm_file}")
-
         toc = chm.GetTopicsTree()
         if not toc:
             default_topic = chm.GetDefaultTopic()
@@ -76,7 +74,6 @@ def extract_html_content(chm_file):
                     raise Exception("No HTML content found in CHM file")
         else:
             return extract_topics_from_toc(chm, toc)
-
     except Exception as e:
         raise Exception(f"Error extracting HTML from CHM: {e}")
     finally:
@@ -97,15 +94,16 @@ def extract_single_topic(chm, topic_path):
 
 def extract_multiple_topics(chm, topics):
     combined_html = [
-        '<!DOCTYPE html><html><head><meta charset="utf-8"><style>'
-        "body { font-family: Arial, sans-serif; line-height: 1.6; margin: 2em; }"
-        "img { max-width: 100%; }"
-        "h1, h2, h3, h4 { color: #333; }"
-        "pre { background-color: #f5f5f5; padding: 1em; border-radius: 4px; }"
-        "code { background-color: #f5f5f5; padding: 0.2em 0.4em; border-radius: 3px; }"
-        "</style></head><body>"
+        (
+            '<!DOCTYPE html><html><head><meta charset="utf-8"><style>'
+            "body { font-family: Arial, sans-serif; line-height: 1.6; margin: 2em; }"
+            "img { max-width: 100%; }"
+            "h1, h2, h3, h4 { color: #333; }"
+            "pre { background-color: #f5f5f5; padding: 1em; border-radius: 4px; }"
+            "code { background-color: #f5f5f5; padding: 0.2em 0.4em; border-radius: 3px; }"
+            "</style></head><body>"
+        )
     ]
-
     for topic in topics:
         try:
             content = chm.RetrieveObject(chm.ResolveObject(topic))
@@ -119,33 +117,32 @@ def extract_multiple_topics(chm, topics):
                 )
         except Exception as e:
             print(f"Warning: Could not extract topic {topic}: {e}")
-
     combined_html.append("</body></html>")
     return "".join(combined_html)
 
 
 def extract_topics_from_toc(chm, toc):
     html_parts = [
-        '<!DOCTYPE html><html><head><meta charset="utf-8"><style>'
-        "body { font-family: Arial, sans-serif; line-height: 1.6; margin: 2em; }"
-        "img { max-width: 100%; }"
-        "h1, h2, h3, h4 { color: #333; }"
-        "pre { background-color: #f5f5f5; padding: 1em; border-radius: 4px; }"
-        "code { background-color: #f5f5f5; padding: 0.2em 0.4em; border-radius: 3px; }"
-        "</style></head><body>"
+        (
+            '<!DOCTYPE html><html><head><meta charset="utf-8"><style>'
+            "body { font-family: Arial, sans-serif; line-height: 1.6; margin: 2em; }"
+            "img { max-width: 100%; }"
+            "h1, h2, h3, h4 { color: #333; }"
+            "pre { background-color: #f5f5f5; padding: 1em; border-radius: 4px; }"
+            "code { background-color: #f5f5f5; padding: 0.2em 0.4em; border-radius: 3px; }"
+            "</style></head><body>"
+        )
     ]
 
     def process_toc_node(node, level=0):
         if hasattr(node, "GetTitle") and hasattr(node, "GetLocal"):
             title = node.GetTitle()
             local_path = node.GetLocal()
-
             if title and local_path:
                 heading_level = min(level + 1, 6)
                 html_parts.append(
                     f"<h{heading_level}>{html.escape(title)}</h{heading_level}>"
                 )
-
                 try:
                     content = chm.RetrieveObject(chm.ResolveObject(local_path))
                     if isinstance(content, bytes):
@@ -155,11 +152,9 @@ def extract_topics_from_toc(chm, toc):
                         html_parts.append(cleaned)
                 except Exception as e:
                     print(f"Warning: Could not extract topic {local_path}: {e}")
-
                 html_parts.append(
                     '<hr style="border: 1px solid #ccc; margin: 20px 0;">'
                 )
-
         if hasattr(node, "GetChildren"):
             for child in node.GetChildren():
                 process_toc_node(child, level + 1)
@@ -169,7 +164,6 @@ def extract_topics_from_toc(chm, toc):
             process_toc_node(topic)
     else:
         process_toc_node(toc)
-
     html_parts.append("</body></html>")
     return "".join(html_parts)
 
@@ -177,19 +171,16 @@ def extract_topics_from_toc(chm, toc):
 def clean_html(html_content):
     if not html_content:
         return ""
-
     html_content = re.sub(
         r"<script[^>]*>.*?</script>", "", html_content, flags=re.DOTALL | re.IGNORECASE
     )
     html_content = re.sub(
         r"<style[^>]*>.*?</style>", "", html_content, flags=re.DOTALL | re.IGNORECASE
     )
-
     parser = CHMHTMLParser()
     try:
         parser.feed(html_content)
         body_content = parser.get_content()
-
         body_content = re.sub(r"\n\s*\n", "\n\n", body_content)
         return body_content.strip()
     except Exception as e:
@@ -199,13 +190,10 @@ def clean_html(html_content):
 
 def convert_chm_to_pdf(input_path, output_path):
     print(f"Converting {input_path} to {output_path}...")
-
     print("Extracting HTML content from CHM...")
     html_content = extract_html_content(input_path)
-
     if not html_content:
         raise Exception("No content extracted from CHM file")
-
     with tempfile.NamedTemporaryFile(
         mode="w", suffix=".html", delete=False, encoding="utf-8"
     ) as temp_html:
@@ -220,38 +208,38 @@ def convert_chm_to_pdf(input_path, output_path):
         @bottom-center {{
             content: counter(page);
             font-size: 10px;
-            color: #666;
+            color:
         }}
     }}
     body {{
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
         line-height: 1.6;
         font-size: 11pt;
-        color: #333;
+        color:
         max-width: 100%;
     }}
     h1 {{
         font-size: 24pt;
-        color: #2c3e50;
-        border-bottom: 2px solid #3498db;
+        color:
+        border-bottom: 2px solid
         padding-bottom: 10px;
         margin-top: 30px;
     }}
     h2 {{
         font-size: 20pt;
-        color: #34495e;
-        border-bottom: 1px solid #bdc3c7;
+        color:
+        border-bottom: 1px solid
         padding-bottom: 8px;
         margin-top: 25px;
     }}
     h3 {{
         font-size: 16pt;
-        color: #555;
+        color:
         margin-top: 20px;
     }}
     h4 {{
         font-size: 14pt;
-        color: #666;
+        color:
         margin-top: 15px;
     }}
     img {{
@@ -260,8 +248,8 @@ def convert_chm_to_pdf(input_path, output_path):
         margin: 10px 0;
     }}
     pre {{
-        background-color: #f8f9fa;
-        border: 1px solid #dee2e6;
+        background-color:
+        border: 1px solid
         border-radius: 4px;
         padding: 15px;
         overflow-x: auto;
@@ -270,7 +258,7 @@ def convert_chm_to_pdf(input_path, output_path):
         line-height: 1.4;
     }}
     code {{
-        background-color: #f8f9fa;
+        background-color:
         padding: 2px 4px;
         border-radius: 3px;
         font-family: 'Courier New', monospace;
@@ -282,27 +270,27 @@ def convert_chm_to_pdf(input_path, output_path):
         margin: 15px 0;
     }}
     th, td {{
-        border: 1px solid #ddd;
+        border: 1px solid
         padding: 8px;
         text-align: left;
     }}
     th {{
-        background-color: #f2f2f2;
+        background-color:
         font-weight: bold;
     }}
     a {{
-        color: #3498db;
+        color:
         text-decoration: none;
     }}
     blockquote {{
-        border-left: 4px solid #3498db;
+        border-left: 4px solid
         margin: 15px 0;
         padding: 10px 20px;
-        background-color: #f8f9fa;
+        background-color:
     }}
     hr {{
         border: none;
-        border-top: 1px solid #ddd;
+        border-top: 1px solid
         margin: 20px 0;
     }}
 </style>
@@ -311,15 +299,12 @@ def convert_chm_to_pdf(input_path, output_path):
 {html_content}
 </body>
 </html>"""
-
         temp_html.write(full_html)
         temp_html_path = temp_html.name
-
     try:
         print("Converting HTML to PDF using WeasyPrint...")
         HTML(filename=temp_html_path).write_pdf(output_path)
         print(f"PDF successfully created: {output_path}")
-
     finally:
         if os.path.exists(temp_html_path):
             os.unlink(temp_html_path)
@@ -330,22 +315,16 @@ def main():
         print("Usage: python chm_to_pdf.py <input_file.chm>")
         print("Example: python chm_to_pdf.py documentation.chm")
         sys.exit(1)
-
     input_path = Path(sys.argv[1])
-
     if not input_path.exists():
         print(f"Error: Input file '{input_path}' does not exist")
         sys.exit(1)
-
     if input_path.suffix.lower() != ".chm":
         print(f"Error: Input file '{input_path}' is not a CHM file")
         sys.exit(1)
-
     output_path = input_path.with_suffix(".pdf")
-
     try:
         convert_chm_to_pdf(input_path, output_path)
-
     except Exception as e:
         print(f"Error during conversion: {e}")
         sys.exit(1)

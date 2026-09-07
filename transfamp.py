@@ -70,7 +70,7 @@ def main():
         return
     print(f"📚 Found {len(text_files)} file(s) to translate")
     print(f"🚀 Starting translation with {max_workers} parallel workers")
-    print("-" * 42)
+    print("-" * 40)
     start_time = time.time()
     successful = 0
     failed = 0
@@ -92,7 +92,7 @@ def main():
                 print(f"❌ Failed to process {file_path.name}: {e}")
                 failed += 1
     elapsed_time = time.time() - start_time
-    print("\n" + "=" * 42)
+    print("\n" + "=" * 40)
     print("✨ Translation complete!")
     print(f"   ✅ Successful: {successful} files")
     if failed > 0:

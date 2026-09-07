@@ -96,12 +96,12 @@ def main():
     logger.info("Analysis complete!")
     logger.info(f"Total words found: {total_words}")
     logger.info(f"Unique words found: {unique_words}")
-    print("\n" + "=" * 42)
+    print("\n" + "=" * 40)
     print("Top 10 Most Common Words:")
-    print("-" * 42)
+    print("-" * 40)
     for word, count in total_counter.most_common(10):
         print(f"{word:<20} {count:>8}")
-    print("-" * 42)
+    print("-" * 40)
     print(f"\nFull results saved to: {output_file.absolute()}")
 
 

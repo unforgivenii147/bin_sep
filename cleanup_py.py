@@ -135,12 +135,12 @@ def main():
                     )
                 else:
                     print(f"✓  {file_path.name:<30} (no changes)")
-    print("\n" + "=" * 42)
+    print("\n" + "=" * 40)
     print("🎉 Finished!")
     print(f"   Files processed : {processed}")
     print(f"   Comments removed: {total_comments}")
     print(f"   Docstrings removed: {total_docstrings}")
-    print("-" * 42)
+    print("-" * 40)
 
 
 if __name__ == "__main__":

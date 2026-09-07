@@ -221,7 +221,6 @@ if BeautifulSoup:
         if extraline:
             html = "\n\n".join(html.replace("\t", "    ").splitlines()) + "\n"
         return html
-
 else:
 
     def html_prettify(html: str, extraline: bool = False) -> str:
@@ -383,7 +382,7 @@ def main() -> None:
         sys.exit(1)
     if args.after and getoutput:
         print(getoutput(str(args.after)))
-    print(f"\n {'-' * 42} \n Files Processed: {list_of_files}.")
+    print(f"\n {'-' * 40} \n Files Processed: {list_of_files}.")
     print(
         f"Number of Files Processed:\n          {(len(list_of_files) if isinstance(list_of_files, tuple) else 1)}"
     )
@@ -391,6 +390,3 @@ def main() -> None:
 
 if __name__ in "__main__":
     raise SystemExit(main())
-
-
-# error[invalid-assignment]: Object of type `def prettify(self, encoding=None, formatter: str = "minimal", indent_width: int = 4) -> str` is not assignable to attribute `prettify` on type `<class 'BeautifulSoup'> & ~AlwaysFalsy`

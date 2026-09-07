@@ -77,7 +77,7 @@ def find_files_to_compress(
 def format_ratio(original: int, compressed: int) -> str:
     if original == 0:
         return "N/A"
-    ratio = (1 - compressed / original) * 100
+    ratio = (1 - compressed / original) * 40
     return f"{ratio:.1f}%"
 
 
@@ -115,9 +115,9 @@ Examples:
     )
     args = parser.parse_args()
     directories = [Path(d).resolve() for d in args.directories]
-    print("\n" + "=" * 42)
+    print("\n" + "=" * 40)
     print("🔍 GZIP Compression Tool (Maximum Compression - Level 9)".center(70))
-    print("-" * 42)
+    print("-" * 40)
     print("\n📂 Processing directories:")
     for d in directories:
         print(f"   • {d}")
@@ -135,11 +135,11 @@ Examples:
         print("\n✅ No files found to compress!")
         return
     print(f"📊 Found {len(files_to_compress)} file(s) to compress\n")
-    print("-" * 42)
+    print("-" * 40)
     print(
         f"{'File':<50} {'Original':>10} {'Compressed':>10} {'Ratio':>8} {'Status':>10}"
     )
-    print("-" * 42)
+    print("-" * 40)
     stats = CompressionStats()
     with ProcessPoolExecutor(max_workers=args.workers) as executor:
         future_to_file = {
@@ -159,7 +159,8 @@ Examples:
                 stats.add_success(orig_size, comp_size)
                 status_symbol = "✅"
                 print(
-                    f"{display_path:<50} {fsz(orig_size):>10} {fsz(comp_size):>10} {format_ratio(orig_size, comp_size):>8} {status_symbol:>10}"
+                    f"{display_path:<50} {fsz(orig_size):>10} {fsz(comp_size):>10} {
+                        format_ratio(orig_size, comp_size):>8} {status_symbol:>10}"
                 )
             else:
                 stats.add_failure()
@@ -170,9 +171,9 @@ Examples:
                 if error:
                     print(f"   ⚠ Error: {error}")
     elapsed_time = time.time() - start_time
-    print("\n" + "=" * 42)
+    print("\n" + "=" * 40)
     print("📊 COMPRESSION SUMMARY".center(70))
-    print("-" * 42)
+    print("-" * 40)
     print(f"  Total files processed:     {stats.total_files}")
     print(f"  Successfully compressed:   {stats.successful} ✅")
     print(f"  Failed compressions:       {stats.failed} ❌")
@@ -181,12 +182,12 @@ Examples:
     if stats.total_original_size > 0:
         overall_ratio = (
             1 - stats.total_compressed_size / stats.total_original_size
-        ) * 100
+        ) * 40
         space_saved = stats.total_original_size - stats.total_compressed_size
         print(f"  Overall compression ratio: {overall_ratio:.1f}%")
         print(f"  Space saved:               {fsz(space_saved)}")
     print(f"  Time elapsed:               {timedelta(seconds=int(elapsed_time))}")
-    print("-" * 42)
+    print("-" * 40)
 
 
 if __name__ == "__main__":

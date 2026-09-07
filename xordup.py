@@ -4,7 +4,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-from dh import cprint, mpf3
+from dh import cprint, mpf
 from xorhash import get_xorhash
 
 REMOVE = "-y" in sys.argv
@@ -24,7 +24,7 @@ def find_dups_optimized(root: Path):
                 paths_to_process.append(path)
     if not paths_to_process:
         return {}
-    results = mpf3(get_xorhash, paths_to_process)
+    results = mpf(get_xorhash, paths_to_process)
     for res in results:
         hash_result, path = res
         if hash_result is not None:
@@ -43,7 +43,7 @@ if __name__ == "__main__":
         for p in paths:
             print(" - ", p)
     if REMOVE:
-        for _, paths in dupes.items():
+        for paths in dupes.values():
             for p in paths[1:]:
                 Path(p).unlink()
     print(f"Found {len(dupes)} group(s) of dups")

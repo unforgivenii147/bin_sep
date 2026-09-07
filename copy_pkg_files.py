@@ -1,8 +1,11 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-import sys
-import shutil
+from __future__ import annotations
+
 import multiprocessing as mp
+import shutil
+import sys
 from pathlib import Path
+
 from loguru import logger
 
 
@@ -36,12 +39,10 @@ def copy_file(file_path_str, base_dir, dest_dir):
 
 
 def main():
-    base_dir = Path(".").resolve()
+    base_dir = Path.cwd()
     dest_dir = Path("~/tmp/packages").expanduser().resolve()
     dest_dir.mkdir(parents=True, exist_ok=True)
-
     clean_records()
-
     files_to_copy = []
     for pkg in sys.argv[1:]:
         pkg_name = pkg.replace("-", "_")
@@ -56,19 +57,16 @@ def main():
                         file_path = line.split(",")[0]
                         if file_path and not file_path.endswith(".pyc"):
                             files_to_copy.append(file_path)
-
     pool = mp.Pool(4)
     results = []
     for f in files_to_copy:
         res = pool.apply_async(copy_file, (f, base_dir, dest_dir))
         results.append(res)
-
     for res in results:
         try:
             res.get()
         except Exception as e:
             logger.error(f"Worker exception: {e}")
-
     pool.close()
     pool.join()
 

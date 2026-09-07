@@ -125,13 +125,11 @@ class SpaceStats:
             return 0, 0, 0
         saved = self.original_size - self.compressed_size
         ratio = (
-            self.compressed_size / self.original_size * 100
+            self.compressed_size / self.original_size * 40
             if self.original_size > 0
             else 0
         )
-        percent_saved = (
-            saved / self.original_size * 100 if self.original_size > 0 else 0
-        )
+        percent_saved = saved / self.original_size * 40 if self.original_size > 0 else 0
         return saved, ratio, percent_saved
 
 
@@ -356,7 +354,7 @@ def process_files(
     total_files = 0
     print(f"\n{'Compressing' if compress else 'Decompressing'} files...")
     print(f"Remove original files: {'Yes' if remove_original else 'No'}")
-    print("-" * 42)
+    print("-" * 40)
     files_list = list(file_generator)
     total_files = len(files_list)
     if total_files == 0:
@@ -407,7 +405,7 @@ def process_files(
                     result
                 )
             completed += 1
-            progress = int(completed / total_files * 42)
+            progress = int(completed / total_files * 40)
             bar = "█" * progress + "░" * (50 - progress)
             print(
                 f"\rProgress: [{bar}] {completed}/{total_files} files",
@@ -416,7 +414,7 @@ def process_files(
             )
             if not success:
                 failed.append((path, result[2] if len(result) > 2 else "Unknown error"))
-    print("\n" + "-" * 42)
+    print("\n" + "-" * 40)
     if compress and total_files > 0:
         saved, ratio, percent_saved = stats.get_savings()
         print("\n📊 Compression Statistics:")

@@ -1,122 +1,166 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
 
 import argparse
 import ast
-import io
-import tokenize
-from concurrent.futures import ProcessPoolExecutor
+import multiprocessing as mp
 from pathlib import Path
-
-from loguru import logger
-
-SKIP_DIRS = {".git", "__pycache__", ".ruff_cache", ".pytest_cache"}
+import libcst as cst
+from libcst import matchers as m
 
 
-def get_removal_zones(source: str):
-    tree = ast.parse(source)
-    zones = []
-    replacements = []
-    for node in ast.walk(tree):
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) and (
-            node.body
-            and isinstance(node.body[0], ast.Expr)
-            and isinstance(node.body[0].value, ast.Constant)
-            and isinstance(node.body[0].value.value, str)
-        ):
-            ds_node = node.body[0]
-            start_line, start_col = ds_node.lineno - 1, ds_node.col_offset
-            end_line, end_col = ds_node.end_lineno - 1, ds_node.end_col_offset
-            if len(node.body) == 1:
-                replacements.append(((start_line, start_col), "pass"))
-            else:
-                zones.append((start_line, start_col, end_line, end_col))
-    tokens = tokenize.generate_tokens(io.StringIO(source).readline)
-    for tok in tokens:
-        if tok.type == tokenize.COMMENT:
-            content = tok.string
-            start_line, start_col = tok.start
-            end_line, end_col = tok.end
-            if start_line == 1 and start_col == 0 and content.startswith("#!"):
-                continue
-            if "# fmt" in content or "# type" in content:
-                continue
-            zones.append((start_line, start_col, end_line, end_col))
-    return zones, replacements
+class CommentAndDocstringRemover(cst.CSTTransformer):
+    def __init__(self):
+        super().__init__()
+        self.comments_removed = 0
+        self.docstrings_removed = 0
 
+    def visit_Comment(self, node: cst.Comment) -> bool:
 
-def apply_cleaning(source: str, zones, replacements):
-    lines = source.splitlines(keepends=True)
-    for start_l, start_c, end_l, end_c in zones:
-        if start_l == end_l:
-            lines[start_l] = lines[start_l][:start_c] + lines[start_l][end_c:]
-        else:
-            lines[start_l] = lines[start_l][:start_c]
-            for l in range(start_l + 1, end_l):
-                lines[l] = ""
-            lines[end_l] = lines[end_l][end_c:]
-    for (line_idx, col_idx), text in replacements:
-        lines[line_idx] = lines[line_idx][:col_idx] + text + lines[line_idx][col_idx:]
-    return "".join(lines)
-
-
-def is_python_script(path: Path) -> bool:
-    if path.suffix == ".py":
         return True
-    try:
-        with path.open("r") as f:
-            first_line = f.readline()
-            return first_line.startswith("#!") and "python" in first_line.lower()
-    except Exception:
-        return False
+
+    def leave_Comment(
+        self, original_node: cst.Comment, updated_node: cst.Comment
+    ) -> cst.FlattenSentinel[cst.Comment] | cst.RemovalSentinel | cst.Comment:
+        self.comments_removed += 1
+        return cst.RemoveFromParent()
+
+    def _process_body_docstring(
+        self, body_node: cst.IndentedBlock
+    ) -> cst.IndentedBlock:
+        if not body_node.body:
+            return body_node
+
+        first_stmt = body_node.body[0]
+
+        if m.matches(
+            first_stmt, m.SimpleStatementLine(body=[m.Expr(value=m.SimpleString())])
+        ):
+            self.docstrings_removed += 1
+            remaining_stmts = list(body_node.body[1:])
+
+            if not remaining_stmts:
+                remaining_stmts = [cst.SimpleStatementLine(body=[cst.Pass()])]
+
+            return body_node.with_changes(body=remaining_stmts)
+
+        return body_node
+
+    def leave_FunctionDef(
+        self, original_node: cst.FunctionDef, updated_node: cst.FunctionDef
+    ) -> cst.FunctionDef:
+        if isinstance(updated_node.body, cst.IndentedBlock):
+            new_body = self._process_body_docstring(updated_node.body)
+            return updated_node.with_changes(body=new_body)
+        return updated_node
+
+    def leave_ClassDef(
+        self, original_node: cst.ClassDef, updated_node: cst.ClassDef
+    ) -> cst.ClassDef:
+        if isinstance(updated_node.body, cst.IndentedBlock):
+            new_body = self._process_body_docstring(updated_node.body)
+            return updated_node.with_changes(body=new_body)
+        return updated_node
 
 
-def process_file(args):
-    path, root = args
+def process_file(file_path: Path) -> tuple[Path, int, int, str | None]:
     try:
-        rel_path = path.relative_to(root)
-        source = path.read_text()
-        zones, replacements = get_removal_zones(source)
-        cleaned_code = apply_cleaning(source, zones, replacements)
-        ast.parse(cleaned_code)
-        removed_count = len(zones) + len(replacements)
-        if removed_count > 0:
-            path.write_text(cleaned_code)
-            logger.info(f"{rel_path}: removed {removed_count} elements")
-            return removed_count
-        return 0
+        source_text = file_path.read_text(encoding="utf-8")
+
+        try:
+            cst_tree = cst.parse_module(source_text)
+        except Exception as e:
+            return file_path, 0, 0, f"CST Parse Error: {e}"
+
+        lines = source_text.splitlines(keepends=True)
+        has_shebang = len(lines) > 0 and lines[0].startswith("#!")
+        shebang_line = lines[0] if has_shebang else ""
+
+        transformer = CommentAndDocstringRemover()
+        modified_tree = cst_tree.visit(transformer)
+        modified_code = modified_tree.code
+
+        if has_shebang and not modified_code.startswith("#!"):
+            modified_code = shebang_line + modified_code
+
+        c_count = transformer.comments_removed
+        d_count = transformer.docstrings_removed
+
+        if has_shebang and c_count > 0:
+            c_count -= 1
+
+        try:
+            ast.parse(modified_code)
+        except SyntaxError as e:
+            return file_path, 0, 0, f"Resulting code failed AST validation: {e}"
+
+        if c_count > 0 or d_count > 0:
+            file_path.write_text(modified_code, encoding="utf-8")
+
+        return file_path, c_count, d_count, None
+
     except Exception as e:
-        logger.error(f"Failed {path}: {e}")
-        return 0
+        return file_path, 0, 0, f"Unexpected error: {e}"
+
+
+def collect_files(inputs: list[str]) -> list[Path]:
+    files = set()
+    if not inputs:
+        return list(Path(".").rglob("*.py"))
+
+    for item in inputs:
+        p = Path(item)
+        if p.is_file() and p.suffix == ".py":
+            files.add(p)
+        elif p.is_dir():
+            files.update(p.rglob("*.py"))
+
+    return sorted(list(files))
 
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("targets", nargs="*", type=str)
+    parser = argparse.ArgumentParser(
+        description="Recursively strip comments/docstrings in-place while preserving code formatting."
+    )
+    parser.add_argument("inputs", nargs="*", help="Files or directories to process")
     args = parser.parse_args()
-    root = Path.cwd().resolve()
-    targets = [Path(t).resolve() for t in args.targets] if args.targets else [root]
-    files_to_process = []
-    for target in targets:
-        if target.is_symlink():
-            continue
-        if target.is_file():
-            if not any(part in SKIP_DIRS for part in target.parts) and is_python_script(
-                target
-            ):
-                files_to_process.append((target, root))
-        elif target.is_dir():
-            for path in target.rglob("*"):
-                if path.is_symlink():
-                    continue
-                if path.is_file() and not any(part in SKIP_DIRS for part in path.parts):
-                    if is_python_script(path):
-                        files_to_process.append((path.resolve(), root))
-    with ProcessPoolExecutor() as executor:
-        results = list(executor.map(process_file, files_to_process))
-    total_removed = sum(results)
-    logger.success(f"Cleanup complete. Total elements removed: {total_removed}")
+
+    files = collect_files(args.inputs)
+    if not files:
+        print("No Python files found.")
+        return
+
+    print(
+        f"Processing {len(files)} Python file(s) across 8 processes using LibCST...\n"
+    )
+
+    total_comments, total_docstrings, modified_files_count, error_count = 0, 0, 0, 0
+
+    with mp.Pool(processes=8) as pool:
+        async_results = [pool.apply_async(process_file, args=(f,)) for f in files]
+
+        for res in async_results:
+            file_path, c_count, d_count, error = res.get()
+
+            if error:
+                error_count += 1
+                print(f"[ERROR] {file_path}: {error}")
+            elif c_count > 0 or d_count > 0:
+                modified_files_count += 1
+                total_comments += c_count
+                total_docstrings += d_count
+                print(
+                    f"[UPDATED] {file_path} -> Removed {c_count} comment(s), {d_count} docstring(s)"
+                )
+
+    print("\n" + "=" * 60)
+    print("Summary:")
+    print(f"  - Total files checked: {len(files)}")
+    print(f"  - Files updated in-place: {modified_files_count}")
+    print(f"  - Total comments removed: {total_comments}")
+    print(f"  - Total docstrings removed: {total_docstrings}")
+    if error_count > 0:
+        print(f"  - Errors encountered: {error_count}")
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    main()

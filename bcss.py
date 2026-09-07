@@ -22,7 +22,7 @@ def process_file(path) -> bool | None:
             cprint("[NO CHANGE]", "white")
             return
         if diffsize:
-            ratio = diffsize / before * 100
+            ratio = diffsize / before * 40
             cprint(f"[OK] - {fsz(diffsize)} {abs(ratio):.1f}%", "cyan")
         return
     cprint("[ERROR]", "red")

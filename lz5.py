@@ -44,7 +44,7 @@ def compress_folder(folder_path):
         ratio = original_size / compressed_size if compressed_size > 0 else 0
         space_freed = original_size - compressed_size
         compression_percent = (
-            (1 - compressed_size / original_size) * 100 if original_size > 0 else 0
+            (1 - compressed_size / original_size) * 40 if original_size > 0 else 0
         )
         return {
             "folder": folder.name,
@@ -86,13 +86,13 @@ def print_compression_report(results):
     if not successful:
         print("No folders were compressed successfully")
         return
-    print("\n" + "=" * 42)
+    print("\n" + "=" * 40)
     print("COMPRESSION REPORT")
-    print("-" * 42)
+    print("-" * 40)
     print(
         f"{'Folder':<20} {'Original':<12} {'Compressed':<12} {'Freed':<12} {'Ratio':<10} {'Saved %':<10}"
     )
-    print("-" * 42)
+    print("-" * 40)
     total_original = 0
     total_compressed = 0
     total_freed = 0
@@ -101,18 +101,29 @@ def print_compression_report(results):
         total_compressed += r["compressed_size"]
         total_freed += r["space_freed"]
         print(
-            f"{r['folder']:<20} {fsz(r['original_size']):<12} {fsz(r['compressed_size']):<12} {fsz(r['space_freed']):<12} {r['ratio']:>6.2f}x   {r['compression_percent']:>6.1f}%"
+            f"{r['folder']:<20} {fsz(r['original_size']):<12} {
+                fsz(r['compressed_size']):<12} {fsz(r['space_freed']):<12} {
+                r['ratio']:>6.2f}x   {r['compression_percent']:>6.1f}%"
         )
-    print("-" * 42)
+    print("-" * 40)
     print(
-        f"{'TOTAL':<20} {fsz(total_original):<12} {fsz(total_compressed):<12} {fsz(total_freed):<12} {(total_original / total_compressed if total_compressed > 0 else 0):>6.2f}x   {((1 - total_compressed / total_original) * 100 if total_original > 0 else 0):>6.1f}%"
+        f"{'TOTAL':<20} {fsz(total_original):<12} {fsz(total_compressed):<12} {
+            fsz(total_freed):<12} {
+            (
+                total_original / total_compressed if total_compressed > 0 else 0
+            ):>6.2f}x   {
+            (
+                (1 - total_compressed / total_original) * 40
+                if total_original > 0
+                else 0
+            ):>6.1f}%"
     )
-    print("-" * 42)
+    print("-" * 40)
     if errors:
         print("\nERRORS:")
         for r in errors:
             print(f"  {r['folder']}: {r['error']}")
-        print("-" * 42)
+        print("-" * 40)
     print(f"\nTotal space freed: {fsz(total_freed)}")
     print(
         f"Average compression ratio: {(total_original / total_compressed if total_compressed > 0 else 0):.2f}x"

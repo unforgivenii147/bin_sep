@@ -425,7 +425,7 @@ def main() -> None:
     if args.move and args.copy:
         logger.error("Use either --move or --copy, not both.")
         sys.exit(1)
-    base = Path(".").resolve()
+    base = Path.cwd()
     files = collect_python_files(base)
     if not files:
         logger.info("No Python files found.")

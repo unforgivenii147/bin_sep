@@ -107,9 +107,9 @@ def test_speed() -> tuple[float | None, float | None, str | None, str | None]:
 
 
 def main() -> None:
-    print("-" * 42)
+    print("-" * 40)
     print(" NETWORK STATES ")
-    print("-" * 42)
+    print("-" * 40)
     print("\n[*] Public IP:")
     pub_ip = get_public_ip()
     if pub_ip:

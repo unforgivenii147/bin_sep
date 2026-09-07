@@ -26,7 +26,7 @@ for dirpath, _dirnames, filenames in os.walk(cwd):
 subdir_percentages = {}
 for subdir, size in subdir_sizes.items():
     if total_size > 0:
-        percentage = size / total_size * 100
+        percentage = size / total_size * 40
         subdir_percentages[os.path.basename(subdir)] = percentage
     else:
         subdir_percentages[os.path.basename(subdir)] = 0

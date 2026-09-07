@@ -20,7 +20,7 @@ class ProcessResult:
     filepath: Path
     success: bool
     modified: bool
-    error: Optional[str] = None
+    error: str | None = None
     message: str = ""
 
 
@@ -43,7 +43,7 @@ def line_exists_in_file(filepath: Path, target_line: str) -> bool:
                 if line.rstrip("\n\r") == target_line:
                     return True
         return False
-    except (IOError, OSError) as e:
+    except OSError as e:
         logger.warning(f"Error reading {filepath}: {e}")
         return False
 
@@ -170,9 +170,9 @@ def main() -> int:
     modified = sum(1 for r in results if r.modified)
     skipped = successful - modified
     failed = len(results) - successful
-    logger.info("=" * 60)
+    logger.info("=" * 40)
     logger.info("SUMMARY")
-    logger.info("=" * 60)
+    logger.info("=" * 40)
     logger.info(f"Total files processed: {len(results)}")
     logger.info(f"Successfully processed: {successful}")
     logger.info(f"Files modified: {modified}")

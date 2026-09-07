@@ -26,8 +26,8 @@ def process_file(path) -> None:
         if not diffsize:
             cprint("(no change)", "grey")
             return
-        ratio = diffsize / after * 100
-        ratio2 = abs(before - after) / before * 100
+        ratio = diffsize / after * 40
+        ratio2 = abs(before - after) / before * 40
         cprint(f"{ratio:.2f}% | {ratio2:.2f}%", "cyan")
         return
     except:
@@ -48,5 +48,5 @@ if __name__ == "__main__":
     dsz = abs(before - after)
     if not dsz:
         sys.exit(1)
-    ratio = dsz / before * 100
+    ratio = dsz / before * 40
     cprint(f"space change: {fsz(dsz)} {ratio:.2f}%")

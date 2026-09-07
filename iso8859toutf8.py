@@ -17,7 +17,3 @@ def convert_in_place(filename):
 
 if __name__ == "__main__":
     convert_in_place("script.sh")
-
-
-# 11 |     with codecs.open(backup, "r", encoding="iso-8859-1") as f:
-# 13 |     with codecs.open(filename, "w", encoding="utf-8") as f:

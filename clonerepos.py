@@ -115,7 +115,7 @@ def main():
     print(
         f"\nDownloading with {args.workers} parallel workers to {output_dir.absolute()}"
     )
-    print("-" * 42)
+    print("-" * 40)
     with ThreadPoolExecutor(max_workers=args.workers) as executor:
         future_to_repo = {
             executor.submit(download_repo_zip, repo, output_dir): repo for repo in repos
@@ -137,7 +137,7 @@ def main():
             except Exception as e:
                 failed += 1
                 print(f"❌ {repo}: Unexpected error: {e!s}")
-    print("-" * 42)
+    print("-" * 40)
     print("\nSummary:")
     print(f"  ✅ Successfully downloaded: {successful}")
     print(f"  ⏭️  Already existed: {skipped}")

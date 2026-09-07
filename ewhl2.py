@@ -150,9 +150,9 @@ def analyze_wheels(
             print("  ✓ VALID wheel (contains code)")
             valid_wheels.append(wheel_file)
         print()
-    print("-" * 42)
+    print("-" * 40)
     print("SUMMARY")
-    print("-" * 42)
+    print("-" * 40)
     print(f"Total wheels: {len(wheel_files)}")
     print(f"Valid wheels: {len(valid_wheels)}")
     print(f"Empty wheels: {len(empty_wheels)}")
@@ -202,9 +202,9 @@ Move all {len(empty_wheels)} empty wheels to '{dest_dir_name}/'? (y/n): """)
         else:
             print("No wheels were moved.")
     if installed_empty_wheels:
-        print("\n" + "=" * 42)
+        print("\n" + "=" * 40)
         print("IMPORTANT ACTIONS TO TAKE")
-        print("-" * 42)
+        print("-" * 40)
         print("These packages were installed from empty wheels and are likely broken:")
         for item in installed_empty_wheels:
             print(f"  - {item['package']} (version {item['version']})")

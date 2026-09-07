@@ -87,24 +87,18 @@ def _is_under_type_checking(
     tree: ast.Module,
 ) -> bool:
     parent: dict[int, ast.AST] = {}
-
     for parent_node in ast.walk(tree):
         for child in ast.iter_child_nodes(parent_node):
             parent[id(child)] = parent_node
-
     current = parent.get(id(node))
-
     while current is not None:
         if isinstance(current, ast.If):
             test = current.test
-
             if (isinstance(test, ast.Name) and test.id == "TYPE_CHECKING") or (
                 isinstance(test, ast.Attribute) and test.attr == "TYPE_CHECKING"
             ):
                 return True
-
         current = parent.get(id(current))
-
     return False
 
 
@@ -138,7 +132,6 @@ def analyse_source(source: str, display_path: str) -> FileReport:
     lines = source.splitlines()
     used_names: set[str] = set()
     import_nodes: list[ast.Import | ast.ImportFrom] = []
-
     for node in ast.walk(tree):
         if isinstance(node, (ast.Import, ast.ImportFrom)):
             import_nodes.append(node)
@@ -293,7 +286,6 @@ def _extract_py_from_tar_zst(
     archive: Path,
 ) -> list[tuple[str, str]]:
     results: list[tuple[str, str]] = []
-
     try:
         import zstandard
     except ImportError:
@@ -304,26 +296,20 @@ def _extract_py_from_tar_zst(
             )
         )
         return results
-
     try:
         with archive.open("rb") as fh:
             dctx = zstandard.ZstdDecompressor()
-
             with tempfile.TemporaryFile() as tmp:
                 dctx.copy_stream(fh, tmp)
                 tmp.seek(0)
-
                 with tarfile.open(fileobj=tmp, mode="r:") as tf:
                     for member in tf.getmembers():
                         if not member.name.endswith(".py") or not member.isfile():
                             continue
-
                         try:
                             extracted = tf.extractfile(member)
-
                             if extracted is None:
                                 continue
-
                             source = extracted.read().decode(
                                 "utf-8",
                                 errors="replace",
@@ -331,7 +317,6 @@ def _extract_py_from_tar_zst(
                             results.append((source, f"{archive}::{member.name}"))
                         except Exception:
                             pass
-
     except Exception as exc:
         results.append(
             (
@@ -339,7 +324,6 @@ def _extract_py_from_tar_zst(
                 f"{archive}::ERROR:{exc}",
             )
         )
-
     return results
 
 

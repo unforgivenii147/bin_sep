@@ -124,7 +124,7 @@ def main():
         logger.error("No packages to process")
         sys.exit(1)
     successful, failed = process_packages(packages)
-    logger.info("=" * 42)
+    logger.info("=" * 40)
     logger.info(f"Summary: {successful} successful, {failed} failed")
     logger.info(f"Total: {successful + failed}")
     logger.info(f".deb files saved in: {DEB_DIR}")

@@ -33,7 +33,7 @@ def _compress(src: Path, keep: bool) -> str:
             if not keep:
                 shutil.rmtree(src)
             ratio = (
-                (1 - compressed_size / original_size) * 100 if original_size > 0 else 0
+                (1 - compressed_size / original_size) * 40 if original_size > 0 else 0
             )
             space_freed = original_size - compressed_size
             return (
@@ -52,7 +52,7 @@ def _compress(src: Path, keep: bool) -> str:
             if not keep:
                 src.unlink()
             ratio = (
-                (1 - compressed_size / original_size) * 100 if original_size > 0 else 0
+                (1 - compressed_size / original_size) * 40 if original_size > 0 else 0
             )
             space_freed = original_size - compressed_size
             return (
@@ -111,7 +111,7 @@ def _decompress(src: Path, keep: bool) -> str:
 
 def _collect_targets(paths: list[str], mode: str) -> list[Path]:
     targets: list[Path] = []
-    cwd = Path(".").resolve()
+    cwd = Path.cwd()
     if mode == "compress":
         if not paths:
             for p in Path(".").rglob("*"):
@@ -210,9 +210,9 @@ def main() -> None:
             if dst.exists():
                 total_compressed += dst.stat().st_size
         if total_original > 0:
-            total_ratio = (1 - total_compressed / total_original) * 100
+            total_ratio = (1 - total_compressed / total_original) * 40
             total_freed = total_original - total_compressed
-            print(f"\n{'=' * 42}")
+            print(f"\n{'=' * 40}")
             print("SUMMARY:")
             print(f"  Total original size: {fsz(total_original)}")
             print(f"  Total compressed size: {fsz(total_compressed)}")
@@ -227,7 +227,7 @@ def main() -> None:
                 dst = t.parent / t.name[: -len(".7z")]
             total_decompressed += gsz(dst)
         total_space_used = total_decompressed - total_original
-        print(f"\n{'=' * 42}")
+        print(f"\n{'=' * 40}")
         print("SUMMARY:")
         print(f"  Total compressed size: {fsz(total_original)}")
         print(f"  Total decompressed size: {fsz(total_decompressed)}")

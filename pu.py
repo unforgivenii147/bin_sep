@@ -7,7 +7,6 @@ from pathlib import Path
 
 from pip._internal.cli.main import main as pip_main
 from rapidfuzz import fuzz
-from dh import get_installed_pkgs
 
 
 def uninstall(packages: list[str]) -> int:
@@ -27,7 +26,7 @@ def create_pip_list_again() -> list[str]:
 
 def load_installed_packages() -> list[str]:
     path = Path(PIP_LIST_FILE)
-    ONE_DAY = 60 * 42 * 24
+    ONE_DAY = 60 * 40 * 24
     age = get_file_age(path)
     print(age)
     if age / ONE_DAY > 1.0 or not path.exists():

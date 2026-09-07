@@ -90,7 +90,7 @@ class GoogleDriveSyncer:
                 done = False
                 while not done:
                     status, done = downloader.next_chunk()
-                    print(f"Downloading {file_name}: {int(status.progress() * 100)}%")
+                    print(f"Downloading {file_name}: {int(status.progress() * 40)}%")
             print(f"✓ Downloaded: {file_name}")
             return True
         except HttpError as error:
@@ -117,9 +117,7 @@ class GoogleDriveSyncer:
                     local_mtime = os.path.getmtime(local_item_path)
                     from datetime import datetime
 
-                    remote_time = datetime.fromisoformat(
-                        remote_modified.replace("Z", "+00:00")
-                    ).timestamp()
+                    remote_time = datetime.fromisoformat(remote_modified).timestamp()
                     if local_mtime >= remote_time:
                         should_download = False
                         print(f"⏭ Skipping (up to date): {item_name}")
@@ -128,9 +126,7 @@ class GoogleDriveSyncer:
                     if remote_modified:
                         from datetime import datetime
 
-                        mod_time = datetime.fromisoformat(
-                            remote_modified.replace("Z", "+00:00")
-                        ).timestamp()
+                        mod_time = datetime.fromisoformat(remote_modified).timestamp()
                         os.utime(local_item_path, (mod_time, mod_time))
 
     def sync_all(self, local_base_path: str) -> None:

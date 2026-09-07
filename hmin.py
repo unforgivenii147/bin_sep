@@ -29,7 +29,7 @@ class MinifyStats:
     def ratio(self) -> float:
         if self.original_size == 0:
             return 0.0
-        return (1 - self.minified_size / self.original_size) * 100
+        return (1 - self.minified_size / self.original_size) * 40
 
     @property
     def saved(self) -> int:
@@ -187,7 +187,7 @@ class HTMLMinifier:
         print(
             f"\n{Fore.CYAN}Found {total_files} HTML file(s) to minify{Style.RESET_ALL}"
         )
-        print(f"{Fore.CYAN}{'=' * 42}{Style.RESET_ALL}\n")
+        print(f"{Fore.CYAN}{'=' * 40}{Style.RESET_ALL}\n")
         stats_list: list[MinifyStats] = []
         successful = 0
         failed = 0
@@ -255,15 +255,13 @@ class HTMLMinifier:
         total_minified: int,
     ) -> None:
         total_saved = total_original - total_minified
-        overall_ratio = (
-            (total_saved / total_original * 100) if total_original > 0 else 0
-        )
+        overall_ratio = (total_saved / total_original * 40) if total_original > 0 else 0
         original_mb = total_original / (1024 * 1024)
         minified_mb = total_minified / (1024 * 1024)
         saved_mb = total_saved / (1024 * 1024)
-        print(f"\n{Fore.CYAN}{'=' * 42}{Style.RESET_ALL}")
+        print(f"\n{Fore.CYAN}{'=' * 40}{Style.RESET_ALL}")
         print(f"{Fore.CYAN}Summary{Style.RESET_ALL}")
-        print(f"{Fore.CYAN}{'=' * 42}{Style.RESET_ALL}")
+        print(f"{Fore.CYAN}{'=' * 40}{Style.RESET_ALL}")
         print(f"{Fore.WHITE}Files processed:  {total}{Style.RESET_ALL}")
         print(f"{Fore.GREEN}✓ Successful:     {successful}{Style.RESET_ALL}")
         if failed > 0:
@@ -273,7 +271,7 @@ class HTMLMinifier:
         print(
             f"{Fore.GREEN}Total saved:      {saved_mb:.2f} MB ({overall_ratio:.1f}%){Style.RESET_ALL}"
         )
-        print(f"{Fore.CYAN}{'=' * 42}{Style.RESET_ALL}\n")
+        print(f"{Fore.CYAN}{'=' * 40}{Style.RESET_ALL}\n")
 
 
 def main():
@@ -282,10 +280,10 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  %(prog)s                          # Process all HTML files in current directory
-  %(prog)s file1.html file2.html    # Process specific HTML files
-  %(prog)s public/ dist/            # Process all HTML files in directories
-  %(prog)s index.html src/          # Mix files and directories
+  %(prog)s
+  %(prog)s file1.html file2.html
+  %(prog)s public/ dist/
+  %(prog)s index.html src/
   %(prog)s --workers 8 src/
         """,
     )

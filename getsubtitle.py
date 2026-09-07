@@ -56,6 +56,3 @@ if __name__ == "__main__":
         sys.argv[1], sys.argv[2] if len(sys.argv) > 2 else None
     )
     sys.exit(0 if success else 1)
-
-
-# 860 | |     encoding: str | None = None,

@@ -311,7 +311,7 @@ def main():
                     f"[{completed}/{len(target_files)}] Unexpected error: {file_path}: {e}"
                 )
                 files_with_errors += 1
-    print(f"\n{'=' * 42}")
+    print(f"\n{'=' * 40}")
     print("Summary:")
     print(f"  Files scanned: {len(target_files)}")
     print(f"  Binary files skipped: {binary_files}")
@@ -319,7 +319,7 @@ def main():
     print(f"  Total comments removed: {total_removed}")
     if files_with_errors > 0:
         print(f"  Files with errors: {files_with_errors}")
-    print(f"{'=' * 42}")
+    print(f"{'=' * 40}")
 
 
 if __name__ == "__main__":

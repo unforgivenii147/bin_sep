@@ -184,7 +184,7 @@ def main():
         print("No comments or docstrings found.")
         return
     print(f"Found {total_findings} comments/docstrings:\n")
-    print("=" * 80)
+    print("=" * 40)
     for file_path in sorted(all_findings.keys()):
         findings = all_findings[file_path]
         try:
@@ -203,7 +203,7 @@ def main():
                 print(f"{Colors.YELLOW}[REMOVED]{Colors.RESET}", end=" ")
         except Exception as e:
             print(f"Error processing {file_path}: {e}", file=sys.stderr)
-    print("\n" + "=" * 80)
+    print("\n" + "=" * 40)
     if args.auto_remove:
         print(
             f"{Colors.YELLOW}Removed {total_findings} comments/docstrings.{Colors.RESET}"

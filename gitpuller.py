@@ -63,9 +63,9 @@ def git_pull_all() -> None:
         except Exception as e:
             failed_repos.append((repo_path, f"Unexpected error: {e!s}"))
             print(f"   ❌ Error: {e}")
-    print("\n" + "=" * 42)
+    print("\n" + "=" * 40)
     print("SUMMARY")
-    print("-" * 42)
+    print("-" * 40)
     if pulled_repos:
         print(f"\n✅ Successfully pulled ({len(pulled_repos)} repos):")
         for repo_path in pulled_repos:

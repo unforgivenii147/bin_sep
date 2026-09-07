@@ -10,8 +10,6 @@ from dh import fsz, get_pyfiles, gsz, mpf_async as mpf, remove_blank_lines
 from tree_sitter import Language, Parser, Query, QueryCursor
 
 CHUNK_SIZE = 1024 * 1024
-
-
 QUERY_STRING = "\n(comment) @comment\n(block\n  . (expression_statement\n    (string)) @docstring)\n(module\n  . (expression_statement\n    (string)) @docstring)\n"
 
 

@@ -18,7 +18,9 @@ def folder_exists_in_db(cursor: sqlite3.Cursor, folder_name: str) -> bool:
 
 def create_folder_table(cursor: sqlite3.Cursor, folder_name: str) -> None:
     cursor.execute(
-        f'CREATE TABLE IF NOT EXISTS "{folder_name}" (id INTEGER PRIMARY KEY AUTOINCREMENT, filename TEXT NOT NULL, file_contents TEXT)'
+        f'CREATE TABLE IF NOT EXISTS "{
+            folder_name
+        }" (id INTEGER PRIMARY KEY AUTOINCREMENT, filename TEXT NOT NULL, file_contents TEXT)'
     )
 
 

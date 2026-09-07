@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import shutil
+import sys
 from collections import defaultdict
 from pathlib import Path
 
@@ -9,7 +10,7 @@ try:
     from PIL import Image
 except ImportError:
     print("Error: This script requires Pillow. Install it with: pip install Pillow")
-    exit(1)
+    sys.exit(1)
 IMAGE_EXTENSIONS = {
     ".jpg",
     ".jpeg",

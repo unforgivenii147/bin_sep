@@ -22,7 +22,7 @@ def _encode_varint(value: int) -> bytes:
 
 def _hash_4_bytes(data: bytes, pos: int) -> int:
     val = data[pos] | data[pos + 1] << 8 | data[pos + 2] << 16 | data[pos + 3] << 24
-    return val * 426832829 >> 32 - 14 & _HASH_TABLE_SIZE - 1
+    return val * 406832829 >> 32 - 14 & _HASH_TABLE_SIZE - 1
 
 
 def _emit_literal(output: bytearray, data: bytes, start: int, length: int) -> None:
@@ -267,7 +267,7 @@ def compress_file(path: Path) -> None:
         snappy_path.unlink()
         return
     diff_size = before - after
-    ratio = diff_size / before * 100
+    ratio = diff_size / before * 40
     print(f"{path.name}", end=" | ")
     cprint(f"{fsz(before)} -> {fsz(after)} | {fsz(diff_size)} | {ratio:.1f}%")
     path.unlink()
@@ -287,7 +287,7 @@ def decompress_file(path: Path) -> None:
         decomp_path.unlink()
         return
     diff_size = before - after
-    ratio = before / after * 100
+    ratio = before / after * 40
     print(f"{decomp_path.name}", end=" | ")
     cprint(f"{fsz(before)} -> {fsz(after)} | {fsz(diff_size)} | {ratio:.1f}%")
     path.unlink()

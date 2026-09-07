@@ -63,8 +63,7 @@ def find_text_files(directories: list[Path]) -> Iterator[Path]:
             if directory.suffix.lower() in TEXT_EXTENSIONS or not directory.suffix:
                 yield directory
         else:
-            for path in get_nobinary(directory):
-                yield path
+            yield from get_nobinary(directory)
 
 
 def calculate_pattern_fingerprint(pattern: str) -> str:
@@ -112,11 +111,11 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  %(prog)s                    # Process current directory recursively
-  %(prog)s /path/to/dir      # Process specific directory
-  %(prog)s file1.txt file2.txt  # Process specific files
-  %(prog)s -a /path/to/dir   # Auto-remove pattern from files
-  %(prog)s --auto-remove      # Same as -a
+  %(prog)s
+  %(prog)s /path/to/dir
+  %(prog)s file1.txt file2.txt
+  %(prog)s -a /path/to/dir
+  %(prog)s --auto-remove
         """,
     )
     parser.add_argument(
@@ -167,9 +166,9 @@ Examples:
         stats_list = Parallel(n_jobs=args.jobs, verbose=1)(
             delayed(process_file)(path, pattern, pattern_fingerprint) for path in files
         )
-        print("\n" + "=" * 42)
+        print("\n" + "=" * 40)
         print("PROCESSING REPORT")
-        print("=" * 42)
+        print("=" * 40)
         total_files = len(stats_list)
         modified_files = sum(1 for s in stats_list if s.modified)
         total_removed = sum(s.removed_count for s in stats_list)
@@ -178,7 +177,7 @@ Examples:
         errors = [s for s in stats_list if s.error]
         for stats in stats_list:
             print(stats)
-        print("\n" + "=" * 42)
+        print("\n" + "=" * 40)
         print(f"Files processed: {total_files}")
         print(f"Files modified: {modified_files}")
         print(f"Pattern removed: {total_removed} occurrence(s)")

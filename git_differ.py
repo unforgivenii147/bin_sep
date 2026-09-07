@@ -92,7 +92,7 @@ def build_report(repo: Path) -> dict:
 
 
 def main() -> None:
-    repo = Path(".").resolve()
+    repo = Path.cwd()
     output_path = repo / "diff_report.json"
     try:
         report = build_report(repo)

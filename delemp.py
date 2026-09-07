@@ -204,7 +204,7 @@ def print_results(
     show_all_binary: bool = False,
     mmap_threshold: int = MMAP_THRESHOLD,
 ):
-    print(f"\n{BOLD}{CYAN}{'─' * 42}{RESET}\n")
+    print(f"\n{BOLD}{CYAN}{'─' * 40}{RESET}\n")
     results.sort(key=lambda x: x[0])
     processed = [(p, t, r, s) for p, t, r, s in results if s.startswith("processed")]
     skipped_binary = [(p, t, r, s) for p, t, r, s in results if s == "binary"]
@@ -244,7 +244,7 @@ def print_results(
             print(f"  {RED}✗{RESET} {path}")
             print(f"    {DIM}{status}{RESET}")
         print()
-    print(f"{BOLD}{CYAN}{'─' * 42}{RESET}")
+    print(f"{BOLD}{CYAN}{'─' * 40}{RESET}")
     print(f"{BOLD}Summary:{RESET}")
     print(f"  Total files found:     {BOLD}{total_files:,}{RESET}")
     print(f"  Text files processed:  {BOLD}{len(processed):,}{RESET}")
@@ -257,7 +257,7 @@ def print_results(
     print(f"  Lines removed:         {BOLD}{GREEN}{total_removed:,}{RESET}")
     if errors:
         print(f"  Errors:                {BOLD}{RED}{len(errors):,}{RESET}")
-    print(f"{BOLD}{CYAN}{'─' * 42}{RESET}\n")
+    print(f"{BOLD}{CYAN}{'─' * 40}{RESET}\n")
 
 
 def main():

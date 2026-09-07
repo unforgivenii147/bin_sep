@@ -145,7 +145,7 @@ def display_results(results: dict, show_candidates: bool = False):
         total_misspellings += len(misspellings)
         rel_path = Path(file_path).relative_to(Path.cwd())
         print(f"\n📄 {rel_path} ({len(misspellings)} misspellings)")
-        print("-" * 42)
+        print("-" * 40)
         for ms in misspellings[:10]:
             context = get_context(result["content"], ms["position"])
             print(f"  • Line {context['line']}: '{ms['word']}' → '{ms['correction']}'")
@@ -155,11 +155,11 @@ def display_results(results: dict, show_candidates: bool = False):
                 print(f"    Context: {context['text']}")
         if len(misspellings) > 10:
             print(f"  ... and {len(misspellings) - 10} more")
-    print("\n" + "=" * 42)
+    print("\n" + "=" * 40)
     print(
         f"📊 Summary: {files_with_errors} files with {total_misspellings} total misspellings"
     )
-    print("-" * 42)
+    print("-" * 40)
 
 
 def get_context(content: str, position: tuple[int, int], window: int = 40) -> dict:

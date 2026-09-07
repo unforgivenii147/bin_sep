@@ -8,36 +8,16 @@ import sys
 from collections.abc import Iterable
 from pathlib import Path
 
-from dh import get_nobinary
+from dh import MIME2EXT, get_nobinary
 
 OUTPUT_DIR = Path("extracted_base64")
 DATA_URL_RE = re.compile(
     "data:(?P<mime>[-\\w.+/]+);base64,(?P<data>[A-Za-z0-9+/=\\s]+)", re.IGNORECASE
 )
-MIME_EXTENSION_MAP: dict[str, str] = {
-    "image/png": "png",
-    "image/jpeg": "jpg",
-    "image/jpg": "jpg",
-    "image/gif": "gif",
-    "image/heif": "heif",
-    "image/webp": "webp",
-    "image/svg+xml": "svg",
-    "application/pdf": "pdf",
-    "application/octet-stream": "bin",
-    "font/woff": "woff",
-    "font/woff2": "woff2",
-    "application/font-woff": "woff",
-    "application/font-woff2": "woff2",
-    "font/ttf": "ttf",
-    "font/otf": "otf",
-    "font/eot": "eot",
-    "font/svg": "svg",
-    "application/javascript": "js",
-}
 
 
 def infer_extension(mime: str) -> str:
-    return MIME_EXTENSION_MAP.get(mime.lower(), mime.rsplit("/", maxsplit=1)[-1])
+    return MIME2EXT.get(mime.lower(), mime.rsplit("/", maxsplit=1)[-1])[0]
 
 
 def decode_base64(data: str) -> bytes:

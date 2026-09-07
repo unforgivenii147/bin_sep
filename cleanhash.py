@@ -1,5 +1,4 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-
 from __future__ import annotations
 
 import sys
@@ -91,7 +90,6 @@ def main():
     else:
         for f in get_files(cwd):
             total += process_file(f)
-
     print(f"{total} comments removed")
 
 

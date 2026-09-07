@@ -177,12 +177,12 @@ def main() -> int:
                 total_comments += s["comments"]
                 total_removed += s["removed"]
                 saved = s["before"] - s["after"]
-                pct = (saved / s["before"] * 100) if s["before"] else 0.0
+                pct = (saved / s["before"] * 40) if s["before"] else 0.0
                 print(
                     f"  ✓ {rel}  {s['comments']} comment(s) removed · {fsz(saved)} (-{pct:.1f}%)"
                 )
     elapsed = time.monotonic() - t0
-    print("\n" + "─" * 42)
+    print("\n" + "─" * 40)
     print(f"  Files processed  : {total_files}")
     print(f"  Comments removed : {total_comments}")
     print(f"  Bytes removed    : {fsz(total_removed)}")

@@ -141,7 +141,7 @@ def collect_py_files(root: Path) -> list[Path]:
 
 
 def main() -> int:
-    root = Path(".").resolve()
+    root = Path.cwd()
     files = collect_py_files(root)
     if not files:
         print("No .py files found.")

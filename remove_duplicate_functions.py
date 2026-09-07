@@ -162,7 +162,7 @@ def main():
         sys.exit(0)
     mode = "applying" if args.apply else "scanning"
     print(f"\n🔍 {mode} {len(target_files)} file(s)...")
-    print("-" * 60)
+    print("-" * 40)
     total_duplicates = 0
     total_updated = 0
     with ThreadPoolExecutor(max_workers=8) as executor:
@@ -184,7 +184,7 @@ def main():
                 print(f"✂️  {result['file']}: removed {names}")
             elif result["status"] == "error":
                 print(f"❌ {result['file']}: {result['error']}")
-    print("-" * 60)
+    print("-" * 40)
     if args.apply:
         print(f"✅ Removed {total_updated} duplicate(s)")
     else:

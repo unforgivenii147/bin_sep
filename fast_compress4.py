@@ -42,7 +42,7 @@ def compress_file(
         if output_path.exists() and output_path.stat().st_size > 0:
             original_size = input_path.stat().st_size
             compressed_size = output_path.stat().st_size
-            ratio = compressed_size / original_size * 100 if original_size > 0 else 0
+            ratio = compressed_size / original_size * 40 if original_size > 0 else 0
             if remove_original:
                 input_path.unlink()
                 print(f"✓ Compressed & removed: {input_path} -> {output_path}")
@@ -178,7 +178,9 @@ def main():
         for input_path, output_path in walk_files(root_dir, args.pattern):
             if args.dry_run:
                 print(
-                    f"[DRY RUN] Would compress & {'remove' if remove_original else 'keep'}: {input_path} -> {output_path}"
+                    f"[DRY RUN] Would compress & {
+                        'remove' if remove_original else 'keep'
+                    }: {input_path} -> {output_path}"
                 )
             elif compress_file(
                 input_path,
@@ -191,7 +193,7 @@ def main():
                 processed += 1
             else:
                 failed += 1
-    print(f"\n{'=' * 42}")
+    print(f"\n{'=' * 40}")
     print(
         f"Completed: {processed} files {'decompressed' if args.decompress else 'compressed'}"
     )

@@ -6,7 +6,6 @@ import sys
 from pathlib import Path
 
 from rapidfuzz import fuzz
-from dh import get_installed_pkgs
 
 PIP_LIST_FILE = "/sdcard/data/pip.list"
 

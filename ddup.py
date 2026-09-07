@@ -138,7 +138,7 @@ def _new_utils_entries(
     groups: dict[str, list[_Def]], existing: dict[str, dict[str, _Def]]
 ) -> dict[str, list[_Def]]:
     new: dict[str, list[_Def]] = {"func": [], "class": [], "const": []}
-    for _hash_key, defs in groups.items():
+    for defs in groups.values():
         rep = defs[0]
         typ, name = rep.type, rep.name
         if typ not in existing:
@@ -302,6 +302,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
-
-# 55 |         with module.open(path, "rt", encoding="utf-8", errors="replace") as fh:

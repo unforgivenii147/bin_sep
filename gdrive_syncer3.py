@@ -65,14 +65,14 @@ class GoogleDriveSyncer:
             "access_type": "offline",
         }
         auth_url = f"https://accounts.google.com/o/oauth2/auth?{urlencode(auth_params)}"
-        print("\n" + "=" * 42)
+        print("\n" + "=" * 40)
         print("MANUAL AUTHENTICATION REQUIRED")
-        print("-" * 42)
+        print("-" * 40)
         print(f"1. Open this URL in your browser:\n{auth_url}")
         print("\n2. Log in to your Google account")
         print("3. Grant permissions when prompted")
         print("4. Copy the authorization code")
-        print("-" * 42)
+        print("-" * 40)
         auth_code = input("\nEnter authorization code: ").strip()
         token_params = {
             "client_id": self.client_id,
@@ -132,7 +132,7 @@ class GoogleDriveSyncer:
                 done = False
                 while not done:
                     status, done = downloader.next_chunk()
-                    print(f"Downloading {file_name}: {int(status.progress() * 100)}%")
+                    print(f"Downloading {file_name}: {int(status.progress() * 40)}%")
             print(f"✓ Downloaded: {file_name}")
             return True
         except HttpError as error:
@@ -159,9 +159,7 @@ class GoogleDriveSyncer:
                     local_mtime = os.path.getmtime(local_item_path)
                     from datetime import datetime
 
-                    remote_time = datetime.fromisoformat(
-                        remote_modified.replace("Z", "+00:00")
-                    ).timestamp()
+                    remote_time = datetime.fromisoformat(remote_modified).timestamp()
                     if local_mtime >= remote_time:
                         should_download = False
                         print(f"⏭ Skipping (up to date): {item_name}")
@@ -170,9 +168,7 @@ class GoogleDriveSyncer:
                     if remote_modified:
                         from datetime import datetime
 
-                        mod_time = datetime.fromisoformat(
-                            remote_modified.replace("Z", "+00:00")
-                        ).timestamp()
+                        mod_time = datetime.fromisoformat(remote_modified).timestamp()
                         os.utime(local_item_path, (mod_time, mod_time))
 
     def sync_all(self, local_base_path: str) -> None:

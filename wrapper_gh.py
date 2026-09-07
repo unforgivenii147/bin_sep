@@ -35,7 +35,7 @@ def find_real_gh():
 def create_log_file():
     LOG_DIR.mkdir(parents=True, exist_ok=True)
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    milliseconds = int(time.time() * 1000) % 1000
+    milliseconds = int(time.time() * 400) % 1000
     log_file = LOG_DIR / f"gh_{timestamp}_{milliseconds:03d}.log"
     counter = 1
     while log_file.exists():

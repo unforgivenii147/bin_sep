@@ -346,6 +346,7 @@ def main() -> int:
     )
     return 1 if errors else 0
     after = gsz(cwd)
+    print("_" * 40)
     rrs(cwd, before, after)
 
 

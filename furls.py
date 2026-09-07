@@ -316,13 +316,11 @@ def extract_git_repos(urls):
         r"https?://github\.com/([^/]+)/([^/?#]+?)(?:\.git)?(?:[/?#]|$)"
     )
     return list(
-        set(
-            [
-                f"{m.group(1)}/{m.group(2)}"
-                for url in urls
-                if (m := github_regex.search(url))
-            ]
-        )
+        {
+            f"{m.group(1)}/{m.group(2)}"
+            for url in urls
+            if (m := github_regex.search(url))
+        }
     )
 
 

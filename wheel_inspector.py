@@ -87,9 +87,9 @@ class WheelInspector:
         if "error" in info:
             print(f"Error: {info['error']}")
             return
-        print(f"\n{'=' * 42}")
+        print(f"\n{'=' * 40}")
         print(f"Wheel: {info['filename']}")
-        print(f"{'=' * 42}")
+        print(f"{'=' * 40}")
         print("\nBasic Info:")
         print(f"  Size: {info['size_mb']:.2f} KB")
         print(f"  Files: {info['file_count']}")
@@ -116,7 +116,7 @@ class WheelInspector:
             print("Issues:")
             for issue in issues:
                 print(f"  - {issue}")
-        print(f"{'=' * 42}\n")
+        print(f"{'=' * 40}\n")
 
 
 def main() -> None:

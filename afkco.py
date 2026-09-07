@@ -33,7 +33,7 @@ class UnusedImport:
 class FileReport:
     path: str
     unused_imports: list[UnusedImport] = field(default_factory=list)
-    error: Optional[str] = None
+    error: str | None = None
     file_size: int = 0
 
 
@@ -138,7 +138,7 @@ class NameVisitor(ast.NodeVisitor):
 
 def analyze_imports(
     source: str, path: str = ""
-) -> tuple[list[UnusedImport], Optional[str]]:
+) -> tuple[list[UnusedImport], str | None]:
     try:
         tree = ast.parse(source)
     except SyntaxError as e:
@@ -366,7 +366,7 @@ def remove_unused_imports(source: str, unused: list[UnusedImport]) -> tuple[str,
 
 def _reconstruct_import_line(
     node, unused_names: set[str], original_line: str
-) -> Optional[str]:
+) -> str | None:
     if isinstance(node, ast.Import):
         names_to_keep = []
         for alias in node.names:
@@ -404,7 +404,7 @@ def _reconstruct_import_line(
 
 def autofix_file(
     file_path: str, unused: list[UnusedImport], dry_run: bool = False
-) -> tuple[bool, Optional[str]]:
+) -> tuple[bool, str | None]:
     try:
         with open(file_path, "r", encoding="utf-8", errors="replace") as f:
             source = f.read()
@@ -447,7 +447,10 @@ def print_report(
         for unused in report.unused_imports:
             total_unused += 1
             print(
-                f"{Colors.BOLD}{report.path}{Colors.RESET}  -->  line {Colors.CYAN}{unused.lineno:>5}{Colors.RESET}  {Colors.YELLOW}{unused.statement}{Colors.RESET}"
+                f"{Colors.BOLD}{report.path}{Colors.RESET}  -->  line {Colors.CYAN}{
+                    unused.lineno:>5}{Colors.RESET}  {Colors.YELLOW}{unused.statement}{
+                    Colors.RESET
+                }"
             )
             if verbose and len(unused.unused_names) > 1:
                 print(f"{'':30}[unused: {', '.join(unused.unused_names)}]")
@@ -536,7 +539,7 @@ def main():
         dry_run=args.dry_run,
         autofix=args.autofix,
     )
-    has_unused = any((r.unused_imports for r in reports))
+    has_unused = any(r.unused_imports for r in reports)
     return 1 if has_unused else 0
 
 

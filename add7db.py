@@ -125,7 +125,9 @@ def get_files_in_cwd():
                             }
                         )
                         print(
-                            f"    ✓ Compressed {file_data['original_size'] / 1024:.1f}KB to {len(compressed) / 1024:.1f}KB"
+                            f"    ✓ Compressed {
+                                file_data['original_size'] / 1024:.1f}KB to {
+                                len(compressed) / 1024:.1f}KB"
                         )
                     else:
                         files.append(
@@ -210,7 +212,7 @@ def main() -> None:
         print(f"\n✅ Successfully added {len(files)} files to table '{folder_name}'")
         if total_compressed > 0:
             ratio = (
-                (1 - total_compressed / total_original) * 100
+                (1 - total_compressed / total_original) * 40
                 if total_original > 0
                 else 0
             )

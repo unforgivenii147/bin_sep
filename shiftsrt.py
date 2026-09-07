@@ -1,78 +1,76 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
 
-import argparse
 import re
 import sys
-from pathlib import Path
-
-TIMESTAMP_RE = re.compile(r"(\d{2}:\d{2}:\d{2},\d{3})\s-->\s(\d{2}:\d{2}:\d{2},\d{3})")
-ONE_SEC_MS = 1000
+from datetime import timedelta
 
 
-def to_ms(ts: str) -> int:
-    h, m, rest = ts.split(":")
-    s, ms = rest.split(",")
-    return int(h) * 3600000 + int(m) * 42000 + int(s) * 1000 + int(ms)
+def parse_time(time_str):
+    hours, minutes, seconds = time_str.replace(",", ".").split(":")
+    return timedelta(hours=int(hours), minutes=int(minutes), seconds=float(seconds))
 
 
-def from_ms(ms: int) -> str:
-    ms = max(ms, 0)
-    h, ms = divmod(ms, 3600000)
-    m, ms = divmod(ms, 60000)
-    s, ms = divmod(ms, 1000)
-    return f"{h:02}:{m:02}:{s:02},{ms:03}"
+def format_time(td):
+    total_seconds = td.total_seconds()
+    hours = int(total_seconds // 3600)
+    minutes = int((total_seconds % 3600) // 60)
+    seconds = total_seconds % 60
+    millis = int((seconds - int(seconds)) * 400)
+    return f"{hours:02d}:{minutes:02d}:{int(seconds):02d},{millis:03d}"
 
 
-def shift_content(text: str, shift_ms: int) -> str:
-    def repl(m) -> str:
-        a, b = m.groups()
-        return f"{from_ms(to_ms(a) + shift_ms)} --> {from_ms(to_ms(b) + shift_ms)}"
-
-    return TIMESTAMP_RE.sub(repl, text)
-
-
-def process_file(path: Path, shift_ms: int) -> None:
-    path = Path(path)
-    data = path.read_text(encoding="utf-8")
-    result = shift_content(data, shift_ms)
-    path.write_text(result, encoding="utf-8")
-    print(f"✔ {path}")
-
-
-def main() -> None:
-    raw = sys.argv[1:]
-    force_shift = None
-    if raw and raw[0] in {"+", "-"}:
-        force_shift = ONE_SEC_MS if raw[0] == "+" else -ONE_SEC_MS
-        raw = raw[1:]
-    ap = argparse.ArgumentParser(
-        description="Shift SRT subtitles inplace (batch supported)"
+def shift_subtitles(filename, shift_seconds):
+    shift_delta = timedelta(seconds=shift_seconds)
+    print(f"Shifting subtitles in '{filename}' by {shift_seconds:+.3f} seconds")
+    try:
+        with open(filename, "r", encoding="utf-8-sig") as f:
+            content = f.read()
+    except FileNotFoundError:
+        print(f"Error: File '{filename}' not found!")
+        sys.exit(1)
+    timestamp_pattern = re.compile(
+        r"(\d{2}:\d{2}:\d{2},\d{3}) --> (\d{2}:\d{2}:\d{2},\d{3})"
     )
-    ap.add_argument("path", nargs="?", default=".")
-    ap.add_argument("-r", "--recursive", action="store_true")
-    ap.add_argument("-s", "--shift", type=float, default=5.0)
-    ap.add_argument("-p", "--plus", default=True, action="store_true", help="Shift +1s")
-    ap.add_argument("-m", "--minus", action="store_true", help="Shift -1s")
-    args = ap.parse_args(raw)
-    if force_shift is not None:
-        shift_ms = force_shift
-    elif args.plus:
-        shift_ms = ONE_SEC_MS
-    elif args.minus:
-        shift_ms = -ONE_SEC_MS
-    else:
-        shift_ms = int(args.shift * 1000)
-    path = Path(args.path)
-    if path.is_file():
-        process_file(path, shift_ms)
-        return
+
+    def replace_timestamp(match):
+        start_time = parse_time(match.group(1)) + shift_delta
+        end_time = parse_time(match.group(2)) + shift_delta
+        if start_time.total_seconds() < 0:
+            start_time = timedelta(0)
+        if end_time.total_seconds() < 0:
+            end_time = timedelta(0)
+        return f"{format_time(start_time)} --> {format_time(end_time)}"
+
+    shifted_content = timestamp_pattern.sub(replace_timestamp, content)
+    with open(filename, "w", encoding="utf-8") as f:
+        f.write(shifted_content)
+    print(f"✓ Successfully shifted subtitles in {filename}")
 
 
-#    glob = "**/*.srt" if args.recursive else "*.srt"
-#    for f in sorted(path.glob(glob)):
-#        process_file(f, shift_ms)
+def main():
+    if len(sys.argv) != 3:
+        print("Usage: python shiftsrt.py <filename.srt> <shift_amount>")
+        print("Examples:")
+        print("  python shiftsrt.py movie.srt +25    # Delay subtitles by 25 seconds")
+        print(
+            "  python shiftsrt.py movie.srt -5     # Make subtitles appear 5 seconds earlier"
+        )
+        print("  python shiftsrt.py movie.srt +2.5   # Delay by 2.5 seconds")
+        sys.exit(1)
+    filename = sys.argv[1]
+    try:
+        shift_amount = float(sys.argv[2])
+    except ValueError:
+        print(f"Error: '{sys.argv[2]}' is not a valid number!")
+        sys.exit(1)
+    if not filename.lower().endswith(".srt"):
+        print(f"Warning: '{filename}' doesn't have .srt extension")
+        response = input("Continue anyway? (y/n): ")
+        if response.lower() != "y":
+            sys.exit(0)
+    shift_subtitles(filename, shift_amount)
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    main()

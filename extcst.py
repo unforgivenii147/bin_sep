@@ -331,11 +331,11 @@ def process_entity_extraction(
                     logger.info(f"✗ No entities found in {file_path.name}")
             except Exception as e:
                 logger.error(f"✗ Failed to process {file_path.name}: {e}")
-    logger.info("\n" + "=" * 42)
+    logger.info("\n" + "=" * 40)
     logger.info("Extraction Summary:")
     for entity_type, count in sorted(total_stats.items()):
         logger.info(f"  {entity_type}: {count}")
-    logger.info("=" * 42)
+    logger.info("=" * 40)
 
 
 def main():
@@ -361,7 +361,7 @@ def main():
     if args.paths:
         input_paths = [Path(p).resolve() for p in args.paths]
     else:
-        input_paths = [Path(".").resolve()]
+        input_paths = [Path.cwd()]
     valid_paths = []
     for path in input_paths:
         if path.exists():

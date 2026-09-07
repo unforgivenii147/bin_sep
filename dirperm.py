@@ -140,7 +140,7 @@ def print_report(stats, success=None, failed=None):
         + len(stats["files_make_executable"])
         + len(stats["files_set_standard"])
     )
-    print(f"\n{'=' * 42}")
+    print(f"\n{'=' * 40}")
     print("Scan Summary:")
     print(f"  Total items scanned: {total_items}")
     print(f"    Directories: {stats['total_dirs']}")
@@ -157,12 +157,12 @@ def print_report(stats, success=None, failed=None):
     if stats["errors"]:
         print(f"  ✗ Errors during analysis: {len(stats['errors'])}")
     if success is not None:
-        print(f"\n{'=' * 42}")
+        print(f"\n{'=' * 40}")
         print("Results:")
         print(f"  ✓ Changes successful: {success}")
         if failed:
             print(f"  ✗ Changes failed: {failed}")
-    print(f"{'=' * 42}")
+    print(f"{'=' * 40}")
 
 
 def show_examples(stats, num=5):
@@ -196,7 +196,9 @@ def main():
     parser = argparse.ArgumentParser(
         description="Fix directory and file permissions with smart rules",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog=f"\nRules for directories:\n  - All directories: set to 0775 (rwxrwxr-x)\n\nRules for files:\n  - Files that are already executable: no changes\n  - Files with shebang (#!) or in 'bin' directory: set to 0755 (rwxr-xr-x)\n  - All other files: set to 0644 (rw-r--r--)\n\nSkipped directories: {', '.join(sorted(SKIP_DIRS))}\n\nExamples:\n  %(prog)s                    # Process current directory\n  %(prog)s /path/to/project   # Process specific path\n  %(prog)s . --dry-run        # Preview changes\n  %(prog)s . --show-examples  # Show examples of changes\n  %(prog)s . --dirs-only      # Only process directories\n  %(prog)s . --files-only     # Only process files\n        ",
+        epilog=f"\nRules for directories:\n  - All directories: set to 0775 (rwxrwxr-x)\n\nRules for files:\n  - Files that are already executable: no changes\n  - Files with shebang (#!) or in 'bin' directory: set to 0755 (rwxr-xr-x)\n  - All other files: set to 0644 (rw-r--r--)\n\nSkipped directories: {
+            ', '.join(sorted(SKIP_DIRS))
+        }\n\nExamples:\n  %(prog)s                    # Process current directory\n  %(prog)s /path/to/project   # Process specific path\n  %(prog)s . --dry-run        # Preview changes\n  %(prog)s . --show-examples  # Show examples of changes\n  %(prog)s . --dirs-only      # Only process directories\n  %(prog)s . --files-only     # Only process files\n        ",
     )
     parser.add_argument(
         "path",
@@ -278,12 +280,12 @@ def main():
     if not args.dry_run:
         success, failed = apply_changes(stats, dry_run=False)
         if success is not None:
-            print(f"\n{'=' * 42}")
+            print(f"\n{'=' * 40}")
             print("Final Results:")
             print(f"  ✓ Changes applied successfully: {success}")
             if failed:
                 print(f"  ✗ Failed changes: {failed}")
-            print(f"{'=' * 42}")
+            print(f"{'=' * 40}")
     else:
         total_changes = (
             len(stats["dirs_to_change"])

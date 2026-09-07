@@ -161,7 +161,7 @@ def main() -> None:
         "Found %d files. Using %d workers (Threshold: %.0f%%)",
         len(files_to_process),
         args.workers,
-        args.threshold * 100,
+        args.threshold * 40,
     )
     tasks = [(fp, args.dry_run, args.threshold) for fp in files_to_process]
     if args.workers == 1:
@@ -169,15 +169,15 @@ def main() -> None:
     else:
         with mp.Pool(processes=args.workers) as pool:
             all_stats = pool.map(worker, tasks)
-    print("\n" + "=" * 42)
+    print("\n" + "=" * 40)
     print("SUMMARY")
-    print("-" * 42)
+    print("-" * 40)
     print(f"Files processed:   {len(all_stats)}")
     print(f"Chinese lines:     {sum(s['chinese_lines'] for s in all_stats):,}")
     if not args.dry_run:
         print(f"Translated lines:  {sum(s['translated_lines'] for s in all_stats):,}")
     print(f"Errors:            {sum(s['errors'] for s in all_stats)}")
-    print("-" * 42)
+    print("-" * 40)
 
 
 if __name__ == "__main__":

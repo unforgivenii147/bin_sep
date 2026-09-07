@@ -69,13 +69,13 @@ def report_stats(results: list[ProcessResult], autofix: bool) -> None:
     ]
     mode = "AUTOFIX" if autofix else "DRY-RUN"
     print(f"\n[{mode}] {'File':<55} {'Replacements':<15} {'Status':<15}")
-    print("-" * 42)
+    print("-" * 40)
     for rel_path, result in rel_results:
         status_str = "✓ Success" if result.status == "success" else "✗ Error"
         if result.error:
             status_str += f": {result.error[:20]}"
         print(f"{rel_path!s:<55} {result.replacements:<15} {status_str:<15}")
-    print("-" * 42)
+    print("-" * 40)
     print(f"Total files:        {total_files}")
     print(f"Files would change: {modified_count}")
     print(f"Total replacements: {total_replacements}")

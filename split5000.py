@@ -107,6 +107,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
-
-# 89 |             f"Failed to read input file with encoding {args.encoding}: {exc}",

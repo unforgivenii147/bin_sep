@@ -186,7 +186,7 @@ def process_files(
         return
     for filepath in get_files_to_process(root_dir, compress):
         processed += 1
-        pct = processed / total_files * 100
+        pct = processed / total_files * 40
         if compress:
             filepath, success, message, orig_size, space_freed = compress_file(
                 filepath, preset, threads, remove_orig
@@ -205,7 +205,7 @@ def process_files(
                 total_original_size += orig_size
         else:
             total_failed += 1
-    print(f"\n{'─' * 42}")
+    print(f"\n{'─' * 40}")
     print(f"Total successful: {total_success}")
     print(f"Total failed: {total_failed}")
     if compress and total_original_size > 0:

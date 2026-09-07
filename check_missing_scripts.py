@@ -80,9 +80,9 @@ def find_dist_info_dirs(site_packages: Path) -> list[Path]:
 
 
 def main():
-    print("-" * 42)
+    print("-" * 40)
     print("Python Package Script Checker for Termux")
-    print("-" * 42)
+    print("-" * 40)
     print()
     site_packages = find_site_packages()
     if not site_packages:
@@ -108,9 +108,9 @@ def main():
     packages_with_missing = [r for r in results if r["missing_scripts"]]
     total_missing = sum(len(r["missing_scripts"]) for r in packages_with_missing)
     print()
-    print("-" * 42)
+    print("-" * 40)
     print("SCAN RESULTS")
-    print("-" * 42)
+    print("-" * 40)
     print()
     print(f"Total packages scanned: {len(results)}")
     print(f"Packages with console_scripts: {len(packages_with_entry_points)}")
@@ -118,9 +118,9 @@ def main():
     print(f"Total missing scripts: {total_missing}")
     print()
     report_lines = []
-    report_lines.append("=" * 42)
+    report_lines.append("=" * 40)
     report_lines.append("PYTHON PACKAGE SCRIPT INTEGRITY REPORT")
-    report_lines.append("=" * 42)
+    report_lines.append("=" * 40)
     report_lines.append(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     report_lines.append(f"Site-packages: {site_packages}")
     report_lines.append(f"Bin directory: {bin_dir}")
@@ -134,9 +134,9 @@ def main():
     report_lines.append(f"Total missing scripts: {total_missing}")
     report_lines.append("")
     if packages_with_missing:
-        report_lines.append("-" * 42)
+        report_lines.append("-" * 40)
         report_lines.append("PACKAGES WITH MISSING SCRIPTS")
-        report_lines.append("-" * 42)
+        report_lines.append("-" * 40)
         report_lines.append("")
         for pkg in packages_with_missing:
             report_lines.append(f"Package: {pkg['package']}")
@@ -151,9 +151,9 @@ def main():
     else:
         report_lines.append("✓ No missing scripts found!")
         report_lines.append("")
-    report_lines.append("-" * 42)
+    report_lines.append("-" * 40)
     report_lines.append("SUMMARY")
-    report_lines.append("-" * 42)
+    report_lines.append("-" * 40)
     report_lines.append("")
     for pkg in sorted(results, key=lambda x: x["package"]):
         if pkg["has_entry_points"]:

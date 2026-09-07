@@ -25,8 +25,6 @@ except ImportError:
             "Install one of them: pip install opencv-python or pip install scikit-image"
         )
         sys.exit(1)
-
-
 MAX_QUEUE = 16
 
 

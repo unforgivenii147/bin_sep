@@ -92,7 +92,7 @@ for py in cwd.rglob("*.py"):
             folder_path = py.parent
             relative_folder = get_relative_path(folder_path, Path())
             folders_found.add(str(relative_folder))
-            file_header = f"\n# {'=' * 42}\n# File: {py.name}\n# {'=' * 42}\n"
+            file_header = f"\n# {'=' * 40}\n# File: {py.name}\n# {'=' * 40}\n"
             folder_definitions[relative_folder].append(file_header)
             for i, def_text in enumerate(definitions, 1):
                 folder_definitions[relative_folder].append(def_text)
@@ -122,8 +122,6 @@ for folder, defs_list in folder_definitions.items():
     print(
         f"✅ saved: {out_file} ({folder_def_count} definitions from {len([f for f in defs_list if 'File:' in f])} files)"
     )
-print(
-    f"""
-✨ Done! Processed {processed_files_count} files with {total_definitions} total definitions in {len(folder_definitions)} folder(s)"""
-)
+print(f"""
+✨ Done! Processed {processed_files_count} files with {total_definitions} total definitions in {len(folder_definitions)} folder(s)""")
 print(f"📁 Folders: {', '.join(sorted(folders_found))}")

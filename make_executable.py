@@ -49,7 +49,7 @@ def main():
     print(
         f"⚡ Processing {len(target_files)} files concurrently across {cpu_cores} threads..."
     )
-    print("-" * 42)
+    print("-" * 40)
     total_shebangs = 0
     total_updated = 0
     with concurrent.futures.ThreadPoolExecutor(max_workers=cpu_cores) as executor:
@@ -68,7 +68,7 @@ def main():
                     print(f"🚀 [MADE EXECUTABLE] {res['path']}")
                 else:
                     print(f"✅ [ALREADY EXECUTABLE] {res['path']}")
-    print("-" * 42)
+    print("-" * 40)
     print("📊 Summary:")
     print(f"   Total shebang files found: {total_shebangs}")
     print(f"   Files updated with +x bit: {total_updated}")

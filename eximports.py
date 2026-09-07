@@ -8,7 +8,6 @@ import tree_sitter_python as tsp
 from dh import cprint, get_installed_pkgs
 from tree_sitter import Language, Parser
 
-
 parser = Parser()
 parser.language = Language(tsp.language())
 VALID = {"import_statement", "import_from_statement"}

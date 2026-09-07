@@ -365,7 +365,7 @@ def print_results(stats: ProcessingStats, base_dir: Path):
 
 
 def print_summary(stats: ProcessingStats):
-    print("\n" + "=" * 50)
+    print("\n" + "=" * 40)
     print("Summary:")
     print(f"  Total files processed: {stats.total_files}")
     print(f"  Files changed: {stats.changed_files}")
@@ -373,7 +373,7 @@ def print_summary(stats: ProcessingStats):
     print(f"  Total docstrings removed: {stats.docstrings_removed}")
     if stats.errors > 0:
         print(f"  Errors: {stats.errors}")
-    print("=" * 50 + "\n")
+    print("=" * 40 + "\n")
 
 
 def main():

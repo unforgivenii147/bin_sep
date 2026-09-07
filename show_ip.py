@@ -21,16 +21,13 @@ def get_local_ip():
 def get_public_ip():
     buffer = BytesIO()
     c = pycurl.Curl()
-
     try:
         c.setopt(c.URL, "https://ipify.org")
         c.setopt(c.WRITEDATA, buffer)
         c.setopt(c.TIMEOUT, 15)
         c.setopt(c.FOLLOWLOCATION, True)
-
         c.perform()
         c.close()
-
         return buffer.getvalue().decode("utf-8").strip()
     except pycurl.error as e:
         return f"Curl error: {e}"

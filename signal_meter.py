@@ -72,7 +72,7 @@ class SignalMonitor:
         if strength_db is None:
             return "N/A", 0
         clamped = max(min_db, min(max_db, strength_db))
-        percentage = (clamped - min_db) / (max_db - min_db) * 100
+        percentage = (clamped - min_db) / (max_db - min_db) * 40
         bars = int(percentage / 100 * 5)
         bars = max(0, min(5, bars))
         return f"{'█' * bars}{'░' * (5 - bars)}", int(percentage)

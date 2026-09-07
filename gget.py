@@ -169,7 +169,3 @@ if __name__ == "__main__":
     hash_arg = sys.argv[3] if len(sys.argv) > 3 else None
     dl = Downloader(url_arg, out_arg, hash_arg)
     dl.start()
-
-
-# 76 |                 with Path(self.state_file).open(encoding="utf-8") as f:
-# 82 |         with self.lock, Path(self.state_file).open("w", encoding="utf-8") as f:

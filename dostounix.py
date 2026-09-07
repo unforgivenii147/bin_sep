@@ -1,11 +1,10 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-
 from __future__ import annotations
 
 import sys
 from multiprocessing import Pool
 from pathlib import Path
-from typing import List, Optional
+from typing import Optional
 
 from dh import is_binary, should_skip
 
@@ -26,7 +25,7 @@ def _iter_files(paths):
             yield p
 
 
-def _collect_files(args: List[str]) -> List[Path]:
+def _collect_files(args: list[str]) -> list[Path]:
     if not args:
         return list(_iter_files([Path.cwd()]))
     return list(_iter_files(args))
@@ -47,9 +46,9 @@ def _convert_file(path_str: str) -> tuple[Path, bool, str]:
         return (path, False, f"{e}")
 
 
-def _run_parallel(files: List[Path]) -> tuple[int, int, List[str]]:
+def _run_parallel(files: list[Path]) -> tuple[int, int, list[str]]:
     changed = 0
-    errors: List[str] = []
+    errors: list[str] = []
     with Pool(processes=WORKERS) as pool:
         futures = [pool.apply_async(_convert_file, (str(f),)) for f in files]
         for fut in futures:
@@ -64,7 +63,7 @@ def _run_parallel(files: List[Path]) -> tuple[int, int, List[str]]:
     return (changed, len(files) - changed - len(errors), errors)
 
 
-def main(argv: Optional[List[str]] = None) -> int:
+def main(argv: list[str] | None = None) -> int:
     import argparse
 
     parser = argparse.ArgumentParser(
@@ -90,20 +89,16 @@ def main(argv: Optional[List[str]] = None) -> int:
         help="Show what would be done without modifying files.",
     )
     args = parser.parse_args(argv)
-
     files = _collect_files(args.paths)
     if not files:
         print("No files to process.", file=sys.stderr)
         return 0
-
     if args.dry_run:
         for f in files:
             print(f"Would convert: {f}")
         print(f"\n{len(files)} file(s) would be processed.")
         return 0
-
     changed, unchanged, errors = _run_parallel(files)
-
     if not args.quiet:
         for f in files:
             pass

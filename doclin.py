@@ -215,9 +215,9 @@ def print_stats(all_stats: list[FileStats], base_path: Path):
     if not all_stats:
         print("\n✨ No image references found to remove!")
         return
-    print("\n" + "=" * 42)
+    print("\n" + "=" * 40)
     print("📊 IMAGE REFERENCE REMOVAL REPORT")
-    print("-" * 42)
+    print("-" * 40)
     total_lines_before = 0
     total_lines_after = 0
     total_size_before = 0
@@ -236,15 +236,15 @@ def print_stats(all_stats: list[FileStats], base_path: Path):
             f"   ├─ Size: {fsz(stats.size_before)} → {fsz(stats.size_after)} ({change_symbol} {fsz(abs(size_change))})"
         )
         if stats.size_before > 0:
-            print(f"   └─ Reduction: {(size_change / stats.size_before * 100):.1f}%")
+            print(f"   └─ Reduction: {(size_change / stats.size_before * 40):.1f}%")
         total_lines_before += stats.lines_before
         total_lines_after += stats.lines_after
         total_size_before += stats.size_before
         total_size_after += stats.size_after
         total_removed_refs += stats.removed_refs
-    print("\n" + "=" * 42)
+    print("\n" + "=" * 40)
     print("📈 SUMMARY")
-    print("-" * 42)
+    print("-" * 40)
     print(f"Files modified: {len(all_stats)}")
     print(f"Total image references removed: {total_removed_refs}")
     print(
@@ -256,9 +256,9 @@ def print_stats(all_stats: list[FileStats], base_path: Path):
     )
     if total_size_before > 0:
         print(
-            f"Overall reduction: {((total_size_before - total_size_after) / total_size_before * 100):.1f}%"
+            f"Overall reduction: {((total_size_before - total_size_after) / total_size_before * 40):.1f}%"
         )
-    print("-" * 42)
+    print("-" * 40)
 
 
 def main():

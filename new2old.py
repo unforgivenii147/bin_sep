@@ -67,7 +67,7 @@ class License:
                 try:
                     text = Path(file_path).read_text(encoding="utf-8")
                     return cls(text=text, file_path=file_path)
-                except (OSError, IOError):
+                except OSError:
                     return cls(file_path=file_path)
         return cls()
 
@@ -110,7 +110,7 @@ class Readme:
     def _read_file(file_path: str) -> str:
         try:
             return Path(file_path).read_text(encoding="utf-8")
-        except (OSError, IOError):
+        except OSError:
             return ""
 
 
@@ -481,7 +481,7 @@ if __name__ == "__main__":
 def read_file_safe(path: Path) -> str | None:
     try:
         return path.read_text(encoding="utf-8")
-    except (OSError, IOError):
+    except OSError:
         return None
 
 
@@ -492,7 +492,7 @@ def write_file_safe(path: Path, content: str, force: bool = False) -> bool:
     try:
         path.write_text(content, encoding="utf-8")
         return True
-    except (OSError, IOError) as e:
+    except OSError as e:
         log(Status.ERROR, f"Failed to write {path}: {e}")
         return False
 
@@ -529,7 +529,7 @@ def main() -> int:
     except tomllib.TOMLDecodeError as e:
         log(Status.ERROR, f"Invalid TOML in {pyproject_path}: {e}")
         return 1
-    except (OSError, IOError) as e:
+    except OSError as e:
         log(Status.ERROR, f"Failed to read {pyproject_path}: {e}")
         return 1
     if "project" not in toml_data:

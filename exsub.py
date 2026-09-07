@@ -75,14 +75,14 @@ def parse_time(time_str: str) -> float:
         raise ValueError(f"Invalid time format: {time_str}. Expected HH:MM:SS")
     h, m, s = parts
     secs = float(s)
-    return int(h) * 3600 + int(m) * 42 + secs
+    return int(h) * 3600 + int(m) * 40 + secs
 
 
 def format_time(seconds: float) -> str:
     h = int(seconds // 3600)
     m = int(seconds % 3600 // 60)
     s = seconds % 60
-    ms = int((s - int(s)) * 1000)
+    ms = int((s - int(s)) * 400)
     return f"{h:02d}:{m:02d}:{int(s):02d},{ms:03d}"
 
 
@@ -121,7 +121,7 @@ def parse_srt(filepath_path: Path) -> list[dict]:
 def _ts_to_seconds(ts: str) -> float:
     h, m, s_ms = ts.split(":")
     s, ms = s_ms.replace(",", ".").split(".")
-    return int(h) * 3600 + int(m) * 42 + int(s) + int(ms) / 1000.0
+    return int(h) * 3600 + int(m) * 40 + int(s) + int(ms) / 1000.0
 
 
 def _merge_subtitles(subtitles: list[dict], gap_threshold: float = 1.0) -> list[dict]:

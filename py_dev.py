@@ -1,7 +1,6 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
 
-import os
 import subprocess
 import sys
 import venv
@@ -51,9 +50,7 @@ class PythonDevSetup:
 __pycache__/
 *.py[cod]
 *$py.class
-# C extensions
 *.so
-# Distribution / packaging
 .Python
 build/
 develop-eggs/
@@ -70,13 +67,10 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-# PyInstaller
 *.manifest
 *.spec
-# Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
-# Unit test / coverage reports
 htmlcov/
 .tox/
 .nox/
@@ -89,10 +83,8 @@ coverage.xml
 *.py,cover
 .hypothesis/
 .pytest_cache/
-# Translations
 *.mo
 *.pot
-# Environments
 .env
 .venv
 env/
@@ -100,24 +92,20 @@ venv/
 ENV/
 env.bak/
 venv.bak/
-# IDE
 .idea/
 .vscode/
 *.swp
 *.swo
 *~
-# OS
 .DS_Store
 Thumbs.db
-# Logs
 *.log
 logs/
-# Local configuration
 .env.local
 .env.*.local
 """
 
-    def __init__(self, project_path: Optional[Path] = None):
+    def __init__(self, project_path: Path | None = None):
         self.project_path = project_path or Path.cwd()
         self.venv_path = self.project_path / ".venv"
         self.is_windows = sys.platform == "win32"
@@ -352,7 +340,6 @@ exclude_lines = [
         if not neovim_file.exists():
             content = f"""# Neovim Configuration for Python Development
 This project uses **LazyVim** with a custom Python configuration.
-## Quick Setup
 1. **Install Neovim** (v0.9+ recommended):
    Linux/macOS:
    brew install neovim  (macOS)
@@ -367,7 +354,6 @@ This project uses **LazyVim** with a custom Python configuration.
    Create ~/.config/nvim/lua/plugins/python.lua with the configuration.
 4. **Install Python LSP Tools**:
    pip install pyright black isort debugpy pynvim
-## Key Mappings
 | Key | Action |
 |-----|--------|
 | <leader>rp | Run current Python file |
@@ -383,12 +369,10 @@ This project uses **LazyVim** with a custom Python configuration.
 | <leader>tt | Run all tests |
 | <leader>td | Debug tests |
 | <leader>cv | Create virtualenv |
-## Virtual Environment
 The configuration automatically detects and uses virtual environments.
 To create a virtual environment:
 python -m venv .venv
 source .venv/bin/activate
-## Recommended Plugins
 The Python configuration includes:
 - LSP: Pyright + Ruff LSP
 - Formatting: Black + isort (via Conform.nvim)
@@ -397,7 +381,6 @@ The Python configuration includes:
 - Testing: neotest with pytest
 - Snippets: Python docstring and code snippets
 - Virtualenv: Automatic venv detection and creation
-## Troubleshooting
 LSP not working?
 :LspInfo
 :Mason
@@ -411,9 +394,9 @@ Debugging not working?
         return True
 
     def run(self) -> bool:
-        print("=" * 42)
+        print("=" * 40)
         print("  Python Development Environment Setup")
-        print("=" * 42)
+        print("=" * 40)
         if not self.check_python_version():
             return False
         self.create_project_structure()
@@ -425,9 +408,9 @@ Debugging not working?
             print("  Warning: Pre-commit setup failed, continuing...")
         if not self.generate_neovim_config_info():
             print("  Warning: Neovim info generation failed, continuing...")
-        print("\n" + "=" * 42)
+        print("\n" + "=" * 40)
         print("  Setup Complete!")
-        print("=" * 42)
+        print("=" * 40)
         print(f"\nProject: {self.project_path}")
         print(f"Python: {self._get_python_path()}")
         print(f"Venv: {self.venv_path}")

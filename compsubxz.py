@@ -244,12 +244,12 @@ def main():
                     print(
                         f"✗ {result.get('name', Path(d).name)}: Failed - {result.get('error')}"
                     )
-        print(f"\n{'=' * 42}")
+        print(f"\n{'=' * 40}")
         print(f"Compression complete: {successful} successful, {failed} failed")
         if successful > 0:
             total_freed = total_original - total_compressed
             compression_ratio = (
-                (1 - total_compressed / total_original) * 100 if total_original else 0.0
+                (1 - total_compressed / total_original) * 40 if total_original else 0.0
             )
             print(f"Total original size:   {fsz(total_original)}")
             print(f"Total compressed size: {fsz(total_compressed)}")
@@ -290,14 +290,16 @@ def main():
                     else:
                         change_str = f"(space freed: {fsz(-space_change)})"
                     print(
-                        f"✓ {result['name']}: {fsz(result['archive_size'])} -> {fsz(result['extracted_size'])} {change_str}"
+                        f"✓ {result['name']}: {fsz(result['archive_size'])} -> {
+                            fsz(result['extracted_size'])
+                        } {change_str}"
                     )
                 else:
                     failed += 1
                     print(
                         f"✗ {result.get('name', Path(a).name)}: Failed - {result.get('error')}"
                     )
-        print(f"\n{'=' * 42}")
+        print(f"\n{'=' * 40}")
         print(f"Decompression complete: {successful} successful, {failed} failed")
         if successful > 0:
             total_change = total_extracted - total_archive

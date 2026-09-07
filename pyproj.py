@@ -1,6 +1,7 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
 
+import argparse
 from pathlib import Path
 
 
@@ -26,7 +27,9 @@ def write_file_if_missing(path: Path, content: str = "") -> None:
 def create_project_structure(
     pkg: str, author: str, email: str, url: str, simple_cli: bool = False
 ) -> None:
-    cwd = Path.cwd()
+    project_dir = Path.cwd() / pkg
+    project_dir.mkdir(exist_ok=True)
+    cwd = project_dir
     version = "1.4.7"
     readme_path = cwd / "README.md"
     write_file_if_missing(readme_path, f"# {pkg}\n")
@@ -38,7 +41,7 @@ def create_project_structure(
         write_file_if_missing(
             main_py,
             """def main() -> None:
-    ""\"CLI entry point.""\"
+    \"\"\"CLI entry point.\"\"\"
     print("Hello from ", __package__)
 if __name__ == "__main__":
     raise SystemExit(main())
@@ -68,11 +71,48 @@ if __name__ == "__main__":
             "",
             "[options.packages.find]",
             "where = src",
-            "",
-            "[options.entry_points]",
-            "console_scripts =",
-            f"    {pkg} = {pkg}.__main__:main" if simple_cli else "",
         ]
     )
+    if simple_cli:
+        cfg_content.extend(
+            [
+                "",
+                "[options.entry_points]",
+                "console_scripts =",
+                f"    {pkg} = {pkg}.__main__:main",
+            ]
+        )
     setup_cfg.write_text("\n".join(cfg_content))
     print(f"Project '{pkg}' initialized in {cwd}")
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Initialize a new Python project structure"
+    )
+    parser.add_argument("package_name", help="Name of the package to create")
+    parser.add_argument("--author", help="Author name (overrides ~/.myinfo if set)")
+    parser.add_argument("--email", help="Author email (overrides ~/.myinfo if set)")
+    parser.add_argument("--url", help="Project URL (overrides ~/.myinfo if set)")
+    parser.add_argument(
+        "--cli", action="store_true", help="Create a simple CLI entry point"
+    )
+    parser.add_argument(
+        "--version", default="1.4.7", help="Initial version (default: 1.4.7)"
+    )
+    args = parser.parse_args()
+    user_info = load_user_info()
+    author = args.author or user_info.get("author", "")
+    email = args.email or user_info.get("email", "")
+    url = args.url or user_info.get("url", "")
+    create_project_structure(
+        pkg=args.package_name,
+        author=author,
+        email=email,
+        url=url,
+        simple_cli=args.cli,
+    )
+
+
+if __name__ == "__main__":
+    main()

@@ -36,9 +36,9 @@ def main() -> None:
             content = path.read_text(encoding="utf-8", errors="replace")
         except OSError as exc:
             content = f"[Could not read file: {exc}]"
-        output.append(f"\n{'=' * 80}")
+        output.append(f"\n{'=' * 40}")
         output.append(f"FILE: {path.relative_to(root)}")
-        output.append("=" * 80)
+        output.append("=" * 40)
         output.append(content)
     pydoc.pager("\n".join(output))
 

@@ -16,9 +16,9 @@ def extract_text_from_pptx(pptx_path):
     output_file = Path(pptx_path).with_suffix(".txt")
     with open(output_file, "w", encoding="utf-8") as f:
         for slide_num, slide in enumerate(prs.slides, 1):
-            f.write(f"\n{'=' * 42}\n")
+            f.write(f"\n{'=' * 40}\n")
             f.write(f"Slide {slide_num}\n")
-            f.write(f"{'=' * 42}\n\n")
+            f.write(f"{'=' * 40}\n\n")
             for shape in slide.shapes:
                 if hasattr(shape, "text") and shape.text.strip():
                     f.write(f"{shape.text}\n")

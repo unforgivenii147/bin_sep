@@ -40,7 +40,7 @@ def _encode_varint(value: int) -> bytes:
 
 def _hash_4_bytes(data: bytes, pos: int) -> int:
     val = data[pos] | data[pos + 1] << 8 | data[pos + 2] << 16 | data[pos + 3] << 24
-    return val * 426832829 >> 32 - 14 & _HASH_TABLE_SIZE - 1
+    return val * 406832829 >> 32 - 14 & _HASH_TABLE_SIZE - 1
 
 
 def _emit_literal(output: bytearray, data: bytes, start: int, length: int) -> None:
@@ -471,7 +471,7 @@ def main() -> None:
         ok_single = [r for r in results_single if r.ok]
         ok_single.sort(key=lambda r: (r.out_size, r.elapsed_s))
         print(f"{'Algo':<10} {'Size':>15} {'Time(s)':>12}")
-        print("-" * 42)
+        print("-" * 40)
         for r in ok_single:
             print(f"{r.algo:<10} {fsz(r.out_size):>15} {r.elapsed_s:>12.4f}")
         print(

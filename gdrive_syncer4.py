@@ -68,16 +68,18 @@ class GoogleDriveSync:
         return False
 
     def authenticate(self) -> None:
-        print("\n" + "=" * 42)
+        print("\n" + "=" * 40)
         print("GOOGLE DRIVE AUTHENTICATION")
-        print("-" * 42)
-        auth_url = f"https://accounts.google.com/o/oauth2/auth?client_id={self.client_id}&redirect_uri=urn:ietf:wg:oauth:2.0:oob&response_type=code&scope=https://www.googleapis.com/auth/drive.readonly&access_type=offline"
+        print("-" * 40)
+        auth_url = f"https://accounts.google.com/o/oauth2/auth?client_id={
+            self.client_id
+        }&redirect_uri=urn:ietf:wg:oauth:2.0:oob&response_type=code&scope=https://www.googleapis.com/auth/drive.readonly&access_type=offline"
         print("\n1. Open this URL in your browser:")
         print(f"\n{auth_url}\n")
         print("2. Sign in to your Google account")
         print("3. Grant access to Google Drive")
         print("4. Copy the authorization code")
-        print("-" * 42)
+        print("-" * 40)
         auth_code = input("\nEnter authorization code: ").strip()
         token_data = {
             "client_id": self.client_id,
@@ -156,7 +158,7 @@ class GoogleDriveSync:
                     f.write(chunk)
                     downloaded += len(chunk)
                     if total_size > 0:
-                        percent = downloaded / total_size * 100
+                        percent = downloaded / total_size * 40
                         print(
                             f"\rDownloading {file_name}: {percent:.1f}%",
                             end="",
@@ -200,7 +202,7 @@ class GoogleDriveSync:
                     local_mtime = os.path.getmtime(local_path)
                     if remote_modified:
                         remote_time = datetime.fromisoformat(
-                            remote_modified.replace("Z", "+00:00")
+                            remote_modified
                         ).timestamp()
                         if local_mtime >= remote_time:
                             should_download = False
@@ -210,9 +212,7 @@ class GoogleDriveSync:
                     and self.download_file(item_id, item_name, local_path)
                     and remote_modified
                 ):
-                    mod_time = datetime.fromisoformat(
-                        remote_modified.replace("Z", "+00:00")
-                    ).timestamp()
+                    mod_time = datetime.fromisoformat(remote_modified).timestamp()
                     os.utime(local_path, (mod_time, mod_time))
 
     def sanitize_filename(self, filename):
@@ -222,16 +222,16 @@ class GoogleDriveSync:
         return filename
 
     def sync_all(self, local_base_path: str) -> None:
-        print("\n" + "=" * 42)
+        print("\n" + "=" * 40)
         print("STARTING GOOGLE DRIVE SYNC")
-        print("-" * 42)
+        print("-" * 40)
         root_metadata = self.get_file_metadata("root")
         if root_metadata:
             print(f"Root folder: {root_metadata.get('name', 'My Drive')}")
         self.sync_folder("root", local_base_path, "My Drive")
-        print("\n" + "=" * 42)
+        print("\n" + "=" * 40)
         print("✅ SYNC COMPLETED!")
-        print("-" * 42)
+        print("-" * 40)
 
 
 def main() -> None:

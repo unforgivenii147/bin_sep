@@ -50,7 +50,7 @@ def convert_one(src: str) -> tuple[str, int, bool, str]:
 
 
 def main() -> None:
-    cwd = Path(".").resolve()
+    cwd = Path.cwd()
     tar_zst_files = sorted(cwd.glob("*.tar.zst"))
     if not tar_zst_files:
         print("No .tar.zst files found in current directory.")

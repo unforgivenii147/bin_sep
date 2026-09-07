@@ -246,7 +246,7 @@ def main() -> None:
     if dst_codec not in allowed:
         print(f"Unsupported target codec: {dst_codec}. Allowed: {sorted(allowed)}")
         sys.exit(1)
-    cwd = Path(".").resolve()
+    cwd = Path.cwd()
     tar_inputs: list[Path] = []
     for p in cwd.rglob("*.tar.*"):
         if not p.is_file():

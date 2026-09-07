@@ -58,7 +58,7 @@ def download_folder(service: Resource, folder_id, current_path: str) -> None:
             done = False
             while not done:
                 status, done = downloader.next_chunk()
-                print(f"Download progress: {int(status.progress() * 100)}%")
+                print(f"Download progress: {int(status.progress() * 40)}%")
             fh.close()
 
 

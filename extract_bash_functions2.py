@@ -180,7 +180,11 @@ class FunctionWriter:
         else:
             output_file = func_output_dir / safe_func_name
         func_output_dir.mkdir(parents=True, exist_ok=True)
-        header = f"#!/bin/bash\n# Function: {func_name}\n# Extracted from: {source_file}\n# Original file: {source_file.name}\n# Environment: {('Termux' if IS_TERMUX else 'Standard')}\n\n"
+        header = f"#!/bin/bash\n# Function: {func_name}\n# Extracted from: {
+            source_file
+        }\n# Original file: {source_file.name}\n# Environment: {
+            ('Termux' if IS_TERMUX else 'Standard')
+        }\n\n"
         try:
             with open(output_file, "w", encoding="utf-8") as f:
                 f.write(header)

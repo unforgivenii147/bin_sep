@@ -169,7 +169,7 @@ def push_to_remote(repo: Repo, remote_name: str, token: str = load_git_token()) 
                 repo.git.push("--set-upstream", remote_name, current_branch)
                 push_result = []
             else:
-                raise e
+                raise
         success = False
         if push_result:
             for result in push_result:

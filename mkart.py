@@ -929,7 +929,7 @@ def detect_script(text):
 
 def main():
     print("Text Art Generator (English & Arabic)")
-    print("=" * 50)
+    print("=" * 40)
     print("Enter text to convert to art")
     print("Available commands:")
     print("  - Type 'quit' to exit")
@@ -955,10 +955,10 @@ def main():
             art = create_english_style_art(text)
             script_name = "English"
         print(f"\n{script_name} Text Art:")
-        print("=" * 50)
+        print("=" * 40)
         for line in art:
             print(f"  {line}")
-        print("=" * 50)
+        print("=" * 40)
         print()
 
 

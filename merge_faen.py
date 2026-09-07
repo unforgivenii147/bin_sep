@@ -143,13 +143,13 @@ def merge_translations(src_dir: str = "."):
         logger.info(f"Saved {len(failed_words)} failed words to {output_failed}")
     except OSError as e:
         logger.error(f"Error saving failed words to {output_failed}: {e}")
-    logger.info("=" * 42)
+    logger.info("=" * 40)
     logger.info("SUMMARY:")
     logger.info(f"Files processed: {len(processed_files) // 2} pairs")
     logger.info(f"New translations added: {total_new_translations}")
     logger.info(f"Total translations in dictionary: {len(translations)}")
     logger.info(f"Total failed words: {len(failed_words)}")
-    logger.info("=" * 42)
+    logger.info("=" * 40)
 
 
 if __name__ == "__main__":

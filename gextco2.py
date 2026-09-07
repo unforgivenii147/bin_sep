@@ -189,7 +189,7 @@ class ImportAnalyzer:
                         imports.add(f"import {alias.name}")
                 elif isinstance(node, ast.ImportFrom):
                     module = node.module or ""
-                    names = ", ".join((alias.name for alias in node.names))
+                    names = ", ".join(alias.name for alias in node.names)
                     if node.level > 0:
                         module = "." * node.level + module
                     imports.add(f"from {module} import {names}")
@@ -236,26 +236,24 @@ class ImportAnalyzer:
         thirdparty_imports = []
         local_imports = []
         for imp in sorted(all_imports):
-            if imp.startswith("from .") or imp.startswith("import ."):
+            if imp.startswith(("from .", "import .")):
                 local_imports.append(imp)
-            elif imp.startswith("from typing") or imp.startswith("import typing"):
+            elif imp.startswith(("from typing", "import typing")):
                 stdlib_imports.insert(0, imp)
             elif any(
-                (
-                    imp.startswith(f"from {mod}") or imp.startswith(f"import {mod}")
-                    for mod in [
-                        "os",
-                        "sys",
-                        "json",
-                        "re",
-                        "pathlib",
-                        "datetime",
-                        "asyncio",
-                        "subprocess",
-                        "threading",
-                        "logging",
-                    ]
-                )
+                imp.startswith((f"from {mod}", f"import {mod}"))
+                for mod in [
+                    "os",
+                    "sys",
+                    "json",
+                    "re",
+                    "pathlib",
+                    "datetime",
+                    "asyncio",
+                    "subprocess",
+                    "threading",
+                    "logging",
+                ]
             ):
                 stdlib_imports.append(imp)
             else:
@@ -273,7 +271,7 @@ class EntityVisitor(ast.NodeVisitor):
         self.source_lines = source_lines
         self.filepath = filepath
         self.entities: list[Entity] = []
-        self.current_class: Optional[str] = None
+        self.current_class: str | None = None
 
     def visit_FunctionDef(self, node: ast.FunctionDef):
         self._process_function(node, is_async=False)
@@ -370,7 +368,7 @@ def is_python_file(path: Path) -> bool:
             first_line = f.readline()
             if first_line.startswith(b"#!"):
                 return b"python" in first_line
-    except (OSError, IOError):
+    except OSError:
         pass
     return False
 
@@ -496,7 +494,7 @@ def scan_directory(directory: str) -> tuple[list[Path], list[tuple[str, str]]]:
                 archive_members.extend(members)
             elif filepath.suffix in {".gz", ".bz2", ".xz", ".zst"}:
                 name = filepath.name
-                if name.endswith(".tar.gz") or name.endswith(".tgz"):
+                if name.endswith((".tar.gz", ".tgz")):
                     archive_type = ".tar.gz"
                 elif name.endswith(".tar.bz2"):
                     archive_type = ".tar.bz2"
@@ -514,7 +512,7 @@ def scan_directory(directory: str) -> tuple[list[Path], list[tuple[str, str]]]:
     return (python_files, archive_members)
 
 
-def write_entity(output_dir: Path, entity: Entity) -> Optional[Path]:
+def write_entity(output_dir: Path, entity: Entity) -> Path | None:
     entity_dir = output_dir / entity.type
     entity_dir.mkdir(parents=True, exist_ok=True)
     base_filename = entity.full_name.replace("::", "_").replace("/", "_")
@@ -549,8 +547,7 @@ def write_imports_file(output_dir: Path, all_imports: set[str]):
     filepath = output_dir / "imports.py"
     with open(filepath, "w", encoding="utf-8") as f:
         f.write("# Aggregated imports from extracted entities\n\n")
-        for imp in organized:
-            f.write(imp + "\n")
+        f.writelines(imp + "\n" for imp in organized)
 
 
 def main():

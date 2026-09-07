@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
+
 from dh import STDLIB, get_installed_pkgs
 
 
@@ -17,7 +18,7 @@ def read_requirements(filename) -> list[str]:
 
 
 def strip_installed_from_requirements(fname: str) -> None:
-    installed = get_ipkgs()
+    installed = get_installed_pkgs()
     installed = [p.lower().replace("-", "_") for p in installed if p]
     lines = read_requirements(fname)
     new_lines = [line for line in lines if line not in installed]

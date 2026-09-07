@@ -1,176 +1,216 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""
+SQLite to JSON Converter
+Converts all tables in a SQLite database to separate JSON files.
+Auto-detects tables and continues on errors.
+"""
 
-import base64
 import json
+import os
 import sqlite3
 import sys
-from multiprocessing import Pool, cpu_count
+from datetime import date, datetime
 from pathlib import Path
+from typing import Any
 
 
-def serialize_value(v):
-    if isinstance(v, (bytes, bytearray)):
-        return {"__blob_base64": base64.b64encode(v).decode("ascii")}
-    return v
+def json_serializer(obj: Any) -> Any:
+
+    if isinstance(obj, (datetime, date)):
+        return obj.isoformat()
+    if isinstance(obj, bytes):
+        return obj.decode("utf-8", errors="ignore")
+    if isinstance(obj, set):
+        return list(obj)
+    if hasattr(obj, "__dict__"):
+        return obj.__dict__
+    raise TypeError(f"Type {type(obj)} not serializable")
 
 
-def row_to_dict(row):
-    try:
-        return {k: serialize_value(row[k]) for k in row}
-    except UnicodeDecodeError:
-        result = {}
-        for k in row:
-            try:
-                result[k] = serialize_value(row[k])
-            except UnicodeDecodeError:
-                try:
-                    result[k] = {
-                        "__blob_base64": base64.b64encode(
-                            str(row[k]).encode("utf-8", errors="replace")
-                        ).decode("asci")
-                    }
-                except:
-                    result[k] = {"__decode_error": "Could not process value"}
-        return result
+def get_tables(conn: sqlite3.Connection) -> list[str]:
+
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT name FROM sqlite_master 
+        WHERE type='table' 
+        AND name NOT LIKE 'sqlite_%'
+        ORDER BY name
+    """)
+    tables = [row[0] for row in cursor.fetchall()]
+    return tables
 
 
-def fetch_table_data(args):
-    db_path, table_name = args
+def table_to_json(conn: sqlite3.Connection, table_name: str) -> list[dict]:
+
+    cursor = conn.cursor()
+
+    cursor.execute(f'SELECT * FROM "{table_name}" LIMIT 1')
+    columns = [description[0] for description in cursor.description]
+
+    cursor.execute(f'SELECT * FROM "{table_name}"')
+    rows = cursor.fetchall()
+
+    result = []
+    for row in rows:
+        row_dict = {}
+        for i, column in enumerate(columns):
+            row_dict[column] = row[i]
+        result.append(row_dict)
+
+    return result
+
+
+def save_json(
+    data: list[dict],
+    table_name: str,
+    output_dir: Path,
+    indent: int = 2,
+    ensure_ascii: bool = False,
+) -> Path:
+
+    output_file = output_dir / f"{table_name}.json"
+
+    with open(output_file, "w", encoding="utf-8") as f:
+        json.dump(
+            data, f, indent=indent, ensure_ascii=ensure_ascii, default=json_serializer
+        )
+
+    return output_file
+
+
+def convert_sqlite_to_json(
+    db_path: str, output_dir: str | None = None, indent: int = 2, verbose: bool = True
+) -> dict:
+
+    if not os.path.exists(db_path):
+        raise FileNotFoundError(f"Database file not found: {db_path}")
+
+    if output_dir is None:
+        db_stem = Path(db_path).stem
+        output_dir = Path(f"{db_stem}_json")
+    else:
+        output_dir = Path(output_dir)
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    stats = {
+        "database": db_path,
+        "output_directory": str(output_dir),
+        "tables_found": 0,
+        "tables_converted": 0,
+        "tables_failed": 0,
+        "total_rows": 0,
+        "errors": [],
+    }
+
     try:
         conn = sqlite3.connect(db_path)
-        conn.row_factory = sqlite3.Row
-        cur = conn.cursor()
-        cur.execute(f'PRAGMA table_info("{table_name}");')
-        cols = cur.fetchall()
-        if not cols:
-            conn.close()
-            return (table_name, [], f"Table '{table_name}' has no columns")
-        try:
-            cur.execute(f'SELECT * FROM "{table_name}";')
-            rows = [row_to_dict(row) for row in cur.fetchall()]
-            conn.close()
-            return (table_name, rows, None)
-        except UnicodeDecodeError:
-            conn.close()
-            conn = sqlite3.connect(db_path)
-            conn.text_factory = lambda x: (
-                x.decode("utf-8", errors="replace") if isinstance(x, bytes) else x
-            )
-            conn.row_factory = sqlite3.Row
-            cur = conn.cursor()
+
+        if verbose:
+            print(f"📁 Database: {db_path}")
+            print(f"📂 Output directory: {output_dir}")
+            print("-" * 50)
+
+        tables = get_tables(conn)
+        stats["tables_found"] = len(tables)
+
+        if verbose:
+            print(f"Found {len(tables)} tables")
+
+        for table_name in tables:
             try:
-                cur.execute(f'SELECT * FROM "{table_name}";')
-                rows = [row_to_dict(row) for row in cur.fetchall()]
-                conn.close()
-                return (
-                    table_name,
-                    rows,
-                    f"UTF-8 decoding errors replaced in '{table_name}'",
-                )
-            except Exception:
-                conn.close()
-                conn = sqlite3.connect(db_path)
-                conn.row_factory = sqlite3.Row
-                cur = conn.cursor()
-                try:
-                    cur.execute(f'SELECT * FROM "{table_name}";')
-                    rows = []
-                    for row in cur.fetchall():
-                        row_dict = {}
-                        for k in row:
-                            val = row[k]
-                            if isinstance(val, bytes):
-                                row_dict[k] = {
-                                    "__blob_base64": base64.b64encode(val).decode(
-                                        "ascii"
-                                    )
-                                }
-                            elif isinstance(val, str):
-                                try:
-                                    val.encode("utf-8")
-                                    row_dict[k] = val
-                                except UnicodeEncodeError:
-                                    row_dict[k] = {
-                                        "__blob_base64": (
-                                            base64.b64encode(
-                                                val.encode(
-                                                    "utf-8", errors="surrogateescape"
-                                                )
-                                            ).decode("ascii")
-                                        )
-                                    }
-                            else:
-                                row_dict[k] = val
-                        rows.append(row_dict)
-                    conn.close()
-                    with open(str(table_name), "w") as f:
-                        json.dump(rows, f, ensure_ascii=False, indent=2)
-                    return (
-                        table_name,
-                        rows,
-                        f"Table '{table_name}' had encoding issues; binary data base64-encoded",
-                    )
-                except Exception as e3:
-                    conn.close()
-                    return (
-                        table_name,
-                        [],
-                        f"Error processing table '{table_name}': {e3!s}",
-                    )
+                if verbose:
+                    print(f"\n🔄 Converting table: '{table_name}'...")
+
+                data = table_to_json(conn, table_name)
+
+                output_file = save_json(data, table_name, output_dir, indent)
+
+                stats["tables_converted"] += 1
+                stats["total_rows"] += len(data)
+
+                if verbose:
+                    print(f"  ✅ Saved {len(data)} rows to {output_file.name}")
+
+            except Exception as e:
+                stats["tables_failed"] += 1
+                error_msg = f"Error converting table '{table_name}': {e!s}"
+                stats["errors"].append(error_msg)
+
+                if verbose:
+                    print(f"  ❌ {error_msg}")
+                continue
+
+        conn.close()
+
     except Exception as e:
-        return (table_name, [], f"Error processing table '{table_name}': {e!s}")
+        error_msg = f"Database connection error: {e!s}"
+        stats["errors"].append(error_msg)
+        if verbose:
+            print(f"❌ {error_msg}")
+
+    if verbose:
+        print("\n" + "=" * 50)
+        print("📊 Conversion Summary:")
+        print(f"  Tables found: {stats['tables_found']}")
+        print(f"  Tables converted: {stats['tables_converted']}")
+        print(f"  Tables failed: {stats['tables_failed']}")
+        print(f"  Total rows converted: {stats['total_rows']}")
+        if stats["errors"]:
+            print(f"  Errors: {len(stats['errors'])}")
+            for error in stats["errors"]:
+                print(f"    - {error}")
+
+    return stats
 
 
 def main():
-    if len(sys.argv) < 2:
-        print("Usage: python sqlite2json.py <sqlite-file>")
-        sys.exit(1)
-    db_path = Path(sys.argv[1])
-    if not db_path.is_file():
-        print(f"File not found: {db_path}")
-        sys.exit(1)
-    out_path = db_path.with_suffix(db_path.suffix + ".json")
-    try:
-        conn = sqlite3.connect(db_path)
-        cur = conn.cursor()
-        cur.execute(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';"
-        )
-        tables = [r[0] for r in cur.fetchall()]
-        conn.close()
-    except Exception as e:
-        print(f"Error reading database: {e}")
-        sys.exit(1)
-    if not tables:
-        print("No tables found in database")
-        sys.exit(1)
-    num_processes = 4
 
-    print(f"Processing {len(tables)} tables")
-    for tbl in tables:
-        print(tbl)
-    input("press any key to continue...")
-    with Pool(processes=num_processes) as pool:
-        results = pool.map(fetch_table_data, [(db_path, table) for table in tables])
-    output = {}
-    warnings = []
-    for table_name, rows, warning in results:
-        output[table_name] = rows
-        if warning:
-            warnings.append(warning)
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description="Convert SQLite database tables to JSON files",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  %(prog)s database.db
+  %(prog)s database.db -o output_folder
+  %(prog)s database.db --indent 4 --no-verbose
+        """,
+    )
+
+    parser.add_argument("database", help="Path to SQLite database file")
+    parser.add_argument("-o", "--output", help="Output directory for JSON files")
+    parser.add_argument(
+        "--indent", type=int, default=2, help="JSON indentation (default: 2)"
+    )
+    parser.add_argument(
+        "--no-verbose", action="store_true", help="Suppress progress output"
+    )
+    parser.add_argument(
+        "--compact", action="store_true", help="Output compact JSON (no indentation)"
+    )
+
+    args = parser.parse_args()
+
     try:
-        with open(out_path, "w", encoding="utf-8", errors="replace") as f:
-            json.dump(output, f, ensure_ascii=False, indent=2, default=str)
-        print(f"✓ Wrote {len(tables)} tables to {out_path}")
-    except Exception as e:
-        print(f"Error writing JSON: {e}")
+        indent = 0 if args.compact else args.indent
+        stats = convert_sqlite_to_json(
+            args.database, args.output, indent, verbose=not args.no_verbose
+        )
+
+        if stats["tables_failed"] > 0:
+            sys.exit(1)
+        else:
+            sys.exit(0)
+
+    except FileNotFoundError as e:
+        print(f"❌ Error: {e}", file=sys.stderr)
         sys.exit(1)
-    if warnings:
-        print("\n⚠ Warnings:")
-        for warning in warnings:
-            print(f"  - {warning}")
+    except Exception as e:
+        print(f"❌ Unexpected error: {e}", file=sys.stderr)
+        sys.exit(1)
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    main()

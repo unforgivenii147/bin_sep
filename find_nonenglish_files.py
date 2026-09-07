@@ -61,7 +61,7 @@ def get_file_sample(text: str, max_lines: int = 50, max_chars: int = 5000) -> st
 def analyze_directory(directory: str = ".", show_all: bool = False) -> dict:
     directory = Path(directory).resolve()
     print(f"🔍 Scanning directory: {directory}")
-    print("-" * 42)
+    print("-" * 40)
     results = {
         "total_files": 0,
         "checked_files": 0,
@@ -114,16 +114,16 @@ def analyze_directory(directory: str = ".", show_all: bool = False) -> dict:
 
 
 def print_results(results: dict, show_files: bool = False) -> None:
-    print("\n" + "=" * 42)
+    print("\n" + "=" * 40)
     print("📊 LANGUAGE DETECTION RESULTS")
-    print("-" * 42)
+    print("-" * 40)
     total = results["total_files"]
     checked = results["checked_files"]
     non_english_total = sum(len(files) for files in results["non_english"].values())
     english_total = len(results["english"])
     undetermined = len(results["undetermined"])
     print(f"\n📁 Files scanned: {total}")
-    print(f"   ├─ Successfully analyzed: {checked} ({checked / total * 100:.1f}%)")
+    print(f"   ├─ Successfully analyzed: {checked} ({checked / total * 40:.1f}%)")
     print(f"   ├─ Skipped (too small): {results['skipped_small']}")
     print(f"   ├─ Skipped (binary/large): {results['skipped_binary']}")
     print(f"   └─ Skipped (encoding issues): {results['skipped_encoding']}")
@@ -132,7 +132,7 @@ def print_results(results: dict, show_files: bool = False) -> None:
     for lang, files in sorted(
         results["non_english"].items(), key=lambda x: len(x[1]), reverse=True
     ):
-        percentage = len(files) / checked * 100 if checked > 0 else 0
+        percentage = len(files) / checked * 40 if checked > 0 else 0
         print(f"   ├─ 🌐 {lang.upper()}: {len(files)} files ({percentage:.1f}%)")
     if undetermined > 0:
         print(f"   └─ ❓ Undetermined: {undetermined}")
@@ -145,7 +145,7 @@ def print_results(results: dict, show_files: bool = False) -> None:
         ]
         dirs_with_non_english.sort(key=lambda x: x[1]["non_english"], reverse=True)
         for dir_path, stats in dirs_with_non_english[:10]:
-            percentage = stats["non_english"] / stats["total"] * 100
+            percentage = stats["non_english"] / stats["total"] * 40
             print(f"   ├─ {dir_path if dir_path != '.' else '(root)'}:")
             print(
                 f"   │   {stats['non_english']}/{stats['total']} files ({percentage:.1f}% non-English)"
@@ -164,9 +164,9 @@ def print_results(results: dict, show_files: bool = False) -> None:
                     print(f"      └─ {rel_path}")
                 if len(files) > 20:
                     print(f"      └─ ... and {len(files) - 20} more")
-    print("\n" + "=" * 42)
+    print("\n" + "=" * 40)
     print("🎯 RECOMMENDATION")
-    print("-" * 42)
+    print("-" * 40)
     if non_english_total == 0:
         print("✅ All files appear to be in English! No translation needed.")
     else:
@@ -185,7 +185,7 @@ def print_results(results: dict, show_files: bool = False) -> None:
             ):
                 print(f"   └─ {dir_path if dir_path != '.' else 'current directory'}:")
                 print(f"       {stats['non_english']} non-English files to translate")
-    print("-" * 42)
+    print("-" * 40)
 
 
 def main() -> None:

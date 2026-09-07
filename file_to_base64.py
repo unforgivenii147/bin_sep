@@ -7,7 +7,6 @@ from pathlib import Path
 
 
 def font_to_base64(font_path):
-
     font_data = font_path.read_bytes()
     return base64.b64encode(font_data).decode("utf-8")
 

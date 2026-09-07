@@ -13,7 +13,7 @@ def parse_metadata_section(lines):
     end_line = 0
     for i, line in enumerate(lines):
         line_stripped = line.strip()
-        if line.startswith(" ") or line.startswith("\t"):
+        if line.startswith((" ", "\t")):
             if (
                 current_key
                 and current_key

@@ -63,7 +63,9 @@ def check_title(prefix_path: str, node: Section, overwrite: bool) -> bool:
             if not title.startswith(node.title):
                 all_matched = False
                 print(
-                    f"[ERROR] Title not matched: source_file:{source_file}, line num:{idx}, title:{title}, title in `SUMMARY.md`:{node.title}"
+                    f"[ERROR] Title not matched: source_file:{source_file}, line num:{
+                        idx
+                    }, title:{title}, title in `SUMMARY.md`:{node.title}"
                 )
                 break
     if not all_matched and overwrite:

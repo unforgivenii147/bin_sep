@@ -38,7 +38,7 @@ def choose_level(path: Path) -> int:
 def ratio_str(before: int, after: int) -> str:
     if before == 0:
         return "0%"
-    return f"{after / before * 100:.0f}%"
+    return f"{after / before * 40:.0f}%"
 
 
 def status_line(ok: bool, name: str, elapsed_ms: float, before: int, after: int) -> str:
@@ -83,7 +83,7 @@ def compress_file(
         else:
             compressed = _compress_bytes_stdlib(data, effective_level)
         dst.write_bytes(compressed)
-        elapsed_ms = (time.perf_counter() - t0) * 1000
+        elapsed_ms = (time.perf_counter() - t0) * 400
         before, after = len(data), len(compressed)
         src.unlink()
         result["ok"] = True
@@ -94,7 +94,7 @@ def compress_file(
                 f"  → {dst.name} ({fsz(before)} → {fsz(after)}, level {effective_level}, {backend})"
             )
     except Exception as exc:
-        elapsed_ms = (time.perf_counter() - t0) * 1000
+        elapsed_ms = (time.perf_counter() - t0) * 400
         result["line"] = status_line(False, src.name, elapsed_ms, 0, 0)
         result["msg"] = f"  ERROR: {exc}"
     return result
@@ -120,7 +120,7 @@ def decompress_file(
         data = src.read_bytes()
         decompressed = lzma.decompress(data, format=lzma.FORMAT_XZ)
         dst.write_bytes(decompressed)
-        elapsed_ms = (time.perf_counter() - t0) * 1000
+        elapsed_ms = (time.perf_counter() - t0) * 400
         before, after = len(data), len(decompressed)
         src.unlink()
         result["ok"] = True
@@ -128,7 +128,7 @@ def decompress_file(
         if verbose:
             result["msg"] = f"  → {dst.name} ({fsz(before)} → {fsz(after)})"
     except Exception as exc:
-        elapsed_ms = (time.perf_counter() - t0) * 1000
+        elapsed_ms = (time.perf_counter() - t0) * 400
         result["line"] = status_line(False, src.name, elapsed_ms, 0, 0)
         result["msg"] = f"  ERROR: {exc}"
     return result

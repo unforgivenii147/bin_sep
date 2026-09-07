@@ -121,16 +121,16 @@ def main() -> None:
         elif result is False:
             error_count += 1
             error_files.append(file_path)
-    print(f"\n{'=' * 42}")
+    print(f"\n{'=' * 40}")
     print("VERIFICATION SUMMARY")
-    print(f"{'=' * 42}")
+    print(f"{'=' * 40}")
     print(f"Total files checked: {len(files)}")
     print(f"✓ Valid files:       {valid_count}")
     print(f"✗ Files with errors: {error_count}")
     if error_files:
-        print(f"\n{'=' * 42}")
+        print(f"\n{'=' * 40}")
         print("FILES WITH ERRORS:")
-        print(f"{'=' * 42}")
+        print(f"{'=' * 40}")
         for file_path in error_files:
             print(f"  ✗ {file_path}")
     logger.info(

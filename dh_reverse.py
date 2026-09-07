@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import ast
 import hashlib
+import sys
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 
@@ -196,7 +197,7 @@ def main():
                 print(message)
             if updated:
                 updated_count += 1
-    print(f"\n{'=' * 42}")
+    print(f"\n{'=' * 40}")
     if args.apply:
         print(f"Updated {updated_count} files")
     else:
@@ -205,4 +206,4 @@ def main():
 
 
 if __name__ == "__main__":
-    exit(main())
+    sys.exit(main())

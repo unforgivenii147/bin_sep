@@ -561,10 +561,6 @@ def print_results(mismatches: list[MismatchResult], confirm: bool = False) -> in
         print(
             f"    Expected ext: {colored(result.expected_exts[0], fg=Color.LIGHT_GREEN)}"
         )
-        if confirm:
-            response = input("    Rename? [y/N]: ").strip().lower()
-            if response != "y":
-                continue
         if safe_rename(result.path, result.new_path):
             cprint("    ✓ Renamed", fg=Color.GREEN)
             renamed_count += 1
@@ -592,8 +588,8 @@ def main():
         help="Directory to scan (default: current directory)",
     )
     parser.add_argument(
-        "-y",
-        "--confirm",
+        "-i",
+        "--interactive",
         action="store_true",
         help="Interactive confirmation before renaming",
     )
@@ -601,22 +597,18 @@ def main():
         "-w",
         "--workers",
         type=int,
-        default=min(os.cpu_count() or 4, 8),
+        default=8,
         help="Number of worker processes",
     )
-    parser.add_argument("--no-color", action="store_true", help="Disable color output")
     args = parser.parse_args()
-    if args.no_color or not Color.can_colorize():
-        Color.disable()
-    else:
-        Color.enable()
+    Color.enable()
     cprint("╔══════════════════════════════════════════╗", fg=Color.CYAN)
     cprint("║  File Extension Mismatch Fixer            ║", fg=Color.CYAN)
     cprint("╚══════════════════════════════════════════╝", fg=Color.CYAN)
     print()
     mismatches = scan_directory(args.directory, workers=args.workers)
-    renamed = print_results(mismatches, confirm=args.confirm)
-    sys.exit(0 if renamed == 0 or not args.confirm else 0)
+    renamed = print_results(mismatches, confirm=args.interactive)
+    sys.exit(0 if renamed == 0 or not args.interactive else 0)
 
 
 if __name__ == "__main__":

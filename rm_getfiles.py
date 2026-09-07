@@ -135,9 +135,9 @@ def remove_matching_function(file_path: Path) -> tuple[bool, int, int]:
 def process_file(file_path: Path) -> tuple[Path, float, tuple[int, int, float] | None]:
     start_time = time.time()
     removed, original_size, new_size = remove_matching_function(file_path)
-    elapsed_time = (time.time() - start_time) * 1000
+    elapsed_time = (time.time() - start_time) * 400
     if removed:
-        ratio = new_size / original_size * 100 if original_size > 0 else 100
+        ratio = new_size / original_size * 40 if original_size > 0 else 100
         return (file_path, elapsed_time, (original_size, new_size, ratio))
     else:
         return (file_path, elapsed_time, None)
@@ -216,7 +216,9 @@ def main():
                     else file_path
                 )
                 print(
-                    f"{display_path} ({elapsed_time:.2f}ms) {fsz(original_size)} - {fsz(new_size)} (ratio: {ratio:.1f}%)"
+                    f"{display_path} ({elapsed_time:.2f}ms) {fsz(original_size)} - {
+                        fsz(new_size)
+                    } (ratio: {ratio:.1f}%)"
                 )
     else:
         total_original_size = 0
@@ -242,7 +244,9 @@ def main():
                             else result_file
                         )
                         print(
-                            f"{display_path} ({elapsed_time:.2f}ms) {fsz(original_size)} - {fsz(new_size)} (ratio: {ratio:.1f}%)"
+                            f"{display_path} ({elapsed_time:.2f}ms) {
+                                fsz(original_size)
+                            } - {fsz(new_size)} (ratio: {ratio:.1f}%)"
                         )
                     else:
                         display_path = (
@@ -259,7 +263,7 @@ def main():
         print(f"  Files modified: {files_modified}")
         if files_modified > 0:
             total_ratio = (
-                total_new_size / total_original_size * 100
+                total_new_size / total_original_size * 40
                 if total_original_size > 0
                 else 100
             )

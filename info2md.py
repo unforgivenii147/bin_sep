@@ -16,7 +16,7 @@ def convert_info_file(info_path: Path) -> None:
         while (info_path.parent / f"{base_name}_{index}.md").exists():
             index += 1
         md_path = info_path.parent / f"{base_name}_{index}.md"
-    result = run(["info", str(info_path)], stdout=PIPE, stderr=PIPE, text=True)
+    result = run(["info", str(info_path)], capture_output=True, text=True)
     if result.returncode == 0:
         md_path.write_text(result.stdout)
         info_path.unlink()

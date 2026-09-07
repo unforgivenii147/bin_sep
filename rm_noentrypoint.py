@@ -46,7 +46,7 @@ def remove_wheels_without_entry_points(
             else:
                 wheels_to_remove.append(wheel_path)
                 print(f"✗ {wheel_path.name} - no entry_points.txt (removing)")
-    print(f"\n{'=' * 42}")
+    print(f"\n{'=' * 40}")
     print(f"Results: {len(wheels_to_keep)} to keep, {len(wheels_to_remove)} to remove")
     if wheels_to_remove:
         if dry_run:

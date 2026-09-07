@@ -102,7 +102,7 @@ class ScanResult:
             "status_code": self.status_code,
             "status": self.status.value,
             "content_length": self.content_length,
-            "response_time_ms": round(self.response_time * 1000, 2),
+            "response_time_ms": round(self.response_time * 400, 2),
             "redirect_url": self.redirect_url,
             "word": self.word,
             "extension": self.extension,
@@ -299,7 +299,7 @@ class OutputHandler:
             status_str = self.color(f"[{status}]", "DIM")
             tag = self.color("OTHER", "DIM")
         size_str = self.color(f"{result.content_length:>8}b", "DIM")
-        time_str = self.color(f"{result.response_time * 1000:>6.1f}ms", "DIM")
+        time_str = self.color(f"{result.response_time * 400:>6.1f}ms", "DIM")
         depth_str = self.color(f"d{result.depth}", "DIM") if result.depth > 0 else "   "
         redirect_info = ""
         if result.redirect_url:
@@ -330,7 +330,7 @@ class OutputHandler:
             )
 
     def print_progress(self, completed: int, total: int, found: int):
-        pct = (completed / total * 100) if total > 0 else 0
+        pct = (completed / total * 40) if total > 0 else 0
         bar_len = 30
         filled = int(bar_len * completed / total) if total > 0 else 0
         bar = "█" * filled + "░" * (bar_len - filled)
@@ -989,9 +989,9 @@ def run_tests():
     import os
     import tempfile
 
-    print("\n" + "=" * 60)
+    print("\n" + "=" * 40)
     print("  🧪 pydirb Unit Tests")
-    print("=" * 60)
+    print("=" * 40)
     passed = 0
     failed = 0
 
@@ -1093,13 +1093,13 @@ def run_tests():
     )
     out = OutputHandler(config_no_color)
     assert_eq(out.color("test", "RED"), "test", "No color when disabled")
-    print("\n" + "=" * 60)
+    print("\n" + "=" * 40)
     print(f"  Results: {passed} passed, {failed} failed, {passed + failed} total")
     if failed == 0:
         print("  ✅ All tests passed!")
     else:
         print(f"  ❌ {failed} test(s) failed!")
-    print("=" * 60)
+    print("=" * 40)
     return failed == 0
 
 

@@ -4,7 +4,6 @@ from __future__ import annotations
 import shutil
 import subprocess
 import sys
-from datetime import datetime
 from pathlib import Path
 
 TERMUX_SHEBANGS = {
@@ -58,12 +57,10 @@ def archive_existing_file(file_path: Path) -> None:
     if not file_path.exists():
         return
     ARCHIVE_DIR.mkdir(parents=True, exist_ok=True)
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    archive_name = f"{file_path.stem}_{timestamp}{file_path.suffix}"
-    archive_path = ARCHIVE_DIR / archive_name
+    archive_path = ARCHIVE_DIR / file_path.name
     counter = 1
     while archive_path.exists():
-        archive_name = f"{file_path.stem}_{timestamp}_{counter}{file_path.suffix}"
+        archive_name = f"{file_path.stem}_{counter}{file_path.suffix}"
         archive_path = ARCHIVE_DIR / archive_name
         counter += 1
     try:

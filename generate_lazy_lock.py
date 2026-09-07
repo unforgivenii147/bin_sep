@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import subprocess
+import sys
 from pathlib import Path
 
 
@@ -63,13 +64,13 @@ def main():
     print("Generating lazy-lock.json for Neovim plugins...")
     print(f"Scanning: {Path.home() / '.local' / 'share' / 'nvim' / 'lazy'}")
     print(f"Output: {Path.home() / '.config' / 'nvim' / 'lazy-lock.json'}")
-    print("-" * 42)
+    print("-" * 40)
     success = generate_lazy_lock()
     if success:
         print("\nDone! You can now use this lock file with lazy.nvim.")
     else:
         print("\nFailed to generate lock file.")
-        exit(1)
+        sys.exit(1)
 
 
 if __name__ == "__main__":

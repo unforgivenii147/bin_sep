@@ -120,7 +120,7 @@ def _replace_html(html: str, file_dir: str, timeout: int) -> tuple[str, list[str
         url = m.group("url")
         raw = url
         target = url.strip()
-        if not target or target.startswith("#") or target.startswith("data:"):
+        if not target or target.startswith(("#", "data:")):
             return m.group(0)
         if _is_remote(target):
             if _is_imageish(target):
@@ -157,7 +157,7 @@ def _replace_md(md: str, file_dir: str, timeout: int) -> tuple[str, list[str]]:
     def replace_md_images(match: re.Match) -> str:
         nonlocal changes
         url = match.group("url").strip()
-        if not url or url.startswith("#") or url.startswith("data:"):
+        if not url or url.startswith(("#", "data:")):
             return match.group(0)
         if _is_remote(url):
             if _is_imageish(url):
@@ -184,7 +184,7 @@ def _replace_md(md: str, file_dir: str, timeout: int) -> tuple[str, list[str]]:
 
     def replace_md_links(match: re.Match) -> str:
         url = match.group("url").strip()
-        if not url or url.startswith("#") or url.startswith("data:"):
+        if not url or url.startswith(("#", "data:")):
             return match.group(0)
         if _is_remote(url):
             ext = _guess_ext(url)

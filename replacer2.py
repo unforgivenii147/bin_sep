@@ -40,7 +40,7 @@ def main() -> None:
     print(f"Found {len(py_files)} Python file(s)")
     print(f"Replacing: {old_text!r}")
     print(f"With:      {new_text!r}")
-    print("-" * 42)
+    print("-" * 40)
     modified_count = 0
     for py_file in py_files:
         if replace_in_file(py_file, old_text, new_text):
@@ -48,7 +48,7 @@ def main() -> None:
             modified_count += 1
         else:
             print(f"  Skipped: {py_file} (no match)")
-    print("-" * 42)
+    print("-" * 40)
     print(f"Done! Modified {modified_count} file(s).")
 
 

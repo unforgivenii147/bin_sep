@@ -58,7 +58,7 @@ def main():
         print("No packages found in file.")
         sys.exit(0)
     print(f"Found {len(packages)} package(s) to reinstall.")
-    print("-" * 42)
+    print("-" * 40)
     successful = 0
     failed = 0
     for pkg in packages:
@@ -67,9 +67,9 @@ def main():
         else:
             failed += 1
         print()
-    print("-" * 42)
+    print("-" * 40)
     print(f"Summary: {successful} successful, {failed} failed")
-    print("-" * 42)
+    print("-" * 40)
     sys.exit(0 if failed == 0 else 1)
 
 

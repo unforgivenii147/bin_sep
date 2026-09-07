@@ -37,7 +37,7 @@ def process_file_lines(input_path: Path, move_mode: bool, strict_ratio: float):
         sys.exit(1)
     detector = gcld3.NNetLanguageIdentifier(min_num_bytes=0, max_num_bytes=1000)
     print("🧠 Loading NLTK English vocabulary corpus...")
-    english_vocab = set(w.lower() for w in words.words())
+    english_vocab = {w.lower() for w in words.words()}
     try:
         lines = input_path.read_text(encoding="utf-8").splitlines()
     except Exception as e:
@@ -46,7 +46,7 @@ def process_file_lines(input_path: Path, move_mode: bool, strict_ratio: float):
     english_lines = []
     non_english_lines = []
     print(f"🔍 Strictly scanning {len(lines)} lines from '{input_path.name}'...")
-    print("-" * 42)
+    print("-" * 40)
     for i, line in enumerate(lines, start=1):
         is_en, diagnostic = is_english_strict(
             line, detector, english_vocab, strict_ratio
@@ -56,7 +56,7 @@ def process_file_lines(input_path: Path, move_mode: bool, strict_ratio: float):
         else:
             non_english_lines.append(line)
             print(f"Line {i} [{diagnostic}]: {line.strip()}")
-    print("-" * 42)
+    print("-" * 40)
     print(
         f"📊 Strict Filter Summary: Identified {len(non_english_lines)} non-English lines."
     )

@@ -72,9 +72,9 @@ class GoogleDriveSync:
         return False
 
     def authenticate_device_flow(self) -> None:
-        print("\n" + "=" * 42)
+        print("\n" + "=" * 40)
         print("GOOGLE DRIVE AUTHENTICATION (Device Flow)")
-        print("-" * 42)
+        print("-" * 40)
         device_data = {
             "client_id": self.client_id,
             "scope": "https://www.googleapis.com/auth/drive.readonly",
@@ -145,21 +145,25 @@ class GoogleDriveSync:
             raise Exception(f"Device flow authentication failed: {e}")
 
     def authenticate_manual_flow(self) -> None:
-        print("\n" + "=" * 42)
+        print("\n" + "=" * 40)
         print("GOOGLE DRIVE AUTHENTICATION (Manual Flow)")
-        print("-" * 42)
+        print("-" * 40)
         redirect_uri = "http://localhost:8080"
-        auth_url = f"https://accounts.google.com/o/oauth2/auth?client_id={self.client_id}&redirect_uri={redirect_uri}&response_type=code&scope=https://www.googleapis.com/auth/drive.readonly&access_type=offline&prompt=consent"
-        print("\n" + "=" * 42)
+        auth_url = f"https://accounts.google.com/o/oauth2/auth?client_id={
+            self.client_id
+        }&redirect_uri={
+            redirect_uri
+        }&response_type=code&scope=https://www.googleapis.com/auth/drive.readonly&access_type=offline&prompt=consent"
+        print("\n" + "=" * 40)
         print("OPTION 1 (Recommended): Localhost Redirect")
-        print("-" * 42)
+        print("-" * 40)
         print("\nOpen this URL in your browser on this device:")
         print(f"\n{auth_url}\n")
         print("After authorization, you'll be redirected to localhost:8080")
         print("Copy the ENTIRE URL from the address bar (it will show an error page)")
-        print("\n" + "=" * 42)
+        print("\n" + "=" * 40)
         print("OPTION 2: Manual Code Entry")
-        print("-" * 42)
+        print("-" * 40)
         print("If Option 1 doesn't work, try this URL instead:")
         print(f"\n{altauth_url}\n")
         input("\nPress Enter after you have the authorization code or redirect URL...")
@@ -272,7 +276,7 @@ class GoogleDriveSync:
                     f.write(chunk)
                     downloaded += len(chunk)
                     if total_size > 0:
-                        percent = downloaded / total_size * 100
+                        percent = downloaded / total_size * 40
                         print(
                             f"\rDownloading {file_name}: {percent:.1f}%",
                             end="",
@@ -316,7 +320,7 @@ class GoogleDriveSync:
                     local_mtime = os.path.getmtime(local_path)
                     if remote_modified:
                         remote_time = datetime.fromisoformat(
-                            remote_modified.replace("Z", "+00:00")
+                            remote_modified
                         ).timestamp()
                         if local_mtime >= remote_time:
                             should_download = False
@@ -326,9 +330,7 @@ class GoogleDriveSync:
                     and self.download_file(item_id, item_name, local_path)
                     and remote_modified
                 ):
-                    mod_time = datetime.fromisoformat(
-                        remote_modified.replace("Z", "+00:00")
-                    ).timestamp()
+                    mod_time = datetime.fromisoformat(remote_modified).timestamp()
                     os.utime(local_path, (mod_time, mod_time))
 
     def sanitize_filename(self, filename):
@@ -338,16 +340,16 @@ class GoogleDriveSync:
         return filename
 
     def sync_all(self, local_base_path: str) -> None:
-        print("\n" + "=" * 42)
+        print("\n" + "=" * 40)
         print("STARTING GOOGLE DRIVE SYNC")
-        print("-" * 42)
+        print("-" * 40)
         root_metadata = self.get_file_metadata("root")
         if root_metadata:
             print(f"Root folder: {root_metadata.get('name', 'My Drive')}")
         self.sync_folder("root", local_base_path, "My Drive")
-        print("\n" + "=" * 42)
+        print("\n" + "=" * 40)
         print("✅ SYNC COMPLETED!")
-        print("-" * 42)
+        print("-" * 40)
 
     def sync_folder_by_name(self, folder_name, local_base_path) -> None:
         print(f"\nSearching for folder: {folder_name}")

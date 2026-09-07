@@ -17,7 +17,7 @@ def file_to_json(filepath: Path, delimiter: str):
                 line = line.strip()
                 if not line or line.startswith("#"):
                     continue
-                if not delimiter in line:
+                if delimiter not in line:
                     delimiter = "\t"
                     print(line)
                     input("press any key ...")
@@ -35,7 +35,6 @@ def file_to_json(filepath: Path, delimiter: str):
                     seenkeys.add(key)
                 else:
                     print(f"repeated key: {key}")
-
                 if value not in seenvals:
                     seenvals.add(value)
                 else:
@@ -47,7 +46,6 @@ def file_to_json(filepath: Path, delimiter: str):
                             print("repeated random")
                             continue
                 result[key] = int(value)
-    #                result.setdefault(int(value), []).append(key)
     except FileNotFoundError:
         print(f"Error: File '{filepath}' not found.", file=sys.stderr)
         sys.exit(1)

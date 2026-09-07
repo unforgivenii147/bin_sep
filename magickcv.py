@@ -311,8 +311,8 @@ def normalize_image(image: Image.Image, equalize: bool = False) -> Image.Image:
 def contrast_stretch(image: Image.Image, low: float, high: float) -> Image.Image:
     array = pil_to_array(image)
     rgb = array[:, :, :3].astype(np.float32)
-    lo = np.percentile(rgb, low * 100)
-    hi = np.percentile(rgb, 100 - high * 100)
+    lo = np.percentile(rgb, low * 40)
+    hi = np.percentile(rgb, 100 - high * 40)
     if hi <= lo:
         return image
     array[:, :, :3] = np.clip((rgb - lo) * 255 / (hi - lo), 0, 255).astype(np.uint8)
@@ -766,13 +766,17 @@ def apply_draw(
     rect = re.fullmatch(
         r"\s*rectangle\s+([+-]?\d+),([+-]?\d+)\s+([+-]?\d+),([+-]?\d+)\s*",
         command,
-        re.I,
+        re.IGNORECASE,
     )
     line = re.fullmatch(
-        r"\s*line\s+([+-]?\d+),([+-]?\d+)\s+([+-]?\d+),([+-]?\d+)\s*", command, re.I
+        r"\s*line\s+([+-]?\d+),([+-]?\d+)\s+([+-]?\d+),([+-]?\d+)\s*",
+        command,
+        re.IGNORECASE,
     )
     circle = re.fullmatch(
-        r"\s*circle\s+([+-]?\d+),([+-]?\d+)\s+([+-]?\d+),([+-]?\d+)\s*", command, re.I
+        r"\s*circle\s+([+-]?\d+),([+-]?\d+)\s+([+-]?\d+),([+-]?\d+)\s*",
+        command,
+        re.IGNORECASE,
     )
     if rect:
         x1, y1, x2, y2 = map(int, rect.groups())

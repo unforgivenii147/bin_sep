@@ -130,9 +130,9 @@ def main():
         days_since, input_date, today = converter.days_since(
             gregorian_year, gregorian_month, gregorian_day
         )
-        print("-" * 42)
+        print("-" * 40)
         print("📅 PERSIAN TO GREGORIAN DATE CONVERTER")
-        print("-" * 42)
+        print("-" * 40)
         persian_date_str = converter.format_persian_date(year, month, day)
         print(f"\n🇮🇷 Persian date:  {persian_date_str}")
         gregorian_date_str = (
@@ -150,9 +150,9 @@ def main():
         ]
         weekday = weekday_names[input_date.weekday()]
         print(f"📆 Weekday:       {weekday}")
-        print("\n" + "-" * 42)
+        print("\n" + "-" * 40)
         print("📊 DAYS SINCE CALCULATION")
-        print("-" * 42)
+        print("-" * 40)
         print(f"\n📅 Input date:    {gregorian_date_str}")
         print(f"📅 Today:         {today.strftime('%Y/%m/%d')}")
         print(f"📊 Days since:    {days_since:,} days")
@@ -166,7 +166,7 @@ def main():
             print("\n🎉 Today's date! No time has passed.")
         else:
             print(f"\n⏳ This date is {abs(days_since)} days in the future.")
-        print("\n" + "=" * 42)
+        print("\n" + "=" * 40)
     except ValueError as e:
         print(f"❌ Error: {e}")
         sys.exit(1)

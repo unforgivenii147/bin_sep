@@ -70,7 +70,7 @@ def download_file(
                         break
                     f.write(chunk)
                     downloaded += len(chunk)
-                    percent = downloaded / total_size * 100
+                    percent = downloaded / total_size * 40
                     print(
                         f"    ⬇ {downloaded / 1024 / 1024:.2f} MB / {total_size / 1024 / 1024:.2f} MB ({percent:.1f}%)",
                         end="\r",

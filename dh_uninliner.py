@@ -146,7 +146,7 @@ def main():
         return
     results.sort(key=lambda r: r[0])
     for path, old_lines, new_lines, names in results:
-        print(f"\n{'=' * 42}")
+        print(f"\n{'=' * 40}")
         tag = "APPLY" if args.apply else "DRY RUN"
         print(f"[{tag}] {path.name}")
         print(f"  matched functions: {', '.join(names)}")

@@ -29,11 +29,11 @@ def process_file(path: Path) -> str:
         after = gsz(path)
         diff_size = before - after
         if diff_size > 0:
-            reduction = (before - after) / before * 100
+            reduction = (before - after) / before * 40
             cprint(f"- {fsz(diff_size)} | reduction : {reduction:.3f}%", "cyan")
             return None
         if diff_size < 0:
-            expantion = (after - before) / after * 100
+            expantion = (after - before) / after * 40
             cprint(f"+ {fsz(diff_size)} | expantion : {expantion:.3f}%", "yellow")
             return None
     except Exception as e:

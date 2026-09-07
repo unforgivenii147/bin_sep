@@ -449,9 +449,9 @@ def main():
     )
     parser.add_argument("-v", "--verbose", action="store_true", help="Verbose output")
     args = parser.parse_args()
-    print("-" * 42)
+    print("-" * 40)
     print("📦 Requirements.txt Generator")
-    print("-" * 42)
+    print("-" * 40)
     print("\n📋 Loading pip packages database...")
     pip_cache = PIPPackageCache(args.pip_list)
     print("📚 Loading stdlib modules...")
@@ -485,9 +485,9 @@ def main():
     with open(args.output, "w") as f:
         f.write("\n".join(sorted_packages) + "\n")
     print(f"✓ Successfully wrote {len(sorted_packages)} packages to {args.output}")
-    print("\n" + "=" * 42)
+    print("\n" + "=" * 40)
     print("📋 Top packages found:")
-    print("-" * 42)
+    print("-" * 40)
     for pkg in sorted_packages[:20]:
         print(f"  • {pkg}")
     if len(sorted_packages) > 20:
@@ -497,19 +497,3 @@ def main():
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
-
-# 242 | |         encoding: str | None = ...,
-# info:   [Self](cls, name: str | bytes | PathLike[str] | PathLike[bytes] | None = None, mode: Literal["r", "r:*", "r:", "r:gz", "r:bz2", "r:xz"] = "r", fileobj: _Fileobj | None = None, bufsize: int = 10240, *, format: int | None = ..., tarinfo: type[TarInfo] | None = ..., dereference: bool | None = ..., ignore_zeros: bool | None = ..., encoding: str | None = ..., errors: str = ..., pax_headers: Mapping[str, str] | None = ..., debug: Literal[0, 1, 2, 3] | None = None, errorlevel: Literal[0, 1, 2] | None = None) -> Self
-# info:   [Self](cls, name: str | bytes | PathLike[str] | PathLike[bytes] | None, mode: Literal["x", "x:", "a", "a:", "w", "w:", "w:tar"], fileobj: _Fileobj | None = None, bufsize: int = 10240, *, format: int | None = ..., tarinfo: type[TarInfo] | None = ..., dereference: bool | None = ..., ignore_zeros: bool | None = ..., encoding: str | None = ..., errors: str = ..., pax_headers: Mapping[str, str] | None = ..., debug: Literal[0, 1, 2, 3] | None = None, errorlevel: Literal[0, 1, 2] | None = None) -> Self
-# info:   [Self](cls, name: str | bytes | PathLike[str] | PathLike[bytes] | None = None, *, mode: Literal["x", "x:", "a", "a:", "w", "w:", "w:tar"], fileobj: _Fileobj | None = None, bufsize: int = 10240, format: int | None = ..., tarinfo: type[TarInfo] | None = ..., dereference: bool | None = ..., ignore_zeros: bool | None = ..., encoding: str | None = ..., errors: str = ..., pax_headers: Mapping[str, str] | None = ..., debug: Literal[0, 1, 2, 3] | None = None, errorlevel: Literal[0, 1, 2] | None = None) -> Self
-# info:   [Self](cls, name: str | bytes | PathLike[str] | PathLike[bytes] | None, mode: Literal["x:gz", "x:bz2", "w:gz", "w:bz2"], fileobj: _Fileobj | None = None, bufsize: int = 10240, *, format: int | None = ..., tarinfo: type[TarInfo] | None = ..., dereference: bool | None = ..., ignore_zeros: bool | None = ..., encoding: str | None = ..., errors: str = ..., pax_headers: Mapping[str, str] | None = ..., debug: Literal[0, 1, 2, 3] | None = None, errorlevel: Literal[0, 1, 2] | None = None, compresslevel: int = 9) -> Self
-# info:   [Self](cls, name: str | bytes | PathLike[str] | PathLike[bytes] | None = None, *, mode: Literal["x:gz", "x:bz2", "w:gz", "w:bz2"], fileobj: _Fileobj | None = None, bufsize: int = 10240, format: int | None = ..., tarinfo: type[TarInfo] | None = ..., dereference: bool | None = ..., ignore_zeros: bool | None = ..., encoding: str | None = ..., errors: str = ..., pax_headers: Mapping[str, str] | None = ..., debug: Literal[0, 1, 2, 3] | None = None, errorlevel: Literal[0, 1, 2] | None = None, compresslevel: int = 9) -> Self
-# info:   [Self](cls, name: str | bytes | PathLike[str] | PathLike[bytes] | None, mode: Literal["x:xz", "w:xz"], fileobj: _Fileobj | None = None, bufsize: int = 10240, *, format: int | None = ..., tarinfo: type[TarInfo] | None = ..., dereference: bool | None = ..., ignore_zeros: bool | None = ..., encoding: str | None = ..., errors: str = ..., pax_headers: Mapping[str, str] | None = ..., debug: Literal[0, 1, 2, 3] | None = None, errorlevel: Literal[0, 1, 2] | None = None, preset: Literal[0, 1, 2, 3, 4, ... omitted 5 literals] | None = ...) -> Self
-# info:   [Self](cls, name: str | bytes | PathLike[str] | PathLike[bytes] | None = None, *, mode: Literal["x:xz", "w:xz"], fileobj: _Fileobj | None = None, bufsize: int = 10240, format: int | None = ..., tarinfo: type[TarInfo] | None = ..., dereference: bool | None = ..., ignore_zeros: bool | None = ..., encoding: str | None = ..., errors: str = ..., pax_headers: Mapping[str, str] | None = ..., debug: Literal[0, 1, 2, 3] | None = None, errorlevel: Literal[0, 1, 2] | None = None, preset: Literal[0, 1, 2, 3, 4, ... omitted 5 literals] | None = ...) -> Self
-# info:   [Self](cls, name: str | Buffer | PathLike[str] | PathLike[bytes] | None, mode: Literal["r|*", "r|", "r|gz", "r|bz2", "r|xz", "r|zst"], fileobj: _Fileobj | None = None, bufsize: int = 10240, *, format: int | None = ..., tarinfo: type[TarInfo] | None = ..., dereference: bool | None = ..., ignore_zeros: bool | None = ..., encoding: str | None = ..., errors: str = ..., pax_headers: Mapping[str, str] | None = ..., debug: Literal[0, 1, 2, 3] | None = None, errorlevel: Literal[0, 1, 2] | None = None) -> Self
-# info:   [Self](cls, name: str | Buffer | PathLike[str] | PathLike[bytes] | None = None, *, mode: Literal["r|*", "r|", "r|gz", "r|bz2", "r|xz", "r|zst"], fileobj: _Fileobj | None = None, bufsize: int = 10240, format: int | None = ..., tarinfo: type[TarInfo] | None = ..., dereference: bool | None = ..., ignore_zeros: bool | None = ..., encoding: str | None = ..., errors: str = ..., pax_headers: Mapping[str, str] | None = ..., debug: Literal[0, 1, 2, 3] | None = None, errorlevel: Literal[0, 1, 2] | None = None) -> Self
-# info:   [Self](cls, name: str | Buffer | PathLike[str] | PathLike[bytes] | None, mode: Literal["w|", "w|xz", "w|zst"], fileobj: _Fileobj | None = None, bufsize: int = 10240, *, format: int | None = ..., tarinfo: type[TarInfo] | None = ..., dereference: bool | None = ..., ignore_zeros: bool | None = ..., encoding: str | None = ..., errors: str = ..., pax_headers: Mapping[str, str] | None = ..., debug: Literal[0, 1, 2, 3] | None = None, errorlevel: Literal[0, 1, 2] | None = None) -> Self
-# info:   [Self](cls, name: str | Buffer | PathLike[str] | PathLike[bytes] | None = None, *, mode: Literal["w|", "w|xz", "w|zst"], fileobj: _Fileobj | None = None, bufsize: int = 10240, format: int | None = ..., tarinfo: type[TarInfo] | None = ..., dereference: bool | None = ..., ignore_zeros: bool | None = ..., encoding: str | None = ..., errors: str = ..., pax_headers: Mapping[str, str] | None = ..., debug: Literal[0, 1, 2, 3] | None = None, errorlevel: Literal[0, 1, 2] | None = None) -> Self
-# info:   [Self](cls, name: str | Buffer | PathLike[str] | PathLike[bytes] | None, mode: Literal["w|gz", "w|bz2"], fileobj: _Fileobj | None = None, bufsize: int = 10240, *, format: int | None = ..., tarinfo: type[TarInfo] | None = ..., dereference: bool | None = ..., ignore_zeros: bool | None = ..., encoding: str | None = ..., errors: str = ..., pax_headers: Mapping[str, str] | None = ..., debug: Literal[0, 1, 2, 3] | None = None, errorlevel: Literal[0, 1, 2] | None = None, compresslevel: int = 9) -> Self
-# info:   [Self](cls, name: str | Buffer | PathLike[str] | PathLike[bytes] | None = None, *, mode: Literal["w|gz", "w|bz2"], fileobj: _Fileobj | None = None, bufsize: int = 10240, format: int | None = ..., tarinfo: type[TarInfo] | None = ..., dereference: bool | None = ..., ignore_zeros: bool | None = ..., encoding: str | None = ..., errors: str = ..., pax_headers: Mapping[str, str] | None = ..., debug: Literal[0, 1, 2, 3] | None = None, errorlevel: Literal[0, 1, 2] | None = None, compresslevel: int = 9) -> Self

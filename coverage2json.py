@@ -38,7 +38,7 @@ def coverage_to_json(
     except sqlite3.DatabaseError as e:
         print(f"Database error: {e}", file=sys.stderr)
         sys.exit(1)
-    except IOError as e:
+    except OSError as e:
         print(f"File I/O error: {e}", file=sys.stderr)
         sys.exit(1)
 

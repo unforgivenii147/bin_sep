@@ -193,9 +193,17 @@ class WheelBuilder:
                 dist_info_name = f"{normalized_name}-{package_info.version}.dist-info"
                 dist_info_dir = temp_path / dist_info_name
                 dist_info_dir.mkdir(parents=True, exist_ok=True)
-                wheel_content = f"Wheel-Version: 1.0\nGenerator: repack_venv_packages\nRoot-Is-Purelib: {('true' if package_info.is_pure_python else 'false')}\nTag: {package_info.py_version}-{package_info.abi_tag}-{package_info.platform_tag}\n"
+                wheel_content = f"Wheel-Version: 1.0\nGenerator: repack_venv_packages\nRoot-Is-Purelib: {
+                    ('true' if package_info.is_pure_python else 'false')
+                }\nTag: {package_info.py_version}-{package_info.abi_tag}-{
+                    package_info.platform_tag
+                }\n"
                 (dist_info_dir / "WHEEL").write_text(wheel_content)
-                metadata_content = f"Metadata-Version: {package_info.metadata_version}\nName: {package_info.name}\nVersion: {package_info.version}\nSummary: Repacked wheel from site-packages\nHome-page: UNKNOWN\nAuthor: UNKNOWN\nAuthor-email: UNKNOWN\nLicense: UNKNOWN\nPlatform: UNKNOWN\n"
+                metadata_content = f"Metadata-Version: {
+                    package_info.metadata_version
+                }\nName: {package_info.name}\nVersion: {
+                    package_info.version
+                }\nSummary: Repacked wheel from site-packages\nHome-page: UNKNOWN\nAuthor: UNKNOWN\nAuthor-email: UNKNOWN\nLicense: UNKNOWN\nPlatform: UNKNOWN\n"
                 (dist_info_dir / "METADATA").write_text(metadata_content)
                 top_level = pkg_name.split("-")[0]
                 (dist_info_dir / "top_level.txt").write_text(top_level + "\n")
@@ -297,7 +305,7 @@ class VenvRepacker:
         print(f"Site-packages: {self.site_packages}")
         print(f"Output directory: {self.output_dir}")
         print(f"Mode: {('DRY RUN' if self.dry_run else 'NORMAL')}")
-        print("-" * 42)
+        print("-" * 40)
         self.output_dir.mkdir(parents=True, exist_ok=True)
         packages = self.find_packages()
         if not packages:
@@ -333,16 +341,16 @@ class VenvRepacker:
         return self.stats
 
     def print_stats(self) -> None:
-        print("\n" + "=" * 42)
+        print("\n" + "=" * 40)
         print("STATISTICS")
-        print("-" * 42)
+        print("-" * 40)
         print(f"Total packages: {self.stats['total_packages']}")
         print(f"Successfully repacked: {self.stats['successfully_repacked']}")
         print(f"Failed: {self.stats['failed_packages']}")
         print()
         print(f"Pure Python packages: {self.stats['pure_python_packages']}")
         print(f"Packages with C extensions: {self.stats['packages_with_c_extensions']}")
-        print("-" * 42)
+        print("-" * 40)
 
     def save_report(self, report_file: str = "repack_report.json") -> None:
         report = {
@@ -365,14 +373,14 @@ class VenvRepacker:
             print("No .whl files found")
             return
         print(f"\nGenerated {len(wheels)} .whl files:")
-        print("-" * 42)
+        print("-" * 40)
         total_size = 0
         for wheel in sorted(wheels):
             size_mb = wheel.stat().st_size / (1024 * 1024)
             total_size += wheel.stat().st_size
             print(f"  {wheel.name:<50} {size_mb:>8.2f} MB")
         total_size_mb = total_size / (1024 * 1024)
-        print("-" * 42)
+        print("-" * 40)
         print(f"Total size: {total_size_mb:.2f} MB")
 
 

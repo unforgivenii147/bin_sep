@@ -49,7 +49,11 @@ def main():
         active_branch = local_repo.active_branch
         if not active_branch.tracking_branch():
             print(
-                f"[!] Active branch '{active_branch.name}' has no upstream tracking branch. Setting to origin/{active_branch.name}"
+                f"[!] Active branch '{
+                    active_branch.name
+                }' has no upstream tracking branch. Setting to origin/{
+                    active_branch.name
+                }"
             )
             active_branch.set_tracking_branch(origin.refs[active_branch.name])
         print(f"[*] Pulling latest changes into '{active_branch.name}'...")
@@ -83,7 +87,7 @@ def main():
                     my_fork = current_user.create_fork(target_repo)
                     print(f"[+] Fork created successfully: {my_fork.full_name}")
                 else:
-                    raise e
+                    raise
             fork_url = f"https://{my_username}:{token}@github.com/{my_username}/{repo_name}.git"
             if "fork" in local_repo.remotes:
                 fork_remote = local_repo.remotes.fork

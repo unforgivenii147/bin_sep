@@ -164,7 +164,7 @@ def main() -> None:
     print(f"[INFO] Mode: {'content' if args.content else 'filename'}")
     print(f"[INFO] Excluded dirs: {sorted(excluded_dirs)}")
     print(f"[INFO] Excluded patterns: {sorted(excluded_patterns)}")
-    print("-" * 42)
+    print("-" * 40)
     files = []
     for pth in walk_files(root):
         path = Path(pth)

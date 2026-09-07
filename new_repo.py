@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 from pathlib import Path
 
 import requests
@@ -78,7 +79,7 @@ def push_to_github(origin):
 def main():
     if not GITHUB_TOKEN:
         print("Error: GITHUB_TOKEN not found in environment variables.")
-        exit(1)
+        sys.exit(1)
     try:
         repo = get_or_create_repo()
         stage_and_commit(repo)
@@ -87,7 +88,7 @@ def main():
         print(f"✅ Repository '{REPO_NAME}' is now on GitHub!")
     except Exception as e:
         print(f"❌ Error: {e}")
-        exit(1)
+        sys.exit(1)
 
 
 if __name__ == "__main__":

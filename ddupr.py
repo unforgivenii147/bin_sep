@@ -476,7 +476,7 @@ def run(cwd: Path, mode: str | None, workers: int) -> None:
     write_utils(grouped, utils_dir, dry_run=dry_run)
     if mode == "move":
         objects_to_remove: list[PyObject] = []
-        for _h, objs in duplicates.items():
+        for objs in duplicates.values():
             objects_to_remove.extend(objs[1:])
             objects_to_remove.append(objs[0])
         remove_and_patch(objects_to_remove, utils_dir, cwd)

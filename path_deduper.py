@@ -73,9 +73,9 @@ def append_to_bashrc(bashrc_path, assignments, export_statement):
 
 
 def display_results(original_paths, deduplicated_paths, assignments, export_statement):
-    print("-" * 42)
+    print("-" * 40)
     print("PATH DEDUPLICATION RESULTS")
-    print("-" * 42)
+    print("-" * 40)
     print("\n📊 Summary:")
     print(f"   Original PATH entries:      {len(original_paths)}")
     print(f"   Deduplicated entries:       {len(deduplicated_paths)}")
@@ -100,7 +100,7 @@ def display_results(original_paths, deduplicated_paths, assignments, export_stat
                 if count > 1:
                     print(f"   {path} (appeared {count} times)")
                     seen.add(path)
-    print("\n" + "=" * 42)
+    print("\n" + "=" * 40)
 
 
 def backup_bashrc(bashrc_path):
@@ -148,9 +148,9 @@ def main():
     except Exception as e:
         print(f"❌ Error writing to {bashrc_path}: {e}")
         return
-    print("\n" + "=" * 42)
+    print("\n" + "=" * 40)
     print("🎉 SUCCESS! Configuration saved to ~/.bashrc")
-    print("-" * 42)
+    print("-" * 40)
     print("\n📋 To activate the new PATH configuration, run one of:")
     print("   source ~/.bashrc")
     print("   # or")

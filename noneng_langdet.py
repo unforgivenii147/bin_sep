@@ -412,7 +412,7 @@ class NonEnglishDetector:
     def save_results(self, results: list[DetectionResult], output_file: Path):
         with open(output_file, "w", encoding="utf-8") as f:
             f.write("Non-English Content Detection Results\n")
-            f.write("=" * 42 + "\n")
+            f.write("=" * 40 + "\n")
             f.write(f"Scan completed: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
             f.write(f"Confidence threshold: {self.config.confidence_threshold:.0%}\n")
             f.write(f"Files scanned: {len(results)}\n\n")
@@ -424,13 +424,13 @@ class NonEnglishDetector:
                     total_non_english_lines += len(result.non_english_lines)
             f.write(f"Files with non-English content: {files_with_non_english}\n")
             f.write(f"Total non-English lines found: {total_non_english_lines}\n")
-            f.write("=" * 42 + "\n\n")
+            f.write("=" * 40 + "\n\n")
             for result in sorted(
                 results, key=lambda r: len(r.non_english_lines), reverse=True
             ):
                 if not result.non_english_lines and not result.error:
                     continue
-                f.write(f"\n{'=' * 42}\n")
+                f.write(f"\n{'=' * 40}\n")
                 f.write(f"File: {result.file_path}\n")
                 f.write(f"Total lines: {result.total_lines}\n")
                 f.write(f"Non-English lines: {len(result.non_english_lines)}\n")
@@ -449,7 +449,7 @@ class NonEnglishDetector:
                         )
                         f.write(f"  Content: {line_info['text'][:150]}\n")
                         f.write("\n")
-            f.write("\n" + "=" * 42 + "\n")
+            f.write("\n" + "=" * 40 + "\n")
             f.write("End of report\n")
 
 
@@ -516,13 +516,13 @@ Examples:
         elapsed = time.time() - start_time
         files_with_issues = sum(1 for r in results if r.non_english_lines)
         total_non_eng = sum(len(r.non_english_lines) for r in results)
-        print("\n" + "=" * 42)
+        print("\n" + "=" * 40)
         print(f"Scan completed in {elapsed:.1f} seconds")
         print(f"Files scanned: {len(results)}")
         print(f"Files with non-English content: {files_with_issues}")
         print(f"Total non-English lines: {total_non_eng}")
         print(f"Results saved to: {output_path.absolute()}")
-        print("-" * 42)
+        print("-" * 40)
         sys.exit(0 if files_with_issues == 0 else 1)
     except KeyboardInterrupt:
         print("\nScan interrupted by user")

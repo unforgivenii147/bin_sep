@@ -11,9 +11,7 @@ import sys
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 
-RST2HTML_OPTIONS = " ".join(
-    ["--no-toc-backlinks", "--strip-comments", "--language en", "--date"]
-)
+RST2HTML_OPTIONS = "--no-toc-backlinks --strip-comments --language en --date"
 VALID_EXTENSIONS = {".rst", ".txt", ".md"}
 MD_LINK_PATTERN = re.compile(r"\[([^\]]+)\]\(([^)]+)\)")
 MD_HEADING_PATTERN = re.compile(r"^(#{1,6})\s+(.+)$", re.MULTILINE)

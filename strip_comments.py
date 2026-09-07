@@ -483,7 +483,7 @@ def print_header(active_exts: set[str]) -> None:
     exts_str = "  ".join(sorted(active_exts))
     print()
     print(_c("  strip_comments ", BOLD, CYAN) + _c(f"targeting: {exts_str}", DIM))
-    print(_c("  " + "─" * 42, DIM))
+    print(_c("  " + "─" * 40, DIM))
 
 
 def print_file_result(r: FileResult) -> None:
@@ -515,9 +515,11 @@ def print_summary(results: list[FileResult], elapsed: float) -> None:
     lines_saved = sum(r.lines_removed for r in results)
     bytes_saved = sum(r.bytes_saved for r in results)
     print()
-    print(_c("  " + "─" * 42, DIM))
+    print(_c("  " + "─" * 40, DIM))
     print(
-        f"  {_c('Summary', BOLD, CYAN)}  {_c(total, BOLD)} files  {_c(changed, BOLD, GREEN)} stripped  {_c(clean, DIM)} clean  "
+        f"  {_c('Summary', BOLD, CYAN)}  {_c(total, BOLD)} files  {
+            _c(changed, BOLD, GREEN)
+        } stripped  {_c(clean, DIM)} clean  "
         + (f"{_c(errors, BOLD, RED)} errors  " if errors else "")
         + f"{_c(f'-{lines_saved} lines', YELLOW)}  {_c(f'-{fsz(bytes_saved)}', MAGENTA)}  {_c(f'{elapsed:.2f}s', DIM)}"
     )
@@ -595,7 +597,7 @@ def main() -> int:
         parser.error(
             "No language flag specified. Use --rs, --toml, --js, --py, --sh, --lua, or --all."
         )
-    cwd = Path(".").resolve()
+    cwd = Path.cwd()
     files = collect_files(args.dirs, active_exts)
     if not files:
         print(_c("\n  No matching files found.\n", YELLOW))
