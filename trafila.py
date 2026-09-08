@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 import trafilatura
-from dh import get_files, mpf3
+from dh import get_files, mpf
 
 remove_orig = "-r" in sys.argv
 
@@ -56,4 +56,4 @@ if __name__ == "__main__":
     if numf == 1:
         process_file(files[0])
         sys.exit(0)
-    mpf3(process_file, files)
+    mpf(process_file, files)

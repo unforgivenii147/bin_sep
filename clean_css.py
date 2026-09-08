@@ -1,17 +1,4 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-"""
-Remove CSS comments using Tree-sitter.
-
-Requirements:
-    pip install tree-sitter tree-sitter-css
-
-Usage:
-    python remove_css_comments.py
-    python remove_css_comments.py styles/ reset.css theme/site.css
-
-With no input paths, recursively processes .css files under the current
-directory. Changed files are updated in place.
-"""
 
 from __future__ import annotations
 

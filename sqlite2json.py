@@ -1,9 +1,4 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-"""
-SQLite to JSON Converter
-Converts all tables in a SQLite database to separate JSON files.
-Auto-detects tables and continues on errors.
-"""
 
 import json
 import os

@@ -1,17 +1,4 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-"""
-Remove comments from TypeScript and TSX source files using Tree-sitter.
-
-Requirements:
-    pip install tree-sitter tree-sitter-typescript
-
-Usage:
-    python remove_ts_comments.py
-    python remove_ts_comments.py src/ file.ts component.tsx
-
-Supported extensions:
-    .ts, .tsx, .mts, .cts
-"""
 
 from __future__ import annotations
 

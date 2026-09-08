@@ -1,26 +1,4 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-"""
-Remove comments from source files supported by installed Tree-sitter grammars.
-
-Requirements:
-    tree-sitter==0.26.0
-    tree-sitter-bash
-    tree-sitter-c
-    tree-sitter-cpp
-    tree-sitter-css
-    tree-sitter-html
-    tree-sitter-javascript
-    tree-sitter-lua
-    tree-sitter-rust
-    tree-sitter-typescript
-    tree-sitter-vim
-
-Usage:
-    python remove_comments.py
-
-The script always scans the current directory recursively and updates changed
-files in place. It uses exactly 8 multiprocessing workers.
-"""
 
 from __future__ import annotations
 

@@ -1,20 +1,4 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-"""
-Remove JavaScript comments using Tree-sitter.
-
-Requirements:
-    pip install tree-sitter tree-sitter-javascript
-
-Usage:
-    python remove_js_comments.py
-    python remove_js_comments.py file.js src/ other/file.mjs
-
-With no arguments, recursively processes JavaScript files under the current
-directory. Files are updated in place.
-
-Supported extensions:
-    .js, .mjs, .cjs, .jsx
-"""
 
 from __future__ import annotations
 

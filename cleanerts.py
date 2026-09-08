@@ -1,16 +1,4 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-"""
-Universal comment remover using Tree-sitter parsers.
-
-Automatically detects file types and removes comments using the appropriate
-Tree-sitter parser. Supports multiple programming languages and file formats.
-
-Usage:
-    python remove_comments.py [file_or_dir ...]
-
-If no arguments are provided, processes all supported files in the current
-directory recursively.
-"""
 
 import sys
 from pathlib import Path

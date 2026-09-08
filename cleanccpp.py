@@ -12,8 +12,20 @@ import tree_sitter_cpp
 from tree_sitter import Language, Parser
 from dh import cprint
 
+
+CPP_EXTS = {
+    "*.cc",
+    "*.cpp",
+    "*.cxx",
+    "*.c++",
+    "*.hpp",
+    "*.hh",
+    "*.hxx",
+    "*.h++",
+    "*.inl",
+}
+
 C_EXTS = {".c", ".h"}
-CPP_EXTS = {".cpp", ".hpp", "cc", "hh"}
 ALL_EXTS = C_EXTS | CPP_EXTS
 _PARSERS: dict[str, Parser] = {}
 
@@ -215,7 +227,7 @@ def main() -> int:
         "-j",
         "--jobs",
         type=int,
-        default=max(1, (os.cpu_count() or 2)),
+        default=max(8, (os.cpu_count() or 8)),
         help="Number of parallel workers (default: CPU count).",
     )
     ap.add_argument(

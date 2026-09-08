@@ -1,13 +1,4 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-"""
-Remove comments from CSS files using Tree-sitter parsing.
-
-Usage:
-    python remove_css_comments.py [file_or_dir ...]
-
-If no arguments are provided, processes all .css files in the current
-directory recursively.
-"""
 
 import sys
 from pathlib import Path
