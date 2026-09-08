@@ -94,7 +94,7 @@ def import_end_index(source: str, offsets: list[int], tree: ast.Module) -> int:
     imports = [
         node for node in tree.body if isinstance(node, (ast.Import, ast.ImportFrom))
     ]
-    lines=[]
+    lines = []
     if not imports:
         lines = source.splitlines(keepends=True)
     index = 0
