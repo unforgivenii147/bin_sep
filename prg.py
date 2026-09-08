@@ -1,12 +1,10 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import argparse
 import re
 from collections.abc import Generator
 from multiprocessing import Pool
 from pathlib import Path
-
 from binaryornot import is_binary
 from dh import BIN_EXT, TXT_EXT
 from fastwalk import walk_files

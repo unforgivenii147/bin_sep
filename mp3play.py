@@ -11,7 +11,6 @@ def playsound(sound, block=True):
         raise NotImplementedError("block=False cannot be used on this platform yet")
     import os
     from urllib.request import pathname2url
-
     import gi
 
     gi.require_version("Gst", "1.0")

@@ -1,12 +1,10 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import contextlib
 import json
 import re
 import time
 from pathlib import Path
-
 import requests
 from dh import cprint, get_installed_pkgs
 from packaging.version import Version

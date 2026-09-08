@@ -1,12 +1,10 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import argparse
 import io
 import re
 import sys
 from pathlib import Path
-
 import cv2
 import imageio.v3 as iio
 import numpy as np

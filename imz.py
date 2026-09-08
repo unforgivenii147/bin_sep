@@ -1,6 +1,5 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import argparse
 import ast
 import contextlib
@@ -11,7 +10,6 @@ import sys
 import tarfile
 import zipfile
 from pathlib import Path
-
 import xxhash
 from dh import PKG_MAPPING, STDLIB
 from tqdm import tqdm

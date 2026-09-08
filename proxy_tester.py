@@ -1,9 +1,7 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 from concurrent.futures import ThreadPoolExecutor
 from time import sleep
-
 import requests
 from colorama import Fore, Style, init
 

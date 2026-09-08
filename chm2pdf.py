@@ -1,6 +1,5 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import html
 import os
 import re
@@ -8,7 +7,6 @@ import sys
 import tempfile
 from html.parser import HTMLParser
 from pathlib import Path
-
 import chm.chm as pychm
 from weasyprint import HTML
 

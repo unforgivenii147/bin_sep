@@ -1,12 +1,10 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import argparse
 import logging
 import site
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
-
 import importlib_metadata
 
 logging.basicConfig(

@@ -1,5 +1,4 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-
 import argparse
 import ast
 import multiprocessing as mp
@@ -15,7 +14,6 @@ class CommentAndDocstringRemover(cst.CSTTransformer):
         self.docstrings_removed = 0
 
     def visit_Comment(self, node: cst.Comment) -> bool:
-
         return True
 
     def leave_Comment(
@@ -29,20 +27,15 @@ class CommentAndDocstringRemover(cst.CSTTransformer):
     ) -> cst.IndentedBlock:
         if not body_node.body:
             return body_node
-
         first_stmt = body_node.body[0]
-
         if m.matches(
             first_stmt, m.SimpleStatementLine(body=[m.Expr(value=m.SimpleString())])
         ):
             self.docstrings_removed += 1
             remaining_stmts = list(body_node.body[1:])
-
             if not remaining_stmts:
                 remaining_stmts = [cst.SimpleStatementLine(body=[cst.Pass()])]
-
             return body_node.with_changes(body=remaining_stmts)
-
         return body_node
 
     def leave_FunctionDef(
@@ -65,39 +58,29 @@ class CommentAndDocstringRemover(cst.CSTTransformer):
 def process_file(file_path: Path) -> tuple[Path, int, int, str | None]:
     try:
         source_text = file_path.read_text(encoding="utf-8")
-
         try:
             cst_tree = cst.parse_module(source_text)
         except Exception as e:
             return file_path, 0, 0, f"CST Parse Error: {e}"
-
         lines = source_text.splitlines(keepends=True)
         has_shebang = len(lines) > 0 and lines[0].startswith("#!")
         shebang_line = lines[0] if has_shebang else ""
-
         transformer = CommentAndDocstringRemover()
         modified_tree = cst_tree.visit(transformer)
         modified_code = modified_tree.code
-
         if has_shebang and not modified_code.startswith("#!"):
             modified_code = shebang_line + modified_code
-
         c_count = transformer.comments_removed
         d_count = transformer.docstrings_removed
-
         if has_shebang and c_count > 0:
             c_count -= 1
-
         try:
             ast.parse(modified_code)
         except SyntaxError as e:
             return file_path, 0, 0, f"Resulting code failed AST validation: {e}"
-
         if c_count > 0 or d_count > 0:
             file_path.write_text(modified_code, encoding="utf-8")
-
         return file_path, c_count, d_count, None
-
     except Exception as e:
         return file_path, 0, 0, f"Unexpected error: {e}"
 
@@ -106,14 +89,12 @@ def collect_files(inputs: list[str]) -> list[Path]:
     files = set()
     if not inputs:
         return list(Path(".").rglob("*.py"))
-
     for item in inputs:
         p = Path(item)
         if p.is_file() and p.suffix == ".py":
             files.add(p)
         elif p.is_dir():
             files.update(p.rglob("*.py"))
-
     return sorted(list(files))
 
 
@@ -123,24 +104,18 @@ def main():
     )
     parser.add_argument("inputs", nargs="*", help="Files or directories to process")
     args = parser.parse_args()
-
     files = collect_files(args.inputs)
     if not files:
         print("No Python files found.")
         return
-
     print(
         f"Processing {len(files)} Python file(s) across 8 processes using LibCST...\n"
     )
-
     total_comments, total_docstrings, modified_files_count, error_count = 0, 0, 0, 0
-
     with mp.Pool(processes=8) as pool:
         async_results = [pool.apply_async(process_file, args=(f,)) for f in files]
-
         for res in async_results:
             file_path, c_count, d_count, error = res.get()
-
             if error:
                 error_count += 1
                 print(f"[ERROR] {file_path}: {error}")
@@ -151,7 +126,6 @@ def main():
                 print(
                     f"[UPDATED] {file_path} -> Removed {c_count} comment(s), {d_count} docstring(s)"
                 )
-
     print("\n" + "=" * 60)
     print("Summary:")
     print(f"  - Total files checked: {len(files)}")

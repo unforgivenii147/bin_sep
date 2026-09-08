@@ -1,6 +1,5 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import json
 import logging
 import re
@@ -10,7 +9,6 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Final
-
 from deep_translator import GoogleTranslator
 from dh import get_nobinary
 from tenacity import (

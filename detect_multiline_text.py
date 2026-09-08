@@ -1,6 +1,5 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import argparse
 import hashlib
 import shutil
@@ -9,7 +8,6 @@ import tempfile
 from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
-
 from dh import TXT_EXT as TEXT_EXTENSIONS, get_nobinary
 from joblib import Parallel, delayed
 

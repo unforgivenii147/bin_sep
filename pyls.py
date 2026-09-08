@@ -1,6 +1,5 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import argparse
 import datetime
 import grp
@@ -9,7 +8,6 @@ import stat
 import sys
 from argparse import Namespace
 from pathlib import Path
-
 from dh import fsz
 
 COLORS = {"dir": "\x1b[34m", "link": "\x1b[36m", "exec": "\x1b[32m", "reset": "\x1b[0m"}

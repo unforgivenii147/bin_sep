@@ -1,9 +1,7 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import sys
 from shutil import get_terminal_size
-
 from PIL import Image
 
 

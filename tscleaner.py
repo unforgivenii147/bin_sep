@@ -1,7 +1,5 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-
 from __future__ import annotations
-
 import os
 import stat
 import sys
@@ -10,11 +8,8 @@ from multiprocessing import Pool
 from pathlib import Path
 from typing import Any
 
-
 WORKERS = 8
 ROOT = Path.cwd()
-
-
 SKIP_DIRECTORY_NAMES = frozenset(
     {
         ".git",
@@ -77,27 +72,21 @@ SUFFIX_SPECS: tuple[tuple[str, LanguageSpec], ...] = (
 
 
 def language_spec_for(path: Path) -> LanguageSpec | None:
-
     name = path.name.lower()
-
     for suffix, spec in SUFFIX_SPECS:
         if name.endswith(suffix):
             return spec
-
     return None
 
 
 def is_source_file(path: Path) -> bool:
-
     return (
         not path.is_symlink() and path.is_file() and language_spec_for(path) is not None
     )
 
 
 def iter_source_files(root: Path) -> list[Path]:
-
     files: list[Path] = []
-
     try:
         for directory, directory_names, file_names in root.walk(
             top_down=True,
@@ -106,24 +95,19 @@ def iter_source_files(root: Path) -> list[Path]:
             directory_names[:] = sorted(
                 name for name in directory_names if name not in SKIP_DIRECTORY_NAMES
             )
-
             for file_name in file_names:
                 path = directory / file_name
-
                 try:
                     if is_source_file(path):
                         files.append(path)
                 except OSError as exc:
                     print(f"warning: cannot inspect {path}: {exc}", file=sys.stderr)
-
     except OSError as exc:
         print(f"error: cannot scan {root}: {exc}", file=sys.stderr)
-
     return files
 
 
 def get_language(spec: LanguageSpec) -> Any:
-
     from importlib import import_module
     from tree_sitter import Language
 
@@ -133,7 +117,6 @@ def get_language(spec: LanguageSpec) -> Any:
 
 
 def make_parser(spec: LanguageSpec) -> Any:
-
     from tree_sitter import Parser
 
     parser = Parser()
@@ -142,126 +125,95 @@ def make_parser(spec: LanguageSpec) -> Any:
 
 
 def collect_comment_ranges(root_node: Any) -> list[tuple[int, int]]:
-
     ranges: list[tuple[int, int]] = []
     stack = [root_node]
-
     while stack:
         node = stack.pop()
-
         if node.type == "comment":
             ranges.append((node.start_byte, node.end_byte))
             continue
-
         children = node.children
         if children:
             stack.extend(reversed(children))
-
     ranges.sort()
     return ranges
 
 
 def remove_comment_ranges(source: bytes, ranges: list[tuple[int, int]]) -> bytes:
-
     if not ranges:
         return source
-
     output = bytearray()
     previous_end = 0
-
     for start, end in ranges:
         output.extend(source[previous_end:start])
-
         comment = source[start:end]
         output.extend(byte for byte in comment if byte in (10, 13))
-
         previous_end = end
-
     output.extend(source[previous_end:])
     return bytes(output)
 
 
 def atomic_write(path: Path, content: bytes) -> None:
-
     original_stat = path.stat()
     mode = stat.S_IMODE(original_stat.st_mode)
     temporary = path.with_name(f".{path.name}.{os.getpid()}.comments.tmp")
-
     try:
         with temporary.open("xb") as file:
             file.write(content)
             file.flush()
             os.fsync(file.fileno())
-
         os.chmod(temporary, mode)
         os.replace(temporary, path)
-
     except BaseException:
         temporary.unlink(missing_ok=True)
         raise
 
 
 def process_file(path_text: str) -> tuple[str, int, str | None]:
-
     path = Path(path_text)
-
     try:
         spec = language_spec_for(path)
         if spec is None:
             return str(path), 0, None
-
         source = path.read_bytes()
         parser = make_parser(spec)
         tree = parser.parse(source)
-
         ranges = collect_comment_ranges(tree.root_node)
         if not ranges:
             return str(path), 0, None
-
         updated = remove_comment_ranges(source, ranges)
-
         if updated != source:
             atomic_write(path, updated)
-
         return str(path), len(ranges), None
-
     except (OSError, ValueError, TypeError, ImportError, AttributeError) as exc:
         return str(path), 0, str(exc)
 
 
 def main() -> int:
     files = iter_source_files(ROOT)
-
     if not files:
         print("No supported source files found.")
         return 0
-
     changed_files = 0
     comments_removed = 0
     failures = 0
-
     with Pool(processes=WORKERS) as pool:
         jobs = [pool.apply_async(process_file, (str(path),)) for path in files]
-
         for job in jobs:
             path, removed_count, error = job.get()
-
             if error is not None:
                 failures += 1
                 print(f"error: {path}: {error}", file=sys.stderr)
                 continue
-
             if removed_count:
                 changed_files += 1
                 comments_removed += removed_count
                 print(f"{path}: removed {removed_count} comment(s)")
-
     print(
         f"\nFiles scanned: {len(files)}"
         f"\nChanged files: {changed_files}"
         f"\nComments removed: {comments_removed}"
     )
-
     return 1 if failures else 0
 
 

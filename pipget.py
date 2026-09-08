@@ -1,11 +1,9 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import sys
 import time
 from io import BytesIO
 from pathlib import Path
-
 import pycurl
 from bs4 import BeautifulSoup
 

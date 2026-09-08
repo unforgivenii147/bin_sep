@@ -1,7 +1,6 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 import os
 import sys
-
 import minify_html as mh
 
 

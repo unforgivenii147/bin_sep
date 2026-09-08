@@ -1,13 +1,11 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import argparse
 import logging
 import sys
 from collections.abc import Container, Iterable
 from pathlib import Path
 from typing import Any
-
 import pdfminer.high_level
 from pdfminer.layout import LAParams, LTTextBox
 from pdfminer.pdfexceptions import PDFValueError

@@ -1,6 +1,5 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import ast
 import copy
 import hashlib
@@ -8,7 +7,6 @@ import sys
 from ast import AsyncFunctionDef, ClassDef, FunctionDef
 from dataclasses import dataclass
 from pathlib import Path
-
 from dh import get_pyfiles, gsz, mpf3
 
 

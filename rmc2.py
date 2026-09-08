@@ -1,6 +1,5 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import argparse
 import ast
 import os
@@ -9,7 +8,6 @@ from collections.abc import Generator, Iterable
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
-
 import tree_sitter_python as tspython
 from tree_sitter import Language, Parser
 

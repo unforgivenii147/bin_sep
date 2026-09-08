@@ -1,13 +1,11 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import json
 import os
 import re
 import sys
 from collections import OrderedDict
 from pathlib import Path
-
 from dh import cprint
 
 

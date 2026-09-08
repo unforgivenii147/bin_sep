@@ -1,12 +1,10 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import argparse
 import mmap
 import os
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
-
 from binaryornot import is_binary
 from dh import fsz
 

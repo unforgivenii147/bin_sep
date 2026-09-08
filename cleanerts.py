@@ -1,5 +1,4 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-
 import sys
 from pathlib import Path
 from typing import Dict, List, Tuple, Optional, Union
@@ -10,9 +9,7 @@ import os
 import stat
 import importlib
 from functools import lru_cache
-
 from tree_sitter import Language, Parser, Node
-
 
 PathLike = Union[str, Path]
 
@@ -108,18 +105,14 @@ EXTENSION_TO_LANGUAGE = {
 
 class UniversalCommentRemover:
     def __init__(self):
-
         self._parser_cache: Dict[str, Parser] = {}
         self._language_cache: Dict[str, Language] = {}
 
     def _load_language(self, module_name: str) -> Optional[Language]:
-
         if module_name in self._language_cache:
             return self._language_cache[module_name]
-
         try:
             module = importlib.import_module(module_name)
-
             if hasattr(module, "language"):
                 language = Language(module.language())
                 self._language_cache[module_name] = language
@@ -127,7 +120,6 @@ class UniversalCommentRemover:
             else:
                 print(f"Warning: Module {module_name} doesn't have language() method")
                 return None
-
         except ImportError:
             print(f"Warning: Tree-sitter parser for {module_name} not installed")
             return None
@@ -136,38 +128,28 @@ class UniversalCommentRemover:
             return None
 
     def get_parser_for_file(self, file_path: Path) -> Optional[Tuple[Parser, str]]:
-
         extension = file_path.suffix.lower()
-
         if file_path.name.lower() == "dockerfile":
             extension = ".dockerfile"
         elif file_path.name.lower() == "makefile":
             extension = ".make"
-
         module_name = EXTENSION_TO_LANGUAGE.get(extension)
         if not module_name:
             return None
-
         if module_name in self._parser_cache:
             return self._parser_cache[module_name], extension
-
         language = self._load_language(module_name)
         if not language:
             return None
-
         parser = Parser()
         parser.language = language
-
         self._parser_cache[module_name] = parser
-
         return parser, extension
 
     def _get_comment_ranges(self, root_node: Node) -> List[Tuple[int, int]]:
-
         comment_ranges = []
 
         def visit_node(node: Node):
-
             if node.type in (
                 "comment",
                 "line_comment",
@@ -178,12 +160,10 @@ class UniversalCommentRemover:
             ):
                 comment_ranges.append((node.start_byte, node.end_byte))
                 return
-
             for child in node.children:
                 visit_node(child)
 
         visit_node(root_node)
-
         if comment_ranges:
             comment_ranges.sort(key=lambda x: x[0])
             merged = [comment_ranges[0]]
@@ -194,50 +174,37 @@ class UniversalCommentRemover:
                 else:
                     merged.append((start, end))
             comment_ranges = merged
-
         return comment_ranges
 
     def _cleanup_empty_lines(self, content: bytes) -> bytes:
-
         while b"\n\n\n" in content:
             content = content.replace(b"\n\n\n", b"\n\n")
-
         return content
 
     def remove_comments(self, content: bytes, file_extension: str) -> Tuple[bytes, int]:
-
         if file_extension in (".json", ".jsonc"):
             return self._remove_json_comments(content)
-
         parser_info = self.get_parser_for_file(Path(f"dummy{file_extension}"))
         if not parser_info:
             return content, 0
-
         parser, _ = parser_info
-
         tree = parser.parse(content)
         comment_ranges = self._get_comment_ranges(tree.root_node)
-
         if not comment_ranges:
             return content, 0
-
         result_parts = []
         last_end = 0
         comments_removed = 0
-
         for start, end in comment_ranges:
             before_comment = content[last_end:start]
-
             line_start = content.rfind(b"\n", 0, start) + 1
             prefix_on_line = content[line_start:start]
-
             if prefix_on_line.strip() == b"":
                 line_end = content.find(b"\n", end)
                 if line_end == -1:
                     line_end = len(content)
                 else:
                     line_end += 1
-
                 suffix_on_line = content[end:line_end].strip()
                 if suffix_on_line == b"":
                     result_parts.append(before_comment[: len(prefix_on_line)])
@@ -248,48 +215,33 @@ class UniversalCommentRemover:
             else:
                 result_parts.append(before_comment)
                 last_end = end
-
             comments_removed += 1
-
         result_parts.append(content[last_end:])
         processed_content = b"".join(result_parts)
-
         processed_content = self._cleanup_empty_lines(processed_content)
-
         return processed_content, comments_removed
 
     def _remove_json_comments(self, content: bytes) -> Tuple[bytes, int]:
-
         import re
 
         pattern_line = re.compile(rb"//.*?$", re.MULTILINE)
-
         pattern_block = re.compile(rb"/\*.*?\*/", re.DOTALL)
-
         comments_count = 0
-
         comments_count += len(pattern_line.findall(content))
         comments_count += len(pattern_block.findall(content))
-
         content = pattern_line.sub(b"", content)
         content = pattern_block.sub(b"", content)
-
         content = self._cleanup_empty_lines(content)
-
         return content, comments_count
 
 
 def collect_supported_files(inputs: List[str]) -> List[Path]:
-
     supported_files = []
     supported_extensions = set(EXTENSION_TO_LANGUAGE.keys())
-
     if not inputs:
         inputs = ["."]
-
     for input_path in inputs:
         path = Path(input_path)
-
         if path.is_file():
             if path.suffix.lower() in supported_extensions or path.name.lower() in (
                 "dockerfile",
@@ -307,7 +259,6 @@ def collect_supported_files(inputs: List[str]) -> List[Path]:
                         supported_files.append(file_path)
         else:
             print(f"Warning: {path} does not exist, skipping")
-
     seen = set()
     unique_files = []
     for f in supported_files:
@@ -315,22 +266,16 @@ def collect_supported_files(inputs: List[str]) -> List[Path]:
         if resolved not in seen:
             seen.add(resolved)
             unique_files.append(resolved)
-
     return unique_files
 
 
 def process_file(file_path: Path) -> ProcessResult:
-
     start_time = time.perf_counter()
-
     try:
         remover = UniversalCommentRemover()
-
         with open(file_path, "rb") as f:
             content = f.read()
-
         file_size = len(content)
-
         if file_size == 0:
             return ProcessResult(
                 path=file_path,
@@ -340,30 +285,23 @@ def process_file(file_path: Path) -> ProcessResult:
                 file_size=0,
                 file_type=file_path.suffix,
             )
-
         processed_content, comments_removed = remover.remove_comments(
             content, file_path.suffix.lower()
         )
-
         if comments_removed > 0 and processed_content != content:
             temp_path = file_path.with_suffix(file_path.suffix + ".tmp")
-
             try:
                 with open(temp_path, "wb") as f:
                     f.write(processed_content)
                     f.flush()
                     os.fsync(f.fileno())
-
                 original_mode = os.stat(file_path).st_mode
                 os.chmod(temp_path, original_mode)
-
                 temp_path.replace(file_path)
-
             except Exception:
                 if temp_path.exists():
                     temp_path.unlink()
                 raise
-
         processing_time = time.perf_counter() - start_time
         return ProcessResult(
             path=file_path,
@@ -373,7 +311,6 @@ def process_file(file_path: Path) -> ProcessResult:
             file_size=file_size,
             file_type=file_path.suffix,
         )
-
     except Exception as e:
         processing_time = time.perf_counter() - start_time
         return ProcessResult(
@@ -388,24 +325,19 @@ def process_file(file_path: Path) -> ProcessResult:
 def process_files_parallel(
     files: List[Path], num_workers: int = 8
 ) -> List[ProcessResult]:
-
     results = []
     total_files = len(files)
     completed = 0
-
     with mp.Pool(processes=num_workers) as pool:
         async_results = []
-
         for file_path in files:
             async_result = pool.apply_async(process_file, (file_path,))
             async_results.append(async_result)
-
         for async_result in async_results:
             try:
                 result = async_result.get(timeout=30)
                 results.append(result)
                 completed += 1
-
                 if result.success:
                     if result.comments_removed > 0:
                         size_kb = result.file_size / 1024 if result.file_size else 0
@@ -424,10 +356,8 @@ def process_files_parallel(
                         f"✗ [{result.file_type:6}] {result.path}: "
                         f"ERROR - {result.error_message}"
                     )
-
                 if completed % 25 == 0 and completed < total_files:
                     print(f"\nProgress: {completed}/{total_files} files processed\n")
-
             except mp.TimeoutError:
                 print(f"✗ Timeout processing file (30s limit)")
                 results.append(
@@ -438,14 +368,11 @@ def process_files_parallel(
                     )
                 )
                 completed += 1
-
     return results
 
 
 def print_summary(results: List[ProcessResult], total_files: int, start_time: float):
-
     total_time = time.perf_counter() - start_time
-
     successful = sum(1 for r in results if r.success)
     failed = sum(1 for r in results if not r.success)
     total_comments_removed = sum(r.comments_removed for r in results if r.success)
@@ -453,7 +380,6 @@ def print_summary(results: List[ProcessResult], total_files: int, start_time: fl
         1 for r in results if r.success and r.comments_removed > 0
     )
     total_size = sum(r.file_size for r in results if r.success and r.file_size)
-
     type_stats = {}
     for r in results:
         if r.success and r.comments_removed > 0:
@@ -462,7 +388,6 @@ def print_summary(results: List[ProcessResult], total_files: int, start_time: fl
                 type_stats[ext] = {"files": 0, "comments": 0}
             type_stats[ext]["files"] += 1
             type_stats[ext]["comments"] += r.comments_removed
-
     print("\n" + "=" * 70)
     print("SUMMARY")
     print("=" * 70)
@@ -472,57 +397,43 @@ def print_summary(results: List[ProcessResult], total_files: int, start_time: fl
     print(f"Files with comments:       {files_with_comments}")
     print(f"Files without comments:    {successful - files_with_comments}")
     print(f"Total comments removed:    {total_comments_removed}")
-
     if total_size > 0:
         size_mb = total_size / (1024 * 1024)
         print(f"Total size processed:      {size_mb:.2f} MB")
-
     print(f"Total processing time:     {total_time:.2f}s")
-
     if successful > 0:
         avg_time = total_time / successful
         print(f"Average time per file:     {avg_time:.3f}s")
-
     if type_stats:
         print(f"\nComments removed by file type:")
         for ext, stats in sorted(type_stats.items()):
             print(
                 f"  {ext:12} {stats['files']:4} files, {stats['comments']:6} comments"
             )
-
     if failed > 0:
         print(f"\nFailed files:")
         for r in results:
             if not r.success:
                 print(f"  - {r.path}: {r.error_message}")
-
     print("=" * 70)
 
 
 def main():
-
     inputs = sys.argv[1:]
-
     print("Universal Comment Remover")
     print("=" * 50)
     print("Supported file types:", len(EXTENSION_TO_LANGUAGE))
     print("Collecting files...")
-
     files = collect_supported_files(inputs)
-
     if not files:
         print("No supported files found to process.")
         return
-
     extensions_found = set(f.suffix.lower() for f in files if f.suffix)
     print(f"Found {len(files)} file(s) to process")
     print(f"File types found: {', '.join(sorted(extensions_found))}")
     print(f"Using 8 worker processes\n")
-
     start_time = time.perf_counter()
-
     results = process_files_parallel(files, num_workers=8)
-
     print_summary(results, len(files), start_time)
 
 

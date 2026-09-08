@@ -1,11 +1,9 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import argparse
 import csv
 import os
 from collections.abc import Iterable
-
 from cld import (
     detect_language,
     is_probably_text_bytes,

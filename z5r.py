@@ -1,6 +1,5 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import argparse
 import multiprocessing as mp
 import tarfile
@@ -9,7 +8,6 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Final
-
 import zstandard as zstd
 from dh import fsz, gsz
 

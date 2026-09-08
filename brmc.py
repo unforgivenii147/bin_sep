@@ -1,11 +1,9 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import argparse
 import ast
 import multiprocessing as mp
 from pathlib import Path
-
 from dh import get_pyfiles
 
 
@@ -121,7 +119,6 @@ def main() -> None:
         py_files = sorted(set(py_files))
     if not py_files:
         return
-
     changed: list[tuple[str, int]] = []
     with mp.Pool(processes=8) as pool:
         async_results = [pool.apply_async(process_file, (p, cwd)) for p in py_files]
@@ -129,7 +126,6 @@ def main() -> None:
             res = async_res.get()
             if res is not None:
                 changed.append(res)
-
     for rel, doc_count in sorted(changed, key=lambda x: x[0]):
         print(rel)
         if doc_count > 0:

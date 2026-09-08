@@ -1,11 +1,9 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import html.parser
 import re
 import sys
 from pathlib import Path
-
 import chm
 from reportlab.lib.enums import TA_CENTER
 from reportlab.lib.pagesizes import letter

@@ -1,10 +1,8 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import json
 import sys
 from pathlib import Path
-
 import nbformat as nbf
 
 

@@ -1,6 +1,5 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import tree_sitter_python as tsp
 from tree_sitter import Language, Parser
 

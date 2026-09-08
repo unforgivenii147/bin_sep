@@ -1,9 +1,7 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import shutil
 from pathlib import Path
-
 from pdf2image import convert_from_path
 
 POPPLER_PATH = None

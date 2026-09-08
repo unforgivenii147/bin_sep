@@ -1,6 +1,5 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import base64
 import mimetypes
 import multiprocessing as mp
@@ -9,7 +8,6 @@ import sys
 from collections.abc import Iterable
 from pathlib import Path
 from urllib.parse import unquote, urldefrag, urljoin, urlparse
-
 import requests
 from bs4 import BeautifulSoup
 

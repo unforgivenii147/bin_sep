@@ -1,10 +1,8 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import hashlib
 from dataclasses import dataclass
 from pathlib import Path
-
 import tree_sitte_python as tsp
 from tree_sitter import Language, Node, Parser
 

@@ -1,13 +1,11 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import logging
 import mimetypes
 import os
 from collections.abc import Iterator
 from multiprocessing import Pool, cpu_count
 from pathlib import Path
-
 from dh import TXT_EXT
 
 logging.basicConfig(

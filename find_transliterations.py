@@ -1,11 +1,9 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import argparse
 import json
 import re
 import sys
-
 from rapidfuzz import fuzz
 
 
@@ -79,7 +77,6 @@ def is_transliteration(persian_word, english_word):
         return False
     if not english_word[0].isupper():
         return False
-
     common_english_words = {
         "pump",
         "enough",
@@ -975,7 +972,6 @@ def is_transliteration(persian_word, english_word):
         "account",
         "nerve",
     }
-
     if english_word.lower() in common_english_words:
         return False
     if " " in english_word:

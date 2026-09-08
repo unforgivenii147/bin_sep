@@ -1,10 +1,8 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import argparse
 import os
 import time
-
 import pysrt
 from deep_translator import GoogleTranslator
 

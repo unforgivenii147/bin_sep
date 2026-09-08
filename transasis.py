@@ -1,13 +1,11 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import logging
 import re
 import sys
 from collections.abc import Iterator
 from pathlib import Path
 from typing import Final
-
 from deep_translator import GoogleTranslator
 
 CHUNK_SIZE = 1024 * 1024

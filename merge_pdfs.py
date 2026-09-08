@@ -1,10 +1,8 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import re
 import sys
 from pathlib import Path
-
 from pypdf import PdfReader, PdfWriter
 
 

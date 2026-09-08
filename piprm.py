@@ -1,10 +1,8 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import subprocess
 import sys
 from pathlib import Path
-
 from rapidfuzz import fuzz
 
 PIP_LIST_FILE = "/sdcard/data/pip.list"

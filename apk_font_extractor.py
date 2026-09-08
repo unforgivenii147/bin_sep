@@ -1,6 +1,5 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import argparse
 import logging
 import multiprocessing
@@ -10,7 +9,6 @@ from concurrent.futures import TimeoutError
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
-
 from fontTools.ttLib import TTFont
 
 logging.basicConfig(

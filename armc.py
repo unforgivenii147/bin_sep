@@ -1,17 +1,14 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import argparse
 import ast
 import multiprocessing as mp
 from pathlib import Path
 import sys
 from typing import NamedTuple
-
 from loguru import logger
 import tree_sitter_python as tspython
 from tree_sitter import Language, Parser
-
 
 logger.remove()
 logger.add(
@@ -19,7 +16,6 @@ logger.add(
     format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level:7}</level> | <level>{message}</level>",
     level="INFO",
 )
-
 PY_LANGUAGE = Language(tspython.language())
 
 
@@ -32,15 +28,12 @@ class ProcessResult(NamedTuple):
 
 
 def is_shebang(byte_content: bytes, node) -> bool:
-
     return node.start_point[0] == 0 and byte_content.startswith(b"#!")
 
 
 def remove_comments_from_code(source_bytes: bytes) -> tuple[bytes, int]:
-
     parser = Parser(PY_LANGUAGE)
     tree = parser.parse(source_bytes)
-
     comment_nodes = []
     cursor = tree.walk()
 
@@ -49,7 +42,6 @@ def remove_comments_from_code(source_bytes: bytes) -> tuple[bytes, int]:
             if not is_shebang(source_bytes, cursor.node):
                 comment_nodes.append(cursor.node)
             return
-
         if cursor.goto_first_child():
             while True:
                 visit_node()
@@ -58,25 +50,19 @@ def remove_comments_from_code(source_bytes: bytes) -> tuple[bytes, int]:
             cursor.goto_parent()
 
     visit_node()
-
     if not comment_nodes:
         return source_bytes, 0
-
     comment_nodes.sort(key=lambda n: n.start_byte, reverse=True)
-
     buffer = bytearray(source_bytes)
     for node in comment_nodes:
         del buffer[node.start_byte : node.end_byte]
-
     return bytes(buffer), len(comment_nodes)
 
 
 def check_remaining_comments(source_bytes: bytes) -> int:
-
     parser = Parser(PY_LANGUAGE)
     tree = parser.parse(source_bytes)
     remaining = 0
-
     cursor = tree.walk()
 
     def count_comments():
@@ -85,7 +71,6 @@ def check_remaining_comments(source_bytes: bytes) -> int:
             if not is_shebang(source_bytes, cursor.node):
                 remaining += 1
             return
-
         if cursor.goto_first_child():
             while True:
                 count_comments()
@@ -98,15 +83,11 @@ def check_remaining_comments(source_bytes: bytes) -> int:
 
 
 def process_single_file(file_path: Path) -> ProcessResult:
-
     try:
         source_bytes = file_path.read_bytes()
-
         cleaned_bytes, removed_count = remove_comments_from_code(source_bytes)
-
         if removed_count == 0:
             return ProcessResult(file_path, 0, 0, False)
-
         try:
             ast.parse(cleaned_bytes, filename=str(file_path))
         except SyntaxError as e:
@@ -117,24 +98,17 @@ def process_single_file(file_path: Path) -> ProcessResult:
                 False,
                 error=f"AST validation failed after stripping comments: {e}",
             )
-
         unremoved_count = check_remaining_comments(cleaned_bytes)
-
         file_path.write_bytes(cleaned_bytes)
-
         return ProcessResult(file_path, removed_count, unremoved_count, True)
-
     except Exception as exc:
         return ProcessResult(file_path, 0, 0, False, error=str(exc))
 
 
 def collect_python_files(inputs: list[str]) -> list[Path]:
-
     files: set[Path] = set()
-
     if not inputs:
         inputs = ["."]
-
     for item in inputs:
         p = Path(item).resolve()
         if p.is_file() and p.suffix == ".py":
@@ -143,7 +117,6 @@ def collect_python_files(inputs: list[str]) -> list[Path]:
             files.update(f for f in p.rglob("*.py") if f.is_file())
         else:
             logger.warning(f"Skipping invalid target or non-Python path: {item}")
-
     return list(files)
 
 
@@ -157,47 +130,37 @@ def main() -> None:
         help="Files or directories to scan (defaults to recursively checking current directory).",
     )
     args = parser.parse_args()
-
     targets = collect_python_files(args.paths)
     if not targets:
         logger.info("No Python files found to process.")
         return
-
     logger.info(
         f"Dispatched {len(targets)} target files to 8 multiprocessing workers..."
     )
-
     async_results = []
     with mp.Pool(processes=8) as pool:
         for file_path in targets:
             res = pool.apply_async(process_single_file, args=(file_path,))
             async_results.append(res)
-
         pool.close()
         pool.join()
-
     total_removed = 0
     total_modified = 0
-
     for async_res in async_results:
         res: ProcessResult = async_res.get()
-
         if res.error:
             logger.error(f"Error processing {res.file_path}: {res.error}")
             continue
-
         if res.modified:
             total_modified += 1
             total_removed += res.removed_count
             logger.info(
                 f"Modified: {res.file_path} | Removed comments: {res.removed_count}"
             )
-
             if res.unremoved_count > 0:
                 logger.warning(
                     f"Lingering comments detected in {res.file_path}: {res.unremoved_count} remain."
                 )
-
     logger.info("--- Execution Summary ---")
     logger.info(f"Total files scanned:  {len(targets)}")
     logger.info(f"Files modified:        {total_modified}")

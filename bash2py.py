@@ -1,13 +1,4 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-"""
-bash2py.py
-
-Convert a bash script that contains one or
- more Python heredocs
-(e.g. `python - <<PY ... PY`) into standal
-one .py file(s), saved inthe current working directory.
-"""
-
 import sys
 import re
 from pathlib import Path
@@ -21,16 +12,8 @@ HEREDOC_START_RE = re.compile(
 
 
 def extract_python_heredocs(bash_text: str):
-    """
-        Find all python heredocs in the given
-    bash script text.
-        Returns a list of extracted python sou
-    rce code strings, in order
-        of appearance.
-    """
     blocks = []
     lines = bash_text.splitlines(keepends=True)
-
     i = 0
     n = len(lines)
     while i < n:
@@ -39,10 +22,8 @@ def extract_python_heredocs(bash_text: str):
         if not m:
             i += 1
             continue
-
         delim = m.group("delim")
         dash = m.group("dash") is not None
-
         body_lines = []
         j = i + 1
         terminator_found = False
@@ -55,15 +36,12 @@ def extract_python_heredocs(bash_text: str):
                 break
             body_lines.append(raw)
             j += 1
-
         if terminator_found:
             blocks.append("".join(body_lines))
             i = j + 1
         else:
-            # No terminator found; best-effort: take the rest of the file.
             blocks.append("".join(lines[i + 1 :]))
             i = n
-
     return blocks
 
 
@@ -71,23 +49,18 @@ def main():
     if len(sys.argv) < 2:
         print("Usage: python bash2py.py <bash_script_path>", file=sys.stderr)
         sys.exit(1)
-
     input_path = Path(sys.argv[1])
     if not input_path.is_file():
         print(f"Error: file not found: {input_path}", file=sys.stderr)
         sys.exit(1)
-
     bash_text = input_path.read_text(encoding="utf-8")
     blocks = extract_python_heredocs(bash_text)
-
     if not blocks:
         print("No python heredocs found in the given script.", file=sys.stderr)
         sys.exit(1)
-
     base_name = input_path.stem
     out_dir = Path.cwd()
     written = []
-
     if len(blocks) == 1:
         out_path = out_dir / f"{base_name}.py"
         out_path.write_text(blocks[0], encoding="utf-8")
@@ -97,7 +70,6 @@ def main():
             out_path = out_dir / f"{base_name}_{idx}.py"
             out_path.write_text(code, encoding="utf-8")
             written.append(out_path)
-
     for p in written:
         print(f"Wrote: {p}")
 

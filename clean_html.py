@@ -1,6 +1,5 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import argparse
 import contextlib
 import multiprocessing as mp
@@ -9,7 +8,6 @@ import sys
 from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
-
 import tree_sitter_css
 import tree_sitter_html
 import tree_sitter_javascript

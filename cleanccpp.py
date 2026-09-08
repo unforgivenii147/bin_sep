@@ -1,17 +1,14 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import argparse
 import os
 import sys
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
-
 import tree_sitter_c
 import tree_sitter_cpp
 from tree_sitter import Language, Parser
 from dh import cprint
-
 
 CPP_EXTS = {
     "*.cc",
@@ -24,7 +21,6 @@ CPP_EXTS = {
     "*.h++",
     "*.inl",
 }
-
 C_EXTS = {".c", ".h"}
 ALL_EXTS = C_EXTS | CPP_EXTS
 _PARSERS: dict[str, Parser] = {}
@@ -61,19 +57,15 @@ def get_comment_info(content: bytes, ext: str) -> list[dict]:
     parser = get_parser(ext)
     tree = parser.parse(content)
     ranges = collect_comment_ranges(tree.root_node)
-
     comment_info = []
     for start, end in sorted(ranges, key=lambda r: r[0]):
         start_line = content[:start].count(b"\n") + 1
         end_line = content[:end].count(b"\n") + 1
-
         comment_text = content[start:end].decode("utf-8", errors="replace")
-
         context_start = max(0, content.rfind(b"\n", 0, start) + 1)
         context_end = content.find(b"\n", end)
         if context_end == -1:
             context_end = len(content)
-
         for _ in range(2):
             prev_newline = content.rfind(b"\n", 0, context_start)
             if prev_newline != -1:
@@ -81,9 +73,7 @@ def get_comment_info(content: bytes, ext: str) -> list[dict]:
             next_newline = content.find(b"\n", context_end)
             if next_newline != -1:
                 context_end = next_newline + 1
-
         context = content[context_start:context_end].decode("utf-8", errors="replace")
-
         comment_info.append(
             {
                 "start": start,
@@ -94,7 +84,6 @@ def get_comment_info(content: bytes, ext: str) -> list[dict]:
                 "context": context,
             }
         )
-
     return comment_info
 
 
@@ -107,10 +96,8 @@ def strip_comments(
         ranges = collect_comment_ranges(tree.root_node)
     else:
         ranges = selected_ranges
-
     if not ranges:
         return content, 0
-
     ranges.sort(key=lambda r: r[0])
     out = bytearray()
     last = 0
@@ -128,16 +115,13 @@ def process_file_interactive(path: Path, base: Path) -> tuple[str, int, str]:
         content = path.read_bytes()
         ext = path.suffix.lower()
         comment_info = get_comment_info(content, ext)
-
         if not comment_info:
             return str(path.relative_to(base)), 0, ""
-
         selected_ranges = []
         print(f"\n{'=' * 40}")
         print(f"File: {path.relative_to(base)}")
         print(f"Found {len(comment_info)} comment(s)")
         print(f"{'=' * 40}")
-
         for i, info in enumerate(comment_info, 1):
             print(f"\nComment {i}/{len(comment_info)}")
             print(f"Lines: {info['start_line']}-{info['end_line']}")
@@ -145,7 +129,6 @@ def process_file_interactive(path: Path, base: Path) -> tuple[str, int, str]:
             print("-" * 40)
             cprint(info["context"])
             print("-" * 40)
-
             while True:
                 response = input("Remove ? [y/n/q]: ").lower().strip()
                 if response in ["y", "yes"]:
@@ -167,15 +150,12 @@ def process_file_interactive(path: Path, base: Path) -> tuple[str, int, str]:
                     return str(path.relative_to(base)), 0, ""
                 else:
                     print("Invalid input. Please enter 'y', 'n', or 'q'.")
-
         if selected_ranges:
             new_content, count = strip_comments(content, ext, selected_ranges)
             if new_content != content:
                 path.write_bytes(new_content)
             return str(path.relative_to(base)), count, ""
-
         return str(path.relative_to(base)), 0, ""
-
     except Exception as exc:
         return str(path), 0, str(exc)
 
@@ -239,16 +219,13 @@ def main() -> int:
     args = ap.parse_args()
     inputs = list(args.paths) if args.paths else [Path(".")]
     files = list(iter_cc_files(inputs))
-
     if not files:
         print("No C/C++ files to process.", file=sys.stderr)
         return 1
-
     base = Path.cwd()
     total_comments = 0
     files_changed = 0
     errors = 0
-
     if args.interactive:
         print(f"Interactive mode: processing {len(files)} file(s)")
         for path in files:
@@ -276,7 +253,6 @@ def main() -> int:
                 if count > 0:
                     files_changed += 1
                 print(f"{rel}: {count} comment(s) removed")
-
     print(
         f"\nSummary: {files_changed}/{len(files)} file(s) changed, "
         f"{total_comments} comment(s) removed, {errors} error(s)."

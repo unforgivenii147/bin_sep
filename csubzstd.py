@@ -1,13 +1,11 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import shutil
 import tarfile
 import time
 from datetime import datetime
 from multiprocessing import Pool
 from pathlib import Path
-
 import zstandard as zstd
 
 ZSTD_LEVEL = 9

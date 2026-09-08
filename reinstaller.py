@@ -1,6 +1,5 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import argparse
 import importlib.metadata
 import logging
@@ -9,7 +8,6 @@ import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from pathlib import Path
-
 from pip._internal.commands.install import InstallCommand
 from pip._internal.exceptions import InstallationError
 

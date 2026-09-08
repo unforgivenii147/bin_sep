@@ -1,8 +1,6 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import sys
-
 from markdown2 import markdown, markdown_path
 from weasyprint import CSS, HTML
 

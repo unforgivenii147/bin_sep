@@ -1,6 +1,5 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import argparse
 import bz2
 import gzip
@@ -11,7 +10,6 @@ import zipfile
 from collections.abc import Callable
 from pathlib import Path
 from typing import Final
-
 from dh import fsz
 
 SKIP_DIRS: Final[frozenset[str]] = frozenset(

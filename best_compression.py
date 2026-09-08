@@ -1,6 +1,5 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
-
 import bz2
 import gzip
 import hashlib
@@ -13,7 +12,6 @@ import zipfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
-
 import brotli
 import py7zr
 import zstandard as zstd

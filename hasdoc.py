@@ -1,5 +1,4 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-
 import ast
 import argparse
 import multiprocessing as mp
@@ -12,16 +11,13 @@ def find_docstring_lines(source_bytes: bytes) -> set[int]:
         tree = ast.parse(source_bytes)
     except Exception:
         return docstring_lines
-
     for node in ast.walk(tree):
         if isinstance(node, ast.Module):
             continue
-
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
             doc = ast.get_docstring(node, clean=False)
             if doc and node.body and isinstance(node.body[0], ast.Expr):
                 docstring_lines.add(node.body[0].lineno)
-
     return docstring_lines
 
 
@@ -30,45 +26,36 @@ def check_file(file_path: Path) -> tuple[Path, list[str]]:
     try:
         source_bytes = file_path.read_bytes()
         docstring_lines = find_docstring_lines(source_bytes)
-
         import io
         import tokenize
 
         tokens = list(tokenize.tokenize(io.BytesIO(source_bytes).readline))
-
         for tok in tokens:
             start_line = tok.start[0]
             tok_str = tok.string
-
             if tok.type == tokenize.COMMENT:
                 if start_line == 1 and tok_str.startswith("#!"):
                     continue
                 issues.append(f"  Line {start_line}: Comment -> {tok_str.strip()}")
-
             elif tok.type == tokenize.STRING:
                 if start_line in docstring_lines:
                     first_line = tok_str.splitlines()[0]
                     issues.append(f"  Line {start_line}: Docstring -> {first_line}...")
-
     except Exception as e:
         issues.append(f"  [ERROR] Failed to parse file: {e}")
-
     return file_path, issues
 
 
 def collect_files(inputs: list[str]) -> list[Path]:
     files = set()
-
     if not inputs:
         return list(Path(".").rglob("*.py"))
-
     for item in inputs:
         p = Path(item)
         if p.is_file() and p.suffix == ".py":
             files.add(p)
         elif p.is_dir():
             files.update(p.rglob("*.py"))
-
     return list(files)
 
 
@@ -82,20 +69,15 @@ def main():
         help="Files or directories to check (defaults to '.' recursively)",
     )
     args = parser.parse_args()
-
     files = collect_files(args.inputs)
     if not files:
         print("No Python files found to inspect.")
         return
-
     print(f"Checking {len(files)} file(s) across 8 processes...\n")
-
     dirty_files = 0
     results = []
-
     with mp.Pool(processes=8) as pool:
         async_results = [pool.apply_async(check_file, args=(f,)) for f in files]
-
         for res in async_results:
             file_path, issues = res.get()
             if issues:
@@ -104,7 +86,6 @@ def main():
                 for issue in issues:
                     print(issue)
                 print()
-
     print("=" * 40)
     if dirty_files == 0:
         print(f"SUCCESS: All {len(files)} Python files are clean!")
