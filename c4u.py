@@ -1,5 +1,6 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
+
 import json
 import logging
 import sys
@@ -8,6 +9,7 @@ from dataclasses import asdict, dataclass
 from multiprocessing import Pool, cpu_count
 from pathlib import Path
 from typing import Any
+
 from dh import get_installed_packages
 
 

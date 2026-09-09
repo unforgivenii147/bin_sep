@@ -1,5 +1,6 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
+
 import os
 from os.path import dirname as dirn, isfile as isf, join as jn
 from pathlib import Path

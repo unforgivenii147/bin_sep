@@ -1,5 +1,12 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""Extract Python code entities from files and archives.
+
+This module scans directories for Python files and archives, extracts
+code entities (classes, functions, methods, constants) and saves them
+as individual files with proper imports. Methods are converted to
+standalone functions with 'self' references removed.
+"""
+
 import ast
 import os
 import re
@@ -9,12 +16,19 @@ import zipfile
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List, Optional, Set, Tuple
+from typing import Dict, List, Optional, Set, Tuple, Union
+from loguru import logger
+
+try:
+    import zstd
+    HAS_ZSTD = True
+except ImportError:
+    HAS_ZSTD = False
 
 SKIP_DIRS = frozenset(
     {".git", "__pycache__", ".venv", "node_modules", ".env", ".pytest_cache"}
 )
-COMMON_IMPORTS = {
+COMMON_IMPORTS: Dict[str, Set[str]] = {
     "typing": {
         "List",
         "Dict",
@@ -158,28 +172,195 @@ COMMON_IMPORTS = {
 
 @dataclass
 class Entity:
+    """Represents a Python code entity (class, function, method, or constant)."""
+    
     name: str
     type: str
     source: str
     full_name: str
     source_file: str
     line_number: int
-    imports: set[str] = field(default_factory=set)
-    decorators: list[str] = field(default_factory=list)
+    imports: Set[str] = field(default_factory=set)
+    decorators: List[str] = field(default_factory=list)
 
 
 @dataclass
 class ExtractionResult:
+    """Contains extraction results for a single file."""
+    
     filepath: str
-    entities: list[Entity] = field(default_factory=list)
-    errors: list[str] = field(default_factory=list)
-    imports: set[str] = field(default_factory=set)
+    entities: List[Entity] = field(default_factory=list)
+    errors: List[str] = field(default_factory=list)
+    imports: Set[str] = field(default_factory=set)
+
+
+class CodeValidator:
+    """Validates Python code before writing to files."""
+    
+    @staticmethod
+    def validate_python_code(source: str) -> Tuple[bool, Optional[str]]:
+        """Validate Python source code.
+        
+        Args:
+            source: Python source code as string
+            
+        Returns:
+            Tuple of (is_valid, error_message)
+        """
+        try:
+            # Try to parse the code
+            tree = ast.parse(source)
+            
+            # Check for syntax errors
+            compile(source, '<validation>', 'exec')
+            
+            # Additional validation: check for undefined names (basic check)
+            undefined_names = CodeValidator._find_undefined_names(tree)
+            if undefined_names:
+                # Don't fail on common builtins or typing imports
+                builtins = set(dir(__builtins__)) if isinstance(__builtins__, dict) else set(dir(__builtins__))
+                common_names = {'self', 'cls', 'List', 'Dict', 'Set', 'Tuple', 'Optional', 
+                               'Union', 'Any', 'Callable', 'Type', 'Generic', 'TypeVar',
+                               'Path', 'datetime', 'date', 'time', 'timedelta', 'timezone',
+                               'json', 're', 'os', 'sys', 'logging', 'logger', 'loguru'}
+                truly_undefined = undefined_names - builtins - common_names
+                if truly_undefined:
+                    # This is not a hard error, just a warning
+                    logger.debug(f"Potential undefined names: {truly_undefined}")
+            
+            return (True, None)
+        except SyntaxError as e:
+            return (False, f"Syntax error: {e}")
+        except Exception as e:
+            return (False, f"Validation error: {e}")
+    
+    @staticmethod
+    def _find_undefined_names(tree: ast.AST) -> Set[str]:
+        """Find potentially undefined names in AST.
+        
+        Args:
+            tree: AST tree to analyze
+            
+        Returns:
+            Set of potentially undefined names
+        """
+        undefined = set()
+        defined = set()
+        
+        for node in ast.walk(tree):
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+                defined.add(node.name)
+            elif isinstance(node, ast.Name):
+                if isinstance(node.ctx, ast.Load):
+                    undefined.add(node.id)
+                elif isinstance(node.ctx, ast.Store):
+                    defined.add(node.id)
+            elif isinstance(node, ast.arg):
+                defined.add(node.arg)
+            elif isinstance(node, ast.Import):
+                for alias in node.names:
+                    name = alias.asname or alias.name.split('.')[0]
+                    defined.add(name)
+            elif isinstance(node, ast.ImportFrom):
+                for alias in node.names:
+                    name = alias.asname or alias.name
+                    if name != '*':
+                        defined.add(name)
+        
+        return undefined - defined
+
+
+class MethodConverter:
+    """Converts class methods to standalone functions."""
+    
+    @staticmethod
+    def method_to_function(source: str) -> str:
+        """Convert a method to a standalone function by removing 'self'.
+        
+        Args:
+            source: Method source code
+            
+        Returns:
+            Function source code with 'self' removed
+        """
+        try:
+            tree = ast.parse(source)
+            
+            # Find the function definition
+            for node in ast.walk(tree):
+                if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    # Remove 'self' from arguments
+                    if node.args.args and node.args.args[0].arg == 'self':
+                        node.args.args.pop(0)
+                        # Also remove self from posonlyargs if present
+                        if node.args.posonlyargs and node.args.posonlyargs[0].arg == 'self':
+                            node.args.posonlyargs.pop(0)
+                    
+                    # Remove 'self.' from attribute access
+                    MethodConverter._remove_self_references(node)
+                    
+                    # Remove decorators that are class-specific
+                    node.decorator_list = [
+                        d for d in node.decorator_list 
+                        if not MethodConverter._is_class_decorator(d)
+                    ]
+                    
+                    # Convert to source
+                    return ast.unparse(node)
+            
+            return source
+        except Exception as e:
+            logger.warning(f"Failed to convert method to function: {e}")
+            return source
+    
+    @staticmethod
+    def _remove_self_references(node: ast.AST) -> None:
+        """Remove 'self.' references from attribute access.
+        
+        Args:
+            node: AST node to process
+        """
+        for child in ast.walk(node):
+            if isinstance(child, ast.Attribute):
+                if isinstance(child.value, ast.Name) and child.value.id == 'self':
+                    # Replace self.attr with just attr
+                    child.value = ast.Name(id=child.attr, ctx=ast.Load())
+                    child.attr = ''
+            elif isinstance(child, ast.Name):
+                if child.id == 'self':
+                    child.id = 'self_removed'  # This should not remain in final code
+    
+    @staticmethod
+    def _is_class_decorator(decorator: ast.expr) -> bool:
+        """Check if a decorator is class-specific.
+        
+        Args:
+            decorator: Decorator AST node
+            
+        Returns:
+            True if the decorator is class-specific
+        """
+        if isinstance(decorator, ast.Name):
+            return decorator.id in {'staticmethod', 'classmethod', 'property', 'abstractmethod'}
+        elif isinstance(decorator, ast.Attribute):
+            return decorator.attr in {'staticmethod', 'classmethod', 'property', 'abstractmethod'}
+        return False
 
 
 class ImportAnalyzer:
+    """Analyzes and manages Python imports."""
+    
     @staticmethod
-    def extract_imports_from_source(source: str) -> set[str]:
-        imports = set()
+    def extract_imports_from_source(source: str) -> Set[str]:
+        """Extract import statements from source code.
+        
+        Args:
+            source: Python source code as string
+            
+        Returns:
+            Set of import statements found in the source
+        """
+        imports: Set[str] = set()
         try:
             tree = ast.parse(source)
             for node in ast.walk(tree):
@@ -197,9 +378,16 @@ class ImportAnalyzer:
         return imports
 
     @staticmethod
-    def detect_needed_imports(source: str) -> set[str]:
-        needed = set()
-        source_lower = source.lower()
+    def detect_needed_imports(source: str) -> Set[str]:
+        """Detect imports needed based on symbols used in the code.
+        
+        Args:
+            source: Python source code as string
+            
+        Returns:
+            Set of import statements that might be needed
+        """
+        needed: Set[str] = set()
         for module, symbols in COMMON_IMPORTS.items():
             for symbol in symbols:
                 if re.search(f"\\b{re.escape(symbol)}\\b", source):
@@ -215,10 +403,6 @@ class ImportAnalyzer:
                         needed.add(f"from enum import {symbol}")
                     else:
                         needed.add(f"from {module} import {symbol}")
-        if "@property" in source:
-            pass
-        if "@" in source and "staticmethod" in source:
-            pass
         if "Path(" in source or "PurePath(" in source:
             needed.add("from pathlib import Path")
         if "datetime(" in source or "date(" in source:
@@ -228,12 +412,22 @@ class ImportAnalyzer:
         return needed
 
     @staticmethod
-    def consolidate_imports(existing: set[str], needed: set[str]) -> list[str]:
+    def consolidate_imports(existing: Set[str], needed: Set[str]) -> List[str]:
+        """Organize and deduplicate imports.
+        
+        Args:
+            existing: Already existing imports
+            needed: Needed imports to add
+            
+        Returns:
+            List of organized import statements
+        """
         all_imports = existing | needed
-        organized = []
-        stdlib_imports = []
-        thirdparty_imports = []
-        local_imports = []
+        organized: List[str] = []
+        stdlib_imports: List[str] = []
+        thirdparty_imports: List[str] = []
+        local_imports: List[str] = []
+        
         for imp in sorted(all_imports):
             if imp.startswith(("from .", "import .")):
                 local_imports.append(imp)
@@ -257,6 +451,7 @@ class ImportAnalyzer:
                 stdlib_imports.append(imp)
             else:
                 thirdparty_imports.append(imp)
+                
         organized.extend(sorted(stdlib_imports))
         if thirdparty_imports:
             organized.extend([""] + sorted(thirdparty_imports))
@@ -266,21 +461,32 @@ class ImportAnalyzer:
 
 
 class EntityVisitor(ast.NodeVisitor):
-    def __init__(self, source_lines: list[str], filepath: str):
+    """Visits AST nodes to extract code entities."""
+    
+    def __init__(self, source_lines: List[str], filepath: str):
+        """Initialize the entity visitor.
+        
+        Args:
+            source_lines: Source code split into lines
+            filepath: Path to the source file
+        """
         self.source_lines = source_lines
         self.filepath = filepath
-        self.entities: list[Entity] = []
-        self.current_class: str | None = None
+        self.entities: List[Entity] = []
+        self.current_class: Optional[str] = None
 
-    def visit_FunctionDef(self, node: ast.FunctionDef):
+    def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
+        """Process regular function definitions."""
         self._process_function(node, is_async=False)
         self.generic_visit(node)
 
-    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef):
+    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
+        """Process async function definitions."""
         self._process_function(node, is_async=True)
         self.generic_visit(node)
 
-    def visit_ClassDef(self, node: ast.ClassDef):
+    def visit_ClassDef(self, node: ast.ClassDef) -> None:
+        """Process class definitions."""
         source = self._get_source_slice(node)
         self.entities.append(
             Entity(
@@ -303,7 +509,8 @@ class EntityVisitor(ast.NodeVisitor):
             self.visit(item)
         self.current_class = old_class
 
-    def visit_Assign(self, node: ast.Assign):
+    def visit_Assign(self, node: ast.Assign) -> None:
+        """Process assignment statements."""
         if self.current_class is None:
             for target in node.targets:
                 if isinstance(target, ast.Name) and self._is_constant_name(target.id):
@@ -320,10 +527,25 @@ class EntityVisitor(ast.NodeVisitor):
                     )
         self.generic_visit(node)
 
-    def _process_function(self, node, is_async: bool = False, in_class: bool = False):
+    def _process_function(self, node: Union[ast.FunctionDef, ast.AsyncFunctionDef], is_async: bool = False, in_class: bool = False) -> None:
+        """Process function/method definitions.
+        
+        Args:
+            node: AST function node
+            is_async: Whether the function is async
+            in_class: Whether the function is a method
+        """
         source = self._get_source_slice(node)
-        entity_type = "method" if in_class else "function"
-        full_name = f"{self.current_class}_{node.name}" if in_class else node.name
+        
+        # Convert methods to standalone functions
+        if in_class:
+            entity_type = "function"  # Save as function, not method
+            source = MethodConverter.method_to_function(source)
+            full_name = f"{self.current_class}_{node.name}" if self.current_class else node.name
+        else:
+            entity_type = "function"
+            full_name = node.name
+        
         self.entities.append(
             Entity(
                 name=node.name,
@@ -337,6 +559,14 @@ class EntityVisitor(ast.NodeVisitor):
         )
 
     def _get_source_slice(self, node: ast.stmt) -> str:
+        """Get source code for a node.
+        
+        Args:
+            node: AST node
+            
+        Returns:
+            Source code string for the node
+        """
         if not self.source_lines:
             return ""
         start_line = node.lineno - 1
@@ -348,6 +578,7 @@ class EntityVisitor(ast.NodeVisitor):
 
     @staticmethod
     def _get_decorator_name(decorator: ast.expr) -> str:
+        """Get decorator name from AST node."""
         if isinstance(decorator, ast.Name):
             return decorator.id
         elif isinstance(decorator, ast.Attribute):
@@ -356,10 +587,19 @@ class EntityVisitor(ast.NodeVisitor):
 
     @staticmethod
     def _is_constant_name(name: str) -> bool:
+        """Check if a name follows constant naming convention."""
         return bool(re.match("^[A-Z_][A-Z0-9_]*$", name))
 
 
 def is_python_file(path: Path) -> bool:
+    """Check if a file is a Python file.
+    
+    Args:
+        path: File path to check
+        
+    Returns:
+        True if the file is a Python file
+    """
     if path.suffix == ".py":
         return True
     try:
@@ -373,6 +613,14 @@ def is_python_file(path: Path) -> bool:
 
 
 def extract_from_file(filepath: Path) -> ExtractionResult:
+    """Extract entities from a single Python file.
+    
+    Args:
+        filepath: Path to the Python file
+        
+    Returns:
+        ExtractionResult containing extracted entities
+    """
     result = ExtractionResult(str(filepath))
     try:
         with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
@@ -392,11 +640,18 @@ def extract_from_file(filepath: Path) -> ExtractionResult:
     return result
 
 
-def extract_from_archive(
-    archive_path: Path, archive_type: str
-) -> list[tuple[str, str]]:
-    results = []
-    if archive_type == ".zip" or archive_type == ".whl":
+def extract_from_archive(archive_path: Path, archive_type: str) -> List[Tuple[str, str]]:
+    """Extract Python files from an archive.
+    
+    Args:
+        archive_path: Path to the archive file
+        archive_type: Type of archive ('.zip', '.whl', '.tar.gz', etc.)
+        
+    Returns:
+        List of tuples (virtual_path, source_code)
+    """
+    results: List[Tuple[str, str]] = []
+    if archive_type in {".zip", ".whl"}:
         try:
             with zipfile.ZipFile(archive_path, "r") as zf:
                 for member in zf.namelist():
@@ -407,8 +662,8 @@ def extract_from_archive(
                             results.append((virtual_path, content))
                         except Exception:
                             pass
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"Failed to extract from zip archive {archive_path}: {e}")
     elif archive_type in {".tar.gz", ".tgz", ".tar.bz2", ".tar.xz", ".tar"}:
         try:
             with tarfile.open(archive_path, "r:*") as tf:
@@ -422,10 +677,11 @@ def extract_from_archive(
                                 results.append((virtual_path, content))
                         except Exception:
                             pass
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"Failed to extract from tar archive {archive_path}: {e}")
     elif archive_type == ".tar.zst":
         if not HAS_ZSTD:
+            logger.warning("zstandard library not available for .tar.zst archives")
             return results
         try:
             with open(archive_path, "rb") as f:
@@ -439,19 +695,26 @@ def extract_from_archive(
                             try:
                                 f_obj = tf.extractfile(member)
                                 if f_obj:
-                                    content = f_obj.read().decode(
-                                        "utf-8", errors="ignore"
-                                    )
+                                    content = f_obj.read().decode("utf-8", errors="ignore")
                                     virtual_path = f"{archive_path.name}::{member.name}"
                                     results.append((virtual_path, content))
                             except Exception:
                                 pass
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"Failed to extract from tar.zst archive {archive_path}: {e}")
     return results
 
 
 def extract_from_archive_member(virtual_path: str, source: str) -> ExtractionResult:
+    """Extract entities from a Python file inside an archive.
+    
+    Args:
+        virtual_path: Virtual path of the file in the archive
+        source: Source code as string
+        
+    Returns:
+        ExtractionResult containing extracted entities
+    """
     result = ExtractionResult(virtual_path)
     try:
         tree = ast.parse(source)
@@ -467,18 +730,29 @@ def extract_from_archive_member(virtual_path: str, source: str) -> ExtractionRes
 
 
 def process_file_worker(filepath: Path) -> ExtractionResult:
+    """Worker function for processing files in parallel."""
     return extract_from_file(filepath)
 
 
-def process_archive_member_worker(args: tuple[str, str]) -> ExtractionResult:
+def process_archive_member_worker(args: Tuple[str, str]) -> ExtractionResult:
+    """Worker function for processing archive members in parallel."""
     virtual_path, source = args
     return extract_from_archive_member(virtual_path, source)
 
 
-def scan_directory(directory: str) -> tuple[list[Path], list[tuple[str, str]]]:
+def scan_directory(directory: str) -> Tuple[List[Path], List[Tuple[str, str]]]:
+    """Scan a directory for Python files and archives.
+    
+    Args:
+        directory: Directory path to scan
+        
+    Returns:
+        Tuple of (python_files, archive_members)
+    """
     base_dir = Path(directory).resolve()
-    python_files = []
-    archive_members = []
+    python_files: List[Path] = []
+    archive_members: List[Tuple[str, str]] = []
+    
     for root, dirs, files in os.walk(base_dir):
         dirs[:] = [d for d in dirs if d not in SKIP_DIRS]
         root_path = Path(root)
@@ -511,7 +785,16 @@ def scan_directory(directory: str) -> tuple[list[Path], list[tuple[str, str]]]:
     return (python_files, archive_members)
 
 
-def write_entity(output_dir: Path, entity: Entity) -> Path | None:
+def write_entity(output_dir: Path, entity: Entity) -> Optional[Path]:
+    """Write an entity to a file after validating the code.
+    
+    Args:
+        output_dir: Directory to write to
+        entity: Entity to write
+        
+    Returns:
+        Path to written file, or None if failed or invalid
+    """
     entity_dir = output_dir / entity.type
     entity_dir.mkdir(parents=True, exist_ok=True)
     base_filename = entity.full_name.replace("::", "_").replace("/", "_")
@@ -521,10 +804,12 @@ def write_entity(output_dir: Path, entity: Entity) -> Path | None:
     while filepath.exists():
         counter += 1
         filepath = entity_dir / f"{base_filename}_{counter}.py"
+        
     existing_imports = ImportAnalyzer.extract_imports_from_source(entity.source)
     needed_imports = ImportAnalyzer.detect_needed_imports(entity.source)
     imports = ImportAnalyzer.consolidate_imports(existing_imports, needed_imports)
-    lines = []
+    
+    lines: List[str] = []
     lines.append(f"# Extracted from: {entity.source_file}:{entity.line_number}\n")
     if imports:
         lines.extend([imp + "\n" for imp in imports])
@@ -532,24 +817,48 @@ def write_entity(output_dir: Path, entity: Entity) -> Path | None:
     lines.append(entity.source)
     if not entity.source.endswith("\n"):
         lines.append("\n")
+    
+    # Validate the complete code before writing
+    complete_code = "".join(lines)
+    is_valid, error_msg = CodeValidator.validate_python_code(complete_code)
+    
+    if not is_valid:
+        logger.warning(f"Skipping invalid entity {entity.full_name}: {error_msg}")
+        return None
+    
     try:
         with open(filepath, "w", encoding="utf-8") as f:
-            f.writelines(lines)
+            f.write(complete_code)
         return filepath
     except Exception as e:
-        print(f"Error writing entity: {e}", file=sys.stderr)
+        logger.error(f"Error writing entity: {e}")
         return None
 
 
-def write_imports_file(output_dir: Path, all_imports: set[str]):
+def write_imports_file(output_dir: Path, all_imports: Set[str]) -> None:
+    """Write aggregated imports to a file.
+    
+    Args:
+        output_dir: Directory to write to
+        all_imports: Set of all imports
+    """
     organized = ImportAnalyzer.consolidate_imports(all_imports, set())
     filepath = output_dir / "imports.py"
-    with open(filepath, "w", encoding="utf-8") as f:
-        f.write("# Aggregated imports from extracted entities\n\n")
-        f.writelines(imp + "\n" for imp in organized)
+    content = "# Aggregated imports from extracted entities\n\n" + "".join(
+        imp + "\n" for imp in organized
+    )
+    
+    # Validate imports file
+    is_valid, error_msg = CodeValidator.validate_python_code(content)
+    if is_valid:
+        with open(filepath, "w", encoding="utf-8") as f:
+            f.write(content)
+    else:
+        logger.warning(f"Failed to write imports file: {error_msg}")
 
 
-def main():
+def main() -> int:
+    """Main entry point for the script."""
     import argparse
 
     parser = argparse.ArgumentParser(
@@ -566,7 +875,7 @@ def main():
     parser.add_argument(
         "--workers",
         type=int,
-        default=min(os.cpu_count() or 4, 8),
+        default=8,
         help="Number of worker processes",
     )
     parser.add_argument(
@@ -576,34 +885,38 @@ def main():
         help="Directory to scan (default: current directory)",
     )
     args = parser.parse_args()
+    
     if args.temp:
         output_dir = Path.home() / "tmp" / "output"
     else:
         output_dir = Path("output")
     output_dir.mkdir(parents=True, exist_ok=True)
-    print(f"Scanning directory: {Path(args.directory).resolve()}")
-    print(f"Output directory: {output_dir.resolve()}\n")
+    
+    logger.info(f"Scanning directory: {Path(args.directory).resolve()}")
+    logger.info(f"Output directory: {output_dir.resolve()}\n")
+    
     python_files, archive_members = scan_directory(args.directory)
-    print(
-        f"Found {len(python_files):,} Python files and {len(archive_members):,} archive members"
-    )
-    print()
-    all_entities: list[Entity] = []
-    all_imports: set[str] = set()
-    entity_count = {"function": 0, "class": 0, "method": 0, "constant": 0}
+    logger.info(f"Found {len(python_files):,} Python files and {len(archive_members):,} archive members\n")
+    
+    all_entities: List[Entity] = []
+    all_imports: Set[str] = set()
+    entity_count: Dict[str, int] = {"function": 0, "class": 0, "constant": 0}
     error_count = 0
+    
     with ProcessPoolExecutor(max_workers=args.workers) as executor:
-        futures = {
+        futures: Dict = {
             executor.submit(process_file_worker, fpath): ("file", str(fpath))
             for fpath in python_files
         }
         for virtual_path, source in archive_members:
-            futures[
-                executor.submit(process_archive_member_worker, (virtual_path, source))
-            ] = ("archive", virtual_path)
+            futures[executor.submit(process_archive_member_worker, (virtual_path, source))] = (
+                "archive",
+                virtual_path,
+            )
+            
         processed = 0
         for future in as_completed(futures):
-            _source_type, source_path = futures[future]
+            source_type, source_path = futures[future]
             processed += 1
             try:
                 result = future.result()
@@ -614,29 +927,44 @@ def main():
                 if result.errors:
                     error_count += len(result.errors)
                     for error in result.errors:
-                        print(f"  Error in {source_path}: {error}", file=sys.stderr)
+                        logger.error(f"Error in {source_path}: {error}")
                 if processed % 50 == 0:
-                    print(f"  Processed: {processed}/{len(futures)}", end="\r")
+                    logger.debug(f"Processed: {processed}/{len(futures)}")
             except Exception as e:
                 error_count += 1
-                print(f"  Error processing {source_path}: {e}", file=sys.stderr)
-    print(f"\n\nExtracted {len(all_entities):,} entities:")
+                logger.error(f"Error processing {source_path}: {e}")
+    
+    logger.info(f"\nExtracted {len(all_entities):,} entities:")
     for etype, count in entity_count.items():
         if count > 0:
-            print(f"  {etype}: {count}")
-    print("\nWriting entities to output directory...")
+            logger.info(f"  {etype}: {count}")
+            
+    logger.info("\nValidating and writing entities to output directory...")
     written_count = 0
+    skipped_count = 0
     for entity in all_entities:
-        if write_entity(output_dir, entity):
+        result = write_entity(output_dir, entity)
+        if result:
             written_count += 1
-    print(f"Saved {written_count}/{len(all_entities)} entities\n")
+        else:
+            skipped_count += 1
+            
+    logger.info(f"Saved {written_count}/{len(all_entities)} entities")
+    if skipped_count > 0:
+        logger.warning(f"Skipped {skipped_count} invalid entities")
+    logger.info("")
+    
     write_imports_file(output_dir, all_imports)
-    print("Saved aggregated imports to imports.py")
-    print(f"\nTotal unique imports: {len(all_imports)}")
+    logger.info("Saved aggregated imports to imports.py")
+    logger.info(f"\nTotal unique imports: {len(all_imports)}")
+    
     if error_count > 0:
-        print(f"Errors encountered: {error_count}")
+        logger.warning(f"Errors encountered: {error_count}")
     return 0
 
 
 if __name__ == "__main__":
+    # Configure loguru for console output
+    logger.remove()
+    logger.add(sys.stderr, level="INFO", format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <level>{message}</level>")
     raise SystemExit(main())

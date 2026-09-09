@@ -1,5 +1,6 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
+
 import argparse
 import hashlib
 import multiprocessing as mp
@@ -7,6 +8,7 @@ from collections import deque
 from io import BytesIO
 from pathlib import Path
 from urllib.parse import urldefrag, urljoin, urlparse
+
 import requests
 from bs4 import BeautifulSoup
 from PIL import Image

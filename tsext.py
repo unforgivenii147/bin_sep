@@ -1,9 +1,12 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
+
 import os
 from pathlib import Path
+
 import tree_sitter_python as tsp
 from tree_sitter import Language, Parser
+from dh import get_pyfiles
 
 PY_LANGUAGE = Language(tsp.language())
 parser = Parser(PY_LANGUAGE)
@@ -89,7 +92,7 @@ def process_directory(start_dir: str, output_dir: str) -> None:
         if classes:
             all_classes["relative_path"] = classes
         if constants:
-            all_constants[relative_path] = constants
+            all_constants["relative_path"] = constants
         all_imports.update(imports)
     with Path(os.path.join(output_dir, "functions.txt")).open(
         "w", encoding="utf-8"

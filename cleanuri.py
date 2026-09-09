@@ -1,10 +1,12 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
+
 import base64
 import hashlib
 import mimetypes
 import re
 from pathlib import Path
+
 from dh import MIME2EXT
 
 DATA_URI_PATTERN = re.compile(

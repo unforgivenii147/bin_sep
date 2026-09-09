@@ -1,5 +1,6 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
+
 import argparse
 import asyncio
 import contextlib
@@ -14,6 +15,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 from urllib.parse import urljoin, urlparse
+
 import aiohttp
 
 try:

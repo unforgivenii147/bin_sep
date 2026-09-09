@@ -1,5 +1,6 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
+
 import ast
 import logging
 import re
@@ -7,6 +8,7 @@ import sys
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any, Final
+
 from deep_translator import GoogleTranslator
 
 SKIP_DIRS: Final[frozenset[str]] = frozenset(

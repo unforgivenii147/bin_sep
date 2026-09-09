@@ -1,5 +1,6 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
+
 import argparse
 import ast
 from dataclasses import dataclass
@@ -56,15 +57,20 @@ def node_span(source: str, offsets: list[int], node: ast.AST) -> tuple[int, int]
 
 def has_top_level_pool_binding(tree: ast.Module) -> bool:
     for node in tree.body:
-        if isinstance(node, ast.ImportFrom) and node.module in {
-            "multiprocessing",
-            "multiprocessing.pool",
-        }:
-            if any((alias.asname or alias.name) == "Pool" for alias in node.names):
-                return True
-        if isinstance(node, ast.Import):
-            if any((alias.asname or alias.name) == "Pool" for alias in node.names):
-                return True
+        if (
+            isinstance(node, ast.ImportFrom)
+            and node.module
+            in {
+                "multiprocessing",
+                "multiprocessing.pool",
+            }
+            and any((alias.asname or alias.name) == "Pool" for alias in node.names)
+        ):
+            return True
+        if isinstance(node, ast.Import) and any(
+            (alias.asname or alias.name) == "Pool" for alias in node.names
+        ):
+            return True
         if (
             isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))
             and node.name == "Pool"
@@ -374,7 +380,7 @@ def has_executor_import(source: str) -> bool:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("paths", nargs="*", type=Path, default=[Path(".")])
-    parser.add_argument("--write", action="store_true")
+    parser.add_argument("-w", "--write", action="store_true")
     args = parser.parse_args()
     paths: list[Path] = []
     for root in args.paths:

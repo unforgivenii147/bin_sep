@@ -1,5 +1,6 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
+
 import ast
 from dataclasses import dataclass
 from pathlib import Path
@@ -142,12 +143,16 @@ class FuturesToPoolMigrator:
 
     def _has_top_level_pool_binding(self) -> bool:
         for node in self.tree.body:
-            if isinstance(node, ast.ImportFrom) and node.module in {
-                "multiprocessing",
-                "multiprocessing.pool",
-            }:
-                if any((alias.asname or alias.name) == "Pool" for alias in node.names):
-                    return True
+            if (
+                isinstance(node, ast.ImportFrom)
+                and node.module
+                in {
+                    "multiprocessing",
+                    "multiprocessing.pool",
+                }
+                and any((alias.asname or alias.name) == "Pool" for alias in node.names)
+            ):
+                return True
             if isinstance(node, ast.Import):
                 if any((alias.asname or alias.name) == "Pool" for alias in node.names):
                     return True

@@ -1,5 +1,6 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
+
 import argparse
 import ast
 import importlib.metadata
@@ -8,6 +9,7 @@ import numbers
 import time
 from collections import defaultdict
 from pathlib import Path
+
 from dh import STDLIB, get_installed_pkgs
 
 try:

@@ -1,9 +1,11 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
+
 import json
 import multiprocessing as mp
 from io import BytesIO
 from pathlib import Path
+
 import pycurl
 from dh import get_installed_packages
 

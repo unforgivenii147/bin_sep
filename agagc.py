@@ -1,5 +1,6 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
+
 import argparse
 import os
 import re
@@ -7,6 +8,7 @@ import sys
 from argparse import Namespace
 from datetime import datetime
 from pathlib import Path
+
 import requests
 from dotenv import load_dotenv
 from git import InvalidGitRepositoryError, Repo

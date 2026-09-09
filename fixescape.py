@@ -1,9 +1,9 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 import argparse
 import multiprocessing as mp
-from pathlib import Path
 import re
 import sys
+from pathlib import Path
 
 INVALID_ESCAPE_PATTERN = re.compile(r'(?<!\\)\\(?![\\\'"abfnrtvNuUx0-7\n])')
 

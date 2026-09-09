@@ -1,5 +1,6 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
+
 import os
 import stat
 import sys
@@ -109,6 +110,7 @@ def iter_source_files(root: Path) -> list[Path]:
 
 def get_language(spec: LanguageSpec) -> Any:
     from importlib import import_module
+
     from tree_sitter import Language
 
     module = import_module(spec.module_name)
@@ -154,6 +156,8 @@ def remove_comment_ranges(source: bytes, ranges: list[tuple[int, int]]) -> bytes
 
 
 def atomic_write(path: Path, content: bytes) -> None:
+    if not content:
+        return
     original_stat = path.stat()
     mode = stat.S_IMODE(original_stat.st_mode)
     temporary = path.with_name(f".{path.name}.{os.getpid()}.comments.tmp")

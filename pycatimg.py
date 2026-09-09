@@ -1,9 +1,11 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
+
 import argparse
 import io
 import os
 import sys
+
 from cairosvg import svg2png
 from PIL import Image
 from PIL.ImageFile import ImageFile

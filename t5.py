@@ -1,8 +1,10 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
+
 import ast
 import sys
 from pathlib import Path
+
 import tree_sitter_python as tspython
 from dh import fsz, get_pyfiles, gsz, mpf_async as mpf, remove_blank_lines
 from tree_sitter import Language, Parser, Query, QueryCursor

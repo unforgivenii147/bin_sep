@@ -1,9 +1,11 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
+
 import argparse
 import sys
 from pathlib import Path
 from typing import Final
+
 import pytesseract
 from deep_translator import GoogleTranslator
 from langdetect import DetectorFactory, detect

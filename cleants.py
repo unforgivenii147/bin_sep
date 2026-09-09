@@ -1,12 +1,14 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
+
 import os
 import sys
 from collections.abc import Iterable, Iterator
 from multiprocessing import Pool
 from pathlib import Path
-from tree_sitter import Language, Parser
+
 import tree_sitter_typescript as tstypescript
+from tree_sitter import Language, Parser
 
 WORKERS = 8
 TYPECRIPT_EXTENSIONS = frozenset({".ts", ".tsx", ".mts", ".cts"})

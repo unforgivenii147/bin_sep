@@ -1,9 +1,11 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
+
 import argparse
 import ast
 from multiprocessing import Pool
 from pathlib import Path
+
 from dh import cprint
 
 TARGET_NAME = "format_size"

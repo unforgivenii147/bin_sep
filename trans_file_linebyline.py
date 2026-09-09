@@ -1,10 +1,12 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
+
 import logging
 import shutil
 import sys
 import tempfile
 from pathlib import Path
+
 from deep_translator import GoogleTranslator
 from langdetect import DetectorFactory, detect
 

@@ -1,17 +1,18 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-import sys
-from pathlib import Path
-from typing import Dict, List, Tuple, Optional, Union
+import importlib
 import multiprocessing as mp
-from dataclasses import dataclass
-import time
 import os
 import stat
-import importlib
+import sys
+import time
+from dataclasses import dataclass
 from functools import lru_cache
-from tree_sitter import Language, Parser, Node
+from pathlib import Path
+from typing import Dict, List, Optional, Tuple, Union
 
-PathLike = Union[str, Path]
+from tree_sitter import Language, Node, Parser
+
+PathLike = str | Path
 
 
 @dataclass
@@ -105,10 +106,10 @@ EXTENSION_TO_LANGUAGE = {
 
 class UniversalCommentRemover:
     def __init__(self):
-        self._parser_cache: Dict[str, Parser] = {}
-        self._language_cache: Dict[str, Language] = {}
+        self._parser_cache: dict[str, Parser] = {}
+        self._language_cache: dict[str, Language] = {}
 
-    def _load_language(self, module_name: str) -> Optional[Language]:
+    def _load_language(self, module_name: str) -> Language | None:
         if module_name in self._language_cache:
             return self._language_cache[module_name]
         try:
@@ -127,7 +128,7 @@ class UniversalCommentRemover:
             print(f"Warning: Failed to load {module_name}: {e}")
             return None
 
-    def get_parser_for_file(self, file_path: Path) -> Optional[Tuple[Parser, str]]:
+    def get_parser_for_file(self, file_path: Path) -> tuple[Parser, str] | None:
         extension = file_path.suffix.lower()
         if file_path.name.lower() == "dockerfile":
             extension = ".dockerfile"
@@ -146,7 +147,7 @@ class UniversalCommentRemover:
         self._parser_cache[module_name] = parser
         return parser, extension
 
-    def _get_comment_ranges(self, root_node: Node) -> List[Tuple[int, int]]:
+    def _get_comment_ranges(self, root_node: Node) -> list[tuple[int, int]]:
         comment_ranges = []
 
         def visit_node(node: Node):
@@ -181,7 +182,7 @@ class UniversalCommentRemover:
             content = content.replace(b"\n\n\n", b"\n\n")
         return content
 
-    def remove_comments(self, content: bytes, file_extension: str) -> Tuple[bytes, int]:
+    def remove_comments(self, content: bytes, file_extension: str) -> tuple[bytes, int]:
         if file_extension in (".json", ".jsonc"):
             return self._remove_json_comments(content)
         parser_info = self.get_parser_for_file(Path(f"dummy{file_extension}"))
@@ -221,7 +222,7 @@ class UniversalCommentRemover:
         processed_content = self._cleanup_empty_lines(processed_content)
         return processed_content, comments_removed
 
-    def _remove_json_comments(self, content: bytes) -> Tuple[bytes, int]:
+    def _remove_json_comments(self, content: bytes) -> tuple[bytes, int]:
         import re
 
         pattern_line = re.compile(rb"//.*?$", re.MULTILINE)
@@ -235,7 +236,7 @@ class UniversalCommentRemover:
         return content, comments_count
 
 
-def collect_supported_files(inputs: List[str]) -> List[Path]:
+def collect_supported_files(inputs: list[str]) -> list[Path]:
     supported_files = []
     supported_extensions = set(EXTENSION_TO_LANGUAGE.keys())
     if not inputs:
@@ -323,8 +324,8 @@ def process_file(file_path: Path) -> ProcessResult:
 
 
 def process_files_parallel(
-    files: List[Path], num_workers: int = 8
-) -> List[ProcessResult]:
+    files: list[Path], num_workers: int = 8
+) -> list[ProcessResult]:
     results = []
     total_files = len(files)
     completed = 0
@@ -371,7 +372,7 @@ def process_files_parallel(
     return results
 
 
-def print_summary(results: List[ProcessResult], total_files: int, start_time: float):
+def print_summary(results: list[ProcessResult], total_files: int, start_time: float):
     total_time = time.perf_counter() - start_time
     successful = sum(1 for r in results if r.success)
     failed = sum(1 for r in results if not r.success)
@@ -428,7 +429,7 @@ def main():
     if not files:
         print("No supported files found to process.")
         return
-    extensions_found = set(f.suffix.lower() for f in files if f.suffix)
+    extensions_found = {f.suffix.lower() for f in files if f.suffix}
     print(f"Found {len(files)} file(s) to process")
     print(f"File types found: {', '.join(sorted(extensions_found))}")
     print(f"Using 8 worker processes\n")

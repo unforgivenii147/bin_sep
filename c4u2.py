@@ -1,9 +1,11 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
+
 import json
 import time
 from io import BytesIO
 from pathlib import Path
+
 import pycurl
 from dh import cprint, get_installed_packages
 from packaging.version import Version

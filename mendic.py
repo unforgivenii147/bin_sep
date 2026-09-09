@@ -1,7 +1,7 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
+
 import json
-import os
 import re
 import sys
 from collections import OrderedDict
@@ -130,17 +130,17 @@ def merge_json_files(directory=".", output_file="enfa.json"):
 
 def main():
     if len(sys.argv) > 1:
-        directory = sys.argv[1]
+        directory = Path(sys.argv[1])
     else:
-        directory = "."
+        directory = Path.cwd()
     output_file = "enfa.json"
     if len(sys.argv) > 2:
         output_file = sys.argv[2]
-    if not os.path.exists(directory):
+    if not directory.exists():
         print(f"❌ Directory '{directory}' does not exist.")
         sys.exit(1)
     print("🔄 Starting JSON merge process...")
-    print(f"📁 Source directory: {os.path.abspath(directory)}")
+    print(f"📁 Source directory: {directory.name}")
     print(f"📄 Output file: {output_file}")
     print("=" * 40)
     merge_json_files(directory, output_file)

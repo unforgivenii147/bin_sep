@@ -1,5 +1,6 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
+
 import argparse
 import logging
 import multiprocessing as mp
@@ -7,6 +8,7 @@ import subprocess
 import sys
 from collections.abc import Iterable
 from pathlib import Path
+
 from dh import MIME2EXT, SHEBANG_MAP, get_files
 
 LOGGER = logging.getLogger(__name__)

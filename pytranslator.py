@@ -1,5 +1,6 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
+
 import ast
 import io
 import logging
@@ -8,6 +9,7 @@ import time
 import tokenize
 from pathlib import Path
 from typing import Final
+
 from deep_translator import GoogleTranslator
 from dh import DOC_TH1, DOC_TH2
 from langdetect import DetectorFactory, detect

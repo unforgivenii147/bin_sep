@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import annotations
+
 import sys
 from multiprocessing import Pool
 from pathlib import Path

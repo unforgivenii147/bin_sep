@@ -1,5 +1,6 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
+
 import importlib.metadata
 import json
 import os
@@ -7,6 +8,7 @@ import site
 import sysconfig
 from multiprocessing import Pool
 from pathlib import Path
+
 from loguru import logger
 
 logger.remove()

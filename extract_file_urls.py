@@ -1,5 +1,6 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
+
 import argparse
 import hashlib
 import os
@@ -7,6 +8,7 @@ import re
 from multiprocessing import Pool
 from pathlib import Path
 from urllib.parse import unquote, urlparse
+
 import requests
 
 ALLOWED_EXTENSIONS = {".css", ".ttf", ".woff", ".woff2", ".pdf"}

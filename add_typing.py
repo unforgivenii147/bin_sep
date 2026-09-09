@@ -1,5 +1,6 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
+
 import argparse
 import ast
 import difflib
@@ -9,6 +10,7 @@ import sys
 import tempfile
 from pathlib import Path
 from typing import Optional
+
 import libcst as cst
 from libcst.codemod import CodemodContext
 from libcst.codemod.visitors import ApplyTypeAnnotationsVisitor

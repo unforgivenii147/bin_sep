@@ -1,5 +1,6 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
+
 import argparse
 import base64
 import contextlib
@@ -9,6 +10,7 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
+
 from dh import fsz
 from joblib import Parallel, delayed
 from loguru import logger

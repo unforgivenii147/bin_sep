@@ -1,11 +1,13 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
+
 import argparse
 import ast
 import sys
 from collections.abc import Iterator
 from concurrent.futures import FIRST_COMPLETED, ProcessPoolExecutor, wait
 from pathlib import Path
+
 import tree_sitter_python as tsp
 from dh import gsz, rrs
 from tree_sitter import Language, Parser

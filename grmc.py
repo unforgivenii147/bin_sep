@@ -3,6 +3,7 @@ import argparse
 import ast
 import multiprocessing as mp
 from pathlib import Path
+
 import libcst as cst
 from libcst import matchers as m
 
@@ -95,7 +96,7 @@ def collect_files(inputs: list[str]) -> list[Path]:
             files.add(p)
         elif p.is_dir():
             files.update(p.rglob("*.py"))
-    return sorted(list(files))
+    return sorted(files)
 
 
 def main():

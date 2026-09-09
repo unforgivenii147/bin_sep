@@ -1,7 +1,9 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
+
 import os
 import sys
+
 from sumy.nlp.stemmers import Stemmer
 from sumy.nlp.tokenizers import Tokenizer
 from sumy.parsers.plaintext import PlaintextParser

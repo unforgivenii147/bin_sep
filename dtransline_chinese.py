@@ -1,5 +1,6 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
+
 import argparse
 import logging
 import multiprocessing as mp
@@ -7,6 +8,7 @@ import re
 import time
 from pathlib import Path
 from typing import Final
+
 from deep_translator import GoogleTranslator
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")

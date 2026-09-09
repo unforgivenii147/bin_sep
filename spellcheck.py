@@ -1,9 +1,11 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
+
 import argparse
 import re
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
+
 from dh import TXT_EXT
 from loguru import logger
 from spellchecker import SpellChecker

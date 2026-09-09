@@ -1,6 +1,6 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-import sys
 import re
+import sys
 from pathlib import Path
 
 HEREDOC_START_RE = re.compile(

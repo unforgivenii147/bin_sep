@@ -1,14 +1,15 @@
 #!/data/data/com.termux/files/home/.local/bin/python
+import importlib.metadata
 import json
 import signal
 import sys
 import time
+from datetime import datetime
 from pathlib import Path
-from typing import Dict, Set, Optional
-import importlib.metadata
+from typing import Dict, Optional, Set
+
 import requests
 from packaging import version
-from datetime import datetime
 
 
 class PackageUpdateChecker:
@@ -17,7 +18,7 @@ class PackageUpdateChecker:
         self.output_dir.mkdir(exist_ok=True)
         self.txt_file = self.output_dir / "updates.txt"
         self.json_file = self.output_dir / "updates_state.json"
-        self.processed_packages: Dict[str, dict] = {}
+        self.processed_packages: dict[str, dict] = {}
         self.interrupted = False
         signal.signal(signal.SIGINT, self.signal_handler)
         self.load_state()
@@ -53,7 +54,7 @@ class PackageUpdateChecker:
         except Exception as e:
             print(f"⚠️  Error saving state: {e}")
 
-    def get_installed_packages(self) -> Dict[str, str]:
+    def get_installed_packages(self) -> dict[str, str]:
         packages = {}
         try:
             for dist in importlib.metadata.distributions():
@@ -65,7 +66,7 @@ class PackageUpdateChecker:
             print(f"⚠️  Error getting installed packages: {e}")
         return packages
 
-    def get_latest_version(self, package_name: str) -> Optional[dict]:
+    def get_latest_version(self, package_name: str) -> dict | None:
         names_to_try = [package_name, package_name.replace("_", "-")]
         for name in names_to_try:
             url = f"https://pypi.org/pypi/{name}/json"
@@ -102,7 +103,7 @@ class PackageUpdateChecker:
                 continue
         return None
 
-    def write_updates_to_file(self, updates: Dict[str, dict]):
+    def write_updates_to_file(self, updates: dict[str, dict]):
         try:
             with open(self.txt_file, "w") as f:
                 f.write("Package Updates Available\n")

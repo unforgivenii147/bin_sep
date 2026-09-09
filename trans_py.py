@@ -1,5 +1,6 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
+
 import ast
 import logging
 import re
@@ -7,6 +8,7 @@ import shutil
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any, Final
+
 from deep_translator import GoogleTranslator
 from dh import get_pyfiles
 

@@ -1,8 +1,10 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
+
 import argparse
 import sys
 from pathlib import Path
+
 from rich.console import Console
 from rich.markdown import Markdown
 

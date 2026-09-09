@@ -1,11 +1,13 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
+
 import argparse
 import multiprocessing as mp
 import os
 import sys
 from collections.abc import Generator, Iterable
 from pathlib import Path
+
 import tree_sitter_bash
 from tree_sitter import Language, Node, Parser
 

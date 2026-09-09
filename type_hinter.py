@@ -1,9 +1,11 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
+
 import os
 import shutil
 import subprocess
 import sys
+
 import libcst as cst
 
 TypeMap = dict[str, tuple[list[str], str]]

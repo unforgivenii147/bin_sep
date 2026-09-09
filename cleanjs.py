@@ -1,12 +1,14 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
+
 import os
 import sys
 from collections.abc import Iterable
 from multiprocessing import Pool
 from pathlib import Path
-from tree_sitter import Language, Parser
+
 import tree_sitter_javascript as tsjavascript
+from tree_sitter import Language, Parser
 
 WORKERS = 8
 JS_EXTENSIONS = frozenset({".js", ".mjs", ".cjs", ".jsx"})

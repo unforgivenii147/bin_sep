@@ -1,5 +1,6 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
+
 import argparse
 import fnmatch
 import operator
@@ -8,6 +9,7 @@ import sys
 from collections.abc import Generator
 from multiprocessing import Pool
 from pathlib import Path
+
 from dh import is_binary
 from loguru import logger
 

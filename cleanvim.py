@@ -1,14 +1,16 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-import sys
-from pathlib import Path
-from typing import Iterator, List, Tuple, Union
 import multiprocessing as mp
-from dataclasses import dataclass
+import sys
 import time
-from tree_sitter import Language, Parser, Node
-import tree_sitter_vim
+from collections.abc import Iterator
+from dataclasses import dataclass
+from pathlib import Path
+from typing import List, Tuple, Union
 
-PathLike = Union[str, Path]
+import tree_sitter_vim
+from tree_sitter import Language, Node, Parser
+
+PathLike = str | Path
 
 
 @dataclass
@@ -29,7 +31,7 @@ class VimCommentRemover:
     def _is_comment_node(self, node: Node) -> bool:
         return node.type == "comment"
 
-    def _get_comment_ranges(self, root_node: Node) -> List[Tuple[int, int]]:
+    def _get_comment_ranges(self, root_node: Node) -> list[tuple[int, int]]:
         comment_ranges = []
 
         def visit_node(node: Node):
@@ -42,7 +44,7 @@ class VimCommentRemover:
         visit_node(root_node)
         return comment_ranges
 
-    def remove_comments(self, content: bytes) -> Tuple[bytes, int]:
+    def remove_comments(self, content: bytes) -> tuple[bytes, int]:
         tree = self.parser.parse(content)
         comment_ranges = self._get_comment_ranges(tree.root_node)
         if not comment_ranges:
@@ -71,7 +73,7 @@ class VimCommentRemover:
         return processed_content, comments_removed
 
 
-def collect_vim_files(inputs: List[str]) -> List[Path]:
+def collect_vim_files(inputs: list[str]) -> list[Path]:
     vim_files = []
     if not inputs:
         inputs = ["."]
@@ -133,8 +135,8 @@ def process_file(file_path: Path) -> ProcessResult:
 
 
 def process_files_parallel(
-    files: List[Path], num_workers: int = 8
-) -> List[ProcessResult]:
+    files: list[Path], num_workers: int = 8
+) -> list[ProcessResult]:
     results = []
     with mp.Pool(processes=num_workers) as pool:
         async_results = []
@@ -175,7 +177,7 @@ def process_files_parallel(
     return results
 
 
-def print_summary(results: List[ProcessResult], total_files: int, start_time: float):
+def print_summary(results: list[ProcessResult], total_files: int, start_time: float):
     total_time = time.perf_counter() - start_time
     successful = sum(1 for r in results if r.success)
     failed = sum(1 for r in results if not r.success)

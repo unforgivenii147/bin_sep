@@ -1,6 +1,8 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
+
 from pathlib import Path
+
 from watchfiles import watch
 
 if __name__ == "__main__":

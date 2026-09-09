@@ -1,13 +1,15 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
+
 import argparse
 import ast
 import multiprocessing as mp
-from pathlib import Path
 import sys
+from pathlib import Path
 from typing import NamedTuple
-from loguru import logger
+
 import tree_sitter_python as tspython
+from loguru import logger
 from tree_sitter import Language, Parser
 
 logger.remove()

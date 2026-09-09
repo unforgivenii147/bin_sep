@@ -1,7 +1,9 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
+
 import sys
 from datetime import UTC, datetime, timedelta
+
 import git
 from git import GitCommandError, Repo
 

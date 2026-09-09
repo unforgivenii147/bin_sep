@@ -1,9 +1,11 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 from __future__ import annotations
+
 import sys
 import time
 from pathlib import Path
 from urllib.parse import urlparse
+
 import pycurl
 from dh import fsz
 
