@@ -1,4 +1,17 @@
 #!/data/data/com.termux/files/home/.local/bin/python
+"""Strip comments from source files recursively.
+
+Prompt: Write a Python CLI that recursively strips comments from Rust, TOML,
+JavaScript/TypeScript, Python, Shell, and Lua files. Use multiprocessing.Pool
+with a fixed pool of 8 workers via apply_async. Parse source with hand-written
+lexers that respect strings, raw strings, chars, and nested block comments for
+Rust; string-aware hash comments for TOML/Shell; template literals and block
+comments for JS/TS; tokenize-based preservation of shebangs, type/fmt/noqa
+pragmas, and module/nested docstrings for Python; long-bracket strings and
+comments for Lua. Collapse runs of blank lines to at most two. Report per-file
+results and a summary with line and byte savings using loguru and ANSI colors.
+"""
+
 from __future__ import annotations
 
 import argparse
@@ -6,15 +19,20 @@ import io
 import re
 import tokenize
 from collections.abc import Callable
-from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import dataclass
+from multiprocessing import Pool
 from pathlib import Path
+from typing import Any, Final
+
+from loguru import logger
 
 from dh import fsz
 
 
 @dataclass
 class FileResult:
+    """Result of stripping comments from a single file."""
+
     path: Path
     rel: str
     original_lines: int
@@ -26,37 +44,41 @@ class FileResult:
 
     @property
     def lines_removed(self) -> int:
+        """Number of lines removed from the file."""
         return self.original_lines - self.stripped_lines
 
     @property
     def bytes_saved(self) -> int:
+        """Number of bytes saved in the file."""
         return self.original_bytes - self.stripped_bytes
 
 
-RESET = "\x1b[0m"
-BOLD = "\x1b[1m"
-DIM = "\x1b[2m"
-GREEN = "\x1b[32m"
-YELLOW = "\x1b[33m"
-CYAN = "\x1b[36m"
-RED = "\x1b[31m"
-BLUE = "\x1b[34m"
-MAGENTA = "\x1b[35m"
-WHITE = "\x1b[97m"
+RESET: Final[str] = "\x1b[0m"
+BOLD: Final[str] = "\x1b[1m"
+DIM: Final[str] = "\x1b[2m"
+GREEN: Final[str] = "\x1b[32m"
+YELLOW: Final[str] = "\x1b[33m"
+CYAN: Final[str] = "\x1b[36m"
+RED: Final[str] = "\x1b[31m"
+BLUE: Final[str] = "\x1b[34m"
+MAGENTA: Final[str] = "\x1b[35m"
+WHITE: Final[str] = "\x1b[97m"
 
 
-def _c(text: str, *codes: str) -> str:
+def _c(text: object, *codes: str) -> str:
+    """Wrap text in ANSI color codes and reset."""
     return "".join(codes) + str(text) + RESET
 
 
 def strip_rust(source: str) -> str:
+    """Strip line and block comments from Rust source code."""
     result: list[str] = []
-    i = 0
-    n = len(source)
-    in_string = False
-    in_raw_string = False
-    raw_hashes = 0
-    in_char = False
+    i: int = 0
+    n: int = len(source)
+    in_string: bool = False
+    in_raw_string: bool = False
+    raw_hashes: int = 0
+    in_char: bool = False
     while i < n:
         if not in_string and (not in_raw_string) and (not in_char):
             raw_m = re.match('r(#*)"', source[i:])
@@ -136,6 +158,7 @@ def strip_rust(source: str) -> str:
 
 
 def strip_toml(source: str) -> str:
+    """Strip hash comments from TOML source code."""
     output: list[str] = []
     for raw_line in source.splitlines(keepends=True):
         output.append(_strip_hash_comment_from_line(raw_line))
@@ -143,10 +166,11 @@ def strip_toml(source: str) -> str:
 
 
 def _strip_hash_comment_from_line(line: str) -> str:
+    """Remove a trailing hash comment from a single line, respecting quotes."""
     result: list[str] = []
-    in_sq = False
-    in_dq = False
-    i = 0
+    in_sq: bool = False
+    in_dq: bool = False
+    i: int = 0
     while i < len(line):
         ch = line[i]
         if ch == "'" and (not in_dq):
@@ -166,13 +190,10 @@ def _strip_hash_comment_from_line(line: str) -> str:
 
 
 def strip_js(source: str) -> str:
+    """Strip line and block comments from JavaScript/TypeScript source code."""
     result: list[str] = []
-    i = 0
-    n = len(source)
-
-    def in_literal_state():
-        return False
-
+    i: int = 0
+    n: int = len(source)
     while i < n:
         if source[i] == "`":
             end = i + 1
@@ -225,28 +246,30 @@ def strip_js(source: str) -> str:
     return _collapse_blank_lines("".join(result))
 
 
-_PRESERVE_COMMENT = re.compile(
+_PRESERVE_COMMENT: Final[re.Pattern[str]] = re.compile(
     "^\\s*#\\s*(type|fmt|noqa|pyright|pylint|mypy|ruff)\\s*[:\\s]"
 )
 
 
 def strip_python(source: str) -> str:
+    """Strip comments and docstrings from Python source code."""
     try:
         tokens = list(tokenize.generate_tokens(io.StringIO(source).readline))
     except tokenize.TokenError:
         return source
     result: list[str] = []
-    prev_end = (1, 0)
-    module_docstring_done = False
-    first_string_seen = False
+    prev_end: tuple[int, int] = (1, 0)
+    module_docstring_done: bool = False
+    first_string_seen: bool = False
     lines = source.splitlines(keepends=True)
 
-    def text_between(start, end):
+    def text_between(start: tuple[int, int], end: tuple[int, int]) -> str:
+        """Return the source text between two (line, col) token positions."""
         sl, sc = start
         el, ec = end
         if sl == el:
             return lines[sl - 1][sc:ec] if sl <= len(lines) else ""
-        out = [lines[sl - 1][sc:]]
+        out: list[str] = [lines[sl - 1][sc:]]
         for ln in range(sl, el - 1):
             out.append(lines[ln] if ln < len(lines) else "")
         if el <= len(lines):
@@ -262,8 +285,6 @@ def strip_python(source: str) -> str:
         if ttype == tokenize.COMMENT:
             if ttext.startswith("#!") or _PRESERVE_COMMENT.match(ttext):
                 result.append(ttext)
-            else:
-                pass
             prev_end = tend
             continue
         if ttype == token_mod.STRING:
@@ -303,6 +324,7 @@ def strip_python(source: str) -> str:
 
 
 def strip_shell(source: str) -> str:
+    """Strip hash comments from shell source code, preserving a shebang."""
     output: list[str] = []
     for idx, raw_line in enumerate(source.splitlines(keepends=True)):
         if idx == 0 and raw_line.startswith("#!"):
@@ -313,10 +335,11 @@ def strip_shell(source: str) -> str:
 
 
 def _strip_shell_comment(line: str) -> str:
+    """Remove a trailing shell comment from a single line, respecting quotes."""
     result: list[str] = []
-    in_sq = False
-    in_dq = False
-    i = 0
+    in_sq: bool = False
+    in_dq: bool = False
+    i: int = 0
     while i < len(line):
         ch = line[i]
         if ch == "'" and (not in_dq):
@@ -340,9 +363,10 @@ def _strip_shell_comment(line: str) -> str:
 
 
 def strip_lua(source: str) -> str:
+    """Strip line and long-bracket comments from Lua source code."""
     result: list[str] = []
-    i = 0
-    n = len(source)
+    i: int = 0
+    n: int = len(source)
     while i < n:
         ls_m = re.match("\\[(?P<eq>=*)\\[", source[i:])
         if ls_m and source[i] == "[":
@@ -398,11 +422,12 @@ def strip_lua(source: str) -> str:
 
 
 def _collapse_blank_lines(text: str, max_consecutive: int = 1) -> str:
+    """Collapse runs of blank lines to at most max_consecutive + 1 newlines."""
     pattern = re.compile("\\n{" + str(max_consecutive + 2) + ",}")
     return pattern.sub("\n" * (max_consecutive + 1), text)
 
 
-_STRIPPER_MAP: dict[str, Callable[[str], str]] = {
+_STRIPPER_MAP: Final[dict[str, Callable[[str], str]]] = {
     ".rs": strip_rust,
     ".toml": strip_toml,
     ".js": strip_js,
@@ -427,6 +452,7 @@ _STRIPPER_MAP: dict[str, Callable[[str], str]] = {
 
 
 def process_file(args: tuple[Path, Path, set[str]]) -> FileResult:
+    """Read, strip comments from, and rewrite a single file."""
     file_path, cwd, _active_exts = args
     rel = str(file_path.relative_to(cwd))
     ext = file_path.suffix.lower()
@@ -463,7 +489,7 @@ def process_file(args: tuple[Path, Path, set[str]]) -> FileResult:
         )
 
 
-_EXT_ICON = {
+_EXT_ICON: Final[dict[str, str]] = {
     ".rs": "🦀",
     ".toml": "⚙️ ",
     ".js": "🟨",
@@ -480,18 +506,22 @@ _EXT_ICON = {
 
 
 def print_header(active_exts: set[str]) -> None:
+    """Log the CLI banner with the active target extensions."""
     exts_str = "  ".join(sorted(active_exts))
-    print()
-    print(_c("  strip_comments ", BOLD, CYAN) + _c(f"targeting: {exts_str}", DIM))
-    print(_c("  " + "─" * 40, DIM))
+    logger.opt(colors=True).info("")
+    logger.opt(colors=True).info(
+        _c("  strip_comments ", BOLD, CYAN) + _c(f"targeting: {exts_str}", DIM)
+    )
+    logger.opt(colors=True).info(_c("  " + "─" * 40, DIM))
 
 
 def print_file_result(r: FileResult) -> None:
+    """Log the strip result for a single file."""
     icon = _EXT_ICON.get(Path(r.rel).suffix.lower(), "📄")
     if r.error:
         status = _c(" ERROR ", BOLD, RED)
         detail = _c(r.error, RED)
-        print(f"  {icon}  {_c(r.rel, BOLD)}  {status}  {detail}")
+        logger.opt(colors=True).info(f"  {icon}  {_c(r.rel, BOLD)}  {status}  {detail}")
         return
     if r.changed:
         status = _c(" stripped ", BOLD, GREEN)
@@ -501,32 +531,39 @@ def print_file_result(r: FileResult) -> None:
             else _c("±0 lines", DIM)
         )
         bytes_badge = _c(f"-{fsz(r.bytes_saved)}", MAGENTA)
-        print(f"  {icon}  {_c(r.rel, WHITE)}  {status}  {lines_badge}  {bytes_badge}")
+        logger.opt(colors=True).info(
+            f"  {icon}  {_c(r.rel, WHITE)}  {status}  {lines_badge}  {bytes_badge}"
+        )
     else:
         status = _c(" clean  ", DIM)
-        print(f"  {icon}  {_c(r.rel, DIM)}  {status}")
+        logger.opt(colors=True).info(f"  {icon}  {_c(r.rel, DIM)}  {status}")
 
 
 def print_summary(results: list[FileResult], elapsed: float) -> None:
+    """Log an aggregate summary of all strip results."""
     total = len(results)
     changed = sum(1 for r in results if r.changed)
     clean = sum(1 for r in results if not r.changed and (not r.error))
     errors = sum(1 for r in results if r.error)
     lines_saved = sum(r.lines_removed for r in results)
     bytes_saved = sum(r.bytes_saved for r in results)
-    print()
-    print(_c("  " + "─" * 40, DIM))
-    print(
-        f"  {_c('Summary', BOLD, CYAN)}  {_c(total, BOLD)} files  {
-            _c(changed, BOLD, GREEN)
-        } stripped  {_c(clean, DIM)} clean  "
-        + (f"{_c(errors, BOLD, RED)} errors  " if errors else "")
-        + f"{_c(f'-{lines_saved} lines', YELLOW)}  {_c(f'-{fsz(bytes_saved)}', MAGENTA)}  {_c(f'{elapsed:.2f}s', DIM)}"
+    logger.opt(colors=True).info("")
+    logger.opt(colors=True).info(_c("  " + "─" * 40, DIM))
+    msg = (
+        f"  {_c('Summary', BOLD, CYAN)}  {_c(total, BOLD)} files  "
+        f"{_c(changed, BOLD, GREEN)} stripped  {_c(clean, DIM)} clean  "
     )
-    print()
+    if errors:
+        msg += f"{_c(errors, BOLD, RED)} errors  "
+    msg += (
+        f"{_c(f'-{lines_saved} lines', YELLOW)}  "
+        f"{_c(f'-{fsz(bytes_saved)}', MAGENTA)}  {_c(f'{elapsed:.2f}s', DIM)}"
+    )
+    logger.opt(colors=True).info(msg)
+    logger.opt(colors=True).info("")
 
 
-_FLAG_EXTS: dict[str, list[str]] = {
+_FLAG_EXTS: Final[dict[str, list[str]]] = {
     "rs": [".rs"],
     "toml": [".toml"],
     "js": [".js", ".ts", ".jsx", ".tsx", ".mjs", ".cjs"],
@@ -535,12 +572,14 @@ _FLAG_EXTS: dict[str, list[str]] = {
     "lua": [".lua"],
 }
 
+_POOL_SIZE: Final[int] = 8
+
 
 def build_parser() -> argparse.ArgumentParser:
+    """Construct the argument parser for the CLI."""
     p = argparse.ArgumentParser(
         description="Strip comments from source files recursively.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog=__doc__,
     )
     p.add_argument(
         "dirs",
@@ -555,22 +594,17 @@ def build_parser() -> argparse.ArgumentParser:
             help=f"Strip comments from {', '.join(exts)} files",
         )
     p.add_argument("--all", action="store_true", help="Enable all language strippers")
-    p.add_argument(
-        "--workers",
-        type=int,
-        default=None,
-        help="Number of parallel workers (default: CPU count)",
-    )
     return p
 
 
 def collect_files(dirs: list[str], active_exts: set[str]) -> list[Path]:
+    """Recursively collect files matching the active extensions."""
     files: list[Path] = []
     seen: set[Path] = set()
     for d in dirs:
         root = Path(d).resolve()
         if not root.is_dir():
-            print(_c(f"  ⚠  Not a directory: {d}", YELLOW))
+            logger.opt(colors=True).warning(_c(f"  ⚠  Not a directory: {d}", YELLOW))
             continue
         for ext in active_exts:
             for fp in root.rglob(f"*{ext}"):
@@ -581,6 +615,7 @@ def collect_files(dirs: list[str], active_exts: set[str]) -> list[Path]:
 
 
 def main() -> int:
+    """Entry point: parse args, dispatch work to the pool, and print results."""
     import time
 
     parser = build_parser()
@@ -600,16 +635,16 @@ def main() -> int:
     cwd = Path.cwd()
     files = collect_files(args.dirs, active_exts)
     if not files:
-        print(_c("\n  No matching files found.\n", YELLOW))
+        logger.opt(colors=True).info(_c("\n  No matching files found.\n", YELLOW))
         return 0
     print_header(active_exts)
-    work = [(fp, cwd, active_exts) for fp in files]
+    work: list[tuple[Path, Path, set[str]]] = [(fp, cwd, active_exts) for fp in files]
     results: list[FileResult] = []
     t0 = time.perf_counter()
-    with ProcessPoolExecutor(max_workers=args.workers) as pool:
-        futures = {pool.submit(process_file, w): w for w in work}
-        for fut in as_completed(futures):
-            result = fut.result()
+    with Pool(processes=_POOL_SIZE) as pool:
+        async_results = [pool.apply_async(process_file, (w,)) for w in work]
+        for ar in async_results:
+            result: FileResult = ar.get()
             print_file_result(result)
             results.append(result)
     elapsed = time.perf_counter() - t0

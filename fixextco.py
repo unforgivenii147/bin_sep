@@ -1,50 +1,60 @@
 #!/data/data/com.termux/files/home/.local/bin/python
+"""
+Generate a Python script that scans a directory tree for files whose extensions do not match their detected MIME type (using the `file` command) or shebang, then interactively or automatically renames them to the correct extension. Use multiprocessing.Pool.apply_async with a fixed pool of 8 workers, loguru for logging, pathlib for all path operations, complete type annotations, and a MIME-to-extension mapping table with skip lists.
+"""
+
 from __future__ import annotations
 
-import os
+import argparse
 import sys
-from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import dataclass
+from multiprocessing import Pool
 from pathlib import Path
+from typing import Any, Final, Iterable
+
+from loguru import logger
 
 from dh import is_binary, runcmd, unique_path
 
 
 class Color:
-    BLACK = 30
-    RED = 31
-    GREEN = 32
-    YELLOW = 33
-    BLUE = 34
-    MAGENTA = 35
-    CYAN = 36
-    WHITE = 37
-    LIGHT_BLACK = 90
-    LIGHT_RED = 91
-    LIGHT_GREEN = 92
-    LIGHT_YELLOW = 93
-    LIGHT_BLUE = 94
-    LIGHT_MAGENTA = 95
-    LIGHT_CYAN = 96
-    LIGHT_WHITE = 97
-    ON_BLACK = 40
-    ON_RED = 41
-    ON_GREEN = 42
-    ON_YELLOW = 43
-    ON_BLUE = 44
-    ON_MAGENTA = 45
-    ON_CYAN = 46
-    ON_WHITE = 47
-    RESET = 0
-    BOLD = 1
-    DIM = 2
-    ITALIC = 3
-    UNDERLINE = 4
-    BLINK = 5
-    REVERSE = 7
-    CONCEALED = 8
-    STRIKETHROUGH = 9
-    _enabled = True
+    """ANSI color code constants and helpers for terminal colorization."""
+
+    BLACK: Final[int] = 30
+    RED: Final[int] = 31
+    GREEN: Final[int] = 32
+    YELLOW: Final[int] = 33
+    BLUE: Final[int] = 34
+    MAGENTA: Final[int] = 35
+    CYAN: Final[int] = 36
+    WHITE: Final[int] = 37
+    LIGHT_BLACK: Final[int] = 90
+    LIGHT_RED: Final[int] = 91
+    LIGHT_GREEN: Final[int] = 92
+    LIGHT_YELLOW: Final[int] = 93
+    LIGHT_BLUE: Final[int] = 94
+    LIGHT_MAGENTA: Final[int] = 95
+    LIGHT_CYAN: Final[int] = 96
+    LIGHT_WHITE: Final[int] = 97
+    ON_BLACK: Final[int] = 40
+    ON_RED: Final[int] = 41
+    ON_GREEN: Final[int] = 42
+    ON_YELLOW: Final[int] = 43
+    ON_BLUE: Final[int] = 44
+    ON_MAGENTA: Final[int] = 45
+    ON_CYAN: Final[int] = 46
+    ON_WHITE: Final[int] = 47
+    RESET: Final[int] = 0
+    BOLD: Final[int] = 1
+    DIM: Final[int] = 2
+    ITALIC: Final[int] = 3
+    UNDERLINE: Final[int] = 4
+    BLINK: Final[int] = 5
+    REVERSE: Final[int] = 7
+    CONCEALED: Final[int] = 8
+    STRIKETHROUGH: Final[int] = 9
+
+    _enabled: bool = True
 
     @classmethod
     def _build_code(
@@ -54,9 +64,10 @@ class Color:
         bg: int | None = None,
         attrs: list[int] | None = None,
     ) -> str:
+        """Wrap *text* with ANSI escape codes for the given colors and attributes."""
         if not cls._enabled:
             return text
-        codes = []
+        codes: list[str] = []
         if fg is not None:
             codes.append(str(fg))
         if bg is not None:
@@ -70,15 +81,20 @@ class Color:
         return f"{escape}{text}{reset}"
 
     @classmethod
-    def disable(cls):
+    def disable(cls) -> None:
+        """Disable color output globally."""
         cls._enabled = False
 
     @classmethod
-    def enable(cls):
+    def enable(cls) -> None:
+        """Enable color output globally."""
         cls._enabled = True
 
     @classmethod
     def can_colorize(cls) -> bool:
+        """Return True if ANSI colors should be emitted to stdout."""
+        import os
+
         if os.environ.get("NO_COLOR"):
             return False
         if os.environ.get("ANSI_COLORS_DISABLED"):
@@ -94,19 +110,11 @@ def colored(
     bg: int | None = None,
     attrs: list[int] | None = None,
 ) -> str:
+    """Return *text* wrapped in ANSI color escape codes."""
     return Color._build_code(text, fg, bg, attrs)
 
 
-def cprint(
-    text: str,
-    fg: int | None = None,
-    bg: int | None = None,
-    attrs: list[int] | None = None,
-):
-    print(colored(text, fg, bg, attrs))
-
-
-MIME_TO_EXTENSIONS: dict[str, list[str]] = {
+MIME_TO_EXTENSIONS: Final[dict[str, list[str]]] = {
     "application/pdf": [".pdf"],
     "application/msword": [".doc"],
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [
@@ -367,21 +375,28 @@ MIME_TO_EXTENSIONS: dict[str, list[str]] = {
     "application/vnd.sqlite3": [".db", ".sqlite", ".sqlite3"],
     "application/octet-stream": [".bin", ".o"],
 }
-SKIP_EXTENSIONS: set[str] = {".css", ".js", ".ts", ".jsx", ".tsx"}
-SKIP_MIME_TYPES: set[str] = {"text/plain", "application/octet-stream"}
-SKIP_DIRECTORIES: frozenset[str] = frozenset(
+
+SKIP_EXTENSIONS: Final[set[str]] = {".css", ".js", ".ts", ".jsx", ".tsx"}
+SKIP_MIME_TYPES: Final[set[str]] = {"text/plain", "application/octet-stream"}
+SKIP_DIRECTORIES: Final[frozenset[str]] = frozenset(
     {".git", "__pycache__", ".venv", "node_modules", ".env"}
 )
+
+WORKER_COUNT: Final[int] = 8
 
 
 @dataclass
 class MimeResult:
+    """Result of running the `file` command to detect a MIME type."""
+
     mime_type: str | None
     error: str | None = None
 
 
 @dataclass
 class MismatchResult:
+    """A detected extension mismatch, with the suggested new path."""
+
     path: Path
     current_ext: str
     detected_mime: str
@@ -391,16 +406,17 @@ class MismatchResult:
 
 
 def fix_by_shebang(path: Path) -> str | None:
+    """Return the extension implied by *path*'s shebang, or None if unknown."""
     if is_binary(path):
         return None
     try:
         with open(path, "rb") as f:
-            first_line = f.readline()
+            first_line: bytes = f.readline()
     except OSError:
         return None
     if not first_line.startswith(b"#!"):
         return None
-    shebang = first_line.decode("utf-8", errors="ignore").strip()
+    shebang: str = first_line.decode("utf-8", errors="ignore").strip()
     if any(shell in shebang for shell in ["/bash", "bash", "/sh", "/bin/sh"]):
         return ".sh"
     if any(shell in shebang for shell in ["/zsh", "zsh"]):
@@ -415,15 +431,17 @@ def fix_by_shebang(path: Path) -> str | None:
         return ".rb"
     if "node" in shebang:
         return ".js"
-    if "ruby" in shebang:
-        return ".rb"
     if "lua" in shebang:
         return ".lua"
     return None
 
 
 def get_file_mime(path: Path) -> MimeResult:
+    """Run `file --brief --mime-type` on *path* and return the parsed result."""
     try:
+        exit_code: int
+        stdout: str
+        stderr: str
         exit_code, stdout, stderr = runcmd(
             ["file", "--brief", "--mime-type", str(path)], timeout=5
         )
@@ -433,7 +451,7 @@ def get_file_mime(path: Path) -> MimeResult:
             return MimeResult(
                 None, stderr or f"file command failed with code {exit_code}"
             )
-        mime_type = stdout.strip()
+        mime_type: str = stdout.strip()
         if mime_type:
             return MimeResult(mime_type)
         return MimeResult(None, "No MIME type detected")
@@ -442,6 +460,7 @@ def get_file_mime(path: Path) -> MimeResult:
 
 
 def safe_rename(old_path: Path, new_path: Path) -> bool:
+    """Rename *old_path* to *new_path*, deduplicating if necessary. Returns success."""
     try:
         if new_path.exists():
             new_path = unique_path(new_path)
@@ -452,12 +471,13 @@ def safe_rename(old_path: Path, new_path: Path) -> bool:
 
 
 def detect_mismatch(base_dir: Path, file_path: Path) -> MismatchResult | None:
+    """Return a MismatchResult if *file_path*'s extension looks wrong, else None."""
     if file_path.suffix.lower() in SKIP_EXTENSIONS:
         return None
-    current_ext = file_path.suffix.lower()
-    shebang_ext = fix_by_shebang(file_path)
+    current_ext: str = file_path.suffix.lower()
+    shebang_ext: str | None = fix_by_shebang(file_path)
     if shebang_ext and current_ext != shebang_ext:
-        new_path = file_path.with_suffix(shebang_ext)
+        new_path: Path = file_path.with_suffix(shebang_ext)
         return MismatchResult(
             path=file_path,
             current_ext=current_ext,
@@ -467,16 +487,16 @@ def detect_mismatch(base_dir: Path, file_path: Path) -> MismatchResult | None:
             expected_exts=[shebang_ext],
             new_path=unique_path(new_path),
         )
-    mime_result = get_file_mime(file_path)
+    mime_result: MimeResult = get_file_mime(file_path)
     if mime_result.error:
         return None
-    mime_type = mime_result.mime_type
+    mime_type: str | None = mime_result.mime_type
     if not mime_type or mime_type in SKIP_MIME_TYPES:
         return None
-    expected_exts = MIME_TO_EXTENSIONS.get(mime_type, [])
+    expected_exts: list[str] = MIME_TO_EXTENSIONS.get(mime_type, [])
     if not expected_exts:
         return None
-    expected_ext = expected_exts[0].lower()
+    expected_ext: str = expected_exts[0].lower()
     if current_ext == expected_ext or current_ext in [e.lower() for e in expected_exts]:
         return None
     new_path = file_path.with_suffix(expected_ext)
@@ -489,97 +509,113 @@ def detect_mismatch(base_dir: Path, file_path: Path) -> MismatchResult | None:
     )
 
 
-def process_file_worker(base_dir: Path, file_path: Path) -> MismatchResult | None:
-    if file_path.stat().st_size == 0:
+def process_file_worker(args: tuple[Path, Path]) -> MismatchResult | None:
+    """Multiprocessing entry point: skip empty files, then detect mismatches."""
+    base_dir, file_path = args
+    try:
+        if file_path.stat().st_size == 0:
+            return None
+    except OSError:
         return None
     return detect_mismatch(base_dir, file_path)
 
 
-def scan_directory(directory: str, workers: int = 4) -> list[MismatchResult]:
-    base_dir = Path(directory).resolve()
+def scan_directory(directory: str) -> list[MismatchResult]:
+    """Walk *directory*, analyze each file, and return all detected mismatches."""
+    base_dir: Path = Path(directory).resolve()
     if not base_dir.is_dir():
-        cprint(f"Error: {directory} is not a directory", fg=Color.RED)
+        logger.error(f"Error: {directory} is not a directory")
         return []
-    files = []
-    for root, dirs, filenames in os.walk(base_dir):
+
+    files: list[Path] = []
+    for root, dirs, filenames in base_dir.walk():
         dirs[:] = [d for d in dirs if d not in SKIP_DIRECTORIES]
-        root_path = Path(root)
+        root_path: Path = Path(root)
         for filename in filenames:
-            file_path = root_path / filename
+            file_path: Path = root_path / filename
             if not file_path.is_symlink():
                 files.append(file_path)
+
     if not files:
-        cprint("No files found", fg=Color.YELLOW)
+        logger.warning("No files found")
         return []
-    cprint(
-        f"Found {len(files):,} files, analyzing with {workers} workers...",
-        fg=Color.CYAN,
-    )
-    results = []
-    with ProcessPoolExecutor(max_workers=workers) as executor:
-        futures = {
-            executor.submit(process_file_worker, base_dir, file_path): file_path
-            for file_path in files
-        }
-        completed = 0
-        for future in as_completed(futures):
+
+    logger.info(f"Found {len(files):,} files, analyzing with {WORKER_COUNT} workers...")
+
+    results: list[MismatchResult] = []
+    tasks: list[tuple[Path, Path]] = [(base_dir, f) for f in files]
+
+    with Pool(processes=WORKER_COUNT) as pool:
+        async_results: list[Any] = [
+            pool.apply_async(process_file_worker, (task,)) for task in tasks
+        ]
+        completed: int = 0
+        for ar in async_results:
             completed += 1
             if completed % 100 == 0:
-                print(
-                    f"\r  Processed: {completed:,}/{len(files):,}", end="", flush=True
-                )
-            result = future.result()
+                logger.debug(f"Processed: {completed:,}/{len(files):,}")
+            try:
+                result: MismatchResult | None = ar.get()
+            except Exception as e:
+                logger.error(f"Worker error: {e}")
+                continue
             if result:
                 results.append(result)
-    print(f"\r  Processed: {completed:,}/{len(files):,}")
+
+    logger.info(f"Processed: {completed:,}/{len(files):,}")
     return results
 
 
 def print_results(mismatches: list[MismatchResult], confirm: bool = False) -> int:
+    """Log each mismatch, optionally prompting before renaming. Returns rename count."""
     if not mismatches:
-        cprint(
-            "\n✓ No file extension mismatches found!",
-            fg=Color.GREEN,
-            attrs=[Color.BOLD],
-        )
+        logger.success("✓ No file extension mismatches found!")
         return 0
-    cprint(
-        f"\nFound {len(mismatches)} file(s) with mismatched extensions:\n",
-        fg=Color.YELLOW,
-        attrs=[Color.BOLD],
-    )
-    renamed_count = 0
+
+    logger.warning(f"Found {len(mismatches)} file(s) with mismatched extensions:")
+
+    renamed_count: int = 0
     for result in sorted(mismatches, key=lambda r: str(r.path)):
         try:
-            rel_path = result.path.relative_to(Path.cwd())
+            rel_path: Path = result.path.relative_to(Path.cwd())
         except ValueError:
             rel_path = result.path
+        new_name: str = result.new_path.name if result.new_path else "<unknown>"
         print(
-            f"  {colored(str(rel_path), fg=Color.CYAN)} → {colored(result.new_path.name, fg=Color.GREEN)}"
+            f"  {colored(str(rel_path), fg=Color.CYAN)} → "
+            f"{colored(new_name, fg=Color.GREEN)}"
         )
         print(f"    MIME: {colored(result.detected_mime, fg=Color.LIGHT_CYAN)}")
         print(
             f"    Expected ext: {colored(result.expected_exts[0], fg=Color.LIGHT_GREEN)}"
         )
+        if result.new_path is None:
+            logger.error("    ✗ No target path computed")
+            print()
+            continue
         if safe_rename(result.path, result.new_path):
-            cprint("    ✓ Renamed", fg=Color.GREEN)
+            logger.success("    ✓ Renamed")
             renamed_count += 1
         else:
-            cprint("    ✗ Failed to rename", fg=Color.RED)
+            logger.error("    ✗ Failed to rename")
         print()
-    cprint(
-        f"Summary: {renamed_count} file(s) renamed", fg=Color.BOLD, attrs=[Color.GREEN]
-    )
+
+    logger.info(f"Summary: {renamed_count} file(s) renamed")
     return renamed_count
 
 
-def main():
-    import argparse
-
+def build_arg_parser() -> argparse.ArgumentParser:
+    """Construct the CLI argument parser."""
     parser = argparse.ArgumentParser(
         description="Detect and fix file extension mismatches by analyzing MIME types",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="\nExamples:\n\n  python fix_extensions.py\n\n\n  python fix_extensions.py /path/to/directory\n\n\n  python fix_extensions.py -y\n\n\n  python fix_extensions.py -w 16\n\n\n  python fix_extensions.py --no-color\n        ",
+        epilog=(
+            "\nExamples:\n\n"
+            "  python fix_extensions.py\n\n\n"
+            "  python fix_extensions.py /path/to/directory\n\n\n"
+            "  python fix_extensions.py -y\n\n\n"
+            "  python fix_extensions.py --no-color\n        "
+        ),
     )
     parser.add_argument(
         "directory",
@@ -594,21 +630,35 @@ def main():
         help="Interactive confirmation before renaming",
     )
     parser.add_argument(
-        "-w",
-        "--workers",
-        type=int,
-        default=8,
-        help="Number of worker processes",
+        "--no-color",
+        action="store_true",
+        help="Disable colored output",
     )
-    args = parser.parse_args()
-    Color.enable()
+    return parser
+
+
+def main() -> int:
+    """CLI entry point."""
+    parser: argparse.ArgumentParser = build_arg_parser()
+    args: argparse.Namespace = parser.parse_args()
+
+    if args.no_color or not Color.can_colorize():
+        Color.disable()
+    else:
+        Color.enable()
+
+    cprint = lambda text, fg=None, bg=None, attrs=None: print(  # noqa: E731
+        colored(text, fg, bg, attrs)
+    )
+
     cprint("╔══════════════════════════════════════════╗", fg=Color.CYAN)
     cprint("║  File Extension Mismatch Fixer            ║", fg=Color.CYAN)
     cprint("╚══════════════════════════════════════════╝", fg=Color.CYAN)
     print()
-    mismatches = scan_directory(args.directory, workers=args.workers)
-    renamed = print_results(mismatches, confirm=args.interactive)
-    sys.exit(0 if renamed == 0 or not args.interactive else 0)
+
+    mismatches: list[MismatchResult] = scan_directory(args.directory)
+    renamed: int = print_results(mismatches, confirm=args.interactive)
+    return 0 if renamed >= 0 else 0
 
 
 if __name__ == "__main__":

@@ -2,88 +2,193 @@
 from __future__ import annotations
 
 import datetime
+import os
+import shutil
+import stat
 import sys
-from os import scandir as _scandir
 from pathlib import Path
 
 REVERSE = "-r" in sys.argv
 
 
-def fsz(sz: float) -> str:
+def fsz(sz: int) -> str:
+    """Format bytes into a compact human-readable string."""
     sz = abs(int(sz))
-    units = ("", "K", "M", "G", "T")
-    if sz == 0:
-        return "0 B"
-    i = min(int(int(sz).bit_length() - 1) // 10, len(units) - 1)
-    sz /= 1024**i
-    return f"{int(sz)} {units[i]}B"
+    if sz < 1024:
+        return f"{sz} B"
+    units = ("K", "M", "G", "T", "P")
+    i = -1
+    v = float(sz)
+    while v >= 1024 and i < len(units) - 1:
+        v /= 1024
+        i += 1
+    # Show one decimal if it fits nicely, otherwise round
+    if v < 10:
+        s = f"{v:.1f}"
+        if s.endswith(".0"):
+            s = s[:-2]
+    else:
+        s = f"{int(v)}"
+    return f"{s} {units[i]}B"
 
 
 def gsz(path: str | Path) -> int:
-    path = Path(path)
-    total_size = 0
-    if not path.exists():
+    """
+    Recursively compute total size of a file or directory.
+    - Counts real files only.
+    - Does not follow symlinks.
+    - Handles hardlinks (counts each link once per unique inode).
+    - Robust against permission/IO errors.
+    """
+    try:
+        st = os.lstat(path)
+    except OSError:
         return 0
-    if path.is_file():
+
+    mode = st.st_mode
+    if stat.S_ISLNK(mode):
+        # Count symlink's own size (the link target string), not the target
+        return st.st_size
+    if stat.S_ISREG(mode):
+        return st.st_size
+    if not stat.S_ISDIR(mode):
+        return 0
+
+    total = 0
+    seen: set[tuple[int, int]] = set()
+    stack = [path]
+    while stack:
+        cur = stack.pop()
         try:
-            total_size = path.stat().st_size
+            with os.scandir(cur) as it:
+                for entry in it:
+                    try:
+                        est = entry.stat(follow_symlinks=False)
+                    except OSError:
+                        continue
+                    emode = est.st_mode
+                    if stat.S_ISLNK(emode):
+                        total += est.st_size
+                    elif stat.S_ISREG(emode):
+                        key = (est.st_dev, est.st_ino)
+                        if key in seen:
+                            continue
+                        seen.add(key)
+                        total += est.st_size
+                    elif stat.S_ISDIR(emode):
+                        stack.append(entry.path)
         except OSError:
-            return 0
-    elif path.is_dir():
-        for entry in _scandir(path):
-            try:
-                if Path(entry.path).is_symlink() or not Path(entry.path).exists():
-                    continue
-                if entry.is_file():
-                    total_size += entry.stat().st_size
-                elif entry.is_dir():
-                    total_size += gsz(entry.path)
-            except OSError:
-                continue
-    return total_size
+            continue
+    return total
+
+
+def fmt_time(ts: float) -> str:
+    return datetime.datetime.fromtimestamp(ts).strftime("%H:%M")
+
+
+def visible_len(s: str) -> int:
+    """Length of a string ignoring ANSI escape sequences."""
+    n = 0
+    i = 0
+    L = len(s)
+    while i < L:
+        c = s[i]
+        if c == "\x1b":
+            # skip until 'm'
+            j = s.find("m", i)
+            if j == -1:
+                break
+            i = j + 1
+            continue
+        n += 1
+        i += 1
+    return n
+
+
+def truncate(s: str, width: int) -> str:
+    if width <= 0:
+        return ""
+    if len(s) <= width:
+        return s
+    if width == 1:
+        return "…"
+    return s[: width - 1] + "…"
+
+
+def main() -> None:
+    cwd = Path.cwd()
+
+    try:
+        term_w = shutil.get_terminal_size(fallback=(80, 24)).columns
+    except Exception:
+        term_w = 80
+
+    dirz: list[tuple[Path, int, float]] = []
+    otherz: list[tuple[Path, int, float]] = []
+
+    try:
+        entries = list(os.scandir(cwd))
+    except OSError as e:
+        print(f"error: {e}", file=sys.stderr)
+        return
+
+    for entry in entries:
+        p = Path(entry.path)
+        try:
+            st = entry.stat(follow_symlinks=False)
+        except OSError:
+            continue
+        try:
+            if entry.is_dir(follow_symlinks=False):
+                size = gsz(p)
+                dirz.append((p, size, st.st_ctime))
+            else:
+                if stat.S_ISLNK(st.st_mode):
+                    size = st.st_size  # symlink string length
+                else:
+                    size = st.st_size
+                otherz.append((p, size, st.st_ctime))
+        except OSError:
+            continue
+
+    # Sort files by size; dirs alphabetically (as original did)
+    otherz.sort(key=lambda t: t[1], reverse=REVERSE)
+    dirz.sort(key=lambda t: t[0].name.lower(), reverse=REVERSE)
+
+    # Layout: NAME | SIZE | TIME
+    # Reserve fixed width for size (8) and time (5) plus 2 spaces between cols
+    SIZE_W = 8
+    TIME_W = 5
+    fixed = SIZE_W + TIME_W + 4  # spaces between/after
+    name_w = max(10, term_w - fixed)
+
+    def emit(name: str, size: int, ctime: float, color: str) -> None:
+        size_str = fsz(size)
+        # Right-align size within SIZE_W
+        size_col = size_str.rjust(SIZE_W)
+        t = fmt_time(ctime)
+        name_disp = truncate(name, name_w)
+        # Pad name to name_w using visible length
+        pad = name_w - visible_len(name_disp)
+        if pad < 0:
+            pad = 0
+        print(
+            f"\x1b[05;{color}m{name_disp}\x1b[0m"
+            f"{' ' * pad}"
+            f" \x1b[05;96m{size_col}\x1b[0m"
+            f" \x1b[05;93m{t}\x1b[0m"
+        )
+
+    for p, sz, ct in otherz:
+        name = p.name
+        if p.is_symlink():
+            emit(name, sz, ct, "95")
+        else:
+            emit(name, sz, ct, "92")
+
+    for p, sz, ct in dirz:
+        emit(p.name, sz, ct, "94")
 
 
 if __name__ == "__main__":
-    cwd = Path.cwd()
-    dirz = []
-    otherz = []
-    sz = ""
-    for path in sorted(cwd.glob("*"), key=lambda e: e.stat().st_size, reverse=REVERSE):
-        if not path.exists():
-            continue
-        if path.is_dir():
-            dirz.append(path)
-        else:
-            otherz.append(path)
-    for f in otherz:
-        ctime = datetime.datetime.fromtimestamp(f.stat().st_ctime).strftime("%H:%M")
-        if f.is_symlink():
-            print(f"\x1b[05;95m{f.name[:24]:25}\x1b[0m", end=" ")
-        else:
-            sz = str(fsz(gsz(f)))
-            match len(sz):
-                case 3:
-                    sz = "      " + sz
-                case 4:
-                    sz = "     " + sz
-                case 5:
-                    sz = "    " + sz
-                case 6:
-                    sz = "   " + sz
-                case 7:
-                    sz = "  " + sz
-                case 8:
-                    sz = " " + sz
-            print(f"\x1b[05;92m{f.stem[:20] + f.suffix:25}\x1b[0m", end=" ")
-        print(f"\x1b[05;96m{sz}\x1b[0m", end=" ")
-        print(f"\x1b[05;93m{ctime}\x1b[0m")
-    for dr in sorted(dirz):
-        ctime = datetime.datetime.fromtimestamp(dr.stat().st_ctime).strftime("%H:%M")
-        sz = str(fsz(gsz(dr)))
-        if len(sz) == 7:
-            sz = "  " + sz
-        if len(sz) == 8:
-            sz = " " + sz
-        print(f"\x1b[05;94m{dr.name[:24]:25}\x1b[0m", end=" ")
-        print(f"\x1b[05;96m{sz}\x1b[0m", end=" ")
-        print(f"\x1b[05;93m{ctime}\x1b[0m")
+    main()

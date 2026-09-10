@@ -1,8 +1,7 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import sys
 import time
+import re
 from io import BytesIO
 from pathlib import Path
 
@@ -14,6 +13,169 @@ TIMEOUT = 30
 DOWNLOAD_DIR = Path.cwd()
 MAX_RETRIES = 3
 RETRY_DELAY = 2
+
+# Architecture/platform tags to detect and skip
+ARCH_TAGS = [
+    "win32",
+    "win_amd64",
+    "win_arm64",
+    "win32",
+    "windows",
+    "manylinux",
+    "musllinux",
+    "linux_i686",
+    "linux_x86_64",
+    "linux_armv7l",
+    "linux_aarch64",
+    "linux_armv6l",
+    "linux_armv8l",
+    "macosx",
+    "darwin",
+    "x86_64",
+    "amd64",
+    "i686",
+    "i386",
+    "aarch64",
+    "armv7l",
+    "armv6l",
+    "armv8l",
+    "ppc64",
+    "ppc64le",
+    "s390x",
+    "riscv64",
+    "cp36",
+    "cp37",
+    "cp38",
+    "cp39",
+    "cp310",
+    "cp311",
+    "cp312",
+    "cp313",
+    "cp27",
+    "cp35",
+    "pp27",
+    "pp36",
+    "pp37",
+    "pp38",
+    "pp39",
+    "pypy",
+    "jython",
+    "32",
+    "64",
+]
+
+# Regex to detect Python version + platform specific wheels
+# e.g. cp312-cp312-manylinux_2_17_x86_64, py2.py3-none-any is OK
+WHEEL_PLATFORM_RE = re.compile(
+    r"-(cp\d+|pp\d+|py\d+)"
+    r"(-(cp\d+|pp\d+|py\d+))?"
+    r"-(manylinux|musllinux|win|macosx|linux|darwin)",
+    re.IGNORECASE,
+)
+
+
+def is_windows_url(url: str) -> bool:
+    """Check if URL is a Windows-tagged package."""
+    lower = url.lower()
+    return (
+        "win32" in lower
+        or "win_amd64" in lower
+        or "win_arm64" in lower
+        or "-win-" in lower
+    )
+
+
+def has_arch_tag(url: str) -> bool:
+    """Check if URL has any architecture/platform specific tag."""
+    lower = url.lower()
+    # Check wheel platform tags
+    if WHEEL_PLATFORM_RE.search(lower):
+        return True
+    # Check other arch indicators
+    for tag in [
+        "manylinux",
+        "musllinux",
+        "macosx",
+        "darwin",
+        "x86_64",
+        "amd64",
+        "i686",
+        "aarch64",
+        "armv7l",
+        "armv6l",
+        "armv8l",
+        "ppc64",
+        "s390x",
+        "riscv64",
+    ]:
+        if tag in lower:
+            return True
+    return False
+
+
+def is_sdist(url: str) -> bool:
+    """Check if URL points to a source distribution (.tar.gz)."""
+    return url.lower().endswith(".tar.gz")
+
+
+def is_pure_wheel(url: str) -> bool:
+    """Check if URL is a pure Python wheel (py3-none-any)."""
+    lower = url.lower()
+    if not lower.endswith(".whl"):
+        return False
+    return "py3-none-any" in lower or "py2.py3-none-any" in lower
+
+
+def select_best_url(links: list, pkg_name: str) -> tuple[str, str, str] | None:
+    """
+    Select best download URL from links.
+    Returns (url, filename, status) where status is:
+      - "download" : should be downloaded
+      - "skip"     : has arch tag, should be skipped but URL reported
+      - "error"    : no suitable file found
+    """
+    sdist_candidates = []  # .tar.gz files
+    pure_wheel_candidates = []  # py3-none-any wheels
+    arch_skipped = []  # files with arch tags (to report)
+
+    for link in links:
+        href = link.get("href", "").strip()
+        if not href:
+            continue
+        url = href.split("#")[0]
+        filename = link.get_text().strip() or url.split("/")[-1]
+
+        # Skip Windows URLs entirely
+        if is_windows_url(url):
+            print(f"  [SKIP-WIN] {filename}")
+            continue
+
+        # Check if has arch tag
+        if has_arch_tag(url):
+            arch_skipped.append((url, filename))
+            continue
+
+        if is_sdist(url):
+            sdist_candidates.append((url, filename))
+        elif is_pure_wheel(url):
+            pure_wheel_candidates.append((url, filename))
+
+    # Prefer latest .tar.gz (sdist)
+    if sdist_candidates:
+        url, filename = sdist_candidates[-1]
+        return (url, filename, "download")
+
+    # Fallback to pure wheel
+    if pure_wheel_candidates:
+        url, filename = pure_wheel_candidates[-1]
+        return (url, filename, "download")
+
+    # No suitable file - report arch-tagged URLs
+    if arch_skipped:
+        url, filename = arch_skipped[-1]
+        return (url, filename, "skip")
+
+    return None
 
 
 def fetch_package_page(pkg_name: str) -> str:
@@ -60,18 +222,16 @@ def fetch_package_page(pkg_name: str) -> str:
         curl.close()
 
 
-def extract_latest_download_url(html: str, pkg_name: str) -> tuple[str, str] | None:
+def extract_latest_download_url(
+    html: str, pkg_name: str
+) -> tuple[str, str, str] | None:
     try:
         soup = BeautifulSoup(html, "html.parser")
         all_links = soup.find_all("a", href=True)
         if not all_links:
             print(f"No download links found for {pkg_name}")
             return None
-        latest_link = all_links[-1]
-        download_url = latest_link["href"]
-        filename = latest_link.get_text().strip()
-        download_url = download_url.split("#")[0]
-        return (download_url, filename)
+        return select_best_url(all_links, pkg_name)
     except Exception as e:
         print(f"Error parsing HTML for {pkg_name}: {e}")
         return None
@@ -147,12 +307,8 @@ def download_file(url: str, filename: str) -> bool:
                     print(
                         "  HTTP 402: Payment Required - The mirror might require authentication or has usage limits"
                     )
-                    print(
-                        "  Suggestion: Try downloading directly from pypi.org or use pip install"
-                    )
                 elif response_code == 403:
                     print("  HTTP 403: Forbidden - Access denied")
-                    print("  Suggestion: The mirror might be blocking direct downloads")
                 elif response_code == 404:
                     print("  HTTP 404: File not found on mirror")
                 elif response_code == 429:
@@ -169,7 +325,12 @@ def download_file(url: str, filename: str) -> bool:
             curl.close()
 
 
-def process_package(pkg_name: str) -> bool:
+def process_package(pkg_name: str) -> tuple[bool, bool]:
+    """
+    Returns (success, skipped).
+    - success: True if downloaded successfully OR skipped (counts as OK)
+    - skipped: True if file had arch tag and was not downloaded
+    """
     print(f"\n{'=' * 40}")
     print(f"Processing package: {pkg_name}")
     print(f"{'=' * 40}")
@@ -177,15 +338,23 @@ def process_package(pkg_name: str) -> bool:
     html = fetch_package_page(pkg_name)
     if not html:
         print(f"Failed to fetch package info for {pkg_name}")
-        return False
+        return (False, False)
     download_info = extract_latest_download_url(html, pkg_name)
     if not download_info:
         print(f"No valid download links found for {pkg_name}")
-        return False
-    url, filename = download_info
-    print(f"Latest version file: {filename}")
+        return (False, False)
+
+    url, filename, status = download_info
+
+    if status == "skip":
+        print(f"  [ARCH-TAG] Skipping download (arch-specific): {filename}")
+        print(f"  Download URL: {url}")
+        return (True, True)
+
+    print(f"Selected file: {filename}")
     print(f"Download URL: {url}")
-    return download_file_with_retry(url, filename)
+    ok = download_file_with_retry(url, filename)
+    return (ok, False)
 
 
 def main():
@@ -197,12 +366,18 @@ def main():
     print(f"Packages to download: {', '.join(packages)}")
     print(f"Download directory: {DOWNLOAD_DIR}")
     print(f"Max retries per package: {MAX_RETRIES}")
+    print(f"Platform: linux/armv8l (32-bit) | Python 3.12")
+    print(f"Preference: .tar.gz (sdist) > py3-none-any .whl")
     start_time = time.time()
     successful = []
     failed = []
+    skipped = []
     for pkg_name in packages:
         try:
-            if process_package(pkg_name):
+            ok, was_skipped = process_package(pkg_name)
+            if was_skipped:
+                skipped.append(pkg_name)
+            elif ok:
                 successful.append(pkg_name)
             else:
                 failed.append(pkg_name)
@@ -214,11 +389,16 @@ def main():
     print(f"{'=' * 40}")
     print(f"Total packages: {len(packages)}")
     print(f"Successful: {len(successful)}")
+    print(f"Skipped (arch-tagged): {len(skipped)}")
     print(f"Failed: {len(failed)}")
     if successful:
         print(f"\nSuccessfully downloaded:")
         for pkg in successful:
             print(f"  ✓ {pkg}")
+    if skipped:
+        print(f"\nSkipped (arch-specific, no pure source/wheel available):")
+        for pkg in skipped:
+            print(f"  ⚠ {pkg}")
     if failed:
         print(f"\nFailed to download:")
         for pkg in failed:

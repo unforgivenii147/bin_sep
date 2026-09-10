@@ -1,27 +1,41 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-"""
-Python Code Entity Extractor
+"""Extract Python code entities from files and archives.
 
-This script extracts Python code entities (classes, functions, and constants)
-from Python source files and archives (ZIP, TAR, etc.). It uses AST parsing
-to identify entities and provides parallel processing for efficiency.
+This script scans a directory tree (and any archives found inside it) for
+Python source files, parses them with :mod:`ast` (optionally enriched with
+``tree-sitter`` and ``zstd`` if available), and extracts individual entities
+— functions, classes, methods, and module-level constants — into separate
+``.py`` files grouped by entity type.
 
-The extracted entities are written as individual Python files to an output
-directory, with appropriate imports and source attribution.
+Each extracted entity is written to ``<output>/<type>/<name>.py`` with a
+best-effort set of imports prepended so that the file is at least
+syntactically valid. All collected import statements are also dumped to
+``global_imports.py`` for reference.
+
+Usage::
+
+    python extract_entities.py [-t] [-w WORKERS] [-d DIR]
+
+Options:
+    -t, --tmp       Write output to ``~/tmp/output/`` instead of ``./output/``.
+    -w, --workers   Number of parallel workers (default: ``min(cpu_count, 8)``).
+    -d, --dir       Root directory to scan (default: current directory).
 """
+
+from __future__ import annotations
 
 import argparse
 import ast
 import io
+import multiprocessing as mp
 import os
 import re
 import sys
 import tarfile
 import zipfile
 from collections import defaultdict
-from multiprocessing import Pool, cpu_count
 from pathlib import Path
-from typing import Any, Callable, NamedTuple, Sequence
+from typing import Any, Callable, Iterable, NamedTuple
 
 from loguru import logger
 
@@ -29,20 +43,35 @@ try:
     import tree_sitter
     import tree_sitter_python as tspython
 
-    HAS_TREE_SITTER = True
+    HAS_TREE_SITTER: bool = True
 except ImportError:
     HAS_TREE_SITTER = False
 
 try:
-    import zstd
+    import zstd  # type: ignore[import-not-found]
 
-    HAS_ZSTD = True
+    HAS_ZSTD: bool = True
 except ImportError:
     HAS_ZSTD = False
 
 
+FIXED_WORKERS: int = 8
+"""Number of worker processes used for parallel extraction."""
+
+
 class Entity(NamedTuple):
-    """Represents a Python code entity (class, function, or constant)."""
+    """A single extracted Python entity.
+
+    Attributes:
+        name: The short name of the entity (e.g. ``"foo"``).
+        full_name: The fully qualified name used for file naming
+            (e.g. ``"MyClass_foo"`` for a method).
+        entity_type: One of ``"function"``, ``"class"`` or ``"const"``.
+        source: The source code slice for this entity.
+        imports: Import statements that were heuristically detected as
+            needed by this entity.
+        source_path: The virtual path the entity was read from.
+    """
 
     name: str
     full_name: str
@@ -52,7 +81,8 @@ class Entity(NamedTuple):
     source_path: str
 
 
-CONST_RE = re.compile(r"^[A-Z_][A-Z0-9_]*$")
+CONST_RE: re.Pattern[str] = re.compile("^[A-Z_][A-Z0-9_]*$")
+
 IMPORT_HINTS: dict[str, str] = {
     "List": "from typing import List",
     "Dict": "from typing import Dict",
@@ -156,13 +186,13 @@ IMPORT_HINTS: dict[str, str] = {
 
 
 def detect_needed_imports(source: str) -> list[str]:
-    """Detect import statements needed based on the source code content.
+    """Heuristically detect imports required by a chunk of source code.
 
     Args:
-        source: Python source code to analyze
+        source: A snippet of Python source code.
 
     Returns:
-        List of import statements needed for the source
+        A de-duplicated list of import statements that are likely needed.
     """
     needed: list[str] = []
     seen: set[str] = set()
@@ -174,73 +204,66 @@ def detect_needed_imports(source: str) -> list[str]:
 
 
 class EntityVisitor(ast.NodeVisitor):
-    """AST visitor that extracts code entities from Python source."""
+    """An :class:`ast.NodeVisitor` that collects :class:`Entity` records.
+
+    The visitor extracts top-level functions, classes (and their methods),
+    nested classes, and module-level constants matching :data:`CONST_RE`.
+    """
 
     def __init__(self, source_lines: list[str], source_path: str) -> None:
-        """Initialize the entity visitor.
+        """Initialize the visitor.
 
         Args:
-            source_lines: Source code split into lines
-            source_path: Path to the source file
+            source_lines: The source file split into lines, each ending in a
+                newline (matching ``ast`` line numbers).
+            source_path: The virtual path of the source file.
         """
-        self.source_lines = source_lines
-        self.source_path = source_path
+        self.source_lines: list[str] = source_lines
+        self.source_path: str = source_path
         self.entities: list[Entity] = []
         self.imports: list[str] = []
         self._class_stack: list[str] = []
 
     def _slice(self, node: ast.AST) -> str:
-        """Extract source code for a given AST node.
+        """Return the source text corresponding to ``node``.
 
         Args:
-            node: AST node to extract source for
+            node: The AST node to slice.
 
         Returns:
-            Source code string for the node
+            The dedented source text for ``node``.
         """
-        start = node.lineno - 1
-        end = node.end_lineno
-        lines = self.source_lines[start:end]
-        col = node.col_offset
-        stripped = [l[col:] if len(l) > col else l for l in lines]
+        start: int = node.lineno - 1
+        end: int = node.end_lineno or node.lineno
+        lines: list[str] = self.source_lines[start:end]
+        col: int = node.col_offset
+        stripped: list[str] = [l[col:] if len(l) > col else l for l in lines]
         return "".join(stripped)
 
     def _record_import(self, node: ast.Import | ast.ImportFrom) -> None:
-        """Record an import statement.
+        """Record a top-level import statement.
 
         Args:
-            node: Import node to record
+            node: The import node to record.
         """
-        src = ast.unparse(node)
+        src: str = ast.unparse(node)
         if src not in self.imports:
             self.imports.append(src)
 
     def visit_Import(self, node: ast.Import) -> None:
-        """Visit an import statement.
-
-        Args:
-            node: Import node
-        """
+        """Handle ``import`` statements."""
         self._record_import(node)
 
     def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
-        """Visit a from-import statement.
-
-        Args:
-            node: ImportFrom node
-        """
+        """Handle ``from ... import ...`` statements."""
         self._record_import(node)
 
     def visit_ClassDef(self, node: ast.ClassDef) -> None:
-        """Visit a class definition and extract it as an entity.
-
-        Args:
-            node: ClassDef node
-        """
+        """Handle class definitions, including nested classes and methods."""
         self._class_stack.append(node.name)
-        class_source = self._slice(node)
-        imports_in_class = detect_needed_imports(class_source)
-        entity = Entity(
+        class_source: str = self._slice(node)
+        imports_in_class: list[str] = detect_needed_imports(class_source)
+        entity: Entity = Entity(
             name=node.name,
             full_name=node.name,
             entity_type="class",
@@ -259,16 +282,16 @@ class EntityVisitor(ast.NodeVisitor):
     def _visit_method(
         self, node: ast.FunctionDef | ast.AsyncFunctionDef, class_name: str
     ) -> None:
-        """Visit a method within a class.
+        """Record a method as a standalone entity.
 
         Args:
-            node: FunctionDef or AsyncFunctionDef node
-            class_name: Name of the containing class
+            node: The method definition node.
+            class_name: The name of the enclosing class.
         """
-        method_source = self._slice(node)
-        full_name = f"{class_name}_{node.name}"
-        imports_for_method = detect_needed_imports(method_source)
-        entity = Entity(
+        method_source: str = self._slice(node)
+        full_name: str = f"{class_name}_{node.name}"
+        imports_for_method: list[str] = detect_needed_imports(method_source)
+        entity: Entity = Entity(
             name=node.name,
             full_name=full_name,
             entity_type="function",
@@ -279,16 +302,12 @@ class EntityVisitor(ast.NodeVisitor):
         self.entities.append(entity)
 
     def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
-        """Visit a function definition and extract it as an entity.
-
-        Args:
-            node: FunctionDef node
-        """
+        """Handle top-level function definitions."""
         if self._class_stack:
             return
-        func_source = self._slice(node)
-        imports_for_func = detect_needed_imports(func_source)
-        entity = Entity(
+        func_source: str = self._slice(node)
+        imports_for_func: list[str] = detect_needed_imports(func_source)
+        entity: Entity = Entity(
             name=node.name,
             full_name=node.name,
             entity_type="function",
@@ -301,17 +320,13 @@ class EntityVisitor(ast.NodeVisitor):
     visit_AsyncFunctionDef = visit_FunctionDef
 
     def visit_Assign(self, node: ast.Assign) -> None:
-        """Visit an assignment and extract constants.
-
-        Args:
-            node: Assign node
-        """
+        """Handle module-level constant assignments."""
         if self._class_stack:
             return
         for target in node.targets:
             if isinstance(target, ast.Name) and CONST_RE.match(target.id):
-                const_source = self._slice(node)
-                entity = Entity(
+                const_source: str = self._slice(node)
+                entity: Entity = Entity(
                     name=target.id,
                     full_name=target.id,
                     entity_type="const",
@@ -322,17 +337,13 @@ class EntityVisitor(ast.NodeVisitor):
                 self.entities.append(entity)
 
     def visit_AnnAssign(self, node: ast.AnnAssign) -> None:
-        """Visit an annotated assignment and extract constants.
-
-        Args:
-            node: AnnAssign node
-        """
+        """Handle annotated module-level constant assignments."""
         if self._class_stack:
             return
         target = node.target
         if isinstance(target, ast.Name) and CONST_RE.match(target.id):
-            const_source = self._slice(node)
-            entity = Entity(
+            const_source: str = self._slice(node)
+            entity: Entity = Entity(
                 name=target.id,
                 full_name=target.id,
                 entity_type="const",
@@ -344,22 +355,22 @@ class EntityVisitor(ast.NodeVisitor):
 
 
 def extract_imports_tree_sitter(source: str) -> list[str]:
-    """Extract import statements using tree-sitter parser.
+    """Extract import statements using tree-sitter, if available.
 
     Args:
-        source: Python source code
+        source: The Python source code to parse.
 
     Returns:
-        List of import statements
+        A list of raw import statement strings, or an empty list if
+        tree-sitter is unavailable or parsing fails.
     """
     if not HAS_TREE_SITTER:
         return []
     try:
-        PY_LANGUAGE = tree_sitter.Language(tspython.language())
-        parser = tree_sitter.Parser(PY_LANGUAGE)
+        py_language = tree_sitter.Language(tspython.language())
+        parser = tree_sitter.Parser(py_language)
         tree = parser.parse(source.encode())
         imports: list[str] = []
-        tree.walk()
 
         def _walk(node: tree_sitter.Node) -> None:
             if node.type in ("import_statement", "import_from_statement"):
@@ -369,86 +380,92 @@ def extract_imports_tree_sitter(source: str) -> list[str]:
 
         _walk(tree.root_node)
         return imports
-    except Exception:
+    except Exception as exc:  # pragma: no cover - defensive
+        logger.debug("tree-sitter parsing failed: {}", exc)
         return []
 
 
 def parse_python_source(
     source: str, virtual_path: str
 ) -> tuple[list[Entity], list[str]]:
-    """Parse Python source and extract entities and imports.
+    """Parse a Python source string and extract entities and imports.
 
     Args:
-        source: Python source code
-        virtual_path: Virtual path for the source
+        source: The Python source code.
+        virtual_path: The virtual path used for error reporting.
 
     Returns:
-        Tuple of entities and imports
+        A tuple ``(entities, imports)``.
     """
     try:
-        tree = ast.parse(source, filename=virtual_path)
+        tree: ast.AST = ast.parse(source, filename=virtual_path)
     except SyntaxError as exc:
-        logger.warning(f"Syntax error in {virtual_path}: {exc}")
+        logger.warning("syntax error in {}: {}", virtual_path, exc)
         return ([], [])
-    lines = [l + "\n" for l in source.splitlines()]
-    visitor = EntityVisitor(lines, virtual_path)
+
+    lines: list[str] = [l + "\n" for l in source.splitlines()]
+    visitor: EntityVisitor = EntityVisitor(lines, virtual_path)
     visitor.visit(tree)
-    ts_imports = extract_imports_tree_sitter(source)
-    all_imports = ts_imports if ts_imports else visitor.imports
+    ts_imports: list[str] = extract_imports_tree_sitter(source)
+    all_imports: list[str] = ts_imports if ts_imports else visitor.imports
     return (visitor.entities, all_imports)
 
 
-PYTHON_EXTENSIONS = {".py"}
-ARCHIVE_EXTENSIONS = {".zip", ".whl", ".tar", ".gz", ".tgz", ".zst", ".xz"}
-SKIP_DIRS = {".git", "__pycache__"}
+PYTHON_EXTENSIONS: set[str] = {".py"}
+ARCHIVE_EXTENSIONS: set[str] = {".zip", ".whl", ".tar", ".gz", ".tgz", ".zst", ".xz"}
+SKIP_DIRS: set[str] = {".git", "__pycache__"}
 
 
 def _looks_like_python(data: bytes) -> bool:
-    """Check if data looks like Python source code.
+    """Heuristically determine whether ``data`` looks like Python source.
 
     Args:
-        data: Binary data to check
+        data: Raw bytes to inspect.
 
     Returns:
-        True if data looks like Python source
+        ``True`` if the data appears to be Python source.
     """
-    head = data[:512]
+    head: bytes = data[:512]
     if b"#!/usr/bin/env python" in head or b"#!/usr/bin/python" in head:
         return True
     return any(kw in head for kw in (b"import ", b"def ", b"class ", b"if __name__"))
 
 
 def read_py_file(path: Path) -> str | None:
-    """Read a Python file.
+    """Read a Python file as UTF-8 text, tolerating errors.
 
     Args:
-        path: Path to the file
+        path: The path to read.
 
     Returns:
-        File contents or None if error
+        The file contents, or ``None`` if reading failed.
     """
     try:
         return path.read_text(encoding="utf-8", errors="replace")
     except (OSError, PermissionError) as exc:
-        logger.error(f"Cannot read {path}: {exc}")
+        logger.error("cannot read {}: {}", path, exc)
         return None
 
 
 def process_python_file(
     path: Path, virtual_path: str | None = None, source_override: str | None = None
 ) -> tuple[list[Entity], list[str]]:
-    """Process a Python file and extract entities.
+    """Read and parse a single Python file.
 
     Args:
-        path: Path to the file
-        virtual_path: Virtual path for the file
-        source_override: Source code override
+        path: The path of the file (used for logging and as default virtual
+            path).
+        virtual_path: Optional virtual path override (e.g. for archive
+            members).
+        source_override: Optional pre-read source, bypassing disk I/O.
 
     Returns:
-        Tuple of entities and imports
+        A tuple ``(entities, imports)``.
     """
-    vpath = virtual_path or str(path)
-    source = source_override if source_override is not None else read_py_file(path)
+    vpath: str = virtual_path or str(path)
+    source: str | None = (
+        source_override if source_override is not None else read_py_file(path)
+    )
     if source is None:
         return ([], [])
     if not source.strip():
@@ -457,30 +474,30 @@ def process_python_file(
 
 
 def process_zip_archive(archive_path: Path) -> list[tuple[list[Entity], list[str]]]:
-    """Process a ZIP archive containing Python files.
+    """Extract entities from all Python members of a zip/whl archive.
 
     Args:
-        archive_path: Path to the ZIP archive
+        archive_path: The archive path.
 
     Returns:
-        List of entity and import tuples
+        A list of ``(entities, imports)`` tuples, one per member.
     """
     results: list[tuple[list[Entity], list[str]]] = []
     try:
         with zipfile.ZipFile(archive_path, "r") as zf:
             for member in zf.infolist():
-                name = member.filename
+                name: str = member.filename
                 if name.endswith("/"):
                     continue
-                p = Path(name)
-                is_py = p.suffix == ".py"
+                p: Path = Path(name)
+                is_py: bool = p.suffix == ".py"
+                source: str | None = None
                 if not is_py:
                     try:
-                        data = zf.read(member)
+                        data: bytes = zf.read(member)
                         is_py = _looks_like_python(data)
-                        source = (
-                            data.decode("utf-8", errors="replace") if is_py else None
-                        )
+                        if is_py:
+                            source = data.decode("utf-8", errors="replace")
                     except Exception:
                         continue
                 else:
@@ -489,97 +506,97 @@ def process_zip_archive(archive_path: Path) -> list[tuple[list[Entity], list[str
                     except Exception:
                         continue
                 if is_py and source:
-                    vpath = f"{archive_path.name}::{name}"
+                    vpath: str = f"{archive_path.name}::{name}"
                     results.append(parse_python_source(source, vpath))
     except (zipfile.BadZipFile, OSError) as exc:
-        logger.error(f"Bad zip {archive_path}: {exc}")
+        logger.error("bad zip {}: {}", archive_path, exc)
     return results
 
 
 def _open_tar(archive_path: Path) -> tarfile.TarFile | None:
-    """Open a TAR archive, handling zstd compression if needed.
+    """Open a tar archive, transparently handling zstd-compressed tarballs.
 
     Args:
-        archive_path: Path to the TAR archive
+        archive_path: The archive path.
 
     Returns:
-        TarFile object or None if error
+        An open :class:`tarfile.TarFile`, or ``None`` on failure.
     """
-    suffix = "".join(archive_path.suffixes).lower()
+    suffix: str = "".join(archive_path.suffixes).lower()
     try:
         if suffix.endswith((".zst", ".tar.zst")):
             if not HAS_ZSTD:
-                logger.warning(f"zstd not available, skipping {archive_path}")
+                logger.warning("zstd not available, skipping {}", archive_path)
                 return None
-            raw = zstd.decompress(archive_path.read_bytes())
+            raw: bytes = zstd.decompress(archive_path.read_bytes())
             return tarfile.open(fileobj=io.BytesIO(raw))
         return tarfile.open(archive_path, mode="r:*")
     except (tarfile.TarError, OSError) as exc:
-        logger.error(f"Cannot open tar {archive_path}: {exc}")
+        logger.error("cannot open tar {}: {}", archive_path, exc)
         return None
 
 
 def process_tar_archive(archive_path: Path) -> list[tuple[list[Entity], list[str]]]:
-    """Process a TAR archive containing Python files.
+    """Extract entities from all Python members of a tar archive.
 
     Args:
-        archive_path: Path to the TAR archive
+        archive_path: The archive path.
 
     Returns:
-        List of entity and import tuples
+        A list of ``(entities, imports)`` tuples, one per member.
     """
     results: list[tuple[list[Entity], list[str]]] = []
-    tf = _open_tar(archive_path)
+    tf: tarfile.TarFile | None = _open_tar(archive_path)
     if tf is None:
         return results
     with tf:
         for member in tf.getmembers():
             if not member.isfile():
                 continue
-            name = member.name
-            p = Path(name)
-            is_py = p.suffix == ".py"
+            name: str = member.name
+            p: Path = Path(name)
+            is_py: bool = p.suffix == ".py"
             try:
                 fobj = tf.extractfile(member)
                 if fobj is None:
                     continue
-                data = fobj.read()
+                data: bytes = fobj.read()
             except Exception:
                 continue
             if not is_py:
                 is_py = _looks_like_python(data)
             if is_py:
-                source = data.decode("utf-8", errors="replace")
-                vpath = f"{archive_path.name}::{name}"
+                source: str = data.decode("utf-8", errors="replace")
+                vpath: str = f"{archive_path.name}::{name}"
                 results.append(parse_python_source(source, vpath))
     return results
 
 
 def process_archive(archive_path: Path) -> list[tuple[list[Entity], list[str]]]:
-    """Process an archive (ZIP or TAR) containing Python files.
+    """Dispatch archive processing based on file name.
 
     Args:
-        archive_path: Path to the archive
+        archive_path: The archive path.
 
     Returns:
-        List of entity and import tuples
+        A list of ``(entities, imports)`` tuples.
     """
-    name = archive_path.name.lower()
+    name: str = archive_path.name.lower()
     if name.endswith((".whl", ".zip")):
         return process_zip_archive(archive_path)
     return process_tar_archive(archive_path)
 
 
 def _is_archive(path: Path) -> bool:
-    """Check if a path is an archive file.
+    """Return whether ``path`` has a recognised archive extension.
 
     Args:
-        path: Path to check
+        path: The path to inspect.
 
     Returns:
-        True if path is an archive
+        ``True`` if the path looks like a supported archive.
     """
-    name = path.name.lower()
+    name: str = path.name.lower()
     return any(
         name.endswith(ext)
         for ext in (".whl", ".zip", ".tar.gz", ".tgz", ".tar.zst", ".tar.xz", ".tar")
@@ -587,13 +604,13 @@ def _is_archive(path: Path) -> bool:
 
 
 def discover_files(root: Path) -> tuple[list[Path], list[Path]]:
-    """Discover Python files and archives in a directory tree.
+    """Walk ``root`` and collect Python files and archives.
 
     Args:
-        root: Root directory to scan
+        root: The root directory to scan.
 
     Returns:
-        Tuple of Python files and archives
+        A tuple ``(py_files, archives)``.
     """
     py_files: list[Path] = []
     archives: list[Path] = []
@@ -601,10 +618,10 @@ def discover_files(root: Path) -> tuple[list[Path], list[Path]]:
         dirnames[:] = [
             d
             for d in dirnames
-            if d not in SKIP_DIRS and (not Path(dirpath, d).is_symlink())
+            if d not in SKIP_DIRS and not Path(dirpath, d).is_symlink()
         ]
         for fname in filenames:
-            fpath = Path(dirpath) / fname
+            fpath: Path = Path(dirpath) / fname
             if fpath.is_symlink():
                 continue
             if fpath.suffix == ".py":
@@ -613,8 +630,8 @@ def discover_files(root: Path) -> tuple[list[Path], list[Path]]:
                 archives.append(fpath)
             else:
                 try:
-                    if fpath.stat().st_size < 1000000:
-                        data = fpath.read_bytes()
+                    if fpath.stat().st_size < 1_000_000:
+                        data: bytes = fpath.read_bytes()
                         if _looks_like_python(data):
                             py_files.append(fpath)
                 except (OSError, PermissionError):
@@ -623,26 +640,26 @@ def discover_files(root: Path) -> tuple[list[Path], list[Path]]:
 
 
 def _worker_py(path: Path) -> tuple[list[Entity], list[str], str]:
-    """Worker function for processing Python files.
+    """Worker entry point for a single Python file.
 
     Args:
-        path: Path to the file
+        path: The file to process.
 
     Returns:
-        Tuple of entities, imports, and label
+        A tuple ``(entities, imports, label)``.
     """
     entities, imports = process_python_file(path)
     return (entities, imports, str(path))
 
 
 def _worker_archive(path: Path) -> tuple[list[Entity], list[str], str]:
-    """Worker function for processing archives.
+    """Worker entry point for a single archive.
 
     Args:
-        path: Path to the archive
+        path: The archive to process.
 
     Returns:
-        Tuple of entities, imports, and label
+        A tuple ``(entities, imports, label)``.
     """
     all_entities: list[Entity] = []
     all_imports: list[str] = []
@@ -652,34 +669,38 @@ def _worker_archive(path: Path) -> tuple[list[Entity], list[str], str]:
     return (all_entities, all_imports, str(path))
 
 
-TYPE_SUBDIR = {"function": "function", "class": "class", "const": "const"}
+TYPE_SUBDIR: dict[str, str] = {
+    "function": "function",
+    "class": "class",
+    "const": "const",
+}
 
 
 def _safe_filename(base: str) -> str:
-    """Create a safe filename from a string.
+    """Sanitize ``base`` so it can be used as a file name.
 
     Args:
-        base: Original filename
+        base: The candidate file stem.
 
     Returns:
-        Safe filename
+        A filesystem-safe version of ``base``.
     """
     return re.sub(r"[^\w\-.]", "_", base)
 
 
 def _unique_path(directory: Path, stem: str, suffix: str = ".py") -> Path:
-    """Generate a unique path in a directory.
+    """Return a non-existing path in ``directory`` derived from ``stem``.
 
     Args:
-        directory: Target directory
-        stem: Filename stem
-        suffix: Filename suffix
+        directory: The directory to place the file in.
+        stem: The preferred file stem.
+        suffix: The file suffix (default ``".py"``).
 
     Returns:
-        Unique path
+        A path that does not yet exist.
     """
-    candidate = directory / f"{stem}{suffix}"
-    counter = 1
+    candidate: Path = directory / f"{stem}{suffix}"
+    counter: int = 1
     while candidate.exists():
         candidate = directory / f"{stem}_{counter}{suffix}"
         counter += 1
@@ -687,111 +708,100 @@ def _unique_path(directory: Path, stem: str, suffix: str = ".py") -> Path:
 
 
 def write_entity(entity: Entity, output_dir: Path) -> Path | None:
-    """Write an entity to a file.
+    """Write a single entity to disk.
 
     Args:
-        entity: Entity to write
-        output_dir: Output directory
+        entity: The entity to write.
+        output_dir: The base output directory.
 
     Returns:
-        Path to written file or None if error
+        The path written, or ``None`` if writing failed.
     """
-    subdir = output_dir / TYPE_SUBDIR.get(entity.entity_type, "other")
+    subdir: Path = output_dir / TYPE_SUBDIR.get(entity.entity_type, "other")
     subdir.mkdir(parents=True, exist_ok=True)
-    stem = _safe_filename(entity.full_name)
-    out_path = _unique_path(subdir, stem)
-    header = f"# Source: {entity.source_path}\n\n"
-    all_imports = sorted(
+    stem: str = _safe_filename(entity.full_name)
+    out_path: Path = _unique_path(subdir, stem)
+    all_imports: list[str] = sorted(
         set(entity.imports),
         key=lambda s: 0 if s.startswith(("import ", "from ")) else 1,
     )
-    import_block = "\n".join(all_imports)
+    import_block: str = "\n".join(all_imports)
     if import_block:
         import_block += "\n\n"
-    content = header + import_block + entity.source
+    content: str = import_block + entity.source
     if not content.endswith("\n"):
         content += "\n"
     try:
+        ast.parse(content)
         out_path.write_text(content, encoding="utf-8")
         return out_path
     except OSError as exc:
-        logger.error(f"Cannot write {out_path}: {exc}")
+        logger.error("cannot write {}: {}", out_path, exc)
+        return None
+    except SyntaxError as exc:
+        logger.warning("generated file {} has syntax error: {}", out_path, exc)
         return None
 
 
 def write_global_imports(imports: list[str], output_dir: Path) -> None:
-    """Write global imports to a file.
+    """Write all collected imports to ``global_imports.py``.
 
     Args:
-        imports: List of import statements
-        output_dir: Output directory
+        imports: The collected import statements.
+        output_dir: The directory to write into.
     """
-    unique = sorted(set(imports))
-    content = "# Global imports collected from all processed files\n\n"
+    unique: list[str] = sorted(set(imports))
+    content: str = "# Global imports collected from all processed files\n\n"
     content += "\n".join(unique) + "\n"
-    out = output_dir / "global_imports.py"
+    out: Path = output_dir / "global_imports.py"
     try:
         out.write_text(content, encoding="utf-8")
-        logger.info(f"Global imports saved → {out}")
+        logger.info("Global imports saved → {}", out)
     except OSError as exc:
-        logger.error(f"Cannot write global imports: {exc}")
+        logger.error("cannot write global imports: {}", exc)
 
 
 def report(entities: list[Entity], all_imports: list[str], saved_count: int) -> None:
-    """Print extraction summary report.
+    """Log a summary of the extraction run.
 
     Args:
-        entities: List of extracted entities
-        all_imports: List of all imports
-        saved_count: Number of entities saved
+        entities: All extracted entities.
+        all_imports: All collected import statements.
+        saved_count: Number of entities successfully written.
     """
-    logger.info("\n" + "=" * 40)
+    logger.info("=" * 40)
     logger.info("EXTRACTION SUMMARY")
     logger.info("-" * 40)
     by_type: dict[str, int] = defaultdict(int)
     for e in entities:
         by_type[e.entity_type] += 1
     for etype, count in sorted(by_type.items()):
-        logger.info(f"  {etype:<12}: {count}")
-    logger.info(f"  {'total':<12}: {len(entities)}")
-    logger.info(f"  {'saved':<12}: {saved_count}")
+        logger.info("  {:<12}: {}", etype, count)
+    logger.info("  {:<12}: {}", "total", len(entities))
+    logger.info("  {:<12}: {}", "saved", saved_count)
+
     module_counts: dict[str, int] = defaultdict(int)
     for stmt in all_imports:
         m = re.match(r"(?:from|import)\s+([\w.]+)", stmt)
         if m:
             module_counts[m.group(1)] += 1
     if module_counts:
-        logger.info("\nTop imported modules:")
+        logger.info("Top imported modules:")
         for mod, cnt in sorted(module_counts.items(), key=lambda x: -x[1])[:15]:
-            logger.info(f"  {mod:<30} {cnt}")
+            logger.info("  {:<30} {}", mod, cnt)
     logger.info("-" * 40)
 
 
-def _process_batch(
-    task: tuple[Callable[[Path], tuple[list[Entity], list[str], str]], Path]
-) -> tuple[list[Entity], list[str], str]:
-    """Process a batch task.
-
-    Args:
-        task: Tuple of worker function and path
-
-    Returns:
-        Result tuple
-    """
-    fn, path = task
-    return fn(path)
-
-
 def main(argv: list[str] | None = None) -> int:
-    """Main entry point.
+    """Entry point for the entity extraction tool.
 
     Args:
-        argv: Command line arguments
+        argv: Optional argument list (defaults to ``sys.argv[1:]``).
 
     Returns:
-        Exit code
+        Process exit code.
     """
-    parser = argparse.ArgumentParser(
+    parser: argparse.ArgumentParser = argparse.ArgumentParser(
         description="Extract Python code entities from files and archives."
     )
     parser.add_argument(
@@ -804,8 +814,8 @@ def main(argv: list[str] | None = None) -> int:
         "-w",
         "--workers",
         type=int,
-        default=8,
-        help="Number of parallel workers (default: 8)",
+        default=FIXED_WORKERS,
+        help=f"Number of parallel workers (default: {FIXED_WORKERS})",
     )
     parser.add_argument(
         "-d",
@@ -814,55 +824,56 @@ def main(argv: list[str] | None = None) -> int:
         default=Path.cwd(),
         help="Root directory to scan (default: current directory)",
     )
-    args = parser.parse_args(argv)
-
-    # Configure loguru
-    logger.remove()
-    logger.add(sys.stderr, level="INFO")
+    args: argparse.Namespace = parser.parse_args(argv)
 
     output_dir: Path = (
         Path.home() / "tmp" / "output" if args.tmp else Path.cwd() / "output"
     )
     output_dir.mkdir(parents=True, exist_ok=True)
-    logger.info(f"Output directory: {output_dir}")
+    logger.info("Output directory: {}", output_dir)
+
     root: Path = args.dir.resolve()
-    logger.info(f"Scanning: {root}")
-    logger.info("\nDiscovering files…")
+    logger.info("Scanning: {}", root)
+    logger.info("Discovering files…")
     py_files, archives = discover_files(root)
-    logger.info(f"  Found {len(py_files)} Python files and {len(archives)} archive(s).")
+    logger.info(
+        "  Found {} Python files and {} archive(s).", len(py_files), len(archives)
+    )
+
     if not py_files and not archives:
         logger.info("Nothing to process.")
         return 0
 
     all_entities: list[Entity] = []
     all_imports: list[str] = []
+
     tasks: list[tuple[Callable[[Path], tuple[list[Entity], list[str], str]], Path]] = [
         (_worker_py, p) for p in py_files
     ] + [(_worker_archive, p) for p in archives]
 
-    logger.info(f"\nProcessing {len(tasks)} file(s) with {args.workers} worker(s)…")
+    logger.info("Processing {} file(s) with {} worker(s)…", len(tasks), args.workers)
 
-    # Use multiprocessing.Pool with apply_async
-    with Pool(processes=args.workers) as pool:
-        results: list[Any] = []
-        for task in tasks:
-            results.append(pool.apply_async(_process_batch, (task,)))
+    with mp.Pool(processes=args.workers) as pool:
+        async_results: list[
+            tuple[Callable[[Path], tuple[list[Entity], list[str], str]], Path, Any]
+        ] = []
+        for fn, path in tasks:
+            async_results.append((fn, path, pool.apply_async(fn, (path,))))
 
-        for i, result in enumerate(results):
+        for fn, path, result in async_results:
             try:
                 entities, imports, label = result.get()
-                logger.info(f"  ✓ {label}  ({len(entities)} entities)")
+                logger.info("  ✓ {}  ({} entities)", label, len(entities))
                 all_entities.extend(entities)
                 all_imports.extend(imports)
             except Exception as exc:
-                logger.error(f"  ✗ {tasks[i][1]}: {exc}")
+                logger.error("  ✗ {}: {}", path, exc)
 
-    logger.info(f"\nWriting {len(all_entities)} entities…")
-    saved = 0
+    logger.info("Writing {} entities…", len(all_entities))
+    saved: int = 0
     for entity in all_entities:
         if write_entity(entity, output_dir):
             saved += 1
-
     write_global_imports(all_imports, output_dir)
     report(all_entities, all_imports, saved)
     return 0

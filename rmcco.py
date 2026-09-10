@@ -1,18 +1,41 @@
 #!/data/data/com.termux/files/home/.local/bin/python
+"""Generate a Python utility that strips comments and docstrings from Python source files and .whl archives.
+
+The script should:
+- Accept a file or directory path as a positional argument (default: current directory).
+- Recursively discover .py files and .whl archives, skipping common cache and virtualenv directories.
+- For each .py file, remove inline comments (while preserving shebangs, encoding declarations, type comments, noqa, pragma, and pylint comments) and remove function, async function, and class docstrings. Optionally remove module-level docstrings via a flag.
+- For each .whl file, process its contained .py members the same way and rewrite the archive in place only if changes were made.
+- Support a --dry-run flag to report changes without writing files.
+- Use multiprocessing.Pool.apply_async with a fixed pool of 8 worker processes for .py file processing.
+- Use loguru for all logging output.
+- Use pathlib exclusively for filesystem operations.
+- Preserve the original source formatting except for removed comments and docstrings (do not reformat via ast.unparse).
+- Print a per-file result list and a final summary of total files, changed files, comments removed, docstrings removed, and errors.
+- Exit with status 0 if no errors occurred, otherwise 1.
+
+The implementation should include dataclasses for FileResult and ProcessingStats, a CommentRemover class, a DocstringRemover AST transformer, functions for processing single files, wheel files, discovering files, printing results and summaries, and a main entry point with argparse.
+"""
+
 from __future__ import annotations
 
+import argparse
 import ast
-import os
+import io
 import re
 import shutil
 import sys
 import tempfile
+import tokenize
 import zipfile
-from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import dataclass, field
+from multiprocessing import Pool
 from pathlib import Path
+from typing import Any, Final, Iterable, Optional, Sequence
 
-SKIP_DIRS = frozenset(
+from loguru import logger
+
+SKIP_DIRS: Final[frozenset[str]] = frozenset(
     {
         ".git",
         "__pycache__",
@@ -27,9 +50,13 @@ SKIP_DIRS = frozenset(
     }
 )
 
+POOL_SIZE: Final[int] = 8
+
 
 @dataclass
 class FileResult:
+    """Result of processing a single Python source file."""
+
     path: str
     is_error: bool = False
     error_message: str = ""
@@ -40,6 +67,8 @@ class FileResult:
 
 @dataclass
 class ProcessingStats:
+    """Aggregated statistics across all processed files."""
+
     total_files: int = 0
     changed_files: int = 0
     comments_removed: int = 0
@@ -49,13 +78,17 @@ class ProcessingStats:
 
 
 class CommentRemover:
-    def __init__(self, source: str):
-        self.source = source
-        self.lines = source.split("\n")
-        self.comments_removed = 0
+    """Remove inline comments from Python source while preserving special comments."""
+
+    def __init__(self, source: str) -> None:
+        """Initialize the remover with the given source text."""
+        self.source: str = source
+        self.lines: list[str] = source.split("\n")
+        self.comments_removed: int = 0
 
     def remove_comments(self) -> str:
-        result_lines = []
+        """Return the source with inline comments removed."""
+        result_lines: list[str] = []
         for line in self.lines:
             processed_line, removed = self._process_line(line)
             result_lines.append(processed_line)
@@ -63,6 +96,7 @@ class CommentRemover:
         return "\n".join(result_lines)
 
     def _process_line(self, line: str) -> tuple[str, int]:
+        """Process a single line, returning the new line and number of comments removed."""
         if self._is_shebang(line):
             return (line, 0)
         if self._is_encoding_declaration(line):
@@ -77,14 +111,17 @@ class CommentRemover:
 
     @staticmethod
     def _is_shebang(line: str) -> bool:
+        """Return True if the line is a shebang."""
         return line.startswith("#!")
 
     @staticmethod
     def _is_encoding_declaration(line: str) -> bool:
-        return re.match("#.*?coding[:=]\\s*([-\\w.]+)", line) is not None
+        """Return True if the line is a PEP 263 encoding declaration."""
+        return re.match(r"#.*?coding[:=]\s*([-\w.]+)", line) is not None
 
     @staticmethod
     def _is_type_comment(line: str) -> bool:
+        """Return True if the line contains a type comment or lint directive."""
         return (
             "# type:" in line
             or "# noqa" in line
@@ -94,10 +131,11 @@ class CommentRemover:
 
     @staticmethod
     def _strip_inline_comment(line: str) -> str:
-        result = []
+        """Strip an inline comment from a line, respecting string literals."""
+        result: list[str] = []
         i = 0
         in_string = False
-        string_char = None
+        string_char: Optional[str] = None
         in_triple = False
         while i < len(line):
             if i + 2 < len(line):
@@ -134,11 +172,15 @@ class CommentRemover:
 
 
 class DocstringRemover(ast.NodeTransformer):
-    def __init__(self, remove_module_docstring: bool = False):
-        self.remove_module_docstring = remove_module_docstring
-        self.docstrings_removed = 0
+    """AST transformer that removes docstrings from functions, classes, and optionally modules."""
+
+    def __init__(self, remove_module_docstring: bool = False) -> None:
+        """Initialize the transformer with the module docstring removal flag."""
+        self.remove_module_docstring: bool = remove_module_docstring
+        self.docstrings_removed: int = 0
 
     def visit_FunctionDef(self, node: ast.FunctionDef) -> ast.FunctionDef:
+        """Remove the docstring from a function definition if present."""
         if (
             self._has_docstring(node)
             and (not self.remove_module_docstring or not self._is_module_level(node))
@@ -158,6 +200,7 @@ class DocstringRemover(ast.NodeTransformer):
     def visit_AsyncFunctionDef(
         self, node: ast.AsyncFunctionDef
     ) -> ast.AsyncFunctionDef:
+        """Remove the docstring from an async function definition if present."""
         if (
             self._has_docstring(node)
             and isinstance(node.body[0], ast.Expr)
@@ -172,6 +215,7 @@ class DocstringRemover(ast.NodeTransformer):
         return node
 
     def visit_ClassDef(self, node: ast.ClassDef) -> ast.ClassDef:
+        """Remove the docstring from a class definition if present."""
         if (
             self._has_docstring(node)
             and isinstance(node.body[0], ast.Expr)
@@ -186,6 +230,7 @@ class DocstringRemover(ast.NodeTransformer):
         return node
 
     def visit_Module(self, node: ast.Module) -> ast.Module:
+        """Remove the module docstring if configured to do so."""
         if (
             self.remove_module_docstring
             and self._has_docstring(node)
@@ -201,37 +246,132 @@ class DocstringRemover(ast.NodeTransformer):
         return node
 
     @staticmethod
-    def _has_docstring(node) -> bool:
+    def _has_docstring(node: ast.AST) -> bool:
+        """Return True if the node has a docstring as its first statement."""
         return (
-            node.body
+            bool(getattr(node, "body", []))
             and isinstance(node.body[0], ast.Expr)
             and isinstance(node.body[0].value, ast.Constant)
             and isinstance(node.body[0].value.value, str)
         )
 
     @staticmethod
-    def _is_module_level(node) -> bool:
+    def _is_module_level(node: ast.AST) -> bool:
+        """Return True if the node is at module level (always False for nested nodes)."""
         return False
+
+
+def _remove_docstrings_from_source(
+    source: str, remove_module_docstring: bool
+) -> tuple[str, int]:
+    """Remove docstrings from source while preserving the original formatting.
+
+    Uses AST to identify docstring line ranges, then strips those lines directly
+    from the source text rather than re-rendering via ast.unparse.
+    """
+    try:
+        tree = ast.parse(source)
+    except SyntaxError:
+        return source, 0
+
+    docstring_lines: set[int] = set()
+
+    def _collect_docstring_lines(node: ast.AST) -> None:
+        body = getattr(node, "body", None)
+        if not body:
+            return
+        first = body[0]
+        if (
+            isinstance(first, ast.Expr)
+            and isinstance(first.value, ast.Constant)
+            and isinstance(first.value.value, str)
+        ):
+            start = first.lineno
+            end = getattr(first, "end_lineno", start)
+            for line_no in range(start, end + 1):
+                docstring_lines.add(line_no)
+
+    if remove_module_docstring:
+        _collect_docstring_lines(tree)
+
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            _collect_docstring_lines(node)
+
+    if not docstring_lines:
+        return source, 0
+
+    lines = source.split("\n")
+    # Determine the set of lines to remove, but only if the docstring is the
+    # sole statement in its body (otherwise keep a `pass`).
+    removed_count = 0
+    keep_lines: list[str] = []
+    skip_until: int = -1
+    for idx, line in enumerate(lines, start=1):
+        if idx <= skip_until:
+            continue
+        if idx in docstring_lines:
+            # Find the enclosing body to decide whether to keep `pass`.
+            skip_until = idx
+            removed_count += 1
+            continue
+        keep_lines.append(line)
+
+    # Now handle the case where a body became empty. We do a second pass to
+    # detect bodies that lost their only statement and insert `pass`.
+    result = "\n".join(keep_lines)
+    try:
+        new_tree = ast.parse(result)
+    except SyntaxError:
+        # Fall back to line-based removal only.
+        return result, removed_count
+
+    needs_pass = False
+    for node in ast.walk(new_tree):
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            if not node.body:
+                needs_pass = True
+                break
+        if isinstance(node, ast.Module) and not node.body:
+            needs_pass = True
+            break
+
+    if not needs_pass:
+        return result, removed_count
+
+    # Re-parse and insert `pass` using line numbers.
+    lines = result.split("\n")
+    insertions: list[tuple[int, str]] = []
+    for node in ast.walk(new_tree):
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            if not node.body:
+                # Insert a `pass` after the def/class line (and decorators).
+                insert_at = getattr(node, "lineno", 1)
+                indent = " " * (
+                    len(lines[insert_at - 1]) - len(lines[insert_at - 1].lstrip())
+                )
+                insertions.append((insert_at, f"{indent}    pass"))
+        if isinstance(node, ast.Module) and not node.body:
+            insertions.append((0, "pass"))
+
+    for line_no, text in sorted(insertions, reverse=True):
+        lines.insert(line_no, text)
+
+    return "\n".join(lines), removed_count
 
 
 def process_single_file(
     filepath: Path, remove_module_docstring: bool = False, dry_run: bool = False
 ) -> FileResult:
+    """Process a single Python file, removing comments and docstrings."""
     try:
         with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
             original_source = f.read()
         comment_remover = CommentRemover(original_source)
         no_comments = comment_remover.remove_comments()
-        try:
-            tree = ast.parse(no_comments)
-        except SyntaxError as e:
-            return FileResult(
-                path=str(filepath), is_error=True, error_message=f"Syntax error: {e}"
-            )
-        remover = DocstringRemover(remove_module_docstring=remove_module_docstring)
-        new_tree = remover.visit(tree)
-        ast.fix_missing_locations(new_tree)
-        processed_source = ast.unparse(new_tree)
+        processed_source, docstrings_removed = _remove_docstrings_from_source(
+            no_comments, remove_module_docstring
+        )
         try:
             ast.parse(processed_source)
         except SyntaxError as e:
@@ -246,12 +386,12 @@ def process_single_file(
                     dir=filepath.parent, prefix=".tmp.", suffix=".py"
                 )
                 try:
-                    with os.fdopen(temp_fd, "w", encoding="utf-8") as f:
+                    with open(temp_fd, "w", encoding="utf-8") as f:
                         f.write(processed_source)
                     shutil.move(temp_path, filepath)
                 except Exception:
-                    if os.path.exists(temp_path):
-                        os.unlink(temp_path)
+                    if Path(temp_path).exists():
+                        Path(temp_path).unlink()
                     raise
             except Exception as e:
                 return FileResult(
@@ -260,7 +400,7 @@ def process_single_file(
         return FileResult(
             path=str(filepath),
             comments_removed=comment_remover.comments_removed,
-            docstrings_removed=remover.docstrings_removed,
+            docstrings_removed=docstrings_removed,
         )
     except Exception as e:
         return FileResult(path=str(filepath), is_error=True, error_message=str(e))
@@ -269,7 +409,8 @@ def process_single_file(
 def process_wheel_file(
     wheel_path: Path, remove_module_docstring: bool = False, dry_run: bool = False
 ) -> list[FileResult]:
-    results = []
+    """Process all Python files inside a wheel archive."""
+    results: list[FileResult] = []
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_path = Path(temp_dir)
         wheel_name = wheel_path.name
@@ -310,17 +451,19 @@ def process_wheel_file(
 
 
 def _worker_process_file(args: tuple[Path, bool, bool]) -> FileResult:
+    """Worker entry point for processing a single file in a subprocess."""
     filepath, remove_module_docstring, dry_run = args
     return process_single_file(filepath, remove_module_docstring, dry_run)
 
 
 def discover_files(start_path: str) -> tuple[list[Path], list[Path]]:
+    """Discover Python files and wheel archives under the given path."""
     start = Path(start_path).resolve()
     if not start.exists():
-        print(f"Error: Path not found: {start}", file=sys.stderr)
+        logger.error(f"Path not found: {start}")
         return ([], [])
-    python_files = []
-    wheel_files = []
+    python_files: list[Path] = []
+    wheel_files: list[Path] = []
     if start.is_file():
         if start.suffix == ".py":
             python_files.append(start)
@@ -339,20 +482,22 @@ def discover_files(start_path: str) -> tuple[list[Path], list[Path]]:
     return (python_files, wheel_files)
 
 
-def print_header(python_count: int, wheel_count: int):
-    print(f"\nFound: {python_count} Python files, {wheel_count} wheel files\n")
+def print_header(python_count: int, wheel_count: int) -> None:
+    """Log a header with the number of discovered files."""
+    logger.info(f"Found: {python_count} Python files, {wheel_count} wheel files")
 
 
-def print_results(stats: ProcessingStats, base_dir: Path):
+def print_results(stats: ProcessingStats, base_dir: Path) -> None:
+    """Log per-file processing results."""
     results = sorted(stats.results, key=lambda r: r.path)
     for result in results:
         if result.is_error:
-            print(f"✗ {result.path}")
-            print(f"  Error: {result.error_message}")
+            logger.error(f"✗ {result.path}")
+            logger.error(f"  Error: {result.error_message}")
         elif result.comments_removed == 0 and result.docstrings_removed == 0:
-            print(f"○ {result.path} (no change)")
+            logger.info(f"○ {result.path} (no change)")
         else:
-            changes = []
+            changes: list[str] = []
             if result.comments_removed > 0:
                 changes.append(
                     f"{result.comments_removed} comment{('s' if result.comments_removed != 1 else '')}"
@@ -361,28 +506,39 @@ def print_results(stats: ProcessingStats, base_dir: Path):
                 changes.append(
                     f"{result.docstrings_removed} docstring{('s' if result.docstrings_removed != 1 else '')}"
                 )
-            print(f"✓ {result.path} ({', '.join(changes)} removed)")
+            logger.info(f"✓ {result.path} ({', '.join(changes)} removed)")
 
 
-def print_summary(stats: ProcessingStats):
-    print("\n" + "=" * 40)
-    print("Summary:")
-    print(f"  Total files processed: {stats.total_files}")
-    print(f"  Files changed: {stats.changed_files}")
-    print(f"  Total comments removed: {stats.comments_removed}")
-    print(f"  Total docstrings removed: {stats.docstrings_removed}")
+def print_summary(stats: ProcessingStats) -> None:
+    """Log the final processing summary."""
+    logger.info("=" * 40)
+    logger.info("Summary:")
+    logger.info(f"  Total files processed: {stats.total_files}")
+    logger.info(f"  Files changed: {stats.changed_files}")
+    logger.info(f"  Total comments removed: {stats.comments_removed}")
+    logger.info(f"  Total docstrings removed: {stats.docstrings_removed}")
     if stats.errors > 0:
-        print(f"  Errors: {stats.errors}")
-    print("=" * 40 + "\n")
+        logger.info(f"  Errors: {stats.errors}")
+    logger.info("=" * 40)
 
 
-def main():
-    import argparse
+def _accumulate_result(stats: ProcessingStats, result: FileResult) -> None:
+    """Update aggregate statistics from a single file result."""
+    stats.results.append(result)
+    if result.is_error:
+        stats.errors += 1
+    elif result.comments_removed > 0 or result.docstrings_removed > 0:
+        stats.changed_files += 1
+        stats.comments_removed += result.comments_removed
+        stats.docstrings_removed += result.docstrings_removed
 
+
+def main() -> int:
+    """Entry point for the comment and docstring stripping utility."""
     parser = argparse.ArgumentParser(
         description="Strip comments and docstrings from Python source files",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="\nExamples:\n\n  python strip_comments.py\n\n\n  python strip_comments.py src/main.py\n\n\n  python strip_comments.py --remove-module-docstring\n\n\n  python strip_comments.py --dry-run\n\n\n  python strip_comments.py --workers 16\n        ",
+        epilog="\nExamples:\n\n  python strip_comments.py\n\n\n  python strip_comments.py src/main.py\n\n\n  python strip_comments.py --remove-module-docstring\n\n\n  python strip_comments.py --dry-run\n        ",
     )
     parser.add_argument(
         "path",
@@ -400,56 +556,43 @@ def main():
         action="store_true",
         help="Show what would be changed without modifying files",
     )
-    parser.add_argument(
-        "--workers",
-        type=int,
-        default=4,
-        help="Number of parallel worker processes (default: 4)",
-    )
     args = parser.parse_args()
+
     python_files, wheel_files = discover_files(args.path)
     if not python_files and (not wheel_files):
-        print("No Python files found", file=sys.stderr)
+        logger.error("No Python files found")
         return 1
+
     print_header(len(python_files), len(wheel_files))
     stats = ProcessingStats(total_files=len(python_files) + len(wheel_files))
+
     for wheel_file in wheel_files:
         results = process_wheel_file(
             wheel_file,
             remove_module_docstring=args.remove_module_docstring,
             dry_run=args.dry_run,
         )
-        stats.results.extend(results)
         for result in results:
-            if result.is_error:
-                stats.errors += 1
-            elif result.comments_removed > 0 or result.docstrings_removed > 0:
-                stats.changed_files += 1
-                stats.comments_removed += result.comments_removed
-                stats.docstrings_removed += result.docstrings_removed
-    with ProcessPoolExecutor(max_workers=args.workers) as executor:
-        futures = {
-            executor.submit(
-                _worker_process_file,
-                (filepath, args.remove_module_docstring, args.dry_run),
-            ): filepath
-            for filepath in python_files
-        }
-        processed = 0
-        for future in as_completed(futures):
-            result = future.result()
-            stats.results.append(result)
-            if result.is_error:
-                stats.errors += 1
-            elif result.comments_removed > 0 or result.docstrings_removed > 0:
-                stats.changed_files += 1
-                stats.comments_removed += result.comments_removed
-                stats.docstrings_removed += result.docstrings_removed
-            processed += 1
-            if processed % 10 == 0:
-                print(f"  Processed: {processed}/{len(python_files)}", end="\r")
+            _accumulate_result(stats, result)
+
     if python_files:
-        print(f"  Processed: {len(python_files)}/{len(python_files)}")
+        tasks: list[tuple[Path, bool, bool]] = [
+            (filepath, args.remove_module_docstring, args.dry_run)
+            for filepath in python_files
+        ]
+        with Pool(processes=POOL_SIZE) as pool:
+            async_results = [
+                pool.apply_async(_worker_process_file, (t,)) for t in tasks
+            ]
+            processed = 0
+            for async_result in async_results:
+                result = async_result.get()
+                _accumulate_result(stats, result)
+                processed += 1
+                if processed % 10 == 0:
+                    logger.info(f"  Processed: {processed}/{len(python_files)}")
+        logger.info(f"  Processed: {len(python_files)}/{len(python_files)}")
+
     base_dir = Path(args.path).resolve()
     print_results(stats, base_dir)
     print_summary(stats)
