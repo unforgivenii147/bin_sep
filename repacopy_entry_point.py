@@ -1,27 +1,33 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""
+Generate a Python script that scans installed Python packages for entry points, copies their files (excluding
+bytecode and dist-info) into ~/tmp/packages/<package>, and processes them concurrently with a fixed
+multiprocessing.Pool of 8 workers. Use loguru for logging, pathlib for paths, and complete type hints.
+"""
 
 import contextlib
 import csv
-import logging
-import os
 import shutil
 import site
 import sys
-from concurrent.futures import ProcessPoolExecutor, as_completed
 from functools import lru_cache
+from multiprocessing import Pool
 from pathlib import Path
+from typing import Any, Optional
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(processName)s - %(levelname)s - %(message)s",
-)
-logger = logging.getLogger(__name__)
+from loguru import logger
+
+# Module-level constants
+MAX_WORKERS: int = 8
+DEST_ROOT: Path = Path.home() / "tmp" / "packages"
 
 
 def get_python_paths() -> list[Path]:
-    paths = []
-    paths.extend(site.getsitepackages())
+    """Return existing Python search paths from site, user site, and PYTHONPATH."""
+    import os
+
+    paths: list[Path] = []
+    paths.extend(Path(p) for p in site.getsitepackages())
     user_site = site.getusersitepackages()
     if user_site:
         paths.append(Path(user_site))
@@ -32,7 +38,8 @@ def get_python_paths() -> list[Path]:
 
 
 def find_dist_info_dirs(search_paths: list[Path]) -> list[Path]:
-    dist_info_dirs = []
+    """Find all .dist-info directories under the given search paths."""
+    dist_info_dirs: list[Path] = []
     for path in search_paths:
         if not path.exists():
             continue
@@ -43,6 +50,7 @@ def find_dist_info_dirs(search_paths: list[Path]) -> list[Path]:
 
 
 def has_entry_points(dist_info_dir: Path) -> bool:
+    """Return True if the dist-info directory appears to declare entry points."""
     entry_points_file = dist_info_dir / "entry_points.txt"
     if entry_points_file.exists():
         return True
@@ -62,11 +70,12 @@ def has_entry_points(dist_info_dir: Path) -> bool:
 
 
 def parse_record_file(dist_info_dir: Path) -> list[tuple[Path, str]]:
+    """Parse a RECORD file and return (relative path, hash) pairs, skipping bytecode."""
     record_file = dist_info_dir / "RECORD"
     if not record_file.exists():
         logger.warning(f"No RECORD file found in {dist_info_dir}")
         return []
-    files = []
+    files: list[tuple[Path, str]] = []
     try:
         with open(record_file, "r", encoding="utf-8") as f:
             reader = csv.reader(f)
@@ -87,7 +96,8 @@ def parse_record_file(dist_info_dir: Path) -> list[tuple[Path, str]]:
 @lru_cache(maxsize=128)
 def find_file_in_paths(
     relative_path: str, search_paths: tuple[Path, ...]
-) -> Path | None:
+) -> Optional[Path]:
+    """Locate a file from a RECORD entry within the given search paths."""
     if Path(relative_path).is_absolute():
         abs_path = Path(relative_path)
         return abs_path if abs_path.exists() else None
@@ -122,9 +132,10 @@ def find_file_in_paths(
 def copy_package_files(
     package_info: tuple[str, Path, list[str]],
 ) -> tuple[str, bool, str]:
+    """Copy all files listed in a package's RECORD into its destination directory."""
     package_name, dist_info_dir, search_paths = package_info
     try:
-        dest_base = Path.home() / "tmp" / "packages" / package_name
+        dest_base = DEST_ROOT / package_name
         dest_base.parent.mkdir(parents=True, exist_ok=True)
         record_files = parse_record_file(dist_info_dir)
         if not record_files:
@@ -173,61 +184,72 @@ def copy_package_files(
         return (package_name, False, error_msg)
 
 
-def main():
+def main() -> int:
+    """Entry point: discover, copy, and summarize packages with entry points."""
     logger.info("Starting package copy process...")
     search_paths = get_python_paths()
     logger.info(f"Search paths: {search_paths}")
     dist_info_dirs = find_dist_info_dirs(search_paths)
     if not dist_info_dirs:
         logger.error("No dist-info directories found!")
-        return
-    packages_with_entry_points = []
+        return 1
+
+    packages_with_entry_points: list[tuple[str, Path]] = []
     for dist_info_dir in dist_info_dirs:
         if has_entry_points(dist_info_dir):
             package_name = dist_info_dir.name.replace(".dist-info", "")
             if "-" in package_name:
                 logger.info(f"Found package with entry points: {package_name}")
             packages_with_entry_points.append((package_name, dist_info_dir))
+
     logger.info(f"Found {len(packages_with_entry_points)} packages with entry points")
     if not packages_with_entry_points:
         logger.warning("No packages with entry points found!")
-        return
+        return 1
+
     search_paths_str = [str(p) for p in search_paths]
-    package_infos = [
+    package_infos: list[tuple[str, Path, list[str]]] = [
         (name, d, search_paths_str) for name, d in packages_with_entry_points
     ]
-    results = []
-    max_workers = min(os.cpu_count() or 1, len(package_infos))
+
     logger.info(
-        f"Processing {len(package_infos)} packages using {max_workers} workers..."
+        f"Processing {len(package_infos)} packages using {MAX_WORKERS} workers..."
     )
-    with ProcessPoolExecutor(max_workers=max_workers) as executor:
-        future_to_package = {
-            executor.submit(copy_package_files, pkg_info): pkg_info[0]
+
+    results: list[tuple[str, bool, str]] = []
+    with Pool(processes=MAX_WORKERS) as pool:
+        async_results: list[Any] = [
+            pool.apply_async(copy_package_files, (pkg_info,))
             for pkg_info in package_infos
-        }
-        for future in as_completed(future_to_package):
-            package_name = future_to_package[future]
+        ]
+        for async_result in async_results:
             try:
-                result = future.result()
+                result: tuple[str, bool, str] = async_result.get()
                 results.append(result)
             except Exception as e:
-                logger.error(f"Exception processing {package_name}: {e}")
-                results.append((package_name, False, str(e)))
-    print("\n" + "=" * 40)
-    print("SUMMARY")
-    print("-" * 40)
+                logger.error(f"Exception processing package: {e}")
+                results.append(("unknown", False, str(e)))
+
+    logger.info("=" * 40)
+    logger.info("SUMMARY")
+    logger.info("-" * 40)
+
     successful = [r for r in results if r[1]]
     failed = [r for r in results if not r[1]]
-    print(f"\n✅ Successfully processed: {len(successful)} packages")
+
+    logger.info(f"✅ Successfully processed: {len(successful)} packages")
     for pkg_name, _, msg in successful:
-        print(f"  - {pkg_name}: {msg}")
+        logger.info(f"  - {pkg_name}: {msg}")
+
     if failed:
-        print(f"\n❌ Failed: {len(failed)} packages")
+        logger.info(f"❌ Failed: {len(failed)} packages")
         for pkg_name, _, msg in failed:
-            print(f"  - {pkg_name}: {msg}")
-    print(f"\n📁 Packages copied to: {Path.home() / 'tmp' / 'packages'}")
-    print("-" * 40)
+            logger.info(f"  - {pkg_name}: {msg}")
+
+    logger.info(f"📁 Packages copied to: {DEST_ROOT}")
+    logger.info("-" * 40)
+
+    return 0
 
 
 if __name__ == "__main__":

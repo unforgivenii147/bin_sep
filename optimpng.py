@@ -1,47 +1,87 @@
 #!/data/data/com.termux/files/home/.local/bin/python
+"""
+Optimize all PNG files under the current directory using optipng with a
+multiprocessing pool of 8 workers, log progress with loguru, and report
+the number of successfully optimized files.
+"""
+
 from __future__ import annotations
 
-import os
 import subprocess
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from multiprocessing import Pool
 from pathlib import Path
+from typing import Final
 
+from loguru import logger
 from tqdm import tqdm
 
-
-def find_png_files(directory: Path):
-    png_files = []
-    for root, _, files in os.walk(directory):
-        png_files.extend(
-            os.path.join(root, file) for file in files if file.lower().endswith(".png")
-        )
-    return png_files
+MAX_WORKERS: Final[int] = 8
+PNG_SUFFIX: Final[str] = ".png"
 
 
-def optimize_png(file_path):
+def find_png_files(directory: Path) -> list[Path]:
+    """
+    Recursively find all PNG files under ``directory``.
+
+    Args:
+        directory: Root directory to search.
+
+    Returns:
+        A list of paths to PNG files.
+    """
+    return [p for p in directory.rglob("*") if p.suffix.lower() == PNG_SUFFIX]
+
+
+def optimize_png(file_path: Path) -> tuple[bool, Path, str | None]:
+    """
+    Optimize a single PNG file using ``optipng -o7``.
+
+    Args:
+        file_path: Path to the PNG file to optimize.
+
+    Returns:
+        A tuple ``(success, file_path, error_message)`` where ``error_message``
+        is ``None`` on success.
+    """
     try:
-        subprocess.run(["optipng", "-o7", str(file_path)], check=True)
-        return True, file_path
-    except subprocess.CalledProcessError as e:
-        return False, file_path, str(e)
+        subprocess.run(
+            ["optipng", "-o7", str(file_path)],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except subprocess.CalledProcessError as exc:
+        return False, file_path, str(exc)
+    else:
+        return True, file_path, None
 
 
-def main() -> None:
-    cwd = Path.cwd()
-    png_files = find_png_files(cwd)
+def main() -> int:
+    """
+    Entry point: find PNGs in the current directory and optimize them in parallel.
+
+    Returns:
+        Process exit code (0 on success).
+    """
+    cwd: Path = Path.cwd()
+    png_files: list[Path] = find_png_files(cwd)
     if not png_files:
-        print("No PNG files found in the current directory.")
-        return
-    print(f"Found {len(png_files)} PNG files to optimize.")
-    with ThreadPoolExecutor(max_workers=4) as executor:
-        futures = {executor.submit(optimize_png, file): file for file in png_files}
-        results = []
+        logger.warning("No PNG files found in the current directory.")
+        return 0
+
+    logger.info(f"Found {len(png_files)} PNG files to optimize.")
+
+    results: list[tuple[bool, Path, str | None]] = []
+    with Pool(processes=MAX_WORKERS) as pool:
+        async_results = [pool.apply_async(optimize_png, (file,)) for file in png_files]
         with tqdm(total=len(png_files), desc="Optimizing PNGs", unit="file") as pbar:
-            for future in as_completed(futures):
-                results.append(future.result())
+            for async_result in async_results:
+                results.append(async_result.get())
                 pbar.update(1)
-    success = sum(1 for r in results if r[0])
-    print(f"\nOptimization complete. Success: {success}/{len(png_files)} files.")
+
+    success: int = sum(1 for ok, _, _ in results if ok)
+    logger.info(f"Optimization complete. Success: {success}/{len(png_files)} files.")
+    return 0
 
 
 if __name__ == "__main__":

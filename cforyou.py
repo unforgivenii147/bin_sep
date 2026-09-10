@@ -8,7 +8,7 @@ import time
 from pathlib import Path
 
 import requests
-from dh import cprint, get_installed_pkgs
+from dh import cprint, get_installed_packages
 from packaging.version import Version
 
 MAX_WORKERS = 8
@@ -16,18 +16,12 @@ TIMEOUT = 15
 RESULTS_FILE = "/sdcard/c4u.json"
 
 
-def save_output(text: str, pkg: str) -> None:
-    Path(f"/sdcard/whl/json/{pkg}.html").write_text(text, encoding="utf-8")
-
-
 def get_latest_version(pkg_name: str) -> str | None:
-    url = f"https://mirror-pypi.runflare.com/{pkg_name}/json"
+    url = f"https://mirror-pypi.runflare.com/{pkg_name}"
     try:
         response = requests.get(url, timeout=TIMEOUT)
         response.raise_for_status()
         html = response.text
-        save_output(html, pkg_name)
-        cprint(f"/sdcard/whl/json/{pkg_name}.html created")
     except:
         return None
     wheel_pattern = re.compile(
@@ -35,7 +29,7 @@ def get_latest_version(pkg_name: str) -> str | None:
         re.IGNORECASE,
     )
     versions = []
-    print(html[:-100])
+    #    print(html[:-100])
     for match in wheel_pattern.finditer(html):
         version_str = match.group(1)
         with contextlib.suppress(BaseException):

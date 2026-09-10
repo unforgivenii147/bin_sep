@@ -162,7 +162,11 @@ def main() -> None:
     fixed = SIZE_W + TIME_W + 4  # spaces between/after
     name_w = max(10, term_w - fixed)
 
-    def emit(name: str, size: int, ctime: float, color: str) -> None:
+    # RGB (255, 127, 80) → ANSI 256-color approximation: 209
+    # If your terminal supports truecolor, use: \x1b[38;2;255;127;80m
+    TIME_COLOR = "\x1b[38;2;255;127;80m"
+
+    def emit(name: str, size: int, ctime: float, name_color: str) -> None:
         size_str = fsz(size)
         # Right-align size within SIZE_W
         size_col = size_str.rjust(SIZE_W)
@@ -173,18 +177,25 @@ def main() -> None:
         if pad < 0:
             pad = 0
         print(
-            f"\x1b[05;{color}m{name_disp}\x1b[0m"
+            f"\x1b[05;{name_color}m{name_disp}\x1b[0m"
             f"{' ' * pad}"
             f" \x1b[05;96m{size_col}\x1b[0m"
-            f" \x1b[05;93m{t}\x1b[0m"
+            f" {TIME_COLOR}{t}\x1b[0m"
         )
 
     for p, sz, ct in otherz:
         name = p.name
-        if p.is_symlink():
-            emit(name, sz, ct, "95")
-        else:
+        # Executable check
+        try:
+            mode = p.stat(follow_symlinks=False).st_mode
+        except OSError:
+            mode = 0
+        if mode & (stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH):
+            # Executable → green
             emit(name, sz, ct, "92")
+        else:
+            # Non-executable file → bold blue
+            emit(name, sz, ct, "94")
 
     for p, sz, ct in dirz:
         emit(p.name, sz, ct, "94")

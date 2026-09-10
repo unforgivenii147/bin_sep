@@ -204,6 +204,9 @@ def main() -> None:
             ".pyformat_cache.json",
             "simz.json",
             ".gitkeep",
+            "acknowledgements",
+            "history.deb822",
+            "readme.changelog",
         }:
             remove_it(path)
             removed_count += 1

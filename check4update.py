@@ -3,16 +3,34 @@ from __future__ import annotations
 
 import json
 import multiprocessing as mp
+import re
 from io import BytesIO
 from pathlib import Path
+from importlib import metadata
+from operator import itemgetter
 
 import pycurl
-from dh import get_installed_packages
+
+
+def _normalize_name(name: str) -> str:
+    """Normalize package name per PEP 503."""
+    return re.sub(r"[-_.]+", "-", name).lower()
+
+
+def get_installed_packages() -> dict[str, str]:
+    packages = {}
+    for distribution in metadata.distributions():
+        name = distribution.metadata.get("Name")
+        version = distribution.metadata.get("Version")
+
+        if name and version:
+            packages[_normalize_name(name)] = version
+    return dict(sorted(packages.items(), key=itemgetter(0)))
 
 
 def get_latest_version(pkg_info):
     pkg_name, current_version = pkg_info
-    url = f"https://pypi.org/simple/{pkg_name}/json"
+    url = f"https://pypi.org/pypi/{pkg_name}/json"
     try:
         buffer = BytesIO()
         curl = pycurl.Curl()
@@ -53,14 +71,17 @@ def main():
     print("Getting installed packages...")
     installed_packages = get_installed_packages()
     if not installed_packages:
-        print("No packages found in ~/.local/lib/python3.12/site-packages")
+        print("No packages found in site-packages")
         return
     print(f"Found {len(installed_packages)} installed packages")
     print("Checking for updates from PyPI...")
+
     with mp.Pool(processes=8) as pool:
-        latest_versions = pool.map(get_latest_version, installed_packages)
+        latest_versions = pool.map(get_latest_version, installed_packages.items())
         updatable_packages = pool.map(compare_versions, latest_versions)
+
     updatable_packages = [pkg for pkg in updatable_packages if pkg is not None]
+
     if updatable_packages:
         print("\n" + "=" * 40)
         print("UPDATABLE PACKAGES:")
@@ -69,20 +90,20 @@ def main():
         for pkg_name, current_version, latest_version in updatable_packages:
             print(f"{pkg_name:30s} {current_version:15s} -> {latest_version}")
             requirements_lines.append(f"{pkg_name}=={latest_version}\n")
-        requirements_path = (
-            Path.home()
-            / ".local"
-            / "lib"
-            / "python3.12"
-            / "site-packages"
-            / "requirements.txt"
-        )
+
+        # Derive the site-packages path dynamically
+        import sysconfig
+
+        site_packages = Path(sysconfig.get_paths()["purelib"])
+        requirements_path = site_packages / "requirements.txt"
+
         with open(requirements_path, "w") as f:
             f.writelines(sorted(requirements_lines))
         print(f"\n{len(updatable_packages)} packages can be updated")
         print(f"Upgradable packages saved to: {requirements_path}")
     else:
         print("\nAll packages are up to date!")
+
     print("\n" + "=" * 40)
     print("SUMMARY:")
     print(f"Total packages checked: {len(installed_packages)}")

@@ -1,5 +1,9 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""Standalone HTML/CSS bundler: inline local images, CSS, JS, and non-image
+remote assets (fonts, CSS, JS) as base64 data URIs into HTML files and
+process standalone CSS files. Uses a fixed multiprocessing pool of 8 workers.
+Logs via loguru, handles paths with pathlib, and is fully type-annotated.
+"""
 
 import argparse
 import base64
@@ -7,19 +11,21 @@ import mimetypes
 import re
 import sys
 import time
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from multiprocessing import Pool
 from pathlib import Path
+from typing import Any, Dict, List, Match, Optional, Tuple
 from urllib.parse import urljoin, urlparse
 
 import requests
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
 from loguru import logger
 
 logger.remove()
 logger.add(
     sys.stderr, level="WARNING", format="<red>{level}</red> | <cyan>{message}</cyan>"
 )
-IMAGE_EXTENSIONS = {
+
+IMAGE_EXTENSIONS: set[str] = {
     ".png",
     ".jpg",
     ".jpeg",
@@ -31,20 +37,24 @@ IMAGE_EXTENSIONS = {
     ".bmp",
     ".tiff",
 }
-CSS_URL_PATTERN = re.compile(r'url\((["\']?)([^)"\']+)\1\)')
-TIMEOUT = 15
+CSS_URL_PATTERN: re.Pattern[str] = re.compile(r'url\((["\']?)([^)"\']+)\1\)')
+TIMEOUT: int = 15
+POOL_SIZE: int = 8
 
 
 def is_remote(url: str) -> bool:
+    """Return True if the URL is an absolute or protocol-relative remote URL."""
     return urlparse(url).scheme in ("http", "https") or url.startswith("//")
 
 
 def is_image(url: str) -> bool:
+    """Return True if the URL path has a known image file extension."""
     ext = Path(urlparse(url).path).suffix.lower()
     return ext in IMAGE_EXTENSIONS
 
 
 def get_mime_type(file_path: str) -> str:
+    """Guess the MIME type for a file path, with fallbacks for common fonts."""
     mime, _ = mimetypes.guess_type(file_path)
     if not mime:
         ext = Path(file_path).suffix.lower()
@@ -60,7 +70,8 @@ def get_mime_type(file_path: str) -> str:
     return mime
 
 
-def fetch_remote(url: str) -> bytes | None:
+def fetch_remote(url: str) -> Optional[bytes]:
+    """Fetch a remote URL and return its bytes, or None on failure."""
     if url.startswith("//"):
         url = "https:" + url
     try:
@@ -72,7 +83,8 @@ def fetch_remote(url: str) -> bytes | None:
         return None
 
 
-def read_local(path: Path) -> bytes | None:
+def read_local(path: Path) -> Optional[bytes]:
+    """Read a local file and return its bytes, or None on failure."""
     try:
         return path.read_bytes()
     except Exception as e:
@@ -81,30 +93,35 @@ def read_local(path: Path) -> bytes | None:
 
 
 def process_css_content(
-    css_content: str, base_path: Path, base_url: str | None = None
-) -> tuple[str, int, int]:
-    loc, rem = 0, 0
+    css_content: str, base_path: Path, base_url: Optional[str] = None
+) -> Tuple[str, int, int]:
+    """Inline url(...) references in CSS as data URIs.
 
-    def replacer(match: re.Match) -> str:
+    Returns the transformed CSS and counts of embedded local and remote assets.
+    """
+    loc: int = 0
+    rem: int = 0
+
+    def replacer(match: Match[str]) -> str:
         nonlocal loc, rem
-        quote = match.group(1)
-        url = match.group(2)
+        quote: str = match.group(1)
+        url: str = match.group(2)
         if url.startswith("data:"):
             return match.group(0)
         if is_remote(url):
             if is_image(url):
                 return match.group(0)
-            target_url = urljoin(base_url, url) if base_url else url
+            target_url: str = urljoin(base_url, url) if base_url else url
             content = fetch_remote(target_url)
             if content:
-                mime = get_mime_type(urlparse(target_url).path)
-                b64 = base64.b64encode(content).decode("ascii")
+                mime: str = get_mime_type(urlparse(target_url).path)
+                b64: str = base64.b64encode(content).decode("ascii")
                 rem += 1
                 return f"url({quote}data:{mime};base64,{b64}{quote})"
             return match.group(0)
         else:
-            clean_url = url.split("?")[0].split("#")[0]
-            local_file = (base_path.parent / clean_url).resolve()
+            clean_url: str = url.split("?")[0].split("#")[0]
+            local_file: Path = (base_path.parent / clean_url).resolve()
             if not local_file.exists():
                 logger.warning(f"Missing local CSS asset referenced: {local_file}")
                 return match.group(0)
@@ -116,51 +133,60 @@ def process_css_content(
                 return f"url({quote}data:{mime};base64,{b64}{quote})"
             return match.group(0)
 
-    new_css = CSS_URL_PATTERN.sub(replacer, css_content)
+    new_css: str = CSS_URL_PATTERN.sub(replacer, css_content)
     return new_css, loc, rem
 
 
-def process_html_file(file_path: Path) -> dict:
-    stats = {
+def process_html_file(file_path: Path) -> Dict[str, Any]:
+    """Inline assets referenced by an HTML file and rewrite it in place."""
+    stats: Dict[str, Any] = {
         "path": str(file_path),
         "local": 0,
         "remote": 0,
         "time": 0.0,
         "status": "success",
     }
-    start = time.perf_counter()
+    start: float = time.perf_counter()
     try:
-        html_text = file_path.read_text(encoding="utf-8")
-        soup = BeautifulSoup(html_text, "html.parser")
+        html_text: str = file_path.read_text(encoding="utf-8")
+        soup: BeautifulSoup = BeautifulSoup(html_text, "html.parser")
+
+        img: Tag
         for img in soup.find_all("img"):
-            src = img.get("src")
+            src: Optional[str] = img.get("src")
             if not src or src.startswith("data:"):
                 continue
             if is_remote(src):
                 continue
-            clean_src = src.split("?")[0].split("#")[0]
-            local_img_path = (file_path.parent / clean_src).resolve()
+            clean_src: str = src.split("?")[0].split("#")[0]
+            local_img_path: Path = (file_path.parent / clean_src).resolve()
             if local_img_path.exists():
-                if content := read_local(local_img_path):
-                    b64 = base64.b64encode(content).decode("ascii")
-                    mime = get_mime_type(str(local_img_path))
+                content = read_local(local_img_path)
+                if content:
+                    b64: str = base64.b64encode(content).decode("ascii")
+                    mime: str = get_mime_type(str(local_img_path))
                     img["src"] = f"data:{mime};base64,{b64}"
                     stats["local"] += 1
             else:
                 logger.warning(f"Missing local image: {local_img_path} in {file_path}")
+
+        link: Tag
         for link in soup.find_all("link", rel="stylesheet"):
-            href = link.get("href")
+            href: Optional[str] = link.get("href")
             if not href:
                 continue
-            css_text, base_url, css_base_path = "", None, file_path
+            css_text: str = ""
+            base_url: Optional[str] = None
+            css_base_path: Path = file_path
             if is_remote(href):
-                if raw := fetch_remote(href):
+                raw = fetch_remote(href)
+                if raw:
                     css_text = raw.decode("utf-8", errors="ignore")
                     base_url = href
                     stats["remote"] += 1
             else:
-                clean_href = href.split("?")[0].split("#")[0]
-                local_css_path = (file_path.parent / clean_href).resolve()
+                clean_href: str = href.split("?")[0].split("#")[0]
+                local_css_path: Path = (file_path.parent / clean_href).resolve()
                 if local_css_path.exists():
                     css_text = local_css_path.read_text(
                         encoding="utf-8", errors="ignore"
@@ -177,21 +203,24 @@ def process_html_file(file_path: Path) -> dict:
                 )
                 stats["local"] += c_loc
                 stats["remote"] += c_rem
-                style_tag = soup.new_tag("style")
+                style_tag: Tag = soup.new_tag("style")
                 style_tag.string = processed_css
                 link.replace_with(style_tag)
+
+        script: Tag
         for script in soup.find_all("script"):
             src = script.get("src")
             if not src:
                 continue
-            script_text = ""
+            script_text: str = ""
             if is_remote(src):
-                if raw := fetch_remote(src):
+                raw = fetch_remote(src)
+                if raw:
                     script_text = raw.decode("utf-8", errors="ignore")
                     stats["remote"] += 1
             else:
                 clean_src = src.split("?")[0].split("#")[0]
-                local_script = (file_path.parent / clean_src).resolve()
+                local_script: Path = (file_path.parent / clean_src).resolve()
                 if local_script.exists():
                     script_text = local_script.read_text(
                         encoding="utf-8", errors="ignore"
@@ -202,20 +231,26 @@ def process_html_file(file_path: Path) -> dict:
                         f"Missing local script: {local_script} in {file_path}"
                     )
             if script_text:
-                new_script = soup.new_tag("script")
+                new_script: Tag = soup.new_tag("script")
                 new_script.string = script_text
                 script.replace_with(new_script)
+
+        tag: Tag
         for tag in soup.find_all(style=True):
-            processed, l, r = process_css_content(tag["style"], file_path)
+            style_attr: str = tag["style"]
+            processed, l, r = process_css_content(style_attr, file_path)
             tag["style"] = processed
             stats["local"] += l
             stats["remote"] += r
+
+        style: Tag
         for style in soup.find_all("style"):
             if style.string:
                 processed, l, r = process_css_content(style.string, file_path)
                 style.string = processed
                 stats["local"] += l
                 stats["remote"] += r
+
         file_path.write_text(str(soup), encoding="utf-8")
     except Exception as e:
         stats["status"] = f"error: {e}"
@@ -224,17 +259,18 @@ def process_html_file(file_path: Path) -> dict:
     return stats
 
 
-def process_css_file(file_path: Path) -> dict:
-    stats = {
+def process_css_file(file_path: Path) -> Dict[str, Any]:
+    """Inline assets referenced by a standalone CSS file and rewrite it."""
+    stats: Dict[str, Any] = {
         "path": str(file_path),
         "local": 0,
         "remote": 0,
         "time": 0.0,
         "status": "success",
     }
-    start = time.perf_counter()
+    start: float = time.perf_counter()
     try:
-        content = file_path.read_text(encoding="utf-8")
+        content: str = file_path.read_text(encoding="utf-8")
         processed_css, l, r = process_css_content(content, file_path)
         stats["local"] += l
         stats["remote"] += r
@@ -246,7 +282,8 @@ def process_css_file(file_path: Path) -> dict:
     return stats
 
 
-def process_file(path: Path) -> dict:
+def process_file(path: Path) -> Dict[str, Any]:
+    """Dispatch a single file to the correct processor based on extension."""
     if path.suffix.lower() == ".html":
         return process_html_file(path)
     elif path.suffix.lower() == ".css":
@@ -260,7 +297,8 @@ def process_file(path: Path) -> dict:
     }
 
 
-def main():
+def main() -> None:
+    """Parse arguments, collect target files, and run the pool of workers."""
     parser = argparse.ArgumentParser(description="Standalone HTML/CSS Bundler Tool")
     parser.add_argument(
         "paths",
@@ -269,7 +307,8 @@ def main():
         help="Files or directories to process (default: current directory)",
     )
     args = parser.parse_args()
-    targets: list[Path] = []
+
+    targets: List[Path] = []
     for p_str in args.paths:
         p = Path(p_str)
         if p.is_file() and p.suffix.lower() in (".html", ".css"):
@@ -277,44 +316,54 @@ def main():
         elif p.is_dir():
             targets.extend(p.rglob("*.html"))
             targets.extend(p.rglob("*.css"))
-    targets = list({p.resolve(): p for p in targets}.values())
+
+    # Deduplicate while preserving resolved identity
+    unique: Dict[Path, Path] = {p.resolve(): p for p in targets}
+    targets = list(unique.values())
+
     if not targets:
-        print("\033[93mNo HTML or CSS files found to process.\033[0m")
+        logger.warning("No HTML or CSS files found to process.")
         return
-    print(
-        f"\033[96mProcessing {len(targets)} files across multiple CPU cores...\033[0m\n"
+
+    logger.info(
+        f"Processing {len(targets)} files with a pool of {POOL_SIZE} workers..."
     )
-    t_loc, t_rem = 0, 0
-    start_time = time.perf_counter()
-    with ProcessPoolExecutor() as executor:
-        futures = {executor.submit(process_file, p): p for p in targets}
-        for future in as_completed(futures):
-            s = future.result()
+
+    t_loc: int = 0
+    t_rem: int = 0
+    start_time: float = time.perf_counter()
+
+    pool: Pool = Pool(processes=POOL_SIZE)
+    try:
+        async_results = [pool.apply_async(process_file, (p,)) for p in targets]
+        for async_result in async_results:
+            s: Dict[str, Any] = async_result.get()
             raw_path = Path(s["path"])
             try:
-                display_path = raw_path.relative_to(Path.cwd())
+                display_path: Path = raw_path.relative_to(Path.cwd())
             except ValueError:
                 display_path = raw_path
+
             t_loc += s["local"]
             t_rem += s["remote"]
-            status = s["status"]
+            status: str = s["status"]
+
             if status == "success":
-                print(
-                    f"\033[92m[SUCCESS]\033[0m "
-                    f"\033[96m{display_path}\033[0m "
-                    f"({s['time']:.2f}s) - Embedded: "
-                    f"\033[93m{s['local']} local\033[0m, "
-                    f"\033[93m{s['remote']} remote\033[0m"
+                logger.info(
+                    f"[SUCCESS] {display_path} ({s['time']:.2f}s) - "
+                    f"Embedded: {s['local']} local, {s['remote']} remote"
                 )
             elif status == "skipped":
                 pass
             else:
-                print(f"\033[91m[ERROR]\033[0m {display_path} - {status}")
-    total_time = time.perf_counter() - start_time
-    print(f"\n\033[1;92mBuild Complete in {total_time:.2f}s!\033[0m")
-    print(
-        f"Total globally embedded resources: \033[93m{t_loc}\033[0m local, \033[93m{t_rem}\033[0m remote."
-    )
+                logger.error(f"[ERROR] {display_path} - {status}")
+    finally:
+        pool.close()
+        pool.join()
+
+    total_time: float = time.perf_counter() - start_time
+    logger.success(f"Build Complete in {total_time:.2f}s!")
+    logger.info(f"Total globally embedded resources: {t_loc} local, {t_rem} remote.")
 
 
 if __name__ == "__main__":

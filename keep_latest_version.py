@@ -1,28 +1,74 @@
 #!/data/data/com.termux/files/home/.local/bin/python
+"""
+Generate a Python CLI script that scans a directory for package files
+(.whl, .metadata, .deb, .tar.gz, .tgz), parses their package name and
+version, keeps only the latest version of each package, and optionally
+deletes older versions. Use argparse for CLI flags (-w/-d/-t/-a,
+--dry-run, --dir, --verbose), multiprocessing.Pool with 8 workers
+(via apply_async) for concurrent parsing, pathlib for path handling,
+loguru for logging, packaging.version for version comparison, and full
+type annotations with docstrings on every function.
+"""
+
 from __future__ import annotations
 
 import argparse
+import multiprocessing
 import re
 import sys
 from collections import defaultdict
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
+from typing import Iterable
+
+from loguru import logger
+from packaging import version as pkg_version
 
 from dh import get_files
-from packaging import version as pkg_version
+
+# ---------------------------------------------------------------------------
+# Module-level constants
+# ---------------------------------------------------------------------------
+
+POOL_WORKERS: int = 8
+
+WHEEL_EXTENSIONS: tuple[str, ...] = (".whl", ".metadata")
+TARGZ_EXTENSIONS: tuple[str, ...] = (".tar.gz", ".tgz")
+DEB_EXTENSIONS: tuple[str, ...] = (".deb",)
+ALL_EXTENSIONS: tuple[str, ...] = (
+    ".whl",
+    ".metadata",
+    ".deb",
+    ".tar.gz",
+    ".tgz",
+)
+
+ParsedEntry = tuple[str, str, Path]
+VersionEntry = tuple[str, Path]
+PackageMap = dict[str, list[VersionEntry]]
+
+
+# ---------------------------------------------------------------------------
+# Version parsing helpers
+# ---------------------------------------------------------------------------
 
 
 def parse_wheel_version(filename: str) -> tuple[str, str] | None:
+    """Parse a wheel or metadata filename into (package_name, version)."""
     if filename.endswith(".whl"):
         name = filename[:-4]
-    if filename.endswith(".metadata"):
+    elif filename.endswith(".metadata"):
         name = filename[:-9]
+    else:
+        return None
+
     parts = name.split("-")
     if len(parts) < 5:
         return None
-    pkg_name_parts = []
-    version_parts = []
+
+    pkg_name_parts: list[str] = []
+    version_parts: list[str] = []
     found_version = False
+
     for i, part in enumerate(parts):
         if not found_version and (
             re.match(r"^\d", part) or part.lower() in ["v", "ver", "version"]
@@ -36,6 +82,7 @@ def parse_wheel_version(filename: str) -> tuple[str, str] | None:
             if remaining_parts <= 3:
                 break
             version_parts.append(part)
+
     if pkg_name_parts and version_parts:
         pkg_name = "-".join(pkg_name_parts)
         version = "-".join(version_parts)
@@ -44,6 +91,7 @@ def parse_wheel_version(filename: str) -> tuple[str, str] | None:
 
 
 def parse_targz_version(filename: str) -> tuple[str, str] | None:
+    """Parse a .tar.gz / .tgz filename into (package_name, version)."""
     name = filename
     if filename.endswith(".tar.gz"):
         name = filename[:-7]
@@ -51,6 +99,7 @@ def parse_targz_version(filename: str) -> tuple[str, str] | None:
         name = filename[:-4]
     else:
         return None
+
     parts = name.split("-")
     for i, part in enumerate(parts):
         if re.match(r"^\d", part):
@@ -63,6 +112,7 @@ def parse_targz_version(filename: str) -> tuple[str, str] | None:
 
 
 def parse_deb_version(filename: str) -> tuple[str, str] | None:
+    """Parse a .deb filename into (package_name, version)."""
     parts = filename.split("_")
     if len(parts) >= 2:
         pkg_name = parts[0]
@@ -72,85 +122,130 @@ def parse_deb_version(filename: str) -> tuple[str, str] | None:
 
 
 def compare_versions(ver1: str, ver2: str) -> int:
+    """Compare two version strings, returning -1, 0, or 1."""
     try:
         v1 = pkg_version.parse(ver1)
         v2 = pkg_version.parse(ver2)
         if v1 < v2:
             return -1
-        elif v1 > v2:
+        if v1 > v2:
             return 1
-        else:
-            return 0
-    except:
+        return 0
+    except Exception:
         if ver1 < ver2:
             return -1
-        elif ver1 > ver2:
+        if ver1 > ver2:
             return 1
-        else:
-            return 0
+        return 0
 
 
-def process_file(file_path: Path, file_type: str) -> tuple[str, str, Path] | None:
+# ---------------------------------------------------------------------------
+# File processing
+# ---------------------------------------------------------------------------
+
+
+def process_file(file_path: Path, file_type: str) -> ParsedEntry | None:
+    """Parse a single file and return (pkg_name, version, path) or None."""
     try:
         filename = file_path.name
-        if file_type == "wheel" and filename.endswith((".whl", ".metadata")):
+        if file_type == "wheel" and filename.endswith(WHEEL_EXTENSIONS):
             parsed = parse_wheel_version(filename)
             if parsed:
                 pkg_name, version = parsed
                 return (pkg_name, version, file_path)
-        elif file_type == "targz" and filename.endswith((".tar.gz", ".tgz")):
+        elif file_type == "targz" and filename.endswith(TARGZ_EXTENSIONS):
             parsed = parse_targz_version(filename)
             if parsed:
                 pkg_name, version = parsed
                 return (pkg_name, version, file_path)
-        elif file_type == "deb" and filename.endswith(".deb"):
+        elif file_type == "deb" and filename.endswith(DEB_EXTENSIONS):
             parsed = parse_deb_version(filename)
             if parsed:
                 pkg_name, version = parsed
                 return (pkg_name, version, file_path)
-    except Exception as e:
-        print(f"Error processing {file_path}: {e}")
+    except Exception as e:  # noqa: BLE001
+        logger.error(f"Error processing {file_path}: {e}")
     return None
+
+
+def _resolve_file_type(file_path: Path) -> str | None:
+    """Determine the parser key for a file path, or None if unsupported."""
+    if file_path.suffix in {".whl", ".metadata"}:
+        return "wheel"
+    if file_path.suffix == ".deb":
+        return "deb"
+    if (file_path.suffix == ".gz" and file_path.stem.endswith(".tar")) or (
+        file_path.suffix == ".tgz"
+    ):
+        return "targz"
+    return None
+
+
+def _process_entry(file_path: Path) -> ParsedEntry | None:
+    """Top-level helper for multiprocessing: dispatch and parse a file."""
+    file_type = _resolve_file_type(file_path)
+    if file_type is None:
+        return None
+    return process_file(file_path, file_type)
+
+
+# ---------------------------------------------------------------------------
+# Directory scanning
+# ---------------------------------------------------------------------------
+
+
+def _select_extensions(file_type: str, check_all: bool) -> tuple[str, ...]:
+    """Return the tuple of extensions to scan for the given file type."""
+    if check_all or file_type == "all":
+        return ALL_EXTENSIONS
+    if file_type == "wheel":
+        return WHEEL_EXTENSIONS
+    if file_type == "deb":
+        return DEB_EXTENSIONS
+    if file_type == "targz":
+        return TARGZ_EXTENSIONS
+    return WHEEL_EXTENSIONS
 
 
 def scan_directory(
     directory: Path, file_type: str, check_all: bool = False
-) -> dict[str, list[tuple[str, Path]]]:
-    packages = defaultdict(list)
-    extensions = (".whl", ".deb", ".tar.gz", ".tgz", ".metadata")
-    if check_all:
-        extensions = (".whl", ".deb", ".tar.gz", ".tgz", ".metadata")
-    elif file_type == "wheel":
-        extensions = (".whl", ".metadata")
-    elif file_type == "deb":
-        extensions = ".deb"
-    elif file_type == "targz":
-        extensions = (".tar.gz", ".tgz")
-    files_to_process = get_files(directory, ext=extensions)
-    print(f"Found {len(files_to_process)} files to process...")
-    with ThreadPoolExecutor(max_workers=4) as executor:
-        futures = {}
-        for file_path in files_to_process:
-            if file_path.suffix in {".whl", ".metadata"}:
-                future = executor.submit(process_file, file_path, "wheel")
-            elif file_path.suffix == ".deb":
-                future = executor.submit(process_file, file_path, "deb")
-            elif (
-                file_path.suffix == ".gz" and file_path.stem.endswith(".tar")
-            ) or file_path.suffix == ".tgz":
-                future = executor.submit(process_file, file_path, "targz")
-            else:
+) -> PackageMap:
+    """Scan a directory for package files, grouped by package name."""
+    packages: PackageMap = defaultdict(list)
+    extensions = _select_extensions(file_type, check_all)
+
+    files_to_process: Iterable[Path] = get_files(directory, ext=extensions)
+    files_list: list[Path] = list(files_to_process)
+    logger.info(f"Found {len(files_list)} files to process...")
+
+    if not files_list:
+        return packages
+
+    with multiprocessing.Pool(processes=POOL_WORKERS) as pool:
+        async_results = [
+            (pool.apply_async(_process_entry, (file_path,)), file_path)
+            for file_path in files_list
+        ]
+        for async_result, file_path in async_results:
+            try:
+                result: ParsedEntry | None = async_result.get()
+            except Exception as e:  # noqa: BLE001
+                logger.error(f"Error processing {file_path}: {e}")
                 continue
-            futures[future] = file_path
-        for future in as_completed(futures):
-            result = future.result()
             if result:
-                pkg_name, version, file_path = result
-                packages[pkg_name].append((version, file_path))
+                pkg_name, version, parsed_path = result
+                packages[pkg_name].append((version, parsed_path))
+
     return packages
 
 
-def get_latest_version(versions: list[tuple[str, Path]]) -> tuple[str, Path]:
+# ---------------------------------------------------------------------------
+# Version selection and cleanup
+# ---------------------------------------------------------------------------
+
+
+def get_latest_version(versions: list[VersionEntry]) -> VersionEntry | None:
+    """Return the entry with the greatest version, or None if empty."""
     if not versions:
         return None
     latest = versions[0]
@@ -161,45 +256,70 @@ def get_latest_version(versions: list[tuple[str, Path]]) -> tuple[str, Path]:
 
 
 def keep_latest_versions(
-    packages: dict[str, list[tuple[str, Path]]], dry_run: bool = False
+    packages: PackageMap, dry_run: bool = False
 ) -> tuple[int, int]:
+    """Delete all but the latest version of each package."""
     total_deleted = 0
     total_files_kept = 0
+
     for pkg_name, versions in packages.items():
         if len(versions) <= 1:
             total_files_kept += len(versions)
             continue
-        latest_version, latest_path = get_latest_version(versions)
-        print(f"\nPackage: {pkg_name}")
-        print(f"  Latest version: {latest_version} - {latest_path.name}")
-        print(f"  Total versions found: {len(versions)}")
+
+        latest = get_latest_version(versions)
+        if latest is None:
+            continue
+        latest_version, latest_path = latest
+
+        logger.info(f"Package: {pkg_name}")
+        logger.info(f"  Latest version: {latest_version} - {latest_path.name}")
+        logger.info(f"  Total versions found: {len(versions)}")
+
         for version, file_path in versions:
             if file_path == latest_path:
                 continue
             if dry_run:
-                print(f"  Would delete: {version} - {file_path.name}")
+                logger.info(f"  Would delete: {version} - {file_path.name}")
             else:
                 try:
                     file_path.unlink()
-                    print(f"  Deleted: {version} - {file_path.name}")
+                    logger.info(f"  Deleted: {version} - {file_path.name}")
                     total_deleted += 1
-                except Exception as e:
-                    print(f"  Error deleting {file_path.name}: {e}")
+                except Exception as e:  # noqa: BLE001
+                    logger.error(f"  Error deleting {file_path.name}: {e}")
         total_files_kept += 1
+
     return (total_deleted, total_files_kept)
 
 
-def main() -> int:
+# ---------------------------------------------------------------------------
+# CLI
+# ---------------------------------------------------------------------------
+
+
+def _build_arg_parser() -> argparse.ArgumentParser:
+    """Build the argument parser for the CLI."""
     parser = argparse.ArgumentParser(
         description="Detect and keep only the latest version of package files.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="\nExamples:\n  %(prog)s -w                # Clean wheel files only\n  %(prog)s -d                # Clean deb files only\n  %(prog)s -t                # Clean tar.gz files only\n  %(prog)s -a                # Clean all package types\n  %(prog)s -t --dry-run      # Preview what would be deleted\n        ",
+        epilog=(
+            "\nExamples:\n"
+            "  %(prog)s -w                # Clean wheel files only\n"
+            "  %(prog)s -d                # Clean deb files only\n"
+            "  %(prog)s -t                # Clean tar.gz files only\n"
+            "  %(prog)s -a                # Clean all package types\n"
+            "  %(prog)s -t --dry-run      # Preview what would be deleted\n"
+        ),
     )
     group = parser.add_mutually_exclusive_group()
     group.add_argument("-d", "--deb", action="store_true", help="Check .deb files")
     group.add_argument("-w", "--wheel", action="store_true", help="Check .whl files")
     group.add_argument(
-        "-t", "--targz", action="store_true", help="Check .tar.gz and .tgz files"
+        "-t",
+        "--targz",
+        action="store_true",
+        help="Check .tar.gz and .tgz files",
     )
     group.add_argument(
         "-a",
@@ -223,13 +343,22 @@ def main() -> int:
         action="store_true",
         help="Show detailed information about each file",
     )
+    return parser
+
+
+def main() -> int:
+    """Entry point for the package-cleanup CLI."""
+    parser = _build_arg_parser()
     args = parser.parse_args()
+
     if not (args.deb or args.wheel or args.targz or args.all):
         args.wheel = True
+
     scan_dir = Path(args.dir).resolve()
     if not scan_dir.exists():
-        print(f"Error: Directory '{scan_dir}' does not exist")
+        logger.error(f"Directory '{scan_dir}' does not exist")
         return 1
+
     if args.all:
         file_type = "all"
     elif args.deb:
@@ -240,38 +369,49 @@ def main() -> int:
         file_type = "targz"
     else:
         file_type = "wheel"
-    print(f"Scanning directory: {scan_dir}")
-    print(f"File type: {file_type}")
+
+    logger.info(f"Scanning directory: {scan_dir}")
+    logger.info(f"File type: {file_type}")
     if args.dry_run:
-        print("DRY RUN MODE - No files will be deleted")
-    print("-" * 40)
+        logger.info("DRY RUN MODE - No files will be deleted")
+    logger.info("-" * 40)
+
     packages = scan_directory(scan_dir, file_type, args.all)
     if not packages:
-        print("No matching package files found.")
+        logger.info("No matching package files found.")
         return 0
+
     total_versions = sum(len(versions) for versions in packages.values())
-    print(f"\nFound {len(packages)} package(s) with {total_versions} total version(s):")
+    logger.info(
+        f"\nFound {len(packages)} package(s) with {total_versions} total version(s):"
+    )
+
     if args.verbose:
         for pkg_name, versions in packages.items():
-            print(f"\n  {pkg_name}: {len(versions)} version(s)")
+            logger.info(f"\n  {pkg_name}: {len(versions)} version(s)")
             for version, path in versions:
-                print(f"    - {version}: {path.name}")
+                logger.info(f"    - {version}: {path.name}")
     else:
         for pkg_name, versions in packages.items():
-            print(f"  {pkg_name}: {len(versions)} version(s)")
-    print("\n" + "=" * 40)
+            logger.info(f"  {pkg_name}: {len(versions)} version(s)")
+
+    logger.info("\n" + "=" * 40)
     total_deleted, total_kept = keep_latest_versions(packages, args.dry_run)
-    print("\n" + "=" * 40)
+    logger.info("\n" + "=" * 40)
+
     if total_deleted == 0:
-        print("No files to delete. All packages have only one version.")
+        logger.info("No files to delete. All packages have only one version.")
     elif args.dry_run:
-        print(
-            f"Dry run complete. Would delete {total_deleted} file(s), keep {total_kept} file(s)."
+        logger.info(
+            f"Dry run complete. Would delete {total_deleted} file(s), "
+            f"keep {total_kept} file(s)."
         )
     else:
-        print(
-            f"Cleanup complete. Deleted {total_deleted} file(s), kept {total_kept} file(s)."
+        logger.info(
+            f"Cleanup complete. Deleted {total_deleted} file(s), "
+            f"kept {total_kept} file(s)."
         )
+
     return 0
 
 

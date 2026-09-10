@@ -647,9 +647,9 @@ def main() -> int:
     else:
         Color.enable()
 
-    cprint = lambda text, fg=None, bg=None, attrs=None: print(  # noqa: E731
+    cprint = lambda text, fg=None, bg=None, attrs=None: print(
         colored(text, fg, bg, attrs)
-    )
+    )  # noqa: E731
 
     cprint("╔══════════════════════════════════════════╗", fg=Color.CYAN)
     cprint("║  File Extension Mismatch Fixer            ║", fg=Color.CYAN)

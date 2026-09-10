@@ -33,18 +33,15 @@ IMPORT_PATTERNS = [
     ),
 ]
 THREAD_POOL_PATTERN = re.compile(
-    r"(\bThreadPoolExecutor\s*\()\s*"
-    r"(?:max_workers\s*=\s*)?(\d+)?\s*\)?",
+    r"(\bThreadPoolExecutor\s*\()\s*" r"(?:max_workers\s*=\s*)?(\d+)?\s*\)?",
     re.MULTILINE,
 )
 PROCESS_POOL_PATTERN = re.compile(
-    r"(\bProcessPoolExecutor\s*\()\s*"
-    r"(?:max_workers\s*=\s*)?(\d+)?\s*\)?",
+    r"(\bProcessPoolExecutor\s*\()\s*" r"(?:max_workers\s*=\s*)?(\d+)?\s*\)?",
     re.MULTILINE,
 )
 SUBMIT_PATTERN = re.compile(
-    r"(\w+)\s*\.\s*submit\s*\(\s*"
-    r"([^,]+)\s*(?:,\s*([^)]*?))?\)",
+    r"(\w+)\s*\.\s*submit\s*\(\s*" r"([^,]+)\s*(?:,\s*([^)]*?))?\)",
     re.MULTILINE,
 )
 EXECUTOR_MAP_PATTERN = re.compile(r"(\w+)\s*\.\s*map\s*\(", re.MULTILINE)

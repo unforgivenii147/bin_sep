@@ -1,24 +1,55 @@
 #!/data/data/com.termux/files/home/.local/bin/python
+"""
+Generate a Python CLI tool that recursively minifies HTML files using the external
+`html-minifier-terser` binary, with these exact behaviors:
+
+- Uses multiprocessing.Pool.apply_async with a fixed pool of 8 workers (no CLI flag
+  for parallelism).
+- Provides a `MinifyStats` dataclass capturing path, original size, minified size,
+  success flag, and error message, with `ratio` and `saved` properties.
+- Defines an `HTMLMinifier` class with a DEFAULT_CONFIG dict of html-minifier-terser
+  options, a dependency check for the binary, doctype/post-processing fixups,
+  parallel file minification, recursive HTML discovery, per-file stats printing,
+  and a final summary.
+- Uses loguru for all user-facing output, pathlib for all path handling, and full
+  type annotations compatible with strict type checkers.
+- CLI accepts positional paths (default: current directory) and a --no-color flag;
+  when set, loguru colors are stripped.
+- Entry point: argparse-based `main()`, invoked via `raise SystemExit(main())`.
+"""
+
 from __future__ import annotations
 
 import argparse
 import contextlib
 import json
+import re
 import shutil
 import subprocess
 import sys
 import tempfile
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
+from multiprocessing import Pool
+from multiprocessing.pool import AsyncResult
 from pathlib import Path
+from typing import Any, Final, Iterable
 
-from colorama import Fore, Style, init
+from loguru import logger
 
-init(autoreset=True)
+HTML_SUFFIXES: Final[frozenset[str]] = frozenset({".html", ".htm"})
+POOL_SIZE: Final[int] = 8
+_INLINE_TAGS: Final[str] = "span|a|strong|em|b|i|code|label"
+_DOCTYPE_RE_1: Final[re.Pattern[str]] = re.compile(r"<!(doctype)(html)", re.IGNORECASE)
+_DOCTYPE_RE_2: Final[re.Pattern[str]] = re.compile(r"<!(DOCTYPE)(HTML)")
+_INLINE_BOUNDARY_RE: Final[re.Pattern[str]] = re.compile(
+    rf"(</(?:{_INLINE_TAGS})>)(<(?:{_INLINE_TAGS}))"
+)
 
 
 @dataclass
 class MinifyStats:
+    """Statistics for a single HTML minification attempt."""
+
     path: Path
     original_size: int
     minified_size: int
@@ -27,17 +58,21 @@ class MinifyStats:
 
     @property
     def ratio(self) -> float:
+        """Percentage of bytes saved, computed as a percentage (0-100)."""
         if self.original_size == 0:
             return 0.0
-        return (1 - self.minified_size / self.original_size) * 40
+        return (1 - self.minified_size / self.original_size) * 100
 
     @property
     def saved(self) -> int:
+        """Number of bytes saved by minification."""
         return self.original_size - self.minified_size
 
 
 class HTMLMinifier:
-    DEFAULT_CONFIG = {
+    """Recursively minify HTML files using the html-minifier-terser binary."""
+
+    DEFAULT_CONFIG: Final[dict[str, Any]] = {
         "collapseBooleanAttributes": True,
         "collapseInlineTagWhitespace": True,
         "collapseWhitespace": True,
@@ -67,48 +102,40 @@ class HTMLMinifier:
         "useShortDoctype": True,
     }
 
-    def __init__(self):
-        self.config = self.DEFAULT_CONFIG.copy()
+    def __init__(self) -> None:
+        """Initialize the minifier and verify the external binary is available."""
+        self.config: dict[str, Any] = dict(self.DEFAULT_CONFIG)
         self._check_dependencies()
 
     @staticmethod
     def _check_dependencies() -> None:
+        """Exit with an error if html-minifier-terser is not on PATH."""
         if not shutil.which("html-minifier-terser"):
-            print(
-                f"{Fore.RED}Error: html-minifier-terser is not installed.{Style.RESET_ALL}"
-            )
-            print(
-                f"{Fore.YELLOW}Install it with: npm install -g html-minifier-terser{Style.RESET_ALL}"
-            )
+            logger.error("html-minifier-terser is not installed.")
+            logger.warning("Install it with: npm install -g html-minifier-terser")
             sys.exit(1)
 
     @staticmethod
     def _fix_doctype(content: str) -> str:
-        import re
-
-        content = re.sub(r"<!(doctype)(html)", r"<!\1 \2", content, flags=re.IGNORECASE)
-        content = re.sub(r"<!(DOCTYPE)(HTML)", r"<!\1 \2", content)
+        """Normalize malformed doctype declarations (e.g. `<!doctypehtml>`)."""
+        content = _DOCTYPE_RE_1.sub(r"<!\1 \2", content)
+        content = _DOCTYPE_RE_2.sub(r"<!\1 \2", content)
         return content
 
     @staticmethod
     def _post_process(content: str) -> str:
+        """Apply small post-processing fixups to the minified HTML output."""
         content = HTMLMinifier._fix_doctype(content)
-        import re
-
-        content = re.sub(
-            r"(</(?:span|a|strong|em|b|i|code|label)>)"
-            r"(<(?:span|a|strong|em|b|i|code|label))",
-            r"\1 \2",
-            content,
-        )
+        content = _INLINE_BOUNDARY_RE.sub(r"\1 \2", content)
         return content
 
     def _build_cli_args(self, config_file: Path) -> list[str]:
-        args = ["html-minifier-terser", "--config-file", str(config_file)]
-        return args
+        """Build the html-minifier-terser CLI argument list."""
+        return ["html-minifier-terser", "--config-file", str(config_file)]
 
     def minify_file(self, file_path: Path) -> MinifyStats:
-        config_file = None
+        """Minify a single HTML file in place and return its statistics."""
+        config_file: Path | None = None
         try:
             original_size = file_path.stat().st_size
             with tempfile.NamedTemporaryFile(
@@ -116,11 +143,14 @@ class HTMLMinifier:
             ) as f:
                 json.dump(self.config, f)
                 config_file = Path(f.name)
-            with open(file_path, "r", encoding="utf-8") as f:
-                content = f.read()
+            content = file_path.read_text(encoding="utf-8")
             cmd = self._build_cli_args(config_file)
             process = subprocess.run(
-                cmd, input=content, capture_output=True, text=True, encoding="utf-8"
+                cmd,
+                input=content,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
             )
             if process.returncode != 0:
                 return MinifyStats(
@@ -131,8 +161,7 @@ class HTMLMinifier:
                     error=f"Minification failed: {process.stderr.strip()}",
                 )
             minified_content = self._post_process(process.stdout)
-            with open(file_path, "w", encoding="utf-8") as f:
-                f.write(minified_content)
+            file_path.write_text(minified_content, encoding="utf-8")
             minified_size = file_path.stat().st_size
             return MinifyStats(
                 path=file_path,
@@ -140,67 +169,73 @@ class HTMLMinifier:
                 minified_size=minified_size,
                 success=True,
             )
-        except Exception as e:
+        except Exception as exc:  # noqa: BLE001 - surfaced via MinifyStats
             return MinifyStats(
                 path=file_path,
                 original_size=0,
                 minified_size=0,
                 success=False,
-                error=str(e),
+                error=str(exc),
             )
         finally:
-            if config_file and config_file.exists():
+            if config_file is not None and config_file.exists():
                 with contextlib.suppress(Exception):
                     config_file.unlink()
 
     @staticmethod
-    def find_html_files(paths: list[Path]) -> list[Path]:
-        html_files = []
+    def find_html_files(paths: Iterable[Path]) -> list[Path]:
+        """Expand the given paths into a sorted, unique list of HTML files."""
+        html_files: list[Path] = []
         for path in paths:
             if not path.exists():
-                print(
-                    f"{Fore.YELLOW}Warning: Path '{path}' does not exist. Skipping.{Style.RESET_ALL}"
-                )
+                logger.warning(f"Path '{path}' does not exist. Skipping.")
                 continue
             if path.is_file():
-                if path.suffix.lower() in [".html", ".htm"]:
+                if path.suffix.lower() in HTML_SUFFIXES:
                     html_files.append(path)
                 else:
-                    print(
-                        f"{Fore.YELLOW}Warning: '{path}' is not an HTML file. Skipping.{Style.RESET_ALL}"
-                    )
+                    logger.warning(f"'{path}' is not an HTML file. Skipping.")
             elif path.is_dir():
-                html_files.extend(path.rglob("*.html"))
-                html_files.extend(path.rglob("*.htm"))
+                for suffix in HTML_SUFFIXES:
+                    html_files.extend(path.rglob(f"*{suffix}"))
             else:
-                print(
-                    f"{Fore.YELLOW}Warning: '{path}' is neither a file nor a directory. Skipping.{Style.RESET_ALL}"
-                )
+                logger.warning(f"'{path}' is neither a file nor a directory. Skipping.")
         return sorted(set(html_files))
 
-    def minify_paths(self, paths: list[Path], max_workers: int = 4) -> None:
+    def minify_paths(self, paths: list[Path]) -> None:
+        """Minify every HTML file reachable from the given paths in parallel."""
         html_files = self.find_html_files(paths)
         if not html_files:
-            print(f"{Fore.YELLOW}No HTML files found to minify.{Style.RESET_ALL}")
+            logger.warning("No HTML files found to minify.")
             return
+
         total_files = len(html_files)
-        print(
-            f"\n{Fore.CYAN}Found {total_files} HTML file(s) to minify{Style.RESET_ALL}"
-        )
-        print(f"{Fore.CYAN}{'=' * 40}{Style.RESET_ALL}\n")
-        stats_list: list[MinifyStats] = []
+        logger.info(f"Found {total_files} HTML file(s) to minify")
+        logger.info("=" * 40)
+
         successful = 0
         failed = 0
         total_original = 0
         total_minified = 0
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            future_to_file = {
-                executor.submit(self.minify_file, file_path): file_path
+
+        results: list[MinifyStats] = []
+        with Pool(processes=POOL_SIZE) as pool:
+            async_results: list[AsyncResult[MinifyStats]] = [
+                pool.apply_async(self.minify_file, (file_path,))
                 for file_path in html_files
-            }
-            for future in as_completed(future_to_file):
-                stats = future.result()
-                stats_list.append(stats)
+            ]
+            for async_result in async_results:
+                try:
+                    stats = async_result.get()
+                except Exception as exc:  # noqa: BLE001
+                    stats = MinifyStats(
+                        path=Path("<unknown>"),
+                        original_size=0,
+                        minified_size=0,
+                        success=False,
+                        error=str(exc),
+                    )
+                results.append(stats)
                 if stats.success:
                     successful += 1
                     total_original += stats.original_size
@@ -209,41 +244,52 @@ class HTMLMinifier:
                 else:
                     failed += 1
                     self._print_error(stats)
+
         self._print_summary(
             total_files, successful, failed, total_original, total_minified
         )
 
-    def minify_directory(self, directories: list[Path], max_workers: int = 4) -> None:
-        self.minify_paths(directories, max_workers)
+    def minify_directory(self, directories: list[Path]) -> None:
+        """Backward-compatible alias for :meth:`minify_paths`."""
+        self.minify_paths(directories)
+
+    @staticmethod
+    def _relative_display(path: Path) -> Path:
+        """Return the path relative to the CWD when possible, else the path itself."""
+        try:
+            return path.relative_to(Path.cwd())
+        except ValueError:
+            return path
+
+    @staticmethod
+    def _ratio_color(ratio: float) -> str:
+        """Return a loguru color tag based on the compression ratio."""
+        if ratio > 30:
+            return "green"
+        if ratio > 10:
+            return "yellow"
+        return "red"
 
     def _print_file_stats(self, stats: MinifyStats) -> None:
-        try:
-            rel_path = stats.path.relative_to(Path.cwd())
-        except ValueError:
-            rel_path = stats.path
+        """Log the size statistics for a successfully minified file."""
+        rel_path = self._relative_display(stats.path)
         original_kb = stats.original_size / 1024
         minified_kb = stats.minified_size / 1024
         saved_kb = stats.saved / 1024
-        if stats.ratio > 30:
-            ratio_color = Fore.GREEN
-        elif stats.ratio > 10:
-            ratio_color = Fore.YELLOW
-        else:
-            ratio_color = Fore.RED
-        print(
-            f"{Fore.GREEN}✓{Style.RESET_ALL} {Fore.WHITE}{rel_path}{Style.RESET_ALL}\n"
-            f"  {Fore.BLUE}Original: {original_kb:.2f} KB{Style.RESET_ALL}  "
-            f"{ratio_color}→ {minified_kb:.2f} KB{Style.RESET_ALL}  "
-            f"{Fore.MAGENTA}(-{saved_kb:.2f} KB, {ratio_color}{stats.ratio:.1f}%{Style.RESET_ALL}{Fore.MAGENTA}){Style.RESET_ALL}"
+        color = self._ratio_color(stats.ratio)
+        logger.opt(colors=True).info(
+            f"<green>✓</green> <white>{rel_path}</white>\n"
+            f"  <blue>Original: {original_kb:.2f} KB</blue>  "
+            f"<{color}>→ {minified_kb:.2f} KB</{color}>  "
+            f"<magenta>(-{saved_kb:.2f} KB, "
+            f"<{color}>{stats.ratio:.1f}%</{color}>)</magenta>"
         )
 
     def _print_error(self, stats: MinifyStats) -> None:
-        try:
-            rel_path = stats.path.relative_to(Path.cwd())
-        except ValueError:
-            rel_path = stats.path
-        print(
-            f"{Fore.RED}✗ {rel_path}{Style.RESET_ALL}\n  {Fore.RED}Error: {stats.error}{Style.RESET_ALL}"
+        """Log an error for a failed minification attempt."""
+        rel_path = self._relative_display(stats.path)
+        logger.opt(colors=True).error(
+            f"<red>✗ {rel_path}</red>\n  <red>Error: {stats.error}</red>"
         )
 
     def _print_summary(
@@ -254,27 +300,53 @@ class HTMLMinifier:
         total_original: int,
         total_minified: int,
     ) -> None:
+        """Log a summary of the entire minification run."""
         total_saved = total_original - total_minified
-        overall_ratio = (total_saved / total_original * 40) if total_original > 0 else 0
+        overall_ratio = (
+            (total_saved / total_original * 100) if total_original > 0 else 0.0
+        )
         original_mb = total_original / (1024 * 1024)
         minified_mb = total_minified / (1024 * 1024)
         saved_mb = total_saved / (1024 * 1024)
-        print(f"\n{Fore.CYAN}{'=' * 40}{Style.RESET_ALL}")
-        print(f"{Fore.CYAN}Summary{Style.RESET_ALL}")
-        print(f"{Fore.CYAN}{'=' * 40}{Style.RESET_ALL}")
-        print(f"{Fore.WHITE}Files processed:  {total}{Style.RESET_ALL}")
-        print(f"{Fore.GREEN}✓ Successful:     {successful}{Style.RESET_ALL}")
+
+        logger.info("=" * 40)
+        logger.info("Summary")
+        logger.info("=" * 40)
+        logger.opt(colors=True).info(f"<white>Files processed:  {total}</white>")
+        logger.opt(colors=True).info(f"<green>✓ Successful:     {successful}</green>")
         if failed > 0:
-            print(f"{Fore.RED}✗ Failed:         {failed}{Style.RESET_ALL}")
-        print(f"{Fore.WHITE}Original size:    {original_mb:.2f} MB{Style.RESET_ALL}")
-        print(f"{Fore.WHITE}Minified size:    {minified_mb:.2f} MB{Style.RESET_ALL}")
-        print(
-            f"{Fore.GREEN}Total saved:      {saved_mb:.2f} MB ({overall_ratio:.1f}%){Style.RESET_ALL}"
+            logger.opt(colors=True).info(f"<red>✗ Failed:         {failed}</red>")
+        logger.opt(colors=True).info(
+            f"<white>Original size:    {original_mb:.2f} MB</white>"
         )
-        print(f"{Fore.CYAN}{'=' * 40}{Style.RESET_ALL}\n")
+        logger.opt(colors=True).info(
+            f"<white>Minified size:    {minified_mb:.2f} MB</white>"
+        )
+        logger.opt(colors=True).info(
+            f"<green>Total saved:      {saved_mb:.2f} MB ({overall_ratio:.1f}%)</green>"
+        )
+        logger.info("=" * 40)
 
 
-def main():
+def _configure_logger(no_color: bool) -> None:
+    """Configure loguru to strip ANSI colors when --no-color is passed."""
+    logger.remove()
+    if no_color:
+        logger.add(
+            sys.stderr,
+            colorize=False,
+            format="{message}",
+        )
+    else:
+        logger.add(
+            sys.stderr,
+            colorize=True,
+            format="<level>{message}</level>",
+        )
+
+
+def main() -> int:
+    """Parse CLI arguments and run the HTML minifier."""
     parser = argparse.ArgumentParser(
         description="Minify HTML files recursively using html-minifier-terser",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -284,7 +356,6 @@ Examples:
   %(prog)s file1.html file2.html
   %(prog)s public/ dist/
   %(prog)s index.html src/
-  %(prog)s --workers 8 src/
         """,
     )
     parser.add_argument(
@@ -294,21 +365,18 @@ Examples:
         help="Files or directories to process (default: current directory)",
     )
     parser.add_argument(
-        "-w",
-        "--workers",
-        type=int,
-        default=4,
-        help="Number of parallel workers (default: 4)",
-    )
-    parser.add_argument(
         "--no-color", action="store_true", help="Disable colored output"
     )
     args = parser.parse_args()
-    if args.no_color:
-        init(strip=True, autostop=False)
-    paths = [Path(p).resolve() for p in args.paths]
+
+    _configure_logger(bool(args.no_color))
+
+    raw_paths: list[str] = list(args.paths)
+    paths: list[Path] = [Path(p).resolve() for p in raw_paths]
+
     minifier = HTMLMinifier()
-    minifier.minify_paths(paths, max_workers=args.workers)
+    minifier.minify_paths(paths)
+    return 0
 
 
 if __name__ == "__main__":

@@ -1,41 +1,111 @@
 #!/data/data/com.termux/files/home/.local/bin/python
+"""
+Generate a Python script that reinstalls all installed Python packages that expose
+entry points (console_scripts, gui_scripts, or any custom entry-point group) using
+pip's internal API with multiprocessing.Pool.apply_async concurrency (fixed at 8
+workers), loguru-based logging, pathlib for all path operations, argparse CLI
+(exclude/only/dry-run/include-deps/verbose/yes), interactive per-package
+confirmation with an "all" option, and complete type annotations and docstrings.
+"""
+
 from __future__ import annotations
 
 import argparse
 import importlib.metadata
-import logging
 import site
 import sys
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import dataclass, field
 from datetime import datetime
+from multiprocessing import Pool
+from multiprocessing.pool import AsyncResult
 from pathlib import Path
+from typing import Any, Optional
 
+from loguru import logger
 from pip._internal.commands.install import InstallCommand
 from pip._internal.exceptions import InstallationError
+from pip._internal.utils.temp_dir import global_tempdir_manager
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    handlers=[
-        logging.FileHandler(
-            f"reinstall_entrypoint_packages_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
-        ),
-        logging.StreamHandler(),
-    ],
-)
-logger = logging.getLogger(__name__)
+# ---------------------------------------------------------------------------
+# Constants
+# ---------------------------------------------------------------------------
+
+FIXED_WORKERS: int = 8
+DEFAULT_EXCLUDES: set[str] = {"pip", "setuptools", "wheel"}
+REINSTALL_FLAGS: tuple[str, ...] = ("--force-reinstall", "--no-cache-dir")
+
+
+# ---------------------------------------------------------------------------
+# Data structures
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class PackageInfo:
+    """Metadata about an installed package that exposes entry points."""
+
+    name: str
+    version: str
+    summary: str
+    size: str
+    groups: set[str] = field(default_factory=set)
+
+
+@dataclass
+class ReinstallResult:
+    """Result of a reinstall attempt for a single package."""
+
+    name: str
+    success: bool
+    message: str
+
+
+# ---------------------------------------------------------------------------
+# Logging configuration
+# ---------------------------------------------------------------------------
+
+
+def configure_logging(verbose: bool = False) -> None:
+    """Configure loguru sinks for file and stderr output.
+
+    Args:
+        verbose: When True, emit DEBUG-level messages; otherwise INFO.
+    """
+    logger.remove()
+    level: str = "DEBUG" if verbose else "INFO"
+    log_path = Path(
+        f"reinstall_entrypoint_packages_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
+    )
+    logger.add(
+        sink=str(log_path),
+        level=level,
+        format="{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}",
+    )
+    logger.add(
+        sink=sys.stderr,
+        level=level,
+        format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> - "
+        "<level>{level}</level> - {message}",
+        colorize=True,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Discovery helpers
+# ---------------------------------------------------------------------------
 
 
 def get_site_packages_dirs() -> list[Path]:
-    site_dirs = []
-    user_site = site.getusersitepackages()
+    """Return existing, unique site-packages directories (user + system)."""
+    site_dirs: list[Path] = []
+    user_site: str = site.getusersitepackages()
     if user_site:
         site_dirs.append(Path(user_site))
-    system_sites = site.getsitepackages()
-    for s in system_sites:
+    for s in site.getsitepackages():
         site_dirs.append(Path(s))
-    seen = set()
-    unique_dirs = []
+
+    seen: set[str] = set()
+    unique_dirs: list[Path] = []
     for d in site_dirs:
         if d.exists() and str(d) not in seen:
             seen.add(str(d))
@@ -43,257 +113,336 @@ def get_site_packages_dirs() -> list[Path]:
     return unique_dirs
 
 
-def get_packages_with_entry_points() -> dict[str, dict[str, any]]:
-    packages_with_eps = {}
+def _entry_point_groups(dist: importlib.metadata.Distribution) -> set[str]:
+    """Return the set of entry-point group names declared by ``dist``."""
+    groups: set[str] = set()
     try:
-        for dist in importlib.metadata.distributions():
+        entry_points = dist.entry_points
+    except Exception as exc:  # pragma: no cover - defensive
+        logger.debug(f"Error reading entry points for {dist.name}: {exc}")
+        return groups
+
+    if not entry_points:
+        return groups
+
+    # importlib.metadata >= 3.10 exposes EntryPoints.select/groups
+    if hasattr(entry_points, "select"):
+        for group in ("console_scripts", "gui_scripts"):
             try:
-                entry_points = dist.entry_points
-                if not entry_points:
-                    continue
-                groups = set()
-                if hasattr(entry_points, "select"):
-                    for group in ["console_scripts", "gui_scripts"]:
-                        eps = entry_points.select(group=group)
-                        if eps:
-                            groups.add(group)
-                    all_groups = set()
-                    if hasattr(entry_points, "groups"):
-                        all_groups = set(entry_points.groups)
-                    else:
-                        for ep in entry_points:
-                            if hasattr(ep, "group"):
-                                all_groups.add(ep.group)
-                    for group in all_groups:
-                        if group not in ["console_scripts", "gui_scripts"]:
-                            groups.add(group)
-                else:
-                    for ep in entry_points:
-                        if hasattr(ep, "group"):
-                            groups.add(ep.group)
-                if groups:
-                    metadata = dist.metadata
-                    summary = (
-                        metadata.get("Summary", "No summary")
-                        if metadata
-                        else "No summary"
-                    )
-                    packages_with_eps[dist.name] = {
-                        "groups": groups,
-                        "info": {
-                            "version": dist.version,
-                            "summary": summary,
-                            "size": get_package_size(dist),
-                        },
-                    }
-                    logger.debug(f"Found entry points in {dist.name}: {groups}")
-            except Exception as e:
-                logger.debug(f"Error checking entry points for {dist.name}: {e}")
-    except Exception as e:
-        logger.error(f"Error using importlib.metadata: {e}")
-        return {}
-    return packages_with_eps
+                if list(entry_points.select(group=group)):
+                    groups.add(group)
+            except Exception:
+                continue
+        try:
+            all_groups: set[str] = set(entry_points.groups)
+        except Exception:
+            all_groups = {
+                getattr(ep, "group", "")
+                for ep in entry_points
+                if getattr(ep, "group", "")
+            }
+        for group in all_groups:
+            groups.add(group)
+    else:
+        for ep in entry_points:
+            g = getattr(ep, "group", None)
+            if g:
+                groups.add(g)
+    return {g for g in groups if g}
 
 
 def get_package_size(dist: importlib.metadata.Distribution) -> str:
+    """Return a human-readable size estimate for the installed distribution."""
     try:
-        if hasattr(dist, "_path"):
-            from pathlib import Path
-
-            dist_path = Path(dist._path)
-            if dist_path.exists() and dist_path.is_dir():
-                total_size = 0
-                for item in dist_path.rglob("*"):
-                    if item.is_file():
+        dist_path_attr = getattr(dist, "_path", None)
+        if dist_path_attr is None:
+            return "Unknown"
+        dist_path = Path(dist_path_attr)
+        if dist_path.exists() and dist_path.is_dir():
+            total_size: int = 0
+            for item in dist_path.rglob("*"):
+                if item.is_file():
+                    try:
                         total_size += item.stat().st_size
-                if total_size > 1024 * 1024:
-                    return f"{total_size / (1024 * 1024):.1f} MB"
-                elif total_size > 1024:
-                    return f"{total_size / 1024:.1f} KB"
-                else:
-                    return f"{total_size} B"
+                    except OSError:
+                        continue
+            if total_size > 1024 * 1024:
+                return f"{total_size / (1024 * 1024):.1f} MB"
+            if total_size > 1024:
+                return f"{total_size / 1024:.1f} KB"
+            return f"{total_size} B"
         return "Unknown"
     except Exception:
         return "Unknown"
 
 
+def get_packages_with_entry_points() -> dict[str, PackageInfo]:
+    """Return metadata for every installed distribution that exposes entry points."""
+    packages: dict[str, PackageInfo] = {}
+    try:
+        distributions = list(importlib.metadata.distributions())
+    except Exception as exc:
+        logger.error(f"Error enumerating distributions: {exc}")
+        return {}
+
+    for dist in distributions:
+        try:
+            groups = _entry_point_groups(dist)
+        except Exception as exc:
+            logger.debug(f"Error checking entry points for {dist.name}: {exc}")
+            continue
+        if not groups:
+            continue
+        try:
+            metadata = dist.metadata
+        except Exception:
+            metadata = None
+        summary: str = (
+            metadata.get("Summary", "No summary") if metadata else "No summary"
+        ) or "No summary"
+        packages[dist.name] = PackageInfo(
+            name=dist.name,
+            version=dist.version or "Unknown",
+            summary=summary,
+            size=get_package_size(dist),
+            groups=groups,
+        )
+        logger.debug(f"Found entry points in {dist.name}: {groups}")
+    return packages
+
+
+# ---------------------------------------------------------------------------
+# User interaction
+# ---------------------------------------------------------------------------
+
+
 def get_user_confirmation(
-    package_name: str, package_data: dict, include_deps: bool = False
+    package_name: str, package_data: PackageInfo, include_deps: bool = False
 ) -> str:
-    groups = package_data.get("groups", set())
-    info = package_data.get("info", {})
+    """Prompt the user to confirm reinstallation of a package.
+
+    Args:
+        package_name: Name of the package being considered.
+        package_data: Metadata for the package.
+        include_deps: Whether dependencies will also be reinstalled.
+
+    Returns:
+        One of ``"yes"``, ``"no"``, or ``"all"``.
+    """
     print("\n" + "=" * 40)
     print(f"📦 Package: {package_name}")
-    print(f"   Version: {info.get('version', 'Unknown')}")
-    print(f"   Entry points: {', '.join(groups)}")
-    if info.get("summary") and info["summary"] != "No summary":
-        print(f"   Summary: {info.get('summary', '')}")
-    if info.get("size"):
-        print(f"   Size: {info.get('size')}")
+    print(f"   Version: {package_data.version}")
+    print(f"   Entry points: {', '.join(sorted(package_data.groups))}")
+    if package_data.summary and package_data.summary != "No summary":
+        print(f"   Summary: {package_data.summary}")
+    if package_data.size:
+        print(f"   Size: {package_data.size}")
     if include_deps:
         print("   ⚠️  Will reinstall dependencies (may cause conflicts)")
     print("-" * 40)
+
     while True:
         response = (
             input("Reinstall this package? (y/n/a/?) [y/n/a/?]: ").lower().strip()
         )
         if response in ("y", "yes"):
             return "yes"
-        elif response in ("n", "no"):
+        if response in ("n", "no"):
             return "no"
-        elif response in ("a", "all"):
+        if response in ("a", "all"):
             return "all"
-        elif response in ("?", "help"):
+        if response in ("?", "help"):
             print("\nOptions:")
             print("  y/yes  - Yes, reinstall this package")
             print("  n/no   - No, skip this package")
             print("  a/all  - Yes to all remaining packages")
             print("  ?/help - Show this help message")
             continue
-        else:
-            print("Invalid response. Please enter 'y', 'n', 'a', or '?'")
-            continue
+        print("Invalid response. Please enter 'y', 'n', 'a', or '?'")
+
+
+# ---------------------------------------------------------------------------
+# Reinstall worker (executed in child processes)
+# ---------------------------------------------------------------------------
 
 
 def reinstall_package_with_pip(
     package_name: str, include_deps: bool = False
-) -> tuple[str, bool, str]:
+) -> ReinstallResult:
+    """Reinstall a single package using pip's internal ``InstallCommand`` API.
+
+    Args:
+        package_name: Distribution name to reinstall.
+        include_deps: When True, allow dependency reinstallation.
+
+    Returns:
+        A :class:`ReinstallResult` describing the outcome.
+    """
     try:
         install_cmd = InstallCommand()
-        args = [
-            "install",
-            "--force-reinstall",
-            "--no-cache-dir",
-        ]
+        args: list[str] = ["install", *REINSTALL_FLAGS]
         if not include_deps:
             args.append("--no-deps")
         args.append(package_name)
         options, _ = install_cmd.parse_args(args)
-        from pip._internal.utils.temp_dir import global_tempdir_manager
-
         with global_tempdir_manager():
             try:
                 install_cmd.run(options, args)
                 logger.info(f"✓ Successfully reinstalled: {package_name}")
-                return (package_name, True, "Successfully reinstalled")
-            except InstallationError as e:
-                error_msg = str(e)
-                logger.error(f"✗ Failed to reinstall {package_name}: {error_msg}")
-                return (package_name, False, error_msg)
-    except Exception as e:
-        error_msg = str(e)
-        logger.error(f"✗ Error reinstalling {package_name}: {error_msg}")
-        return (package_name, False, error_msg)
+                return ReinstallResult(
+                    name=package_name,
+                    success=True,
+                    message="Successfully reinstalled",
+                )
+            except InstallationError as exc:
+                msg = str(exc)
+                logger.error(f"✗ Failed to reinstall {package_name}: {msg}")
+                return ReinstallResult(package_name, False, msg)
+    except Exception as exc:
+        msg = str(exc)
+        logger.error(f"✗ Error reinstalling {package_name}: {msg}")
+        return ReinstallResult(package_name, False, msg)
+
+
+# ---------------------------------------------------------------------------
+# Orchestration
+# ---------------------------------------------------------------------------
+
+
+def _run_pool(packages: set[str], include_deps: bool) -> list[ReinstallResult]:
+    """Run reinstallations via ``multiprocessing.Pool.apply_async`` with 8 workers."""
+    results: list[ReinstallResult] = []
+    with Pool(processes=FIXED_WORKERS) as pool:
+        async_results: dict[AsyncResult[ReinstallResult], str] = {}
+        for pkg in sorted(packages):
+            ar: AsyncResult[ReinstallResult] = pool.apply_async(
+                reinstall_package_with_pip, (pkg, include_deps)
+            )
+            async_results[ar] = pkg
+        for ar, pkg in async_results.items():
+            try:
+                results.append(ar.get())
+            except Exception as exc:
+                logger.error(f"Unexpected error for {pkg}: {exc}")
+                results.append(ReinstallResult(pkg, False, str(exc)))
+    return results
 
 
 def reinstall_entrypoint_packages(
-    max_workers: int = 4,
-    exclude_packages: set[str] | None = None,
-    only_packages: set[str] | None = None,
+    exclude_packages: Optional[set[str]] = None,
+    only_packages: Optional[set[str]] = None,
     include_deps: bool = False,
     dry_run: bool = False,
     skip_confirmation: bool = False,
 ) -> None:
+    """Reinstall every installed package that exposes entry points.
+
+    Args:
+        exclude_packages: Package names to skip. Defaults to pip/setuptools/wheel.
+        only_packages: When provided, restrict reinstallation to these names.
+        include_deps: When True, do not pass ``--no-deps`` to pip.
+        dry_run: When True, only list packages without reinstalling.
+        skip_confirmation: When True, skip interactive confirmation.
+    """
     if exclude_packages is None:
-        exclude_packages = {"pip", "setuptools", "wheel"}
-    entry_point_packages = get_packages_with_entry_points()
+        exclude_packages = set(DEFAULT_EXCLUDES)
+
+    entry_point_packages: dict[str, PackageInfo] = get_packages_with_entry_points()
     if not entry_point_packages:
         logger.warning("No packages with entry points found!")
         return
-    packages_to_reinstall = set(entry_point_packages.keys())
-    packages_to_reinstall = packages_to_reinstall - exclude_packages
+
+    packages_to_reinstall: set[str] = (
+        set(entry_point_packages.keys()) - exclude_packages
+    )
     if only_packages:
-        packages_to_reinstall = packages_to_reinstall & only_packages
+        packages_to_reinstall &= only_packages
+
     logger.info(f"Found {len(entry_point_packages)} packages with entry points")
     logger.info(f"Will reinstall {len(packages_to_reinstall)} packages after filtering")
+
     if packages_to_reinstall:
         logger.info("\nPackages with entry points:")
         for i, pkg in enumerate(sorted(packages_to_reinstall), 1):
-            data = entry_point_packages.get(pkg, {})
-            groups = data.get("groups", set())
-            version = data.get("info", {}).get("version", "Unknown")
+            info = entry_point_packages[pkg]
             logger.info(
-                f"  {i:3d}. {pkg} (v{version}) - entry points: {', '.join(groups)}"
+                f"  {i:3d}. {pkg} (v{info.version}) - "
+                f"entry points: {', '.join(sorted(info.groups))}"
             )
+
     if dry_run:
         logger.info("\nDRY RUN - No packages will be reinstalled")
         return
+
     if not packages_to_reinstall:
         logger.warning("No packages to reinstall after filtering!")
         return
+
     if not skip_confirmation:
-        selected_packages = set()
-        all_selected = False
+        selected: set[str] = set()
+        all_selected: bool = False
         for pkg in sorted(packages_to_reinstall):
             if all_selected:
-                selected_packages.add(pkg)
+                selected.add(pkg)
                 continue
-            data = entry_point_packages.get(pkg, {})
-            result = get_user_confirmation(pkg, data, include_deps)
-            if result == "all":
+            info = entry_point_packages[pkg]
+            answer = get_user_confirmation(pkg, info, include_deps)
+            if answer == "all":
                 all_selected = True
-                selected_packages.add(pkg)
-            elif result == "yes":
-                selected_packages.add(pkg)
-        packages_to_reinstall = selected_packages
+                selected.add(pkg)
+            elif answer == "yes":
+                selected.add(pkg)
+        packages_to_reinstall = selected
         if not packages_to_reinstall:
             logger.warning("No packages selected for reinstallation!")
             return
     else:
         logger.info("Skipping confirmation - will reinstall all packages")
+
     logger.info(
         f"\nStarting reinstallation of {len(packages_to_reinstall)} selected packages..."
     )
-    successful = []
-    failed = []
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        future_to_package = {
-            executor.submit(reinstall_package_with_pip, pkg, include_deps): pkg
-            for pkg in packages_to_reinstall
-        }
-        for future in as_completed(future_to_package):
-            package_name = future_to_package[future]
-            try:
-                name, success, message = future.result()
-                if success:
-                    successful.append(name)
-                else:
-                    failed.append((name, message))
-            except Exception as e:
-                logger.error(f"Unexpected error for {package_name}: {e}")
-                failed.append((package_name, str(e)))
+
+    results: list[ReinstallResult] = _run_pool(packages_to_reinstall, include_deps)
+
+    successful: list[str] = [r.name for r in results if r.success]
+    failed: list[tuple[str, str]] = [
+        (r.name, r.message) for r in results if not r.success
+    ]
+
     logger.info("\n" + "=" * 40)
     logger.info("REINSTALLATION SUMMARY")
     logger.info("=" * 40)
     logger.info(f"✓ Successfully reinstalled: {len(successful)} packages")
     logger.info(f"✗ Failed to reinstall: {len(failed)} packages")
+
     if successful:
         logger.info("\nSuccessfully reinstalled packages:")
         for name in sorted(successful):
             logger.info(f"  ✓ {name}")
+
     if failed:
         logger.info("\nFailed packages:")
         for name, error in failed:
             logger.info(f"  ✗ {name}: {error[:100]}...")
 
 
-def main():
+# ---------------------------------------------------------------------------
+# CLI
+# ---------------------------------------------------------------------------
+
+
+def build_parser() -> argparse.ArgumentParser:
+    """Build the argument parser for the CLI."""
     parser = argparse.ArgumentParser(
         description="Reinstall all Python packages with entry points using pip API",
-        epilog="Compatible with Python 3.12+ and pip 26.1.2+",
-    )
-    parser.add_argument(
-        "-w",
-        "--workers",
-        type=int,
-        default=4,
-        help="Number of parallel workers (default: 4)",
+        epilog="Compatible with Python 3.12+ and modern pip",
     )
     parser.add_argument(
         "-e",
         "--exclude",
         nargs="+",
-        default=["pip", "setuptools", "wheel"],
+        default=sorted(DEFAULT_EXCLUDES),
         help="Packages to exclude from reinstallation",
     )
     parser.add_argument(
@@ -318,28 +467,41 @@ def main():
         action="store_true",
         help="Skip confirmation and reinstall all packages (use with caution)",
     )
-    args = parser.parse_args()
-    if args.workers < 1:
-        logger.error("Number of workers must be at least 1")
-        sys.exit(1)
-    if args.verbose:
-        logging.getLogger().setLevel(logging.DEBUG)
-    logger.info(f"Starting package reinstallation with {args.workers} workers")
+    return parser
+
+
+def main(argv: Optional[list[str]] = None) -> int:
+    """Entry point for the CLI.
+
+    Args:
+        argv: Optional argument vector; defaults to ``sys.argv[1:]``.
+
+    Returns:
+        Process exit code.
+    """
+    parser = build_parser()
+    args = parser.parse_args(argv)
+
+    configure_logging(verbose=bool(args.verbose))
+
+    logger.info(f"Starting package reinstallation with {FIXED_WORKERS} workers")
     logger.info(
-        "Reinstalling ONLY packages with entry points (console_scripts, gui_scripts, etc.)"
+        "Reinstalling ONLY packages with entry points "
+        "(console_scripts, gui_scripts, etc.)"
     )
     if args.yes:
         logger.warning(
             "⚠️  Auto-confirmation enabled. Will reinstall all packages without prompting!"
         )
+
     reinstall_entrypoint_packages(
-        max_workers=args.workers,
         exclude_packages=set(args.exclude),
         only_packages=set(args.only) if args.only else None,
-        include_deps=args.include_deps,
-        dry_run=args.dry_run,
-        skip_confirmation=args.yes,
+        include_deps=bool(args.include_deps),
+        dry_run=bool(args.dry_run),
+        skip_confirmation=bool(args.yes),
     )
+    return 0
 
 
 if __name__ == "__main__":

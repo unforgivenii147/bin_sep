@@ -18,15 +18,13 @@ def sqlite_to_json(input_path: Path) -> Path:
     output_path = input_path.with_suffix(".json")
     with sqlite3.connect(input_path) as connection:
         connection.row_factory = sqlite3.Row
-        tables = connection.execute(
-            """
+        tables = connection.execute("""
             SELECT name
             FROM sqlite_master
             WHERE type = 'table'
               AND name NOT LIKE 'sqlite_%'
             ORDER BY name
-            """
-        ).fetchall()
+            """).fetchall()
         database_data: dict[str, list[dict[str, Any]]] = {}
         for table_row in tables:
             table_name = table_row["name"]

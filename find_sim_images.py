@@ -62,6 +62,7 @@ Method:
 
         def hashfunc(img):
             return imagehash.whash(img, mode="db4")
+
     elif hashmethod == "colorhash":
         hashfunc = imagehash.colorhash
     elif hashmethod == "crop-resistant":

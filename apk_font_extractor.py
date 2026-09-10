@@ -1,128 +1,182 @@
 #!/data/data/com.termux/files/home/.local/bin/python
+"""Extract .ttf, .woff, and .woff2 fonts from APK files recursively.
+
+This script scans APK files (or directories of APK files) for embedded
+TrueType (.ttf), WOFF (.woff), and WOFF2 (.woff2) font files. It reads
+each font's metadata using fontTools, renames the font to a canonical
+``Family-Style.ext`` filename, and writes the fonts to an output
+directory. Use a multiprocessing pool of 8 workers to process APKs in
+parallel.
+"""
+
 from __future__ import annotations
 
 import argparse
-import logging
 import multiprocessing
 import re
+import sys
 import zipfile
-from concurrent.futures import TimeoutError
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
 from fontTools.ttLib import TTFont
+from loguru import logger
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
-)
-logger = logging.getLogger(__name__)
+# ---------------------------------------------------------------------------
+# Module-level constants
+# ---------------------------------------------------------------------------
+
+WORKERS: int = 8
+DEFAULT_OUTPUT_DIR: Path = Path("/sdcard/_static/fonts")
+FONT_EXTENSIONS: frozenset[str] = frozenset({".ttf", ".woff", ".woff2"})
+APK_TIMEOUT_SECONDS: int = 600
+
+
+# ---------------------------------------------------------------------------
+# Data structures
+# ---------------------------------------------------------------------------
 
 
 @dataclass
 class FontInfo:
+    """Metadata describing a single font file."""
+
     family_name: str
     style_name: str
     weight: int
     is_italic: bool
     extension: str
-    original_path: Path
+    original_path: Path = field(default_factory=lambda: Path(""))
+
+
+# ---------------------------------------------------------------------------
+# Extractor
+# ---------------------------------------------------------------------------
 
 
 class APKFontExtractor:
-    FONT_EXTENSIONS: set[str] = {".ttf", ".otf", ".woff", ".woff2", ".ttc", ".eot"}
-    FONT_DIRS: set[str] = {"font", "fonts", "assets/fonts", "res/font", "assets"}
+    """Extract .ttf/.woff/.woff2 fonts from APK archives in parallel."""
 
-    def __init__(self, output_dir: Path = Path("fonts"), workers: int = 8):
-        self.output_dir = Path(output_dir)
-        self.workers = workers
+    FONT_EXTENSIONS: frozenset[str] = FONT_EXTENSIONS
+
+    def __init__(self, output_dir: Path = DEFAULT_OUTPUT_DIR) -> None:
+        """Initialize the extractor.
+
+        Args:
+            output_dir: Directory where extracted fonts will be written.
+        """
+        self.output_dir: Path = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.processed_fonts: dict[str, Path] = {}
         logger.info(
-            f"Initialized with output_dir={self.output_dir}, workers={self.workers}"
+            "Initialized APKFontExtractor output_dir={} workers={}",
+            self.output_dir,
+            WORKERS,
         )
 
+    # -- discovery ---------------------------------------------------------
+
     def _find_apk_files(self, paths: list[Path]) -> list[Path]:
+        """Return all APK files found under the given input paths."""
         apk_files: list[Path] = []
         for path in paths:
             if path.is_file() and path.suffix.lower() == ".apk":
                 apk_files.append(path)
-                logger.debug(f"Found APK file: {path}")
+                logger.debug("Found APK file: {}", path)
             elif path.is_dir():
                 for apk_path in path.rglob("*.apk"):
                     apk_files.append(apk_path)
-                    logger.debug(f"Found APK file: {apk_path}")
-        logger.info(f"Found {len(apk_files)} APK file(s) to process")
+                    logger.debug("Found APK file: {}", apk_path)
+        logger.info("Found {} APK file(s) to process", len(apk_files))
         return apk_files
 
-    def _extract_font_from_apk(self, apk_path: Path) -> list[tuple[Path, bytes, str]]:
+    # -- extraction --------------------------------------------------------
+
+    def _extract_fonts_from_apk(self, apk_path: Path) -> list[tuple[Path, bytes, str]]:
+        """Extract every supported font file from an APK archive.
+
+        Returns a list of ``(internal_path, data, extension)`` tuples.
+        """
         fonts: list[tuple[Path, bytes, str]] = []
         try:
             with zipfile.ZipFile(apk_path, "r") as zip_ref:
                 for file_info in zip_ref.filelist:
-                    file_path = Path(file_info.filename)
-                    is_font_dir = any(
-                        font_dir in str(file_path.parent).lower()
-                        for font_dir in self.FONT_DIRS
+                    internal_path = Path(file_info.filename)
+                    if internal_path.suffix.lower() not in self.FONT_EXTENSIONS:
+                        continue
+                    try:
+                        font_data: bytes = zip_ref.read(file_info.filename)
+                    except Exception as exc:  # noqa: BLE001
+                        logger.warning(
+                            "Failed to read {} from {}: {}",
+                            internal_path,
+                            apk_path.name,
+                            exc,
+                        )
+                        continue
+                    fonts.append(
+                        (
+                            internal_path,
+                            font_data,
+                            internal_path.suffix.lower(),
+                        )
                     )
-                    has_font_ext = file_path.suffix.lower() in self.FONT_EXTENSIONS
-                    if is_font_dir or has_font_ext:
-                        try:
-                            font_data = zip_ref.read(file_info.filename)
-                            fonts.append((file_path, font_data, file_path.suffix))
-                            logger.debug(
-                                f"Extracted font: {file_path} from {apk_path.name}"
-                            )
-                        except Exception as e:
-                            logger.warning(
-                                f"Failed to extract {file_path} from {apk_path.name}: {e}"
-                            )
-                            continue
+                    logger.debug(
+                        "Extracted font candidate: {} from {}",
+                        internal_path,
+                        apk_path.name,
+                    )
         except zipfile.BadZipFile:
-            logger.error(f"Invalid APK file: {apk_path}")
-        except Exception as e:
-            logger.error(f"Error processing {apk_path}: {e}")
+            logger.error("Invalid APK file: {}", apk_path)
+        except Exception as exc:  # noqa: BLE001
+            logger.error("Error processing {}: {}", apk_path, exc)
         return fonts
 
-    def _get_font_metadata(self, font_data: bytes) -> FontInfo | None:
+    # -- metadata ----------------------------------------------------------
+
+    def _get_font_metadata(self, font_data: bytes) -> Optional[FontInfo]:
+        """Parse font metadata from raw bytes. Returns None on failure."""
+        font: Optional[TTFont] = None
         try:
-            font = TTFont(io=None, fontData=font_data)
-            family_name = "Unknown"
-            style_name = "Regular"
-            weight = 400
-            is_italic = False
+            font = TTFont(io=None, fontData=font_data)  # type: ignore[arg-type]
+
+            family_name: str = "Unknown"
+            style_name: str = "Regular"
+            weight: int = 400
+            is_italic: bool = False
+
             if "name" in font:
                 name_table = font["name"]
-                family_record = name_table.getBestFamilyName()
-                if family_record:
-                    family_name = family_record
+                best_family = name_table.getBestFamilyName()
+                if best_family:
+                    family_name = best_family
                 style_record = name_table.getName(2, 3, 1, 1033)
                 if style_record:
                     style_name = style_record.toStr()
                 is_italic = "italic" in style_name.lower()
-                if "OS/2" in font:
-                    weight = font["OS/2"].usWeightClass
-                else:
-                    weight_lower = style_name.lower()
-                    if "thin" in weight_lower:
-                        weight = 100
-                    elif "extralight" in weight_lower or "ultralight" in weight_lower:
-                        weight = 200
-                    elif "light" in weight_lower:
-                        weight = 300
-                    elif "medium" in weight_lower:
-                        weight = 500
-                    elif "semibold" in weight_lower or "demibold" in weight_lower:
-                        weight = 600
-                    elif "bold" in weight_lower:
-                        weight = 700
-                    elif "extrabold" in weight_lower or "ultrabold" in weight_lower:
-                        weight = 800
-                    elif "black" in weight_lower or "heavy" in weight_lower:
-                        weight = 900
-            font.close()
+
+            if "OS/2" in font:
+                weight = int(font["OS/2"].usWeightClass)
+            else:
+                weight_lower = style_name.lower()
+                if "thin" in weight_lower:
+                    weight = 100
+                elif "extralight" in weight_lower or "ultralight" in weight_lower:
+                    weight = 200
+                elif "light" in weight_lower:
+                    weight = 300
+                elif "medium" in weight_lower:
+                    weight = 500
+                elif "semibold" in weight_lower or "demibold" in weight_lower:
+                    weight = 600
+                elif "bold" in weight_lower:
+                    weight = 700
+                elif "extrabold" in weight_lower or "ultrabold" in weight_lower:
+                    weight = 800
+                elif "black" in weight_lower or "heavy" in weight_lower:
+                    weight = 900
+
             if font_data[:4] == b"OTTO":
                 extension = ".otf"
             elif font_data[:4] == b"wOFF":
@@ -131,6 +185,7 @@ class APKFontExtractor:
                 extension = ".woff2"
             else:
                 extension = ".ttf"
+
             return FontInfo(
                 family_name=family_name,
                 style_name=style_name,
@@ -139,16 +194,27 @@ class APKFontExtractor:
                 extension=extension,
                 original_path=Path(""),
             )
-        except Exception as e:
-            logger.warning(f"Failed to extract font metadata: {e}")
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Failed to extract font metadata: {}", exc)
             return None
+        finally:
+            if font is not None:
+                try:
+                    font.close()
+                except Exception:  # noqa: BLE001
+                    pass
 
-    def _generate_font_filename(self, font_info: FontInfo, original_path: Path) -> str:
+    # -- filename generation ----------------------------------------------
+
+    def _generate_font_filename(self, font_info: FontInfo) -> str:
+        """Build a canonical ``Family-Style.ext`` filename."""
         family_name = re.sub(r"[^\w\s-]", "", font_info.family_name)
         family_name = re.sub(r"\s+", "-", family_name.strip())
+
         style_str = font_info.style_name
         style_str = re.sub(r"[^\w\s-]", "", style_str)
         style_str = re.sub(r"\s+", "-", style_str.strip())
+
         if style_str.lower() in ("regular", "normal", "medium", ""):
             if font_info.weight <= 300:
                 style_str = "Light"
@@ -156,105 +222,142 @@ class APKFontExtractor:
                 style_str = "Bold"
             else:
                 style_str = "Regular"
+
         if font_info.is_italic and "italic" not in style_str.lower():
             style_str = f"{style_str}-Italic"
-        filename = f"{family_name}-{style_str}{font_info.extension}"
-        return filename
 
-    def _handle_duplicate_filename(self, filename: str, source_apk: Path) -> str:
+        return f"{family_name}-{style_str}{font_info.extension}"
+
+    # -- duplicate handling -----------------------------------------------
+
+    def _handle_duplicate_filename(
+        self, filename: str, source_apk: Path, font_data: bytes
+    ) -> str:
+        """Return a filename that does not collide with an existing file."""
         base_name = Path(filename).stem
         extension = Path(filename).suffix
         counter = 1
         while True:
-            if counter == 1:
-                new_filename = filename
-            else:
-                new_filename = f"{base_name}-{counter}{extension}"
+            new_filename = (
+                filename if counter == 1 else f"{base_name}-{counter}{extension}"
+            )
             output_path = self.output_dir / new_filename
-            if output_path.exists():
-                if self._is_same_font(output_path, source_apk):
-                    logger.info(f"Font already exists: {new_filename}")
-                    return new_filename
-                counter += 1
-            else:
+            if not output_path.exists():
                 return new_filename
+            if self._is_same_font(output_path, source_apk, font_data):
+                logger.info("Font already exists: {}", new_filename)
+                return new_filename
+            counter += 1
 
-    def _is_same_font(self, existing_path: Path, source_apk: Path) -> bool:
+    def _is_same_font(
+        self, existing_path: Path, source_apk: Path, font_data: bytes
+    ) -> bool:
+        """Heuristically determine whether the existing file is the same font."""
         try:
             existing_size = existing_path.stat().st_size
-            key = f"{source_apk.name}-{existing_size}"
-            return key in self.processed_fonts
-        except Exception:
+        except OSError:
             return False
+        if existing_size != len(font_data):
+            return False
+        key = f"{source_apk.name}-{existing_size}"
+        return key in self.processed_fonts
+
+    # -- saving ------------------------------------------------------------
 
     def _save_font(
         self, font_data: bytes, filename: str, source_apk: Path
-    ) -> Path | None:
-        final_filename = self._handle_duplicate_filename(filename, source_apk)
+    ) -> Optional[Path]:
+        """Write font data to disk, resolving filename collisions."""
+        final_filename = self._handle_duplicate_filename(
+            filename, source_apk, font_data
+        )
         output_path = self.output_dir / final_filename
         try:
             output_path.write_bytes(font_data)
-            logger.info(f"Saved font: {final_filename}")
+            logger.info("Saved font: {}", final_filename)
             self.processed_fonts[f"{source_apk.name}-{len(font_data)}"] = output_path
             return output_path
-        except Exception as e:
-            logger.error(f"Failed to save font {final_filename}: {e}")
+        except Exception as exc:  # noqa: BLE001
+            logger.error("Failed to save font {}: {}", final_filename, exc)
             return None
 
+    # -- per-APK worker ----------------------------------------------------
+
     def _process_apk(self, apk_path: Path) -> int:
-        logger.info(f"Processing APK: {apk_path.name}")
-        fonts = self._extract_font_from_apk(apk_path)
+        """Extract and save every supported font found in ``apk_path``."""
+        logger.info("Processing APK: {}", apk_path.name)
+        fonts = self._extract_fonts_from_apk(apk_path)
         extracted_count = 0
+
         for original_path, font_data, extension in fonts:
             font_info = self._get_font_metadata(font_data)
-            if font_info:
+            if font_info is not None:
                 font_info.original_path = original_path
+                # Keep the actual file extension (ttf/woff/woff2) rather than
+                # whatever the container sniffing guessed, so only requested
+                # types are emitted with their correct suffixes.
                 font_info.extension = extension
-                filename = self._generate_font_filename(font_info, original_path)
-                output_path = self._save_font(font_data, filename, apk_path)
-                if output_path:
-                    extracted_count += 1
+                filename = self._generate_font_filename(font_info)
             else:
-                fallback_filename = original_path.name
-                output_path = self._save_font(font_data, fallback_filename, apk_path)
-                if output_path:
-                    extracted_count += 1
-        logger.info(f"Extracted {extracted_count} font(s) from {apk_path.name}")
+                filename = original_path.name
+
+            if self._save_font(font_data, filename, apk_path) is not None:
+                extracted_count += 1
+
+        logger.info("Extracted {} font(s) from {}", extracted_count, apk_path.name)
         return extracted_count
 
-    def process(self, input_paths: list[Path] | None = None) -> int:
+    # -- driver ------------------------------------------------------------
+
+    def process(self, input_paths: Optional[list[Path]] = None) -> int:
+        """Process all discovered APKs using a fixed multiprocessing pool."""
         if input_paths is None:
             input_paths = [Path.cwd()]
         else:
             input_paths = [Path(p) for p in input_paths]
+
         apk_files = self._find_apk_files(input_paths)
         if not apk_files:
             logger.warning("No APK files found to process")
             return 0
+
         total_extracted = 0
         try:
-            with multiprocessing.Pool(processes=self.workers) as pool:
-                async_results = []
+            with multiprocessing.Pool(processes=WORKERS) as pool:
+                async_results: list[
+                    tuple[Path, multiprocessing.pool.AsyncResult[int]]
+                ] = []
                 for apk_path in apk_files:
                     result = pool.apply_async(self._process_apk, (apk_path,))
                     async_results.append((apk_path, result))
+
                 for apk_path, async_result in async_results:
                     try:
-                        count = async_result.get(timeout=600)
+                        count = async_result.get(timeout=APK_TIMEOUT_SECONDS)
                         total_extracted += count
-                    except TimeoutError:
-                        logger.error(f"Timeout processing {apk_path.name}")
-                    except Exception as e:
-                        logger.error(f"Error processing {apk_path.name}: {e}")
-        except Exception as e:
-            logger.error(f"Error in parallel processing: {e}")
-        logger.info(f"Total fonts extracted: {total_extracted}")
+                    except multiprocessing.TimeoutError:
+                        logger.error("Timeout processing {}", apk_path.name)
+                    except Exception as exc:  # noqa: BLE001
+                        logger.error("Error processing {}: {}", apk_path.name, exc)
+        except Exception as exc:  # noqa: BLE001
+            logger.error("Error in parallel processing: {}", exc)
+
+        logger.info("Total fonts extracted: {}", total_extracted)
         return total_extracted
 
 
+# ---------------------------------------------------------------------------
+# CLI
+# ---------------------------------------------------------------------------
+
+
 def parse_arguments() -> argparse.Namespace:
+    """Parse command-line arguments."""
     parser = argparse.ArgumentParser(
-        description="Extract fonts from APK files with parallel processing.",
+        description=(
+            "Extract .ttf, .woff, and .woff2 fonts from APK files "
+            "using a fixed pool of 8 workers."
+        ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -277,53 +380,53 @@ Examples:
         "-o",
         "--output",
         type=Path,
-        default=Path("fonts"),
+        default=DEFAULT_OUTPUT_DIR,
         help="Output directory for extracted fonts (default: fonts)",
     )
     parser.add_argument(
-        "-w",
-        "--workers",
-        type=int,
-        default=8,
-        choices=range(1, 17),
-        metavar="N",
-        help="Number of parallel workers (default: 8)",
-    )
-    parser.add_argument(
-        "-v", "--verbose", action="store_true", help="Enable verbose logging"
+        "-v",
+        "--verbose",
+        action="store_true",
+        help="Enable verbose logging",
     )
     return parser.parse_args()
 
 
 def main() -> int:
+    """Entry point. Returns a process exit code."""
     args = parse_arguments()
+
     if args.verbose:
-        logging.getLogger().setLevel(logging.DEBUG)
+        logger.remove()
+        logger.add(sys.stderr, level="DEBUG")
+    else:
+        logger.remove()
+        logger.add(sys.stderr, level="INFO")
+
     try:
         args.output.mkdir(parents=True, exist_ok=True)
-    except Exception as e:
-        logger.error(f"Cannot create output directory {args.output}: {e}")
+    except Exception as exc:  # noqa: BLE001
+        logger.error("Cannot create output directory {}: {}", args.output, exc)
         return 1
-    extractor = APKFontExtractor(output_dir=args.output, workers=args.workers)
+
+    extractor = APKFontExtractor(output_dir=args.output)
+
     try:
         total_fonts = extractor.process(
-            input_paths=args.inputs if args.inputs else None
+            input_paths=list(args.inputs) if args.inputs else None
         )
         if total_fonts > 0:
-            logger.info(f"✓ Successfully extracted {total_fonts} font(s)")
-            return 0
+            logger.info("Successfully extracted {} font(s)", total_fonts)
         else:
             logger.warning("No fonts were extracted")
-            return 0
+        return 0
     except KeyboardInterrupt:
         logger.info("Interrupted by user")
         return 130
-    except Exception as e:
-        logger.error(f"Fatal error: {e}")
+    except Exception as exc:  # noqa: BLE001
+        logger.error("Fatal error: {}", exc)
         return 1
 
 
 if __name__ == "__main__":
-    import sys
-
     sys.exit(main())

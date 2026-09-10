@@ -1,18 +1,33 @@
 #!/data/data/com.termux/files/home/.local/bin/python
+"""Scan and optionally autofix deprecated ``pkg_resources`` usage in Python files.
+
+This script walks the current working directory, reports every occurrence of
+``pkg_resources`` imports and usages (with known replacements for common
+patterns such as ``get_distribution``, ``resource_string``, ``require`` and
+``DistributionNotFound``), and can mechanically rewrite safe usages to the
+modern ``importlib.metadata`` / ``importlib.resources`` equivalents. It uses
+a ``multiprocessing.Pool`` with 8 workers, ``pathlib`` for all path handling,
+``loguru`` for logging and full strict type annotations.
+"""
+
 from __future__ import annotations
 
 import argparse
 import re
 import sys
-from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import dataclass, field
+from multiprocessing import Pool
 from pathlib import Path
+from typing import Iterable, Iterator, List, Optional, Sequence, Tuple
 
-IMPORT_RE = re.compile(
+from loguru import logger
+
+IMPORT_RE: re.Pattern[str] = re.compile(
     r"""^(?P<indent>\s*)(?P<stmt>(?:import|from)\s+pkg_resources(?:\s+import\s+(?P<names>[^\n#]+))?)\s*(?P<comment>#.*)?$""",
     re.VERBOSE,
 )
-USAGE_PATTERNS: list[tuple[re.Pattern, str, bool, bool]] = [
+
+USAGE_PATTERNS: List[Tuple[re.Pattern[str], str, bool, bool]] = [
     (
         re.compile(r"pkg_resources\.get_distribution\(\s*([^)]+?)\s*\)\.version"),
         r"importlib.metadata.version(\1)",
@@ -64,11 +79,34 @@ USAGE_PATTERNS: list[tuple[re.Pattern, str, bool, bool]] = [
         False,
     ),
 ]
-GENERIC_USAGE_RE = re.compile(r"pkg_resources\.([A-Za-z_][A-Za-z0-9_]*)")
+
+GENERIC_USAGE_RE: re.Pattern[str] = re.compile(
+    r"pkg_resources\.([A-Za-z_][A-Za-z0-9_]*)"
+)
+
+SKIPPED_DIRS: frozenset[str] = frozenset(
+    {
+        ".git",
+        "__pycache__",
+        ".venv",
+        "venv",
+        "env",
+        ".tox",
+        "build",
+        "dist",
+        ".eggs",
+    }
+)
+
+ALIAS_RE: re.Pattern[str] = re.compile(r"\bas\s+\w+\b")
+
+POOL_SIZE: int = 8
 
 
 @dataclass
 class Finding:
+    """A single detected ``pkg_resources`` import or usage site."""
+
     path: Path
     lineno: int
     col: int
@@ -80,18 +118,22 @@ class Finding:
 
 @dataclass
 class FileReport:
+    """Aggregated scan results for a single Python file."""
+
     path: Path
-    findings: list[Finding] = field(default_factory=list)
+    findings: List[Finding] = field(default_factory=list)
     needs_metadata: bool = False
     needs_resources: bool = False
     has_pkg_resources_import: bool = False
 
     @property
     def has_findings(self) -> bool:
+        """Return ``True`` if any findings were recorded for this file."""
         return bool(self.findings)
 
 
 def scan_file(path: Path) -> FileReport:
+    """Scan a single Python file for ``pkg_resources`` imports and usages."""
     report = FileReport(path=path)
     try:
         text = path.read_text(encoding="utf-8")
@@ -108,6 +150,7 @@ def scan_file(path: Path) -> FileReport:
             )
         )
         return report
+
     for i, raw in enumerate(text.splitlines(), start=1):
         stripped = raw.rstrip("\n")
         m_import = IMPORT_RE.match(stripped)
@@ -125,6 +168,7 @@ def scan_file(path: Path) -> FileReport:
                 )
             )
             continue
+
         for pat, _repl, needs_meta, needs_res in USAGE_PATTERNS:
             for m in pat.finditer(stripped):
                 report.findings.append(
@@ -140,6 +184,7 @@ def scan_file(path: Path) -> FileReport:
                 )
                 report.needs_metadata = report.needs_metadata or needs_meta
                 report.needs_resources = report.needs_resources or needs_res
+
         for m in GENERIC_USAGE_RE.finditer(stripped):
             span = m.span()
             already = False
@@ -164,15 +209,18 @@ def scan_file(path: Path) -> FileReport:
     return report
 
 
-def autofix_file(path: Path) -> tuple[bool, list[str]]:
+def autofix_file(path: Path) -> Tuple[bool, List[str]]:
+    """Apply mechanical ``pkg_resources`` replacements to a single file."""
     try:
         text = path.read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError):
         return False, [f"cannot read {path}"]
+
     original = text
-    notes: list[str] = []
+    notes: List[str] = []
     needs_metadata = False
     needs_resources = False
+
     for pat, repl, needs_meta, needs_res in USAGE_PATTERNS:
         new_text, n = pat.subn(repl, text)
         if n:
@@ -180,29 +228,32 @@ def autofix_file(path: Path) -> tuple[bool, list[str]]:
             needs_metadata = needs_metadata or needs_meta
             needs_resources = needs_resources or needs_res
             text = new_text
+
     lines = text.splitlines(keepends=True)
-    new_lines: list[str] = []
+    new_lines: List[str] = []
     removed_import = False
     skipped_alias = False
+
     for line in lines:
         m = IMPORT_RE.match(line.rstrip("\n"))
         if not m:
             new_lines.append(line)
             continue
         stmt = m.group("stmt")
-        if re.search(r"\bas\s+\w+\b", stmt) or (
-            stmt.startswith("from")
-            and m.group("names")
-            and re.search(r"\bas\s+\w+\b", m.group("names"))
+        names = m.group("names")
+        if ALIAS_RE.search(stmt) or (
+            stmt.startswith("from") and names and ALIAS_RE.search(names)
         ):
             skipped_alias = True
             new_lines.append(line)
             continue
         removed_import = True
         notes.append(f"removed import: {stmt.strip()}")
+
     text = "".join(new_lines)
+
     if removed_import or needs_metadata or needs_resources:
-        insertion_lines: list[str] = []
+        insertion_lines: List[str] = []
         if needs_metadata:
             insertion_lines.append("import importlib.metadata\n")
         if needs_resources:
@@ -210,36 +261,30 @@ def autofix_file(path: Path) -> tuple[bool, list[str]]:
         if insertion_lines:
             text = "".join(insertion_lines) + text
             notes.append("added importlib.metadata / importlib.resources imports")
+
     if skipped_alias:
         notes.append(
             "WARNING: aliased pkg_resources import left untouched; manual review required"
         )
+
     if text == original:
         return False, notes
+
     path.write_text(text, encoding="utf-8")
     return True, notes
 
 
-def iter_python_files(root: Path):
-    skipped_dirs = {
-        ".git",
-        "__pycache__",
-        ".venv",
-        "venv",
-        "env",
-        ".tox",
-        "build",
-        "dist",
-        ".eggs",
-    }
+def iter_python_files(root: Path) -> Iterator[Path]:
+    """Yield all Python files under ``root``, skipping common junk directories."""
     for p in root.rglob("*.py"):
-        if any(part in skipped_dirs for part in p.parts):
+        if any(part in SKIPPED_DIRS for part in p.parts):
             continue
         if p.is_file():
             yield p
 
 
-def main(argv: list[str] | None = None) -> int:
+def _build_parser() -> argparse.ArgumentParser:
+    """Build the argument parser for the CLI."""
     parser = argparse.ArgumentParser(
         description="Report (and optionally autofix) deprecated pkg_resources usage in .py files."
     )
@@ -247,83 +292,81 @@ def main(argv: list[str] | None = None) -> int:
         "-a", "--autofix", action="store_true", help="Apply mechanical autofixes."
     )
     parser.add_argument(
-        "-w",
-        "--max-workers",
-        type=int,
-        default=8,
-        help="Number of parallel workers (default: 8).",
-    )
-    parser.add_argument(
         "-q", "--quiet", action="store_true", help="Suppress per-file output."
     )
+    return parser
+
+
+def main(argv: Optional[Sequence[str]] = None) -> int:
+    """Entry point: scan (and optionally autofix) ``pkg_resources`` usages."""
+    parser = _build_parser()
     args = parser.parse_args(argv)
+
     root = Path.cwd()
-    files = list(iter_python_files(root))
+    files: List[Path] = list(iter_python_files(root))
     if not files:
-        print("no .py files found")
+        logger.info("no .py files found")
         return 0
-    max_workers = max(1, args.max_workers)
+
     total_findings = 0
     files_with_findings = 0
     autofixed_files = 0
-    reports: list[FileReport] = []
-    with ProcessPoolExecutor(max_workers=max_workers) as ex:
-        futures = {ex.submit(scan_file, p): p for p in files}
-        for fut in as_completed(futures):
-            p = futures[fut]
+    reports: List[FileReport] = []
+
+    with Pool(processes=POOL_SIZE) as pool:
+        async_results = [pool.apply_async(scan_file, (p,)) for p in files]
+        for p, ar in zip(files, async_results):
             try:
-                rep = fut.result()
-            except Exception as exc:
-                print(f"error scanning {p}: {exc}", file=sys.stderr)
+                rep: FileReport = ar.get()
+            except Exception as exc:  # pragma: no cover - defensive
+                logger.error(f"error scanning {p}: {exc}")
                 continue
             reports.append(rep)
+
     reports.sort(key=lambda r: r.path)
+
     for rep in reports:
         if not rep.has_findings:
             continue
         files_with_findings += 1
         if not args.quiet:
-            print(f"\n== {rep.path} ==")
+            logger.info(f"== {rep.path} ==")
         for f in rep.findings:
             total_findings += 1
             tag = "AUTOFIX" if f.autofixable else "MANUAL"
             if not args.quiet:
-                print(f"  {f.lineno}:{f.col}  [{tag}] ({f.kind})  {f.pattern!r}")
-                print(f"      | {f.line.strip()}")
-    print()
-    print(f"scanned files      : {len(files)}")
-    print(f"files with findings: {files_with_findings}")
-    print(f"total findings     : {total_findings}")
+                logger.info(f"  {f.lineno}:{f.col}  [{tag}] ({f.kind})  {f.pattern!r}")
+                logger.info(f"      | {f.line.strip()}")
+
+    logger.info(f"scanned files      : {len(files)}")
+    logger.info(f"files with findings: {files_with_findings}")
+    logger.info(f"total findings     : {total_findings}")
+
     if args.autofix:
-        print("\n--autofix enabled--")
-        with ProcessPoolExecutor(max_workers=max_workers) as ex:
-            futures = {
-                ex.submit(autofix_file, r.path): r.path
-                for r in reports
-                if r.has_findings
-            }
-            for fut in as_completed(futures):
-                p = futures[fut]
+        logger.info("--autofix enabled--")
+        with Pool(processes=POOL_SIZE) as pool:
+            targets: List[Path] = [r.path for r in reports if r.has_findings]
+            async_results = [pool.apply_async(autofix_file, (p,)) for p in targets]
+            for p, ar in zip(targets, async_results):
                 try:
-                    changed, notes = fut.result()
-                except Exception as exc:
-                    print(f"  error autofixing {p}: {exc}", file=sys.stderr)
+                    changed, notes = ar.get()
+                except Exception as exc:  # pragma: no cover - defensive
+                    logger.error(f"  error autofixing {p}: {exc}")
                     continue
                 if changed:
                     autofixed_files += 1
-                    print(f"  fixed: {p}")
+                    logger.info(f"  fixed: {p}")
                     for n in notes:
-                        print(f"      - {n}")
+                        logger.info(f"      - {n}")
                 else:
                     if notes:
-                        print(f"  no-op: {p}")
+                        logger.info(f"  no-op: {p}")
                         for n in notes:
-                            print(f"      - {n}")
-        print(f"files autofixed    : {autofixed_files}")
-    return (
-        0 if total_findings == 0 or not args.autofix else (1 if total_findings else 0)
-    )
+                            logger.info(f"      - {n}")
+        logger.info(f"files autofixed    : {autofixed_files}")
+
+    return 0 if total_findings == 0 or not args.autofix else 1
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    sys.exit(main())

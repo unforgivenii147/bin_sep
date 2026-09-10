@@ -5,10 +5,9 @@ import argparse
 from pathlib import Path
 from time import perf_counter as pff
 from typing import Any
+from dh import cprint, format_time, fsz, get_pyfiles, mpf_async
 
-from dh import cprint, format_time, fsz, get_pyfiles, mpf3
-
-MODE: str = "yapf"
+MODE: str = "black"
 CHUNK_SIZE: Any = 1024 * 1024
 
 
@@ -16,10 +15,10 @@ def process_file(path: str | Path, mode: str = MODE):
     stime = pff()
     path = Path(path)
     before: int = path.stat().st_size
-    after: int = before.copy()
+    after: int = before
     try:
         original_code: str = path.read_text(encoding="utf-8")
-        code = original_code.copy()
+        code = original_code
         match mode:
             case "autoflake":
                 from autoflake import fix_code as fix_with_autoflake
@@ -96,7 +95,7 @@ def main() -> None:
         MODE = "yapf"
     else:
         MODE = "black"
-    mpf3(process_file, files)
+    mpf_async(process_file, files)
 
 
 if __name__ == "__main__":

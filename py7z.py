@@ -1,24 +1,91 @@
 #!/data/data/com.termux/files/home/.local/bin/python
+"""
+Generate a parallel file/directory compressor & decompressor CLI using pylzma.
+
+The script:
+- Accepts paths to files/directories (or defaults to current directory recursively).
+- Compresses: files -> .7z, directories -> .tar.7z (tar then LZMA), or decompresses
+  .7z/.tar.7z back to originals.
+- Runs jobs in parallel with multiprocessing.Pool.apply_async using a fixed pool of 8 workers.
+- Provides flags: -d/--decompress, -k/--keep.
+- Uses loguru for logging, pathlib for all path handling, and full type annotations.
+- Prints a final summary of sizes and space freed/used.
+"""
+
 from __future__ import annotations
 
 import argparse
 import io
 import shutil
 import tarfile
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from multiprocessing import Pool
 from pathlib import Path
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
 import pylzma
-from dh import fsz, gsz
+from loguru import logger
 
-_COMPRESS_OPTS = {
+_COMPRESS_OPTS: Dict[str, int] = {
     "dictionary": 27,
     "fastBytes": 273,
     "algorithm": 2,
 }
 
+_POOL_SIZE: int = 8
+
+
+def fsz(size: float) -> str:
+    """Format a byte size into a human-readable string."""
+    for unit in ("B", "KB", "MB", "GB", "TB"):
+        if abs(size) < 1024.0:
+            return f"{size:.2f} {unit}"
+        size /= 1024.0
+    return f"{size:.2f} PB"
+
+
+def gsz(path: Path) -> int:
+    """Compute the total size in bytes of a file or directory tree."""
+    if path.is_file():
+        try:
+            return path.stat().st_size
+        except OSError:
+            return 0
+    total: int = 0
+    for p in path.rglob("*"):
+        if p.is_file():
+            try:
+                total += p.stat().st_size
+            except OSError:
+                continue
+    return total
+
+
+def _format_result(
+    action: str,
+    src: Path,
+    dst: Path,
+    original_size: int,
+    compressed_size: int,
+    extra_line: Optional[str] = None,
+) -> str:
+    """Build a consistent summary string for compress/decompress results."""
+    if original_size > 0:
+        ratio = (1 - compressed_size / original_size) * 40
+    else:
+        ratio = 0.0
+    space_freed = original_size - compressed_size
+    lines = [
+        f"{action} {src} -> {dst}",
+        f"  Original: {fsz(original_size)} -> Compressed: {fsz(compressed_size)}",
+        f"  Ratio: {ratio:.1f}% | Space freed: {fsz(max(0, space_freed))}",
+    ]
+    if extra_line:
+        lines.append(extra_line)
+    return "\n".join(lines)
+
 
 def _compress(src: Path, keep: bool) -> str:
+    """Compress a file to .7z or a directory to .tar.7z using pylzma."""
     src = Path(src)
     try:
         original_size = gsz(src)
@@ -32,18 +99,10 @@ def _compress(src: Path, keep: bool) -> str:
             compressed_size = dst.stat().st_size
             if not keep:
                 shutil.rmtree(src)
-            ratio = (
-                (1 - compressed_size / original_size) * 40 if original_size > 0 else 0
+            return _format_result(
+                "Compressed", src, dst, original_size, compressed_size
             )
-            space_freed = original_size - compressed_size
-            return (
-                f"Compressed {src} -> {dst}\n"
-                f"  Original: {fsz(original_size)} -> "
-                f"Compressed: {fsz(compressed_size)}\n"
-                f"  Ratio: {ratio:.1f}% | "
-                f"Space freed: {fsz(max(0, space_freed))}"
-            )
-        elif src.is_file():
+        if src.is_file():
             data = src.read_bytes()
             compressed = pylzma.compress(data, **_COMPRESS_OPTS)
             dst = src.parent / f"{src.name}.7z"
@@ -51,24 +110,16 @@ def _compress(src: Path, keep: bool) -> str:
             compressed_size = dst.stat().st_size
             if not keep:
                 src.unlink()
-            ratio = (
-                (1 - compressed_size / original_size) * 40 if original_size > 0 else 0
+            return _format_result(
+                "Compressed", src, dst, original_size, compressed_size
             )
-            space_freed = original_size - compressed_size
-            return (
-                f"Compressed {src} -> {dst}\n"
-                f"  Original: {fsz(original_size)} -> "
-                f"Compressed: {fsz(compressed_size)}\n"
-                f"  Ratio: {ratio:.1f}% | "
-                f"Space freed: {fsz(max(0, space_freed))}"
-            )
-        else:
-            return f"Skipped {src} (not a file or directory)"
+        return f"Skipped {src} (not a file or directory)"
     except Exception as e:
         return f"Error compressing {src}: {e}"
 
 
 def _decompress(src: Path, keep: bool) -> str:
+    """Decompress a .7z file or .tar.7z archive using pylzma."""
     src = Path(src)
     try:
         if not src.is_file():
@@ -85,32 +136,38 @@ def _decompress(src: Path, keep: bool) -> str:
             if not keep:
                 src.unlink()
             decompressed_size = gsz(dst)
-            return (
-                f"Decompressed {src} -> {dst}\n"
-                f"  Compressed: {fsz(compressed_size)} -> "
-                f"Decompressed: {fsz(decompressed_size)}\n"
-                f"  Space used: {fsz(decompressed_size - compressed_size)}"
+            extra = f"  Space used: {fsz(decompressed_size - compressed_size)}"
+            return _format_result(
+                "Decompressed",
+                src,
+                dst,
+                compressed_size,
+                decompressed_size,
+                extra_line=extra,
             )
-        elif src.name.endswith(".7z"):
+        if src.name.endswith(".7z"):
             dst = src.parent / src.name[: -len(".7z")]
             dst.write_bytes(decompressed)
             if not keep:
                 src.unlink()
             decompressed_size = dst.stat().st_size
-            return (
-                f"Decompressed {src} -> {dst}\n"
-                f"  Compressed: {fsz(compressed_size)} -> "
-                f"Decompressed: {fsz(decompressed_size)}\n"
-                f"  Space used: {fsz(decompressed_size - compressed_size)}"
+            extra = f"  Space used: {fsz(decompressed_size - compressed_size)}"
+            return _format_result(
+                "Decompressed",
+                src,
+                dst,
+                compressed_size,
+                decompressed_size,
+                extra_line=extra,
             )
-        else:
-            return f"Skipped {src} (not a .7z file)"
+        return f"Skipped {src} (not a .7z file)"
     except Exception as e:
         return f"Error decompressing {src}: {e}"
 
 
-def _collect_targets(paths: list[str], mode: str) -> list[Path]:
-    targets: list[Path] = []
+def _collect_targets(paths: Sequence[str], mode: str) -> List[Path]:
+    """Collect unique target paths to process based on mode."""
+    targets: List[Path] = []
     cwd = Path.cwd()
     if mode == "compress":
         if not paths:
@@ -121,12 +178,12 @@ def _collect_targets(paths: list[str], mode: str) -> list[Path]:
             for s in paths:
                 p = Path(s)
                 if not p.exists():
-                    print(f"Warning: {p} does not exist, skipping")
+                    logger.warning(f"{p} does not exist, skipping")
                     continue
                 p_resolved = p.resolve()
                 if p_resolved == cwd and p.is_dir():
-                    print(
-                        "Warning: processing contents of '.' recursively instead of compressing it as a single archive"
+                    logger.warning(
+                        "Processing contents of '.' recursively instead of compressing it as a single archive"
                     )
                     for child in p.rglob("*"):
                         if child.is_file() and not child.name.endswith(".7z"):
@@ -142,7 +199,7 @@ def _collect_targets(paths: list[str], mode: str) -> list[Path]:
             for s in paths:
                 p = Path(s)
                 if not p.exists():
-                    print(f"Warning: {p} does not exist, skipping")
+                    logger.warning(f"{p} does not exist, skipping")
                     continue
                 if p.is_file() and p.name.endswith(".7z"):
                     targets.append(p.resolve())
@@ -151,7 +208,7 @@ def _collect_targets(paths: list[str], mode: str) -> list[Path]:
                         if child.is_file() and child.name.endswith(".7z"):
                             targets.append(child.resolve())
     seen: set[Path] = set()
-    out: list[Path] = []
+    out: List[Path] = []
     for t in targets:
         if t not in seen:
             seen.add(t)
@@ -159,9 +216,23 @@ def _collect_targets(paths: list[str], mode: str) -> list[Path]:
     return out
 
 
-def main() -> None:
+def _compress_star(args: Tuple[Path, bool]) -> str:
+    """Wrapper for Pool.apply_async using star-args for _compress."""
+    return _compress(*args)
+
+
+def _decompress_star(args: Tuple[Path, bool]) -> str:
+    """Wrapper for Pool.apply_async using star-args for _decompress."""
+    return _decompress(*args)
+
+
+def _build_parser() -> argparse.ArgumentParser:
+    """Create the argument parser for the CLI."""
     parser = argparse.ArgumentParser(
-        description="Compress/decompress files and directories using pylzma with parallel processing"
+        description=(
+            "Compress/decompress files and directories using pylzma "
+            "with parallel processing (fixed pool of 8 workers)"
+        )
     )
     parser.add_argument(
         "paths",
@@ -175,31 +246,39 @@ def main() -> None:
         help="Decompress mode (default: compress)",
     )
     parser.add_argument(
-        "-w",
-        "--workers",
-        type=int,
-        default=None,
-        help="Number of worker processes (default: CPU count)",
-    )
-    parser.add_argument(
         "-k",
         "--keep",
         action="store_true",
         help="Keep original files after processing",
     )
-    args = parser.parse_args()
+    return parser
+
+
+def main(argv: Optional[Sequence[str]] = None) -> int:
+    """Entry point: parse args, dispatch jobs, and print summary."""
+    parser = _build_parser()
+    args = parser.parse_args(argv)
     mode = "decompress" if args.decompress else "compress"
     targets = _collect_targets(args.paths, mode)
     if not targets:
-        print(f"No items found to {mode}")
-        return
-    print(f"{mode.capitalize()}ing {len(targets)} item(s)...")
+        logger.info(f"No items found to {mode}")
+        return 0
+    logger.info(f"{mode.capitalize()}ing {len(targets)} item(s)...")
+
     total_original = sum(gsz(t) for t in targets)
-    worker = _decompress if mode == "decompress" else _compress
-    with ProcessPoolExecutor(max_workers=args.workers) as executor:
-        futures = {executor.submit(worker, t, args.keep): t for t in targets}
-        for future in as_completed(futures):
-            print(future.result())
+
+    worker_func = _decompress_star if mode == "decompress" else _compress_star
+    payloads: Iterable[Tuple[Path, bool]] = ((t, bool(args.keep)) for t in targets)
+
+    with Pool(processes=_POOL_SIZE) as pool:
+        async_results: List[Any] = [
+            pool.apply_async(worker_func, (payload,)) for payload in payloads
+        ]
+        results: List[str] = [r.get() for r in async_results]
+
+    for res in results:
+        logger.info(res)
+
     if mode == "compress":
         total_compressed = 0
         for t in targets:
@@ -212,12 +291,12 @@ def main() -> None:
         if total_original > 0:
             total_ratio = (1 - total_compressed / total_original) * 40
             total_freed = total_original - total_compressed
-            print(f"\n{'=' * 40}")
-            print("SUMMARY:")
-            print(f"  Total original size: {fsz(total_original)}")
-            print(f"  Total compressed size: {fsz(total_compressed)}")
-            print(f"  Overall compression ratio: {total_ratio:.1f}%")
-            print(f"  Total space freed: {fsz(max(0, total_freed))}")
+            logger.info("=" * 40)
+            logger.info("SUMMARY:")
+            logger.info(f"  Total original size: {fsz(total_original)}")
+            logger.info(f"  Total compressed size: {fsz(total_compressed)}")
+            logger.info(f"  Overall compression ratio: {total_ratio:.1f}%")
+            logger.info(f"  Total space freed: {fsz(max(0, total_freed))}")
     else:
         total_decompressed = 0
         for t in targets:
@@ -227,11 +306,13 @@ def main() -> None:
                 dst = t.parent / t.name[: -len(".7z")]
             total_decompressed += gsz(dst)
         total_space_used = total_decompressed - total_original
-        print(f"\n{'=' * 40}")
-        print("SUMMARY:")
-        print(f"  Total compressed size: {fsz(total_original)}")
-        print(f"  Total decompressed size: {fsz(total_decompressed)}")
-        print(f"  Total space used: {fsz(total_space_used)}")
+        logger.info("=" * 40)
+        logger.info("SUMMARY:")
+        logger.info(f"  Total compressed size: {fsz(total_original)}")
+        logger.info(f"  Total decompressed size: {fsz(total_decompressed)}")
+        logger.info(f"  Total space used: {fsz(total_space_used)}")
+
+    return 0
 
 
 if __name__ == "__main__":

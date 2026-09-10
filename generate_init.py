@@ -1,7 +1,7 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import ast
+import multiprocessing as mp
+import shutil
 import sys
 from pathlib import Path
 
@@ -31,23 +31,36 @@ def get_python_modules(directory: Path) -> list[Path]:
     return sorted(modules)
 
 
-def generate_init_content(modules: list[Path]) -> str:
-    lines = []
-    all_exports = []
-    for module in modules:
-        module_name = module.stem
-        public_names = get_public_names(module)
-        if public_names:
-            names_str = ", ".join(public_names)
-            lines.append(f"from .{module_name} import {names_str}")
-            all_exports.extend(public_names)
-    if all_exports:
-        lines.append("")
-        all_str = ", ".join(repr(name) for name in all_exports)
-        lines.append(f"__all__ = [{all_str}]")
-    if lines:
-        lines.append("")
-    return "\n".join(lines)
+def process_module(module_path: Path) -> tuple[str, list[str]]:
+    return module_path.stem, get_public_names(module_path)
+
+
+def parse_existing_init(init_file: Path) -> tuple[set[str], set[str], list[str]]:
+    """Return (imported_module_imports, existing_all, original_lines)."""
+    existing_imports: set[str] = set()
+    existing_all: set[str] = set()
+    try:
+        with open(init_file, "r", encoding="utf-8") as f:
+            original_lines = f.readlines()
+        tree = ast.parse("".join(original_lines), filename=str(init_file))
+    except SyntaxError:
+        return existing_imports, existing_all, original_lines
+
+    for node in tree.body:
+        if isinstance(node, ast.ImportFrom) and node.module is None and node.level == 1:
+            for alias in node.names:
+                existing_imports.add(alias.name)
+        elif isinstance(node, ast.Assign):
+            for target in node.targets:
+                if isinstance(target, ast.Name) and target.id == "__all__":
+                    if isinstance(node.value, (ast.List, ast.Tuple)):
+                        for elt in node.value.elts:
+                            if isinstance(elt, ast.Constant) and isinstance(
+                                elt.value, str
+                            ):
+                                existing_all.add(elt.value)
+
+    return existing_imports, existing_all, original_lines
 
 
 def main():
@@ -57,24 +70,108 @@ def main():
     if not modules:
         print("No Python modules found in the current directory.")
         return
-    print(f"Found {len(modules)} Python module(s):")
-    for module in modules:
-        public_names = get_public_names(module)
-        print(f"  - {module.name}: {len(public_names)} public name(s)")
-    init_content = generate_init_content(modules)
+
+    print(f"Found {len(modules)} Python module(s). Parsing in parallel...")
+
+    with mp.Pool(processes=8) as pool:
+        results = pool.map(process_module, modules)
+
+    module_public: dict[str, list[str]] = {}
+    for module_name, public_names in results:
+        module_public[module_name] = public_names
+        print(f"  - {module_name}.py: {len(public_names)} public name(s)")
+
+    modules_with_public = [
+        (name, names) for name, names in module_public.items() if names
+    ]
+
     init_file = cwd / "__init__.py"
+
     if init_file.exists():
-        response = input(f"\n{init_file} already exists. Overwrite? (y/N): ")
-        if response.lower() != "y":
-            print("Aborted.")
-            return
-    with open(init_file, "w", encoding="utf-8") as f:
-        f.write(init_content)
-    print(f"\nCreated {init_file}")
-    print("\nGenerated content:")
-    print("-" * 40)
-    print(init_content)
-    print("-" * 40)
+        # Create backup
+        backup_file = init_file.with_suffix(".py.bak")
+        shutil.copy2(init_file, backup_file)
+        print(f"\nBackup created: {backup_file}")
+
+        existing_imports, existing_all, original_lines = parse_existing_init(init_file)
+
+        # Strip trailing empty lines for clean append
+        while original_lines and original_lines[-1].strip() == "":
+            original_lines.pop()
+
+        new_lines = list(original_lines)
+        if new_lines:
+            new_lines.append("")
+
+        appended_any = False
+        for module_name, public_names in modules_with_public:
+            missing = [n for n in public_names if n not in existing_imports]
+            if missing:
+                names_str = ", ".join(missing)
+                new_lines.append(f"from .{module_name} import {names_str}")
+                existing_imports.update(missing)
+                appended_any = True
+
+        # Merge __all__
+        merged_all = sorted(existing_all | existing_imports)
+        # Remove any prior __all__ assignment from original lines
+        cleaned_lines = []
+        skip = False
+        for line in new_lines:
+            if skip:
+                if "]" in line:
+                    skip = False
+                continue
+            if line.strip().startswith("__all__"):
+                if "[" in line and "]" in line:
+                    continue
+                skip = True
+                continue
+            cleaned_lines.append(line)
+        while cleaned_lines and cleaned_lines[-1].strip() == "":
+            cleaned_lines.pop()
+
+        if merged_all:
+            cleaned_lines.append("")
+            all_str = ", ".join(repr(name) for name in merged_all)
+            cleaned_lines.append(f"__all__ = [{all_str}]")
+
+        cleaned_lines.append("")
+        new_content = "\n".join(cleaned_lines)
+
+        with open(init_file, "w", encoding="utf-8") as f:
+            f.write(new_content)
+
+        if appended_any:
+            print(f"\nUpdated {init_file} (appended missing imports).")
+        else:
+            print(f"\nUpdated {init_file} (no new imports, __all__ refreshed).")
+        print("\nGenerated content:")
+        print("-" * 40)
+        print(new_content)
+        print("-" * 40)
+    else:
+        lines = []
+        all_exports = []
+        for module_name, public_names in modules_with_public:
+            names_str = ", ".join(public_names)
+            lines.append(f"from .{module_name} import {names_str}")
+            all_exports.extend(public_names)
+        if all_exports:
+            lines.append("")
+            all_str = ", ".join(repr(name) for name in all_exports)
+            lines.append(f"__all__ = [{all_str}]")
+        if lines:
+            lines.append("")
+        init_content = "\n".join(lines)
+
+        with open(init_file, "w", encoding="utf-8") as f:
+            f.write(init_content)
+        print(f"\nCreated {init_file}")
+        print("\nGenerated content:")
+        print("-" * 40)
+        print(init_content)
+        print("-" * 40)
 
 
 if __name__ == "__main__":

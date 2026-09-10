@@ -256,7 +256,7 @@ jobs:
         if pyproject_path.exists():
             print("  pyproject.toml already exists")
             return True
-        content = f'''[build-system]
+        content = f"""[build-system]
 requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 [project]
@@ -316,7 +316,7 @@ exclude_lines = [
     "raise NotImplementedError",
     "if TYPE_CHECKING:",
 ]
-'''
+"""
         pyproject_path.write_text(content)
         print("  Created: pyproject.toml")
         return True

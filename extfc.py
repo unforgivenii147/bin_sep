@@ -122,6 +122,8 @@ for folder, defs_list in folder_definitions.items():
     print(
         f"✅ saved: {out_file} ({folder_def_count} definitions from {len([f for f in defs_list if 'File:' in f])} files)"
     )
-print(f"""
-✨ Done! Processed {processed_files_count} files with {total_definitions} total definitions in {len(folder_definitions)} folder(s)""")
+print(
+    f"""
+✨ Done! Processed {processed_files_count} files with {total_definitions} total definitions in {len(folder_definitions)} folder(s)"""
+)
 print(f"📁 Folders: {', '.join(sorted(folders_found))}")

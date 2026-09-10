@@ -1,31 +1,55 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""Extract various archive formats in the current directory using external tools.
 
-import os
+This script scans the current working directory for supported archive files
+(.7z, .zip, .rar, .tar, .tar.gz, .tar.bz2, .tar.xz, .tgz, .tbz2,
+.txz, .gz, .bz2, .xz, .lz4, .lzma, .zst, .cab, .arj, .ace),
+extracts each one into either the current directory (for multi-file archives) or
+a subdirectory named after the archive (for single-file archives), and optionally
+deletes the original archive file upon successful extraction.
+
+Extraction is performed in parallel using a fixed pool of 8 worker processes
+via multiprocessing.Pool.apply_async. Results are logged with loguru, including
+per-archive status, extraction time, file counts, and a final summary.
+
+The script requires external extraction tools (e.g., 7z, unzip, unrar, tar,
+gunzip, bunzip2, unxz, lz4, unlzma, unzstd, cabextract, arj, unace)
+to be installed and available on the system PATH. Unsupported formats are skipped;
+missing tools cause failures with descriptive error messages.
+Type annotations are provided throughout for strict type checking (mypy/pyright),
+and all filesystem operations use pathlib.Path.
+"""
+
 import shutil
 import subprocess
 import time
-from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import dataclass
+from multiprocessing import Pool
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Set, Tuple
+
+from loguru import logger
 
 
 @dataclass
 class ExtractionStats:
+    """Statistics for a single archive extraction operation."""
+
     archive_path: Path
     status: str
     extraction_time: float
-    output_dir: Path | None = None
+    output_dir: Optional[Path] = None
     extracted_files: int = 0
-    error_message: str | None = None
+    error_message: Optional[str] = None
     original_size: int = 0
 
-    def __str__(self):
-        size_mb = self.original_size / (1024 * 1024)
-        status_icon = (
+    def __str__(self) -> str:
+        """Return a human-readable string representation of the stats."""
+        size_mb: float = self.original_size / (1024 * 1024)
+        status_icon: str = (
             "✓" if self.status == "success" else "✗" if self.status == "failed" else "○"
         )
-        result = (
+        result: str = (
             f"{status_icon} {self.archive_path.name} [{size_mb:.1f}MB] - {self.status}"
         )
         if self.status == "success":
@@ -38,7 +62,9 @@ class ExtractionStats:
 
 
 class ArchiveExtractor:
-    EXTRACTION_COMMANDS = {
+    """Extract various archive formats using external tools."""
+
+    EXTRACTION_COMMANDS: Dict[str, List[str]] = {
         ".7z": ["7z", "x", "-y", "-o"],
         ".zip": ["unzip", "-o"],
         ".rar": ["unrar", "x", "-y"],
@@ -59,16 +85,19 @@ class ArchiveExtractor:
         ".arj": ["arj", "x", "-y"],
         ".ace": ["unace", "x"],
     }
-    SINGLE_FILE_EXTENSIONS = {".gz", ".bz2", ".xz", ".lz4", ".lzma", ".zst"}
 
-    def __init__(self, current_dir: Path):
-        self.current_dir = current_dir
+    SINGLE_FILE_EXTENSIONS: Set[str] = {".gz", ".bz2", ".xz", ".lz4", ".lzma", ".zst"}
+
+    def __init__(self, current_dir: Path) -> None:
+        """Initialize the extractor with the working directory."""
+        self.current_dir: Path = current_dir
         self._check_available_tools()
 
-    def _check_available_tools(self):
-        available = {}
+    def _check_available_tools(self) -> Dict[str, bool]:
+        """Check which extraction tools are available on the system."""
+        available: Dict[str, bool] = {}
         for ext, cmd in self.EXTRACTION_COMMANDS.items():
-            tool = cmd[0]
+            tool: str = cmd[0]
             if shutil.which(tool):
                 available[ext] = True
             else:
@@ -76,28 +105,30 @@ class ArchiveExtractor:
         return available
 
     def _check_if_single_file_archive(self, archive_path: Path) -> bool:
+        """Determine if the archive contains a single file at its root."""
         if archive_path.suffix.lower() in self.SINGLE_FILE_EXTENSIONS:
             return True
+
         try:
-            suffix = archive_path.suffix.lower()
+            suffix: str = archive_path.suffix.lower()
             if suffix == ".zip":
-                result = subprocess.run(
+                result: subprocess.CompletedProcess[str] = subprocess.run(
                     ["unzip", "-l", str(archive_path)],
                     capture_output=True,
                     text=True,
                     timeout=30,
                 )
                 if result.returncode == 0:
-                    lines = result.stdout.strip().split("\n")
-                    entries = []
+                    lines: List[str] = result.stdout.strip().split("\n")
+                    entries: List[str] = []
                     for line in lines[3:-2]:
-                        parts = line.strip().split()
+                        parts: List[str] = line.strip().split()
                         if len(parts) >= 4:
                             entries.append(" ".join(parts[3:]))
                     if entries:
-                        first_parts = set()
+                        first_parts: Set[str] = set()
                         for entry in entries:
-                            parts = Path(entry).parts
+                            parts: Tuple[str, ...] = Path(entry).parts
                             if parts:
                                 first_parts.add(parts[0])
                         return len(first_parts) == 1 and not all(
@@ -112,22 +143,22 @@ class ArchiveExtractor:
                 ".tbz2",
                 ".txz",
             ]:
-                result = subprocess.run(
+                result: subprocess.CompletedProcess[str] = subprocess.run(
                     ["tar", "-tf", str(archive_path)],
                     capture_output=True,
                     text=True,
                     timeout=30,
                 )
                 if result.returncode == 0:
-                    entries = [
+                    entries: List[str] = [
                         line.strip()
                         for line in result.stdout.split("\n")
                         if line.strip()
                     ]
                     if entries:
-                        first_parts = set()
+                        first_parts: Set[str] = set()
                         for entry in entries:
-                            parts = Path(entry).parts
+                            parts: Tuple[str, ...] = Path(entry).parts
                             if parts:
                                 first_parts.add(parts[0])
                         return len(first_parts) == 1 and not all(
@@ -138,7 +169,8 @@ class ArchiveExtractor:
         return False
 
     def _get_output_directory(self, archive_path: Path) -> Path:
-        stem = archive_path.name
+        """Generate the output directory name for an archive."""
+        stem: str = archive_path.name
         for ext in [".tar.gz", ".tar.bz2", ".tar.xz", ".tar.lz4"]:
             if stem.endswith(ext):
                 stem = stem[: -len(ext)]
@@ -148,22 +180,24 @@ class ArchiveExtractor:
         return self.current_dir / stem
 
     def _count_files(self, directory: Path) -> int:
+        """Count the number of files in a directory recursively."""
         try:
             return sum(1 for _ in directory.rglob("*") if _.is_file())
         except Exception:
             return 0
 
     def extract_archive(self, archive_path: Path) -> ExtractionStats:
-        start_time = time.time()
-        original_size = archive_path.stat().st_size if archive_path.exists() else 0
-        stats = ExtractionStats(
+        """Extract a single archive file and return statistics."""
+        start_time: float = time.time()
+        original_size: int = archive_path.stat().st_size if archive_path.exists() else 0
+        stats: ExtractionStats = ExtractionStats(
             archive_path=archive_path,
             status="failed",
             extraction_time=0,
             original_size=original_size,
         )
-        archive_name = archive_path.name.lower()
-        ext = None
+        archive_name: str = archive_path.name.lower()
+        ext: Optional[str] = None
         for possible_ext in sorted(
             self.EXTRACTION_COMMANDS.keys(), key=len, reverse=True
         ):
@@ -175,22 +209,25 @@ class ArchiveExtractor:
             stats.error_message = f"Unsupported format: {archive_path.suffix}"
             stats.extraction_time = time.time() - start_time
             return stats
-        tool = self.EXTRACTION_COMMANDS[ext][0]
+
+        tool: str = self.EXTRACTION_COMMANDS[ext][0]
         if not shutil.which(tool):
             stats.status = "failed"
             stats.error_message = f"Tool '{tool}' not found"
             stats.extraction_time = time.time() - start_time
             return stats
+
         try:
-            needs_subdir = self._check_if_single_file_archive(archive_path)
-            output_dir = (
+            needs_subdir: bool = self._check_if_single_file_archive(archive_path)
+            output_dir: Path = (
                 self._get_output_directory(archive_path)
                 if needs_subdir
                 else self.current_dir
             )
             if needs_subdir:
                 output_dir.mkdir(exist_ok=True)
-            cmd = list(self.EXTRACTION_COMMANDS[ext])
+
+            cmd: List[str] = list(self.EXTRACTION_COMMANDS[ext])
             if ext == ".7z":
                 cmd.append(str(archive_path))
                 cmd[-2] = f"-o{output_dir}"
@@ -209,16 +246,15 @@ class ArchiveExtractor:
             elif ext == ".rar":
                 cmd.extend([str(archive_path), str(output_dir)])
             elif ext == ".lz4":
-                output_file = output_dir / archive_path.stem
+                output_file: Path = output_dir / archive_path.stem
                 cmd.extend([str(archive_path), str(output_file)])
             elif ext in [".gz", ".bz2", ".xz", ".lzma", ".zst"]:
-                import shutil
-
-                temp_archive = output_dir / archive_path.name
+                temp_archive: Path = output_dir / archive_path.name
                 shutil.copy2(archive_path, temp_archive)
+
                 cmd.append(str(temp_archive))
-                cwd = output_dir
-                result = subprocess.run(
+                cwd: Path = output_dir
+                result: subprocess.CompletedProcess[str] = subprocess.run(
                     cmd, cwd=cwd, capture_output=True, text=True, timeout=300
                 )
                 if result.returncode == 0:
@@ -240,8 +276,9 @@ class ArchiveExtractor:
                 cmd.append(str(archive_path))
                 if output_dir != self.current_dir:
                     cmd.append(str(output_dir))
+
             if ext not in [".gz", ".bz2", ".xz", ".lzma", ".zst"]:
-                result = subprocess.run(
+                result: subprocess.CompletedProcess[str] = subprocess.run(
                     cmd,
                     capture_output=True,
                     text=True,
@@ -255,10 +292,11 @@ class ArchiveExtractor:
                         output=result.stdout,
                         stderr=result.stderr,
                     )
+
             if needs_subdir:
-                extracted_count = self._count_files(output_dir)
+                extracted_count: int = self._count_files(output_dir)
             else:
-                extracted_count = self._count_files(self.current_dir)
+                extracted_count: int = self._count_files(self.current_dir)
             stats.status = "success"
             stats.output_dir = output_dir if needs_subdir else None
             stats.extracted_files = extracted_count
@@ -279,8 +317,9 @@ class ArchiveExtractor:
         return stats
 
 
-def find_archives(directory: Path) -> list[Path]:
-    archive_extensions = {
+def find_archives(directory: Path) -> List[Path]:
+    """Find all supported archive files in the given directory."""
+    archive_extensions: Set[str] = {
         ".7z",
         ".zip",
         ".rar",
@@ -301,10 +340,11 @@ def find_archives(directory: Path) -> list[Path]:
         ".arj",
         ".ace",
     }
-    archives = []
+
+    archives: List[Path] = []
     for item in directory.iterdir():
         if item.is_file():
-            name_lower = item.name.lower()
+            name_lower: str = item.name.lower()
             for ext in archive_extensions:
                 if name_lower.endswith(ext):
                     archives.append(item)
@@ -312,51 +352,61 @@ def find_archives(directory: Path) -> list[Path]:
     return archives
 
 
-def main():
-    current_dir = Path.cwd()
-    print(f"Scanning for archives in: {current_dir}")
-    archives = find_archives(current_dir)
+def main() -> int:
+    """Main entry point for the script."""
+    current_dir: Path = Path.cwd()
+    logger.info(f"Scanning for archivesin: {current_dir}")
+    archives: List[Path] = find_archives(current_dir)
     if not archives:
-        print("No archive files found.")
-        return
-    print(f"\nFound {len(archives)} archive(s):")
+        logger.info("No archive files found.")
+        return 0
+
+    logger.info(f"Found {len(archives)} archive(s):")
     for archive in archives:
-        size_mb = archive.stat().st_size / (1024 * 1024)
-        print(f"  • {archive.name} ({size_mb:.1f} MB)")
-    max_workers = max(1, os.cpu_count() // 2)
-    print(f"\nProcessing with {max_workers} parallel worker(s)...")
-    extractor = ArchiveExtractor(current_dir)
-    results = []
-    start_time = time.time()
-    with ProcessPoolExecutor(max_workers=max_workers) as executor:
-        future_to_archive = {
-            executor.submit(extractor.extract_archive, archive): archive
-            for archive in archives
-        }
-        for future in as_completed(future_to_archive):
-            archive = future_to_archive[future]
+        size_mb: float = archive.stat().st_size / (1024 * 1024)
+        logger.info(f"  • {archive.name} ({size_mb:.1f} MB)")
+
+    max_workers: int = 8  # Fixed pool size as requested
+    logger.info(f"Processing with {max_workers} parallel worker(s)...")
+
+    extractor: ArchiveExtractor = ArchiveExtractor(current_dir)
+    results: List[ExtractionStats] = []
+    start_time: float = time.time()
+
+    with Pool(processes=max_workers) as pool:
+        async_results: List[Tuple[Any, Path]] = []
+        for archive in archives:
+            async_result: Any = pool.apply_async(extractor.extract_archive, (archive,))
+            async_results.append((async_result, archive))
+
+        for async_result, archive in async_results:
             try:
-                result = future.result()
+                result: ExtractionStats = async_result.get()
                 results.append(result)
-                print(f"\r{result}")
+                logger.info(str(result))
             except Exception as e:
-                print(f"\r✗ {archive.name} - Worker error: {e}")
-    total_time = time.time() - start_time
-    successful = sum(1 for r in results if r.status == "success")
-    failed = sum(1 for r in results if r.status == "failed")
-    skipped = sum(1 for r in results if r.status == "skipped")
-    print(f"\n{'=' * 40}")
-    print("SUMMARY")
-    print(f"{'=' * 40}")
-    print(f"Total archives: {len(archives)}")
-    print(f"✓ Successfully extracted: {successful}")
-    print(f"✗ Failed: {failed}")
-    print(f"○ Skipped: {skipped}")
-    print(f"Total time: {total_time:.1f}s")
+                logger.error(f"✗ {archive.name} - Worker error: {e}")
+
+    total_time: float = time.time() - start_time
+    successful: int = sum(1 for r in results if r.status == "success")
+    failed: int = sum(1 for r in results if r.status == "failed")
+    skipped: int = sum(1 for r in results if r.status == "skipped")
+
+    logger.info(f"\n{'=' * 40}")
+    logger.info("SUMMARY")
+    logger.info(f"{'=' * 40}")
+    logger.info(f"Total archives: {len(archives)}")
+    logger.info(f"✓ Successfully extracted: {successful}")
+    logger.info(f"✗ Failed: {failed}")
+    logger.info(f"○ Skipped: {skipped}")
+    logger.info(f"Total time: {total_time:.1f}s")
+
     if results:
-        print("\nDetailed results:")
+        logger.info("\nDetailed results:")
         for result in results:
-            print(f"  {result}")
+            logger.info(f"  {result}")
+
+    return 0
 
 
 if __name__ == "__main__":

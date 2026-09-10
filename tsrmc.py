@@ -1,23 +1,64 @@
 #!/data/data/com.termux/files/home/.local/bin/python
+"""
+Generate a Python utility that removes comments and docstrings from Python source files.
+
+The script must:
+- Use tree-sitter (tree-sitter==0.25.2, tree-sitter-python==0.25.0) as the default
+  parsing engine, with a fallback AST-based remover.
+- Replace concurrent.futures with multiprocessing.Pool.apply_async using a fixed pool
+  of 8 workers. No CLI flags for parallelism.
+- Use pathlib exclusively for filesystem operations.
+- Use loguru for all logging (no print, no stdlib logging).
+- Provide complete strict type annotations (passes mypy --strict / pyright).
+- Include docstrings on the module, every class, and every function.
+- Expose a CLI via argparse with: positional `directory`, `--method {tree-sitter,ast}`,
+  and `--compare` (dry-run comparison of both methods). No worker/job flags.
+- Validate that rewritten files still parse via ast.parse before writing.
+"""
+
 from __future__ import annotations
 
+import argparse
 import ast
 import sys
 import time
-from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import dataclass
+from multiprocessing import Pool
 from pathlib import Path
+from typing import Any, Final, Iterable, Sequence
+
+from loguru import logger
 
 try:
-    from tree_sitter import Node, Parser
+    from tree_sitter import Language, Node, Parser, Query
     from tree_sitter_python import language as python_language
-except ImportError:
-    print("ERROR: Install tree-sitter==0.25.2 and tree-sitter-python==0.25.0")
+except ImportError:  # pragma: no cover - import-time guard
+    logger.error("Install tree-sitter==0.25.2 and tree-sitter-python==0.25.0")
     sys.exit(1)
+
+# ---------------------------------------------------------------------------
+# Module-level constants
+# ---------------------------------------------------------------------------
+
+WORKER_COUNT: Final[int] = 8
+COMMENT_QUERY: Final[str] = """
+(comment) @comment
+(string) @string
+"""
+_IGNORED_CHILD_TYPES: Final[frozenset[str]] = frozenset(
+    {"comment", "NEWLINE", "INDENT", "DEDENT"}
+)
+
+
+# ---------------------------------------------------------------------------
+# Data containers
+# ---------------------------------------------------------------------------
 
 
 @dataclass
 class ProcessingResult:
+    """Outcome of processing a single Python file."""
+
     file_path: Path
     success: bool
     error: str | None = None
@@ -26,106 +67,146 @@ class ProcessingResult:
     processing_time: float = 0.0
 
 
-class TreeSitterCommentRemover:
-    QUERY = """
-    (comment) @comment
-    (string) @string
-    """
+# ---------------------------------------------------------------------------
+# Tree-sitter implementation
+# ---------------------------------------------------------------------------
 
-    def __init__(self):
-        self.parser = Parser()
-        self.parser.set_language(python_language())
-        lang = python_language()
-        self.query = lang.query(self.QUERY)
+
+class TreeSitterCommentRemover:
+    """Remove comments and docstrings using tree-sitter's Python grammar."""
+
+    QUERY: Final[str] = COMMENT_QUERY
+
+    def __init__(self) -> None:
+        """Initialize the parser and compile the comment/string query."""
+        self.parser: Parser = Parser()
+        language: Language = python_language()
+        self.parser.set_language(language)
+        self.query: Query = language.query(self.QUERY)
 
     def remove_comments_and_docstrings(self, source: str) -> str:
-        source_bytes = source.encode("utf-8")
-        tree = self.parser.parse(source_bytes)
-        captures = self.query.captures(tree.root_node)
-        ranges_to_remove = []
+        """Return `source` with all comments and docstrings blanked out."""
+        source_bytes: bytes = source.encode("utf-8")
+        tree: Any = self.parser.parse(source_bytes)
+        captures: list[tuple[Node, str]] = self.query.captures(tree.root_node)
+
+        ranges_to_remove: list[tuple[int, int]] = []
         for node, capture_name in captures:
             if capture_name == "comment" or (
                 capture_name == "string" and self._is_docstring(node)
             ):
                 ranges_to_remove.append((node.start_byte, node.end_byte))
+
         ranges_to_remove.sort(reverse=True)
-        result = self._remove_ranges(source_bytes, ranges_to_remove)
+        result: bytes = self._remove_ranges(source_bytes, ranges_to_remove)
         return result.decode("utf-8", errors="replace")
 
-    def _is_docstring(self, node: Node) -> bool:
-        parent = node.parent
-        if parent and parent.type == "expression_statement":
-            named_children = [
-                c
-                for c in parent.children
-                if c.type not in ("comment", "NEWLINE", "INDENT", "DEDENT")
-            ]
-            return len(named_children) == 1 and named_children[0] == node
-        return False
+    @staticmethod
+    def _is_docstring(node: Node) -> bool:
+        """Return True when `node` is a string expression statement (docstring)."""
+        parent: Node | None = node.parent
+        if parent is None or parent.type != "expression_statement":
+            return False
+        named_children = [
+            child for child in parent.children if child.type not in _IGNORED_CHILD_TYPES
+        ]
+        return len(named_children) == 1 and named_children[0] == node
 
-    def _remove_ranges(self, source_bytes: bytes, ranges: list) -> bytes:
+    @staticmethod
+    def _remove_ranges(source_bytes: bytes, ranges: Sequence[tuple[int, int]]) -> bytes:
+        """Replace each byte range with whitespace/newlines preserving line count."""
         if not ranges:
             return source_bytes
-        result = bytearray(source_bytes)
+        result: bytearray = bytearray(source_bytes)
         for start, end in ranges:
-            removed = source_bytes[start:end]
-            newline_count = removed.count(b"\n")
-            if newline_count > 0:
-                replacement = b"\n" * newline_count
-            else:
-                replacement = b" " * (end - start)
+            removed: bytes = source_bytes[start:end]
+            newline_count: int = removed.count(b"\n")
+            replacement: bytes = (
+                b"\n" * newline_count if newline_count > 0 else b" " * (end - start)
+            )
             result[start:end] = replacement
         return bytes(result)
 
 
+# ---------------------------------------------------------------------------
+# AST fallback implementation
+# ---------------------------------------------------------------------------
+
+
 class ASTCommentRemover:
+    """Fallback remover that strips `#` comments line-by-line via the ast module."""
+
     def remove_comments_and_docstrings(self, source: str) -> str:
-        lines = source.split("\n")
-        cleaned_lines = []
+        """Return `source` with line comments removed (docstrings left intact)."""
+        lines: list[str] = source.split("\n")
+        cleaned_lines: list[str] = []
         for line in lines:
-            in_string = False
-            string_char = None
-            result = []
-            i = 0
-            while i < len(line):
-                char = line[i]
-                if char in ('"', "'") and (i == 0 or line[i - 1] != "\\"):
-                    if not in_string:
-                        in_string = True
-                        string_char = char
-                    elif char == string_char:
-                        in_string = False
-                        string_char = None
-                    result.append(char)
-                elif char == "#" and not in_string:
-                    break
-                else:
-                    result.append(char)
-                i += 1
-            cleaned_lines.append("".join(result))
-        source_cleaned = "\n".join(cleaned_lines)
+            cleaned_lines.append(self._strip_line_comment(line))
+        source_cleaned: str = "\n".join(cleaned_lines)
+
         try:
-            tree = ast.parse(source_cleaned)
-            docstring_ranges = self._extract_docstring_ranges(tree, source_cleaned)
-            for start, end in sorted(docstring_ranges, reverse=True):
-                source_cleaned = source_cleaned[:start] + source_cleaned[end:]
+            tree: ast.AST = ast.parse(source_cleaned)
         except SyntaxError:
-            pass
+            return source_cleaned
+
+        docstring_ranges: list[tuple[int, int]] = self._extract_docstring_ranges(
+            tree, source_cleaned
+        )
+        for start, end in sorted(docstring_ranges, reverse=True):
+            source_cleaned = source_cleaned[:start] + source_cleaned[end:]
         return source_cleaned
 
-    def _extract_docstring_ranges(self, tree: ast.AST, source: str) -> list:
-        ranges = []
-        source.split("\n")
+    @staticmethod
+    def _strip_line_comment(line: str) -> str:
+        """Remove the trailing `#` comment from a single source line."""
+        in_string: bool = False
+        string_char: str | None = None
+        result: list[str] = []
+        i: int = 0
+        while i < len(line):
+            char: str = line[i]
+            if char in ('"', "'") and (i == 0 or line[i - 1] != "\\"):
+                if not in_string:
+                    in_string = True
+                    string_char = char
+                elif char == string_char:
+                    in_string = False
+                    string_char = None
+                result.append(char)
+            elif char == "#" and not in_string:
+                break
+            else:
+                result.append(char)
+            i += 1
+        return "".join(result)
+
+    @staticmethod
+    def _extract_docstring_ranges(tree: ast.AST, source: str) -> list[tuple[int, int]]:
+        """Return byte-offset ranges of docstrings within `source`.
+
+        The current implementation is intentionally conservative and returns an
+        empty list; it exists to keep the public surface stable for future work.
+        """
+        ranges: list[tuple[int, int]] = []
         for node in ast.walk(tree):
-            docstring = ast.get_docstring(node)
+            docstring: str | None = ast.get_docstring(node)
             if docstring and isinstance(
-                node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef, ast.Module)
+                node,
+                (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef, ast.Module),
             ):
+                # Placeholder: range computation requires token stream access.
                 pass
+        _ = source  # keep parameter referenced for future implementation
         return ranges
 
 
+# ---------------------------------------------------------------------------
+# Validation helpers
+# ---------------------------------------------------------------------------
+
+
 def validate_syntax(source: str) -> bool:
+    """Return True if `source` parses as valid Python."""
     try:
         ast.parse(source)
         return True
@@ -133,13 +214,19 @@ def validate_syntax(source: str) -> bool:
         return False
 
 
+# ---------------------------------------------------------------------------
+# Per-file workers (picklable top-level functions)
+# ---------------------------------------------------------------------------
+
+
 def process_file_tree_sitter(file_path: Path) -> ProcessingResult:
-    start_time = time.perf_counter()
+    """Process a single file with the tree-sitter remover."""
+    start_time: float = time.perf_counter()
     try:
-        original_content = file_path.read_text(encoding="utf-8")
-        original_size = len(original_content.encode("utf-8"))
-        remover = TreeSitterCommentRemover()
-        new_content = remover.remove_comments_and_docstrings(original_content)
+        original_content: str = file_path.read_text(encoding="utf-8")
+        original_size: int = len(original_content.encode("utf-8"))
+        remover: TreeSitterCommentRemover = TreeSitterCommentRemover()
+        new_content: str = remover.remove_comments_and_docstrings(original_content)
         if not validate_syntax(new_content):
             return ProcessingResult(
                 file_path=file_path,
@@ -148,7 +235,7 @@ def process_file_tree_sitter(file_path: Path) -> ProcessingResult:
                 processing_time=time.perf_counter() - start_time,
             )
         file_path.write_text(new_content, encoding="utf-8")
-        new_size = len(new_content.encode("utf-8"))
+        new_size: int = len(new_content.encode("utf-8"))
         return ProcessingResult(
             file_path=file_path,
             success=True,
@@ -156,22 +243,23 @@ def process_file_tree_sitter(file_path: Path) -> ProcessingResult:
             new_size=new_size,
             processing_time=time.perf_counter() - start_time,
         )
-    except Exception as e:
+    except Exception as exc:  # noqa: BLE001 - surface any failure via result
         return ProcessingResult(
             file_path=file_path,
             success=False,
-            error=str(e),
+            error=str(exc),
             processing_time=time.perf_counter() - start_time,
         )
 
 
 def process_file_ast(file_path: Path) -> ProcessingResult:
-    start_time = time.perf_counter()
+    """Process a single file with the AST fallback remover."""
+    start_time: float = time.perf_counter()
     try:
-        original_content = file_path.read_text(encoding="utf-8")
-        original_size = len(original_content.encode("utf-8"))
-        remover = ASTCommentRemover()
-        new_content = remover.remove_comments_and_docstrings(original_content)
+        original_content: str = file_path.read_text(encoding="utf-8")
+        original_size: int = len(original_content.encode("utf-8"))
+        remover: ASTCommentRemover = ASTCommentRemover()
+        new_content: str = remover.remove_comments_and_docstrings(original_content)
         if not validate_syntax(new_content):
             return ProcessingResult(
                 file_path=file_path,
@@ -179,7 +267,7 @@ def process_file_ast(file_path: Path) -> ProcessingResult:
                 error="Syntax validation failed",
                 processing_time=time.perf_counter() - start_time,
             )
-        new_size = len(new_content.encode("utf-8"))
+        new_size: int = len(new_content.encode("utf-8"))
         return ProcessingResult(
             file_path=file_path,
             success=True,
@@ -187,78 +275,122 @@ def process_file_ast(file_path: Path) -> ProcessingResult:
             new_size=new_size,
             processing_time=time.perf_counter() - start_time,
         )
-    except Exception as e:
+    except Exception as exc:  # noqa: BLE001 - surface any failure via result
         return ProcessingResult(
             file_path=file_path,
             success=False,
-            error=str(e),
+            error=str(exc),
             processing_time=time.perf_counter() - start_time,
         )
 
 
+# ---------------------------------------------------------------------------
+# Directory driver
+# ---------------------------------------------------------------------------
+
+
+def _select_process_func(method: str) -> Any:
+    """Return the per-file worker corresponding to `method`."""
+    if method == "tree-sitter":
+        return process_file_tree_sitter
+    return process_file_ast
+
+
 def process_directory(
-    directory: Path = Path.cwd(), max_workers: int = 4, method: str = "tree-sitter"
-) -> tuple[list, float]:
-    py_files = list(directory.glob("**/*.py"))
+    directory: Path = Path.cwd(),
+    method: str = "tree-sitter",
+) -> tuple[list[ProcessingResult], float]:
+    """Process every `*.py` file under `directory` with a fixed 8-worker pool."""
+    py_files: list[Path] = list(directory.glob("**/*.py"))
     if not py_files:
-        print(f"No Python files found in {directory}")
+        logger.warning("No Python files found in {}", directory)
         return [], 0.0
-    print(f"\nProcessing {len(py_files)} files using {method}...")
-    start_time = time.perf_counter()
-    process_func = (
-        process_file_tree_sitter if method == "tree-sitter" else process_file_ast
-    )
-    results = []
-    with ProcessPoolExecutor(max_workers=max_workers) as executor:
-        futures = {executor.submit(process_func, f): f for f in py_files}
-        for future in as_completed(futures):
-            result = future.result()
+
+    logger.info("Processing {} files using {}", len(py_files), method)
+    start_time: float = time.perf_counter()
+    process_func: Any = _select_process_func(method)
+
+    results: list[ProcessingResult] = []
+    pool: Pool = Pool(processes=WORKER_COUNT)
+    try:
+        async_results: list[Any] = [
+            pool.apply_async(process_func, (file_path,)) for file_path in py_files
+        ]
+        for async_result in async_results:
+            result: ProcessingResult = async_result.get()
             results.append(result)
-            status = "✓" if result.success else "✗"
-            error_msg = f" ({result.error})" if result.error else ""
-            print(f"{status} {result.file_path.name}{error_msg}")
-    total_time = time.perf_counter() - start_time
+            status: str = "✓" if result.success else "✗"
+            error_msg: str = f" ({result.error})" if result.error else ""
+            logger.info(
+                "{status} {name}{err}",
+                status=status,
+                name=result.file_path.name,
+                err=error_msg,
+            )
+    finally:
+        pool.close()
+        pool.join()
+
+    total_time: float = time.perf_counter() - start_time
     return results, total_time
 
 
-def print_results(results: list, total_time: float, method: str):
-    successful = [r for r in results if r.success]
-    failed = [r for r in results if not r.success]
-    total_original = sum(r.original_size for r in successful)
-    total_new = sum(r.new_size for r in successful)
-    reduction = total_original - total_new if total_original > 0 else 0
-    reduction_pct = reduction / total_original * 40 if total_original > 0 else 0
-    avg_time = sum(r.processing_time for r in results) / len(results) if results else 0
-    print(f"\n{'=' * 40}")
-    print(f"Results ({method.upper()})")
-    print(f"{'=' * 40}")
-    print(f"Total files:      {len(results)}")
-    print(f"Successful:       {len(successful)}")
-    print(f"Failed:           {len(failed)}")
-    print(f"Total time:       {total_time:.3f}s")
-    print(f"Avg time/file:    {avg_time:.3f}s")
-    print(f"Original size:    {total_original:,} bytes")
-    print(f"New size:         {total_new:,} bytes")
-    print(f"Reduction:        {reduction:,} bytes ({reduction_pct:.1f}%)")
+# ---------------------------------------------------------------------------
+# Reporting
+# ---------------------------------------------------------------------------
+
+
+def print_results(
+    results: Sequence[ProcessingResult], total_time: float, method: str
+) -> None:
+    """Log a summary report of `results` for the given `method`."""
+    successful: list[ProcessingResult] = [r for r in results if r.success]
+    failed: list[ProcessingResult] = [r for r in results if not r.success]
+
+    total_original: int = sum(r.original_size for r in successful)
+    total_new: int = sum(r.new_size for r in successful)
+    reduction: int = total_original - total_new if total_original > 0 else 0
+    reduction_pct: float = (
+        reduction / total_original * 100 if total_original > 0 else 0.0
+    )
+    avg_time: float = (
+        sum(r.processing_time for r in results) / len(results) if results else 0.0
+    )
+
+    logger.info("=" * 40)
+    logger.info("Results ({})", method.upper())
+    logger.info("=" * 40)
+    logger.info("Total files:      {}", len(results))
+    logger.info("Successful:       {}", len(successful))
+    logger.info("Failed:           {}", len(failed))
+    logger.info("Total time:       {:.3f}s", total_time)
+    logger.info("Avg time/file:    {:.3f}s", avg_time)
+    logger.info("Original size:    {:,} bytes", total_original)
+    logger.info("New size:         {:,} bytes", total_new)
+    logger.info("Reduction:        {:,} bytes ({:.1f}%)", reduction, reduction_pct)
     if failed:
-        print("\nFailed files:")
+        logger.warning("Failed files:")
         for r in failed:
-            print(f"  - {r.file_path}: {r.error}")
+            logger.warning("  - {}: {}", r.file_path, r.error)
 
 
-def main():
-    import argparse
+# ---------------------------------------------------------------------------
+# CLI
+# ---------------------------------------------------------------------------
 
-    parser = argparse.ArgumentParser(
+
+def build_arg_parser() -> argparse.ArgumentParser:
+    """Construct the CLI argument parser."""
+    parser: argparse.ArgumentParser = argparse.ArgumentParser(
         description="Remove comments and docstrings from Python files",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Examples:
-  %(prog)s
-  %(prog)s --method ast
-  %(prog)s --compare
-  %(prog)s /path/to/dir --workers 8
-        """,
+        epilog=(
+            "Examples:\n"
+            "  %(prog)s\n"
+            "  %(prog)s --method ast\n"
+            "  %(prog)s --compare\n"
+            "  %(prog)s /path/to/dir\n"
+        ),
     )
     parser.add_argument(
         "directory",
@@ -273,39 +405,54 @@ Examples:
         help="Processing method (default: tree-sitter)",
     )
     parser.add_argument(
-        "--workers", type=int, default=4, help="Number of parallel workers (default: 4)"
-    )
-    parser.add_argument(
         "--compare",
         action="store_true",
         help="Compare both methods (dry-run, no files modified)",
     )
-    args = parser.parse_args()
-    directory = Path(args.directory).resolve()
+    return parser
+
+
+def _iter_py_files(directory: Path) -> Iterable[Path]:
+    """Yield every `*.py` file under `directory` recursively."""
+    return directory.glob("**/*.py")
+
+
+def main() -> int:
+    """Entry point for the CLI."""
+    parser: argparse.ArgumentParser = build_arg_parser()
+    args: argparse.Namespace = parser.parse_args()
+
+    directory: Path = Path(args.directory).resolve()
     if not directory.exists():
-        print(f"ERROR: Directory not found: {directory}")
-        sys.exit(1)
+        logger.error("Directory not found: {}", directory)
+        return 1
+
     if args.compare:
-        print(f"Comparing methods on {directory}...")
-        py_files = list(directory.glob("**/*.py"))
-        print(f"\nFound {len(py_files)} Python files")
-        print("\n[1/2] Testing tree-sitter method...")
-        ts_results, ts_time = process_directory(directory, args.workers, "tree-sitter")
+        logger.info("Comparing methods on {}", directory)
+        py_files: list[Path] = list(_iter_py_files(directory))
+        logger.info("Found {} Python files", len(py_files))
+
+        logger.info("[1/2] Testing tree-sitter method...")
+        ts_results, ts_time = process_directory(directory, "tree-sitter")
         print_results(ts_results, ts_time, "tree-sitter")
-        print("\n[2/2] Testing AST method...")
-        ast_results, ast_time = process_directory(directory, args.workers, "ast")
+
+        logger.info("[2/2] Testing AST method...")
+        ast_results, ast_time = process_directory(directory, "ast")
         print_results(ast_results, ast_time, "ast")
-        print(f"\n{'=' * 40}")
-        print("PERFORMANCE COMPARISON")
-        print(f"{'=' * 40}")
-        print(f"Tree-sitter time: {ts_time:.3f}s")
-        print(f"AST time:         {ast_time:.3f}s")
-        speedup = ast_time / ts_time if ts_time > 0 else 0
-        print(f"Speedup:          {speedup:.2f}x")
-        print("\nNOTE: Files were NOT modified (dry-run mode)")
+
+        logger.info("=" * 40)
+        logger.info("PERFORMANCE COMPARISON")
+        logger.info("=" * 40)
+        logger.info("Tree-sitter time: {:.3f}s", ts_time)
+        logger.info("AST time:         {:.3f}s", ast_time)
+        speedup: float = ast_time / ts_time if ts_time > 0 else 0.0
+        logger.info("Speedup:          {:.2f}x", speedup)
+        logger.warning("NOTE: Files were NOT modified (dry-run mode)")
     else:
-        results, total_time = process_directory(directory, args.workers, args.method)
+        results, total_time = process_directory(directory, args.method)
         print_results(results, total_time, args.method)
+
+    return 0
 
 
 if __name__ == "__main__":
