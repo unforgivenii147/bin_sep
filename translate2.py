@@ -43,10 +43,10 @@ except ImportError:  # pragma: no cover
 # ---------------------------------------------------------------------------
 
 CYRILLIC_RE = re.compile(r"[\u0400-\u04FF]")
-TRANSLATE_CHUNK = 20          # lines per GoogleTranslator API call inside a worker
+TRANSLATE_CHUNK = 20  # lines per GoogleTranslator API call inside a worker
 DEFAULT_SAVE_INTERVAL = 10.0  # seconds between periodic saves
 
-_shutdown = False             # set by signal handler (main process only)
+_shutdown = False  # set by signal handler (main process only)
 
 
 def _has_cyrillic(text: str) -> bool:
@@ -63,6 +63,7 @@ def _handle_signal(signum, _frame) -> None:
 # Worker functions (run inside the multiprocessing pool)
 # ---------------------------------------------------------------------------
 
+
 def _translate_texts(texts: list[str], src: str, tgt: str) -> list[str]:
     """Call GoogleTranslator.translate_batch and validate the result."""
     translator = GoogleTranslator(source=src, target=tgt)
@@ -74,7 +75,9 @@ def _translate_texts(texts: list[str], src: str, tgt: str) -> list[str]:
     return [r if r is not None else t for r, t in zip(result, texts)]
 
 
-def _translate_task(task: tuple[str, str, list[tuple[int, str]]]) -> list[tuple[int, str]]:
+def _translate_task(
+    task: tuple[str, str, list[tuple[int, str]]],
+) -> list[tuple[int, str]]:
     """Translate a batch of (index, text) items."""
     src, tgt, items = task
 
@@ -109,6 +112,7 @@ def _translate_task(task: tuple[str, str, list[tuple[int, str]]]) -> list[tuple[
 # ---------------------------------------------------------------------------
 # Progress saving
 # ---------------------------------------------------------------------------
+
 
 def _save_progress(
     output_path: str,
@@ -146,6 +150,7 @@ def _save_progress(
 # Commands
 # ---------------------------------------------------------------------------
 
+
 def cmd_translate(args: argparse.Namespace) -> None:
     input_path = Path(args.input)
     if not input_path.is_file():
@@ -169,8 +174,13 @@ def cmd_translate(args: argparse.Namespace) -> None:
 
     # Initial (empty) save so the user always has an output file to look at.
     _save_progress(
-        output_path, meta_path, lines, translations,
-        args.source, args.target, input_path,
+        output_path,
+        meta_path,
+        lines,
+        translations,
+        args.source,
+        args.target,
+        input_path,
     )
 
     print(
@@ -182,15 +192,19 @@ def cmd_translate(args: argparse.Namespace) -> None:
 
     result_queue: Queue = Queue()
 
-    def _on_ok(res):    result_queue.put(("ok", res))
-    def _on_err(exc):   result_queue.put(("err", exc))
+    def _on_ok(res):
+        result_queue.put(("ok", res))
+
+    def _on_err(exc):
+        result_queue.put(("err", exc))
 
     pool = Pool(processes=args.workers)
 
     try:
         for t in tasks:
-            pool.apply_async(_translate_task, (t,),
-                             callback=_on_ok, error_callback=_on_err)
+            pool.apply_async(
+                _translate_task, (t,), callback=_on_ok, error_callback=_on_err
+            )
 
         pending = len(tasks)
         while pending > 0:
@@ -210,13 +224,20 @@ def cmd_translate(args: argparse.Namespace) -> None:
             now = time.time()
             if now - last_save >= args.save_interval:
                 _save_progress(
-                    output_path, meta_path, lines, translations,
-                    args.source, args.target, input_path,
+                    output_path,
+                    meta_path,
+                    lines,
+                    translations,
+                    args.source,
+                    args.target,
+                    input_path,
                 )
                 done = len(translations)
                 pct = 100.0 * done / len(lines)
-                print(f"[translate] progress: {done}/{len(lines)} ({pct:.1f}%)",
-                      file=sys.stderr)
+                print(
+                    f"[translate] progress: {done}/{len(lines)} ({pct:.1f}%)",
+                    file=sys.stderr,
+                )
                 last_save = now
 
     except KeyboardInterrupt:
@@ -227,14 +248,22 @@ def cmd_translate(args: argparse.Namespace) -> None:
 
         complete = (not _shutdown) and len(translations) == len(lines)
         _save_progress(
-            output_path, meta_path, lines, translations,
-            args.source, args.target, input_path, complete=complete,
+            output_path,
+            meta_path,
+            lines,
+            translations,
+            args.source,
+            args.target,
+            input_path,
+            complete=complete,
         )
 
     done = len(translations)
     tag = "complete" if complete else "interrupted"
-    print(f"[translate] {tag}: wrote {output_path} ({done}/{len(lines)} lines)",
-          file=sys.stderr)
+    print(
+        f"[translate] {tag}: wrote {output_path} ({done}/{len(lines)} lines)",
+        file=sys.stderr,
+    )
     if not complete:
         sys.exit(130 if _shutdown else 1)
 
@@ -243,24 +272,40 @@ def cmd_translate(args: argparse.Namespace) -> None:
 # CLI
 # ---------------------------------------------------------------------------
 
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         description="Translate a text file with deep_translator.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     p.add_argument("-i", "--input", help="Path to the input text file.")
-    p.add_argument("-s", "--source", default="auto",
-                   help="Source language code (e.g. 'ru', 'en', 'auto').")
-    p.add_argument("-t", "--target", default="en",
-                   help="Target language code (e.g. 'en').")
-    p.add_argument("-o", "--output",
-                   help="Output file path (default: <input>.translated.txt).")
-    p.add_argument("--workers", type=int, default=min(4, cpu_count() or 1),
-                   help="Number of worker processes.")
-    p.add_argument("--batch-size", type=int, default=100,
-                   help="Number of lines per worker task.")
-    p.add_argument("--save-interval", type=float, default=DEFAULT_SAVE_INTERVAL,
-                   help="Seconds between periodic progress saves.")
+    p.add_argument(
+        "-s",
+        "--source",
+        default="auto",
+        help="Source language code (e.g. 'ru', 'en', 'auto').",
+    )
+    p.add_argument(
+        "-t", "--target", default="en", help="Target language code (e.g. 'en')."
+    )
+    p.add_argument(
+        "-o", "--output", help="Output file path (default: <input>.translated.txt)."
+    )
+    p.add_argument(
+        "--workers",
+        type=int,
+        default=min(4, cpu_count() or 1),
+        help="Number of worker processes.",
+    )
+    p.add_argument(
+        "--batch-size", type=int, default=100, help="Number of lines per worker task."
+    )
+    p.add_argument(
+        "--save-interval",
+        type=float,
+        default=DEFAULT_SAVE_INTERVAL,
+        help="Seconds between periodic progress saves.",
+    )
     return p
 
 

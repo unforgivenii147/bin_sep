@@ -30,10 +30,10 @@ def run_tool(tool: str, file_path: Path) -> tuple[str, str | None]:
             cmd = ["pyright", str(file_path)]
         elif tool == "pylint":
             cmd = ["pylint", "-E", str(file_path)]
-        elif tool == "ruff":
-            cmd = ["ruff", "check", str(file_path)]
-        elif tool == "radon":
-            cmd = ["radon", "cc", str(file_path)]
+        elif tool == "pyrefly":
+            cmd = ["pyrefly", "check", str(file_path)]
+        elif tool == "mypy":
+            cmd = ["mypy", str(file_path)]
         else:
             return tool, None
         _returncode, output = runcmd(cmd)
@@ -106,7 +106,7 @@ Examples:
         "-a",
         "--all",
         action="store_true",
-        help="Run all tools: ty, pyright, pylint, ruff",
+        help="Run all tools: ty, pyright, pylint, pyrefly",
     )
     parser.add_argument(
         "-g",
@@ -122,9 +122,9 @@ Examples:
     )
     parser.add_argument(
         "-r",
-        "--ruff",
+        "--pyrefly",
         action="store_true",
-        help="Run ruff",
+        help="Run pyrefly",
     )
     parser.add_argument(
         "-t",
@@ -133,16 +133,16 @@ Examples:
         help="Run ty",
     )
     parser.add_argument(
-        "-d",
-        "--radon",
+        "-m",
+        "--mypy",
         action="store_true",
-        help="Run radon",
+        help="Run mypy",
     )
     args = parser.parse_args()
     paths = args.paths if args.paths else ["."]
     enabled_tools = []
     if args.all:
-        enabled_tools = ["ty", "pyright", "pylint", "ruff"]
+        enabled_tools = ["ty", "pyright", "pylint", "pyrefly",'mypy']
     else:
         if args.ty:
             enabled_tools.append("ty")
@@ -150,12 +150,12 @@ Examples:
             enabled_tools.append("pyright")
         if args.pylint:
             enabled_tools.append("pylint")
-        if args.ruff:
-            enabled_tools.append("ruff")
-        if args.radon:
-            enabled_tools.append("radon")
+        if args.pyrefly:
+            enabled_tools.append("pyrefly")
+        if args.mypy:
+            enabled_tools.append("mypy")
         if not enabled_tools:
-            enabled_tools = ["ty", "pyright", "pylint", "ruff"]
+            enabled_tools = ["ty", "pyright", "pyrefly"]
     files = list(collect_pyfiles(paths))
     if not files:
         print("No .py files found.")

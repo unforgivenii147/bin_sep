@@ -39,11 +39,11 @@ ENGLISH_PATTERN: Final[re.Pattern] = re.compile(r"^[A-Za-z0-9\s\.,;:!?\'\"()\-â€
 
 
 class ResilientTranslator:
-    def __init__(self, target_lang: str = "en"):
+    def __init__(self, target_lang: str = "fa"):
         self.target_lang = target_lang
         self.google_translator = Translator() if HAS_GOOGLETRANS else None
         self.deep_translator = (
-            GoogleTranslator(source="auto", target=target_lang)
+            GoogleTranslator(source="en", target=target_lang)
             if HAS_DEEP_TRANSLATOR
             else None
         )
@@ -53,14 +53,8 @@ class ResilientTranslator:
             return text
         for attempt in range(RETRY_ATTEMPTS):
             try:
-                if HAS_DEEP_TRANSLATOR:
-                    result = self.deep_translator.translate(text)
-                    if result:
-                        return result
                 if HAS_GOOGLETRANS:
                     detected = self.google_translator.detect(text)
-                    if detected.lang == self.target_lang:
-                        return text
                     result = self.google_translator.translate(
                         text, dest=self.target_lang
                     )
@@ -99,9 +93,6 @@ def process_file(input_file: Path, output_file: Path | None = None) -> None:
     output_lines: list[str] = []
     for i, line in enumerate(lines):
         lang_type = detect_language_type(line)
-        if lang_type in ("empty", "marker", "english"):
-            output_lines.append(line)
-            continue
         logger.info("Translating line %d (%s)...", i + 1, lang_type)
         translated = translator.translate(line)
         output_lines.append(line)
@@ -119,9 +110,7 @@ def process_file(input_file: Path, output_file: Path | None = None) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Translate Tamil/Chinese text to English."
-    )
+    parser = argparse.ArgumentParser(description="Translate text to persian.")
     parser.add_argument("input_file", type=Path, help="Input file path")
     parser.add_argument("-o", "--output", type=Path, help="Output file path")
     args = parser.parse_args()
