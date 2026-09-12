@@ -10,7 +10,6 @@ from argparse import ArgumentParser, RawDescriptionHelpFormatter
 from dataclasses import dataclass, field
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Optional
 
 try:
     import zstandard as zstd

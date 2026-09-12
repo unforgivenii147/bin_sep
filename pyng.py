@@ -5,7 +5,6 @@ import argparse
 import re
 import subprocess
 import sys
-from typing import Optional
 
 
 class PingResult:

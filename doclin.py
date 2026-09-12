@@ -19,11 +19,10 @@ import sys
 from dataclasses import dataclass
 from multiprocessing.pool import AsyncResult, Pool
 from pathlib import Path
-from typing import Final, Iterable, List, Optional, Sequence, Tuple
-
-from loguru import logger
+from typing import Final, List, Optional, Sequence, Tuple
 
 from dh import fsz
+from loguru import logger
 
 # ---------------------------------------------------------------------------
 # Constants

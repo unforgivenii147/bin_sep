@@ -1,43 +1,55 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""
+Generate a Python script that translates non-English text files (.md, .txt) in a directory
+tree to English using deep_translator's GoogleTranslator, processing files concurrently with
+multiprocessing.Pool.apply_async using a fixed pool of 8 workers, logging via loguru, handling
+paths with pathlib, and safely overwriting files using a temporary file + atomic move.
+"""
 
-import logging
 import re
 import shutil
 import sys
 import tempfile
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from multiprocessing.pool import AsyncResult, Pool
 from pathlib import Path
 from typing import Final
 
 from deep_translator import GoogleTranslator
-from dh import get_files
+from loguru import logger
 
-NON_ENGLISH_PATTERN: Final[re.Pattern] = re.compile(r"[^\x00-\x7F]")
-MAX_WORKERS: Final[int] = 4
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[logging.StreamHandler(sys.stdout)],
+NON_ENGLISH_PATTERN: Final[re.Pattern[str]] = re.compile(r"[^\x00-\x7F]")
+MAX_WORKERS: Final[int] = 8
+SKIP_DIRS: Final[frozenset[str]] = frozenset(
+    {
+        ".git",
+        ".hg",
+        ".svn",
+        "node_modules",
+        "__pycache__",
+        ".venv",
+        "venv",
+        ".mypy_cache",
+    }
 )
-logger = logging.getLogger(__name__)
 
 
 def is_english(text: str) -> bool:
+    """Return True if the given text contains only ASCII characters."""
     return not NON_ENGLISH_PATTERN.search(text)
 
 
 def get_files(
     path: Path, include_hidden: bool = True, extensions: tuple[str, ...] | None = None
 ) -> list[Path]:
+    """Recursively collect files under ``path`` matching optional extension filter."""
     if not path.exists():
         raise FileNotFoundError(f"Path does not exist: {path}")
     if not path.is_dir():
         raise NotADirectoryError(f"Path is not a directory: {path}")
     files: list[Path] = []
-    stack = [path]
+    stack: list[Path] = [path]
     while stack:
-        current = stack.pop()
+        current: Path = stack.pop()
         try:
             for entry in current.iterdir():
                 if entry.is_symlink():
@@ -51,54 +63,58 @@ def get_files(
                     if extensions is None or entry.suffix.lower() in extensions:
                         files.append(entry)
         except PermissionError:
-            logger.warning("Permission denied: %s", current)
+            logger.warning("Permission denied: {}", current)
             continue
     return sorted(files)
 
 
 def translate_text(text: str) -> str:
+    """Translate non-English lines of ``text`` to English, preserving line endings."""
     if not text:
         return text
-    lines = text.splitlines(keepends=True)
+    lines: list[str] = text.splitlines(keepends=True)
     translated_lines: list[str] = []
-    translator = GoogleTranslator(source="auto", target="en")
+    translator: GoogleTranslator = GoogleTranslator(source="auto", target="en")
     for line in lines:
-        stripped_line = line.strip()
+        stripped_line: str = line.strip()
         if not stripped_line or is_english(stripped_line):
             translated_lines.append(line)
         else:
             try:
-                result = translator.translate(stripped_line)
-                ending = "\n" if line.endswith("\n") else ""
+                result: str | None = translator.translate(stripped_line)
+                ending: str = "\n" if line.endswith("\n") else ""
                 translated_lines.append(f"{result}{ending}" if result else line)
             except Exception as e:
-                logger.error("Translation error on line: %s", e)
+                logger.error("Translation error on line: {}", e)
                 translated_lines.append(line)
     return "".join(translated_lines)
 
 
 def safe_overwrite(filepath: Path, content: str) -> None:
+    """Atomically overwrite ``filepath`` with ``content`` using a temp file."""
+    tmp_path: Path
     with tempfile.NamedTemporaryFile(
         mode="w", encoding="utf-8", delete=False, dir=filepath.parent
     ) as tmp:
         tmp.write(content)
         tmp_path = Path(tmp.name)
     try:
-        shutil.move(tmp_path, filepath)
+        shutil.move(str(tmp_path), str(filepath))
     except Exception as e:
         tmp_path.unlink(missing_ok=True)
         raise RuntimeError(f"Failed to overwrite {filepath}: {e}") from e
 
 
 def process_file(path: Path) -> str:
+    """Read, translate if needed, and atomically overwrite a single file."""
     try:
-        original = path.read_text(encoding="utf-8", errors="ignore")
+        original: str = path.read_text(encoding="utf-8", errors="ignore")
     except Exception as e:
         return f"Error reading {path}: {e}"
     if is_english(original.strip()):
         return f"Skipped (English): {path.name}"
     try:
-        translated = translate_text(original)
+        translated: str = translate_text(original)
         if translated.strip() != original.strip():
             safe_overwrite(path, translated)
             return f"✓ Updated: {path.name}"
@@ -108,8 +124,10 @@ def process_file(path: Path) -> str:
 
 
 def main() -> None:
-    args = sys.argv[1:]
-    cwd = Path.cwd()
+    """Entry point: gather target files and dispatch translation jobs to a Pool."""
+    args: list[str] = sys.argv[1:]
+    cwd: Path = Path.cwd()
+    files: list[Path]
     if args:
         files = [Path(p) for p in args if Path(p).is_file()]
     else:
@@ -117,12 +135,21 @@ def main() -> None:
     if not files:
         logger.info("No files found to process.")
         return
-    logger.info("Starting processing of %d files...", len(files))
-    with ProcessPoolExecutor(max_workers=MAX_WORKERS) as executor:
-        future_to_file = {executor.submit(process_file, f): f for f in files}
-        for future in as_completed(future_to_file):
-            result = future.result()
-            logger.info(result)
+    logger.info("Starting processing of {} files...", len(files))
+    pool: Pool = Pool(processes=MAX_WORKERS)
+    try:
+        results: list[AsyncResult[str]] = [
+            pool.apply_async(process_file, (f,)) for f in files
+        ]
+        pool.close()
+        for result in results:
+            try:
+                logger.info(result.get())
+            except Exception as e:
+                logger.error("Worker error: {}", e)
+        pool.join()
+    finally:
+        pool.terminate()
 
 
 if __name__ == "__main__":

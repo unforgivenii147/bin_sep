@@ -8,9 +8,8 @@ from multiprocessing import Pool
 from pathlib import Path
 from typing import Any
 
-from loguru import logger
-
 from dh import get_nobinary
+from loguru import logger
 
 MAX_WORKERS: int = 8
 WORD_PATTERN: re.Pattern[str] = re.compile(r"\b[a-z]+\b")

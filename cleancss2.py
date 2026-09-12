@@ -1,12 +1,10 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 import multiprocessing as mp
 import os
-import stat
 import sys
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Tuple, Union
 
 import tree_sitter_css
 from tree_sitter import Language, Node, Parser

@@ -9,7 +9,7 @@ import sys
 import time
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 from urllib.parse import urljoin, urlparse
 
 import requests

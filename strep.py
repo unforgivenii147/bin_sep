@@ -7,24 +7,21 @@ import tempfile
 from pathlib import Path
 from zipfile import ZipFile
 
-from dh import cprint, fsz, gsz, mpf3, runcmd
+from dh import fsz, runcmd
+from rich.console import Console
+from rich.progress import BarColumn, Progress, TaskProgressColumn, TextColumn
 
 SO_PATTERN = re.compile(r"\.so(\.\d+)*$")
+console = Console()
 
 
 def process_file(path: Path) -> None:
-    path = Path(path)
-    before = path.stat().st_size
+    """Strip a single .so file"""
     _ret, _, _ = runcmd(["strip", str(path)], show_output=True)
-    after = path.stat().st_size
-    if not after:
-        return
-    dz = before - after
-    if dz:
-        cprint(f"{path.name} | ratio: {after / before:.1f}%")
 
 
 def process_whl(whl_path: Path) -> None:
+    """Process all .so files inside a .whl archive"""
     with tempfile.TemporaryDirectory() as tmpdir:
         tmpdir = Path(tmpdir)
         with ZipFile(whl_path, "r") as zf:
@@ -39,24 +36,47 @@ def process_whl(whl_path: Path) -> None:
 
 
 def collect_files(cwd: Path, args: list[str]) -> list[Path]:
+    """Collect .so files from args or recursively from cwd"""
     if args:
         return [Path(p) for p in args]
     so_files = [p for p in cwd.rglob("*") if SO_PATTERN.search(p.name) and p.is_file()]
-    whl_files = list(cwd.rglob("*.whl"))
-    return so_files + whl_files
+    return so_files
+
+
+def show_summary(files: list[Path]) -> None:
+    """Display total count and size of .so files"""
+    total_size = sum(f.stat().st_size for f in files if f.is_file())
+    console.print(
+        f"[bold cyan]Total number of .so files:[/] [bold yellow]{len(files)}[/]"
+    )
+    console.print(
+        f"[bold cyan]Total size of .so files:[/] [bold yellow]{fsz(total_size)}[/]"
+    )
 
 
 if __name__ == "__main__":
     cwd = Path.cwd()
-    before = gsz(cwd)
     args = sys.argv[1:]
     files = collect_files(cwd, args)
     so_files = [f for f in files if f.suffix in (".so",) or SO_PATTERN.search(f.name)]
-    whl_files = [f for f in files if f.suffix == ".whl"]
-    mpf3(process_file, so_files)
-    for whl in whl_files:
-        process_whl(whl)
-    after = gsz(cwd)
-    dsz = before - after
-    if dsz:
-        print(f"space freed: {fsz(dsz)}")
+
+    # Show summary at start
+    console.print("[bold green]Starting .so stripping process...[/]")
+    show_summary(so_files)
+
+    # Process with progress bar
+    with Progress(
+        TextColumn("[bold blue]{task.description}[/]"),
+        BarColumn(),
+        TaskProgressColumn(),
+        TextColumn("[bold]{task.completed}/{task.total}[/]"),
+        console=console,
+    ) as progress:
+        task = progress.add_task("[cyan]Stripping .so files...[/]", total=len(so_files))
+        for so_file in so_files:
+            process_file(so_file)
+            progress.update(task, advance=1)
+
+    console.print(
+        "[bold green]Done![/] Processed [bold yellow]{len(so_files)}[/] .so files."
+    )

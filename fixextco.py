@@ -10,11 +10,10 @@ import sys
 from dataclasses import dataclass
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Any, Final, Iterable
-
-from loguru import logger
+from typing import Any, Final
 
 from dh import is_binary, runcmd, unique_path
+from loguru import logger
 
 
 class Color:

@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import argparse
 import ast
-import sys
 from collections.abc import Iterator
 from multiprocessing import Pool
 from multiprocessing.pool import AsyncResult

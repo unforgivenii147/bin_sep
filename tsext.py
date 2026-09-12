@@ -5,8 +5,8 @@ import os
 from pathlib import Path
 
 import tree_sitter_python as tsp
-from tree_sitter import Language, Parser
 from dh import get_pyfiles
+from tree_sitter import Language, Parser
 
 PY_LANGUAGE = Language(tsp.language())
 parser = Parser(PY_LANGUAGE)

@@ -4,10 +4,10 @@ from __future__ import annotations
 import json
 import multiprocessing as mp
 import re
-from io import BytesIO
-from pathlib import Path
 from importlib import metadata
+from io import BytesIO
 from operator import itemgetter
+from pathlib import Path
 
 import pycurl
 

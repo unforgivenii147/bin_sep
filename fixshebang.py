@@ -1,16 +1,22 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""
+Generate a Python script that scans the current directory recursively for Python files, adds or updates Python shebangs (#!/data/data/com.termux/files/home/.local/bin/python) in all detected Python files, skips symlinks, skips non-Python files, uses multiprocessing.Pool.apply_async with a fixed pool of 8 workers, adds complete type hints to all functions, classes, arguments, return types, module-level constants, and variables, uses loguru for logging instead of print or standard logging, uses pathlib for all path handling, includes a module docstring, function docstrings, and fixes any type-checker issues such as missing imports, Optional handling, and wrong signatures.
+"""
 
 import re
-import sys
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from multiprocessing import Pool
 from pathlib import Path
+from typing import Any, Final
 
-SHEBANG_PATTERN = re.compile(r"^#!.*python[23]?(?:\.\d+)?(?:[ \t]+.*)?$", re.MULTILINE)
-NEW_SHEBANG12 = "#!/data/data/com.termux/files/home/.local/bin/python"
-NEW_SHEBANG14 = "#!/data/data/com.termux/files/usr/bin/python"
-PYTHON_EXTENSIONS = {".py"}
-COMMON_PYTHON_NAMES = {
+from loguru import logger
+
+SHEBANG_PATTERN: Final[re.Pattern[str]] = re.compile(
+    r"^#!.*python[23]?(?:\.\d+)?(?:[ \t]+.*)?$", re.MULTILINE
+)
+NEW_SHEBANG12: Final[str] = "#!/data/data/com.termux/files/home/.local/bin/python"
+NEW_SHEBANG14: Final[str] = "#!/data/data/com.termux/files/usr/bin/python"
+PYTHON_EXTENSIONS: Final[set[str]] = {".py"}
+COMMON_PYTHON_NAMES: Final[set[str]] = {
     "setup",
     "setup.py",
     "manage",
@@ -36,6 +42,14 @@ COMMON_PYTHON_NAMES = {
 
 
 def get_shebang(content: str) -> str:
+    """Return the appropriate shebang line for the given file content.
+
+    Args:
+        content: The text content of the file.
+
+    Returns:
+        The shebang line to use.
+    """
     if re.search(
         r"^\s*(?:import\s+cv2\b|from\s+cv2\b)",
         content,
@@ -46,10 +60,19 @@ def get_shebang(content: str) -> str:
 
 
 def is_symlink(path: Path) -> bool:
+    """Return True if the given path is a symbolic link."""
     return path.is_symlink()
 
 
 def is_likely_python_file(path: Path) -> bool:
+    """Heuristically determine whether a file is likely a Python file.
+
+    Args:
+        path: The file path to inspect.
+
+    Returns:
+        True if the file appears to be Python source, False otherwise.
+    """
     try:
         with open(path, "rb") as f:
             content = f.read(512)
@@ -74,7 +97,15 @@ def is_likely_python_file(path: Path) -> bool:
 
 
 def find_python_files(directory: Path) -> list[Path]:
-    python_files = []
+    """Recursively find Python files under the given directory.
+
+    Args:
+        directory: The root directory to scan.
+
+    Returns:
+        A list of paths to Python files.
+    """
+    python_files: list[Path] = []
     for path in directory.rglob("*"):
         if (
             any(part.startswith(".") and part != "." for part in path.parts)
@@ -112,6 +143,15 @@ def find_python_files(directory: Path) -> list[Path]:
 
 
 def process_file(path: Path, root_dir: Path) -> tuple[Path, bool, str | None, str, str]:
+    """Process a single file to add or update its Python shebang.
+
+    Args:
+        path: The file to process.
+        root_dir: The root directory used for relative path reporting.
+
+    Returns:
+        A tuple of (path, was_changed, error_or_None, relative_path, action_type).
+    """
     rel_path = str(path.relative_to(root_dir))
     if is_symlink(path):
         return (path, False, "Symlink skipped", rel_path, "skipped")
@@ -135,29 +175,49 @@ def process_file(path: Path, root_dir: Path) -> tuple[Path, bool, str | None, st
         return (path, False, str(e), rel_path, "error")
 
 
-def main():
+def _process_file_star(
+    args: tuple[Path, Path],
+) -> tuple[Path, bool, str | None, str, str]:
+    """Unpack arguments for process_file when using Pool.apply_async.
+
+    Args:
+        args: A tuple of (path, root_dir).
+
+    Returns:
+        The result of process_file.
+    """
+    return process_file(*args)
+
+
+def main() -> int:
+    """Run the shebang updater across the current working directory.
+
+    Returns:
+        Exit code (0 on success, 1 if errors occurred).
+    """
     current_dir = Path.cwd()
-    print(f"📁 Scanning directory: {current_dir}")
-    print("-" * 40)
+    logger.info(f"📁 Scanning directory: {current_dir}")
+    logger.info("-" * 40)
     python_files = find_python_files(current_dir)
     if not python_files:
-        print("No Python files found.")
-        return
-    print(f"Found {len(python_files)} Python files to check.")
-    print("-" * 40)
-    updated_files = []
-    added_shebang_files = []
-    errors = []
+        logger.info("No Python files found.")
+        return 0
+    logger.info(f"Found {len(python_files)} Python files to check.")
+    logger.info("-" * 40)
+    updated_files: list[tuple[Path, str]] = []
+    added_shebang_files: list[tuple[Path, str]] = []
+    errors: list[tuple[str, str]] = []
     skipped_count = 0
     already_correct_count = 0
     not_python_count = 0
-    with ProcessPoolExecutor() as executor:
-        future_to_file = {
-            executor.submit(process_file, path, current_dir): path
-            for path in python_files
-        }
-        for future in as_completed(future_to_file):
-            path, was_changed, error, rel_path, action_type = future.result()
+    with Pool(processes=8) as pool:
+        async_results: list[Any] = []
+        for path in python_files:
+            async_results.append(
+                pool.apply_async(_process_file_star, ((path, current_dir),))
+            )
+        for async_result in async_results:
+            path, was_changed, error, rel_path, action_type = async_result.get()
             if error:
                 if "Symlink" in error:
                     skipped_count += 1
@@ -174,38 +234,39 @@ def main():
             else:
                 skipped_count += 1
     if updated_files:
-        print(f"\n✅ Updated existing shebangs in {len(updated_files)} files:")
-        print("-" * 40)
+        logger.info(f"\n✅ Updated existing shebangs in {len(updated_files)} files:")
+        logger.info("-" * 40)
         for path, rel_path in updated_files:
             file_info = rel_path
             if "." not in Path(rel_path).name:
                 file_info += " (no extension)"
-            print(f"  ✏️  {file_info}")
+            logger.info(f"  ✏️  {file_info}")
     if added_shebang_files:
-        print(f"\n➕ Added new shebang to {len(added_shebang_files)} files:")
-        print("-" * 40)
+        logger.info(f"\n➕ Added new shebang to {len(added_shebang_files)} files:")
+        logger.info("-" * 40)
         for path, rel_path in added_shebang_files:
             file_info = rel_path
             if "." not in Path(rel_path).name:
                 file_info += " (no extension)"
-            print(f"  ➕ {file_info}")
-    if not updated_files and (not added_shebang_files):
-        print("\n✅ No files needed updating.")
-    print("\n" + "=" * 40)
-    print("📊 Summary:")
-    print(f"  ✏️  Updated existing shebangs: {len(updated_files)} files")
-    print(f"  ➕ Added new shebangs: {len(added_shebang_files)} files")
-    print(f"  ⏭️  Skipped (symlinks): {skipped_count} files")
-    print(f"  ⏭️  Not Python shebang: {not_python_count} files")
-    print(f"  ⏭️  Already correct: {already_correct_count} files")
-    print(f"  📝 Total processed: {len(python_files)} files")
+            logger.info(f"  ➕ {file_info}")
+    if not updated_files and not added_shebang_files:
+        logger.info("\n✅ No files needed updating.")
+    logger.info("\n" + "=" * 40)
+    logger.info("📊 Summary:")
+    logger.info(f"  ✏️  Updated existing shebangs: {len(updated_files)} files")
+    logger.info(f"  ➕ Added new shebangs: {len(added_shebang_files)} files")
+    logger.info(f"  ⏭️  Skipped (symlinks): {skipped_count} files")
+    logger.info(f"  ⏭️  Not Python shebang: {not_python_count} files")
+    logger.info(f"  ⏭️  Already correct: {already_correct_count} files")
+    logger.info(f"  📝 Total processed: {len(python_files)} files")
     if errors:
-        print(f"  ❌ Errors: {len(errors)} files")
+        logger.info(f"  ❌ Errors: {len(errors)} files")
     if errors:
-        print("\n❌ Errors:")
+        logger.info("\n❌ Errors:")
         for rel_path, error in errors:
-            print(f"  - {rel_path}: {error}")
-        sys.exit(1)
+            logger.info(f"  - {rel_path}: {error}")
+        return 1
+    return 0
 
 
 if __name__ == "__main__":

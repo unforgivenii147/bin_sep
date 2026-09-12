@@ -10,7 +10,6 @@ import argparse
 import importlib.metadata
 import shutil
 import site
-import sys
 from multiprocessing import Pool
 from pathlib import Path
 from typing import Any, Optional

@@ -16,9 +16,8 @@ from multiprocessing.pool import AsyncResult
 from pathlib import Path
 from typing import Final
 
-from loguru import logger
-
 from dh import is_binary, should_skip
+from loguru import logger
 
 # Module-level constants
 ANSI_RESET: Final[str] = "\x1b[0m"

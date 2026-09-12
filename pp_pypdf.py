@@ -1,70 +1,82 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
+import multiprocessing as mp
 import sys
 from pathlib import Path
 
-from joblib import Parallel, delayed
-from pypdf import PdfReader
+try:
+    from pypdf import PdfReader
+except ImportError:
+    print("pypdf not installed. Install with: pip install pypdf")
+    sys.exit(1)
 
 
-def extract_pages_from_pdf(pdf_path, n_jobs=4):
-    pdf_path = Path(pdf_path)
-    output_dir = pdf_path.parent / pdf_path.stem
+CHUNK_SIZE = 10
+
+
+def extract_chunk(args):
+    pdf_path, start_page, end_page, output_dir, total_pages = args
+    print(f"processing pages {start_page + 1}-{end_page}")
+
+    padding = len(str(total_pages))
+    results = []
+
+    try:
+        with open(pdf_path, "rb") as f:
+            reader = PdfReader(f)
+            for page_num in range(start_page, end_page):
+                try:
+                    text = reader.pages[page_num].extract_text() or ""
+                except Exception as e:
+                    text = ""
+
+                filename = f"page_{page_num + 1:0{padding}d}.txt"
+                output_file = output_dir / filename
+                output_file.write_text(text, encoding="utf-8")
+                results.append((page_num + 1, str(output_file), len(text)))
+    except Exception as e:
+        # If the whole chunk fails, report error for each page in it
+        for page_num in range(start_page, end_page):
+            results.append((page_num + 1, f"ERROR: {e}", 0))
+
+    return results
+
+
+def extract_pdf(pdf_path):
+    pdf_path = Path(pdf_path).resolve()
+
+    if not pdf_path.is_file():
+        raise FileNotFoundError(f"PDF not found: {pdf_path}")
+
+    output_dir = Path(pdf_path.stem)
     output_dir.mkdir(exist_ok=True)
-    reader = PdfReader(pdf_path)
 
-    def extract_page(page_num):
-        if page_num % 10 == 0:
-            print(f"processing page {page_num}")
-        try:
-            page = reader.pages[page_num - 1]
-            text = page.extract_text()
-            page_file = output_dir / f"page_{page_num:03d}.txt"
-            page_file.write_text(text, encoding="utf-8")
-            return page_num, page_file
-        except Exception as e:
-            print(f"Error extracting page {page_num}: {e}", file=sys.stderr)
-            return None
+    with open(pdf_path, "rb") as f:
+        reader = PdfReader(f)
+        total_pages = len(reader.pages)
 
-    results = Parallel(n_jobs=n_jobs, backend="threading")(
-        delayed(extract_page)(i) for i in range(1, len(reader.pages) + 1)
-    )
-    return [r for r in results if r is not None]
+    print(f"PDF: {pdf_path.name}")
+    print(f"Pages: {total_pages}")
+    print(f"Output: {output_dir.resolve()}")
 
+    # Build chunks of CHUNK_SIZE pages each
+    tasks = []
+    for start in range(0, total_pages, CHUNK_SIZE):
+        end = min(start + CHUNK_SIZE, total_pages)
+        tasks.append((str(pdf_path), start, end, output_dir, total_pages))
 
-def collect_pdf_files(inputs):
-    pdf_files = []
-    if not inputs:
-        inputs = [Path(".")]
-    for item in inputs:
-        path = Path(item)
-        if path.is_file() and path.suffix.lower() == ".pdf":
-            pdf_files.append(path)
-        elif path.is_dir():
-            pdf_files.extend(path.rglob("*.pdf"))
-        else:
-            print(
-                f"Warning: {path} is not a valid PDF file or directory", file=sys.stderr
-            )
-    return pdf_files
+    print(f"Chunks: {len(tasks)} ({CHUNK_SIZE} pages each)")
 
+    with mp.Pool(processes=8) as pool:
+        for chunk_result in pool.imap_unordered(extract_chunk, tasks):
+            for page_num, info, length in chunk_result:
+                print(f"  Page {page_num}: {info} ({length} chars)")
 
-def main():
-    inputs = sys.argv[1:] if len(sys.argv) > 1 else []
-    pdf_files = collect_pdf_files(inputs)
-    if not pdf_files:
-        print("No PDF files found.", file=sys.stderr)
-        return
-    print(f"Found {len(pdf_files)} PDF file(s) to process.")
-    for i, pdf_file in enumerate(pdf_files, 1):
-        print(f"Processing file {i}/{len(pdf_files)}: {pdf_file.name}")
-        try:
-            results = extract_pages_from_pdf(pdf_file, n_jobs=8)
-            print(f"  Extracted {len(results)} pages from {pdf_file.name}")
-        except Exception as e:
-            print(f"Failed to process {pdf_file}: {e}", file=sys.stderr)
+    print("Done.")
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    if len(sys.argv) < 2:
+        print("Usage: python extract_pdf.py <pdf_file>")
+        sys.exit(1)
+
+    extract_pdf(sys.argv[1])

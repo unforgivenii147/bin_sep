@@ -25,12 +25,11 @@ import threading
 from multiprocessing import Pool
 from multiprocessing.pool import AsyncResult
 from pathlib import Path
-from typing import Generator, Iterator, List, Optional, Tuple
+from typing import Generator, Iterator, Tuple
 
 import zstandard as zstd
-from loguru import logger
-
 from dh import fsz
+from loguru import logger
 
 # ---------------------------------------------------------------------------
 # Module-level constants

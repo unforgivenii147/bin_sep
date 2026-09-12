@@ -7,8 +7,10 @@ zstd, brotli, lz4, lzma, gzip, and bz2 with parallel processing capabilities.
 """
 
 import argparse
+import bz2
+import gzip
 import json
-import multiprocessing
+import lzma
 import sys
 import tarfile
 import tempfile
@@ -20,10 +22,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import brotli
-import bz2
-import gzip
 import lz4.frame
-import lzma
 import zstandard as zstd
 from loguru import logger
 

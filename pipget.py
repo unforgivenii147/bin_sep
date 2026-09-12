@@ -1,7 +1,7 @@
 #!/data/data/com.termux/files/home/.local/bin/python
+import re
 import sys
 import time
-import re
 from io import BytesIO
 from pathlib import Path
 

@@ -20,10 +20,9 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Iterable
 
+from dh import get_files
 from loguru import logger
 from packaging import version as pkg_version
-
-from dh import get_files
 
 # ---------------------------------------------------------------------------
 # Module-level constants

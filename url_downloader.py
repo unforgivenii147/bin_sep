@@ -11,7 +11,7 @@ from __future__ import annotations
 import sys
 from multiprocessing.pool import AsyncResult, Pool
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple
+from typing import List, Set, Tuple
 
 from loguru import logger
 

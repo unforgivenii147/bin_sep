@@ -6,7 +6,6 @@ Generate a Python CLI tool that compresses and decompresses files using Zstandar
 from __future__ import annotations
 
 import argparse
-import sys
 import tarfile
 import time
 from dataclasses import dataclass
@@ -15,9 +14,8 @@ from pathlib import Path
 from typing import Any, Callable, Iterable, Optional
 
 import zstandard as zstd
-from loguru import logger
-
 from dh import fsz, should_skip
+from loguru import logger
 
 EXCLUDED_EXTENSIONS: set[str] = {
     ".xz",

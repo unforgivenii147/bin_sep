@@ -2,13 +2,10 @@
 import importlib
 import multiprocessing as mp
 import os
-import stat
 import sys
 import time
 from dataclasses import dataclass
-from functools import lru_cache
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union
 
 from tree_sitter import Language, Node, Parser
 

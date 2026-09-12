@@ -1,98 +1,195 @@
 #!/data/data/com.termux/files/home/.local/bin/python
+"""
+Translate Persian words from a text file to English using Google Translate.
+
+Reads words from ``words.txt`` (one per line), translates each unique word
+concurrently using a multiprocessing pool of 8 workers, and stores results
+incrementally in ``dic.json`` as a mapping of Persian word to English
+translation. Existing translations are preserved and skipped, progress is
+saved atomically every 1000 new entries, and Ctrl-C triggers a final save.
+"""
+
 from __future__ import annotations
 
 import json
+import multiprocessing
 import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-from threading import Lock
+from typing import Any, Dict, List, Optional
 
 from deep_translator import GoogleTranslator
+from loguru import logger
 from tqdm import tqdm
 
-INPUT_FILE = "words.txt"
-OUTPUT_FILE = "dic.json"
-MAX_WORKERS = 12
-SAVE_EVERY = 1000
-lock = Lock()
+INPUT_FILE: str = "words.txt"
+OUTPUT_FILE: str = "dic.json"
+MAX_WORKERS: int = 8
+SAVE_EVERY: int = 1000
+MAX_RETRIES: int = 3
+RETRY_DELAY_SECONDS: float = 0.5
 
 
-def translate_word(word) -> str | None:
-    for attempt in range(3):
+def translate_word(word: str) -> Optional[str]:
+    """Translate a single word to English, retrying on failure.
+
+    Args:
+        word: The source word to translate.
+
+    Returns:
+        The translated English string, or ``None`` if all retries failed.
+    """
+    for attempt in range(MAX_RETRIES):
         try:
             return GoogleTranslator(source="auto", target="en").translate(word)
-        except Exception as e:
-            print(f"[WARN] Failed '{word}' (attempt {attempt + 1}): {e}")
-            time.sleep(0.5)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(
+                "Failed '{}' (attempt {}/{}): {}",
+                word,
+                attempt + 1,
+                MAX_RETRIES,
+                exc,
+            )
+            time.sleep(RETRY_DELAY_SECONDS)
     return None
 
 
-def load_words(input_file: str) -> list[str]:
-    with Path(input_file).open(encoding="utf-8") as f:
-        return [w.strip() for w in f if w.strip()]
+def load_words(input_file: str) -> List[str]:
+    """Load non-empty, stripped lines from a text file.
+
+    Args:
+        input_file: Path to the file containing one word per line.
+
+    Returns:
+        A list of unique, non-empty words preserving input order.
+    """
+    seen: set[str] = set()
+    words: List[str] = []
+    with Path(input_file).open(encoding="utf-8") as fh:
+        for raw in fh:
+            word = raw.strip()
+            if word and word not in seen:
+                seen.add(word)
+                words.append(word)
+    return words
 
 
-def load_existing_results(output_file: str):
-    if Path(output_file).exists():
-        try:
-            with Path(output_file).open(encoding="utf-8") as f:
-                data = json.load(f)
-                if isinstance(data, dict):
-                    return data
-        except Exception as e:
-            print(f"[WARN] Could not load existing {output_file}: {e}")
+def load_existing_results(output_file: str) -> Dict[str, str]:
+    """Load previously saved translations from a JSON file.
+
+    Args:
+        output_file: Path to the JSON dictionary file.
+
+    Returns:
+        A mapping of source words to translations. Empty if the file is
+        missing or malformed.
+    """
+    path = Path(output_file)
+    if not path.exists():
+        return {}
+    try:
+        with path.open(encoding="utf-8") as fh:
+            data: Any = json.load(fh)
+        if isinstance(data, dict):
+            return {str(k): str(v) for k, v in data.items()}
+        logger.warning("Existing {} is not a JSON object; ignoring.", output_file)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Could not load existing {}: {}", output_file, exc)
     return {}
 
 
-def save_results_atomic(results, output_file: str) -> None:
-    tmp = output_file + ".tmp"
-    with Path(tmp).open("w", encoding="utf-8") as f:
-        json.dump(results, f, ensure_ascii=False, indent=2)
-    Path(tmp).replace(output_file)
+def save_results_atomic(results: Dict[str, str], output_file: str) -> None:
+    """Atomically write the translation dictionary to disk.
+
+    Writes to a temporary file first, then replaces the target file to
+    avoid corrupting the output on interruption.
+
+    Args:
+        results: Mapping of source words to translations.
+        output_file: Destination JSON path.
+    """
+    target = Path(output_file)
+    tmp = target.with_suffix(target.suffix + ".tmp")
+    with tmp.open("w", encoding="utf-8") as fh:
+        json.dump(results, fh, ensure_ascii=False, indent=2)
+    tmp.replace(target)
 
 
-def main() -> None:
+def main() -> int:
+    """Run the translation pipeline.
+
+    Returns:
+        Process exit code (0 on success).
+    """
     words = load_words(INPUT_FILE)
-    print(f"[INFO] Loaded {len(words)} Persian words")
+    logger.info("Loaded {} Persian words", len(words))
+
     results = load_existing_results(OUTPUT_FILE)
-    print(f"[INFO] Loaded {len(results)} existing translations from {OUTPUT_FILE}")
+    logger.info("Loaded {} existing translations from {}", len(results), OUTPUT_FILE)
+
     to_translate = [w for w in words if w not in results]
     total_remaining = len(to_translate)
-    print(f"[INFO] {total_remaining} words to translate (will skip already translated)")
+    logger.info("{} words to translate (skipping already translated)", total_remaining)
+
     if total_remaining == 0:
-        print("[INFO] Nothing to do. Exiting.")
-        return
+        logger.info("Nothing to do. Exiting.")
+        return 0
+
     new_count = 0
     pbar = tqdm(total=total_remaining, desc="Translating", unit="word")
-    try:
-        with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-            future_map = {executor.submit(translate_word, w): w for w in to_translate}
-            for future in as_completed(future_map):
-                persian_word = future_map[future]
-                try:
-                    english = future.result()
-                    with lock:
-                        if english:
-                            results[persian_word] = english
-                            new_count += 1
-                            print(f"{persian_word} → {english}")
-                        else:
-                            print(f"[FAIL] Could not translate: {persian_word}")
-                        pbar.update(1)
-                        if new_count % SAVE_EVERY == 0:
-                            print(
-                                f"[INFO] Saving progress after {new_count} new translations..."
-                            )
-                            save_results_atomic(results, OUTPUT_FILE)
-                except Exception as e:
-                    print(f"[ERROR] Unexpected error for '{persian_word}': {e}")
-    except KeyboardInterrupt:
-        print("\n[INFO] Interrupted by user. Saving progress...")
-    finally:
-        with lock:
+
+    # Shared counter used by worker callbacks; multiprocessing-safe via Value.
+    counter = multiprocessing.Value("i", 0)
+
+    def on_success(word: str, translation: Optional[str]) -> None:
+        """Handle a completed translation task.
+
+        Args:
+            word: The source word.
+            translation: The translated text, or ``None`` on failure.
+        """
+        nonlocal new_count
+        if translation:
+            results[word] = translation
+            new_count += 1
+            logger.info("{} → {}", word, translation)
+        else:
+            logger.error("Could not translate: {}", word)
+        pbar.update(1)
+        with counter.get_lock():
+            counter.value += 1
+            current = counter.value
+        if current % SAVE_EVERY == 0:
+            logger.info("Saving progress after {} new translations...", new_count)
             save_results_atomic(results, OUTPUT_FILE)
+
+    def on_error(exc: BaseException) -> None:
+        """Handle an unexpected worker failure.
+
+        Args:
+            exc: The exception raised by the worker.
+        """
+        logger.error("Unexpected worker error: {}", exc)
+        pbar.update(1)
+
+    try:
+        with multiprocessing.Pool(processes=MAX_WORKERS) as pool:
+            for word in to_translate:
+                pool.apply_async(
+                    translate_word,
+                    args=(word,),
+                    callback=lambda translation, w=word: on_success(w, translation),
+                    error_callback=on_error,
+                )
+            pool.close()
+            pool.join()
+    except KeyboardInterrupt:
+        logger.info("Interrupted by user. Saving progress...")
+    finally:
+        save_results_atomic(results, OUTPUT_FILE)
         pbar.close()
-        print(f"\n[SAVED] Translation dictionary saved to {OUTPUT_FILE}")
+        logger.info("Translation dictionary saved to {}", OUTPUT_FILE)
+
+    return 0
 
 
 if __name__ == "__main__":

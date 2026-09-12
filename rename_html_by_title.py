@@ -17,13 +17,11 @@ from datetime import datetime
 from functools import lru_cache
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Any, Optional, Dict, List, Set, Tuple, Union
+from typing import Any, Dict, List, Optional, Set
 
 from loguru import logger
 
 try:
-    from tree_sitter import Language, Parser
-
     TREE_SITTER_AVAILABLE = True
 except ImportError:
     TREE_SITTER_AVAILABLE = False

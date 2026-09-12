@@ -19,9 +19,8 @@ from pathlib import Path
 from typing import Iterable, Set
 
 import py7zr
-from loguru import logger
-
 from dh import cprint, get_nobinary
+from loguru import logger
 
 CHUNK_SIZE: int = 1024 * 1024
 POOL_SIZE: int = 8

@@ -19,7 +19,7 @@ import io
 import tarfile
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Any, BinaryIO, List, Optional, Union
+from typing import BinaryIO, List, Union
 
 import zstandard as zstd
 from loguru import logger

@@ -21,13 +21,12 @@ import sys
 import tarfile
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 
 import brotli
 import zstandard as zstd
-from loguru import logger
-
 from dh import fsz
+from loguru import logger
 
 # ---------------------------------------------------------------------------
 # Module-level constants

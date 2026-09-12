@@ -1,16 +1,27 @@
 #!/data/data/com.termux/files/home/.local/bin/python
+"""
+Generate a script that scans a directory tree for text files, detects non-English
+lines using gcld3, and writes a report. It walks files with pathlib, filters by a
+set of text-file extensions, processes files in parallel using a fixed
+multiprocessing.Pool of 8 workers via apply_async, logs progress with loguru, and
+writes findings and errors to an output report file.
+"""
+
 from __future__ import annotations
 
 import argparse
-from concurrent.futures import ProcessPoolExecutor, as_completed
 from datetime import datetime
-from multiprocessing import cpu_count
+from multiprocessing import Pool, cpu_count
 from pathlib import Path
+from typing import Iterable, Optional
 
 import gcld3
+from loguru import logger
 
-detector = gcld3.NNetLanguageIdentifier(min_num_bytes=0, max_num_bytes=1000)
-TEXT_EXTENSIONS = {
+# Module-level detector instance. Created once per worker process.
+_DETECTOR: Optional[gcld3.NNetLanguageIdentifier] = None
+
+TEXT_EXTENSIONS: set[str] = {
     ".txt",
     ".csv",
     ".log",
@@ -54,63 +65,98 @@ TEXT_EXTENSIONS = {
     ".dockerfile",
 }
 
+MAX_FILE_SIZE_BYTES: int = 10 * 1024 * 1024
+FIXED_WORKERS: int = 8
 
-def is_likely_text_file(file_path):
+# Type aliases
+LineFinding = tuple[int, str, str, float]
+FileResult = tuple[Path, Optional[list[LineFinding]], Optional[str]]
+
+
+def _get_detector() -> gcld3.NNetLanguageIdentifier:
+    """Return a lazily-initialized gcld3 language detector for the current process."""
+    global _DETECTOR
+    if _DETECTOR is None:
+        _DETECTOR = gcld3.NNetLanguageIdentifier(min_num_bytes=0, max_num_bytes=1000)
+    return _DETECTOR
+
+
+def is_likely_text_file(file_path: Path) -> bool:
+    """Return True if the file's extension is in the known text-file set."""
     return file_path.suffix.lower() in TEXT_EXTENSIONS
 
 
-def detect_language(text):
+def detect_language(text: str) -> tuple[Optional[str], Optional[float], bool]:
+    """Detect the language of a text snippet.
+
+    Returns a tuple of (language_code, probability, is_reliable). For blank
+    input, returns (None, None, True).
+    """
     if not text.strip():
         return None, None, True
-    result = detector.FindLanguage(text=text)
+    result = _get_detector().FindLanguage(text=text)
     if result.language == "und":
         return "und", result.probability, result.is_reliable
     return result.language, result.probability, result.is_reliable
 
 
-def process_file(file_path):
-    non_english_lines = []
+def process_file(file_path: Path) -> FileResult:
+    """Scan a single file and return its non-English line findings.
+
+    Returns (path, findings, error). If successful, error is None and findings
+    is a (possibly empty) list. On failure, findings is None and error is a
+    human-readable message.
+    """
     try:
-        if file_path.stat().st_size > 10 * 1024 * 1024:
+        if file_path.stat().st_size > MAX_FILE_SIZE_BYTES:
             return file_path, None, "File too large (>10MB)"
-    except (OSError, PermissionError) as e:
-        return file_path, None, f"Cannot access file: {e}"
+    except (OSError, PermissionError) as exc:
+        return file_path, None, f"Cannot access file: {exc}"
+
     try:
-        content = None
-        for encoding in ["utf-8", "latin-1", "cp1252"]:
+        content: Optional[list[str]] = None
+        for encoding in ("utf-8", "latin-1", "cp1252"):
             try:
-                with open(file_path, "r", encoding=encoding) as f:
-                    content = f.readlines()
+                with open(file_path, "r", encoding=encoding) as handle:
+                    content = handle.readlines()
                 break
             except UnicodeDecodeError:
                 continue
+
         if content is None:
             return file_path, None, "Cannot decode file"
+
+        findings: list[LineFinding] = []
         for line_num, line in enumerate(content, 1):
-            if not line.strip():
+            stripped = line.strip()
+            if not stripped:
                 continue
-            lang, prob, reliable = detect_language(line.strip())
-            if lang and lang != "en" and reliable:
-                non_english_lines.append((line_num, line.strip(), lang, prob))
-            elif lang == "und" and not reliable:
-                non_english_lines.append((line_num, line.strip(), "und", prob))
-        return file_path, non_english_lines, None
-    except Exception as e:
-        return file_path, None, f"Error processing file: {e}"
+            lang, prob, reliable = detect_language(stripped)
+            if lang and lang != "en" and reliable and prob is not None:
+                findings.append((line_num, stripped, lang, prob))
+            elif lang == "und" and not reliable and prob is not None:
+                findings.append((line_num, stripped, "und", prob))
+        return file_path, findings, None
+    except Exception as exc:  # noqa: BLE001 - reported to caller
+        return file_path, None, f"Error processing file: {exc}"
 
 
-def find_text_files(root_dir=".", extensions=TEXT_EXTENSIONS):
+def find_text_files(
+    root_dir: str = ".", extensions: Iterable[str] = TEXT_EXTENSIONS
+) -> list[Path]:
+    """Recursively find text files under root_dir matching the given extensions."""
     root_path = Path(root_dir)
-    text_files = []
+    text_files: list[Path] = []
     for ext in extensions:
         text_files.extend(root_path.rglob(f"*{ext}"))
-    text_files = list(set(text_files))
-    text_files = [f for f in text_files if is_likely_text_file(f)]
-    text_files.sort()
-    return text_files
+    unique_files = list(set(text_files))
+    filtered = [f for f in unique_files if is_likely_text_file(f)]
+    filtered.sort()
+    return filtered
 
 
-def main():
+def build_arg_parser() -> argparse.ArgumentParser:
+    """Build the CLI argument parser."""
     parser = argparse.ArgumentParser(
         description="Find non-English lines in text files using gcld3"
     )
@@ -127,79 +173,115 @@ def main():
         help="Output report file (default: noneng.txt)",
     )
     parser.add_argument(
-        "-w",
-        "--workers",
-        type=int,
-        default=cpu_count(),
-        help=f"Number of parallel workers (default: {cpu_count()})",
+        "--extensions",
+        nargs="+",
+        help="Additional file extensions to scan",
     )
-    parser.add_argument(
-        "--extensions", nargs="+", help="Additional file extensions to scan"
-    )
+    return parser
+
+
+def write_report(
+    output_path: Path,
+    directory: str,
+    files_scanned: int,
+    files_with_findings: int,
+    total_non_eng_lines: int,
+    non_english_results: list[tuple[Path, list[LineFinding]]],
+    errors: list[tuple[Path, str]],
+) -> None:
+    """Write the detection report to output_path."""
+    with open(output_path, "w", encoding="utf-8") as handle:
+        handle.write("=" * 40 + "\n")
+        handle.write("Non-English Lines Detection Report\n")
+        handle.write(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+        handle.write(f"Directory scanned: {Path(directory).resolve()}\n")
+        handle.write(f"Files scanned: {files_scanned}\n")
+        handle.write(f"Files with non-English content: {files_with_findings}\n")
+        handle.write(f"Total non-English lines found: {total_non_eng_lines}\n")
+        handle.write("=" * 40 + "\n\n")
+
+        if non_english_results:
+            for file_path, lines in non_english_results:
+                handle.write(f"\n{'─' * 40}\n")
+                handle.write(f"File: {file_path}\n")
+                handle.write(f"Non-English lines: {len(lines)}\n")
+                handle.write(f"{'─' * 40}\n\n")
+                for line_num, line_text, lang, prob in lines:
+                    handle.write(
+                        f"  Line {line_num}: [{lang}] (confidence: {prob:.2f})\n"
+                    )
+                    handle.write(f"  Content: {line_text}\n\n")
+        else:
+            handle.write("No non-English lines found.\n")
+
+        if errors:
+            handle.write(f"\n{'=' * 40}\n")
+            handle.write(f"Errors encountered: {len(errors)}\n")
+            handle.write(f"{'=' * 40}\n\n")
+            for file_path, error in errors:
+                handle.write(f"  {file_path}: {error}\n")
+
+
+def main() -> int:
+    """Entry point: parse args, scan files in parallel, and write the report."""
+    parser = build_arg_parser()
     args = parser.parse_args()
-    extensions = TEXT_EXTENSIONS
+
+    extensions: set[str] = set(TEXT_EXTENSIONS)
     if args.extensions:
         extensions.update(args.extensions)
-    print(f"Scanning directory: {args.directory}")
+
+    logger.info(f"Scanning directory: {args.directory}")
     text_files = find_text_files(args.directory, extensions)
-    print(f"Found {len(text_files)} text files to process")
-    non_english_results = []
-    errors = []
+    logger.info(f"Found {len(text_files)} text files to process")
+
+    non_english_results: list[tuple[Path, list[LineFinding]]] = []
+    errors: list[tuple[Path, str]] = []
     files_with_findings = 0
     total_non_eng_lines = 0
-    print(f"Processing files using {args.workers} workers...")
-    with ProcessPoolExecutor(max_workers=args.workers) as executor:
-        future_to_file = {
-            executor.submit(process_file, file): file for file in text_files
-        }
+
+    logger.info(f"Processing files using {FIXED_WORKERS} workers...")
+    pool = Pool(processes=FIXED_WORKERS)
+    try:
+        async_results = [pool.apply_async(process_file, (f,)) for f in text_files]
         completed = 0
-        for future in as_completed(future_to_file):
+        total = len(text_files)
+        for async_result in async_results:
             completed += 1
-            if completed % 100 == 0 or completed == len(text_files):
-                print(f"Progress: {completed}/{len(text_files)} files processed")
-            file_path, results, error = future.result()
+            if completed % 100 == 0 or completed == total:
+                logger.info(f"Progress: {completed}/{total} files processed")
+            file_path, results, error = async_result.get()
             if error:
                 errors.append((file_path, error))
             elif results:
                 files_with_findings += 1
                 total_non_eng_lines += len(results)
                 non_english_results.append((file_path, results))
+    finally:
+        pool.close()
+        pool.join()
+
     output_path = Path(args.output)
-    print(f"\nGenerating report: {output_path}")
-    with open(output_path, "w", encoding="utf-8") as f:
-        f.write("=" * 40 + "\n")
-        f.write("Non-English Lines Detection Report\n")
-        f.write(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-        f.write(f"Directory scanned: {Path(args.directory).resolve()}\n")
-        f.write(f"Files scanned: {len(text_files)}\n")
-        f.write(f"Files with non-English content: {files_with_findings}\n")
-        f.write(f"Total non-English lines found: {total_non_eng_lines}\n")
-        f.write("=" * 40 + "\n\n")
-        if non_english_results:
-            for file_path, lines in non_english_results:
-                f.write(f"\n{'─' * 40}\n")
-                f.write(f"File: {file_path}\n")
-                f.write(f"Non-English lines: {len(lines)}\n")
-                f.write(f"{'─' * 40}\n\n")
-                for line_num, line_text, lang, prob in lines:
-                    f.write(f"  Line {line_num}: [{lang}] (confidence: {prob:.2f})\n")
-                    f.write(f"  Content: {line_text}\n\n")
-        else:
-            f.write("No non-English lines found.\n")
-        if errors:
-            f.write(f"\n{'=' * 40}\n")
-            f.write(f"Errors encountered: {len(errors)}\n")
-            f.write(f"{'=' * 40}\n\n")
-            for file_path, error in errors:
-                f.write(f"  {file_path}: {error}\n")
-    print(f"\n{'=' * 40}")
-    print("Scan complete!")
-    print(f"Files scanned: {len(text_files)}")
-    print(f"Files with non-English content: {files_with_findings}")
-    print(f"Total non-English lines found: {total_non_eng_lines}")
-    print(f"Errors: {len(errors)}")
-    print(f"Report saved to: {output_path.resolve()}")
-    print(f"{'=' * 40}")
+    logger.info(f"Generating report: {output_path}")
+    write_report(
+        output_path=output_path,
+        directory=args.directory,
+        files_scanned=len(text_files),
+        files_with_findings=files_with_findings,
+        total_non_eng_lines=total_non_eng_lines,
+        non_english_results=non_english_results,
+        errors=errors,
+    )
+
+    logger.info("=" * 40)
+    logger.info("Scan complete!")
+    logger.info(f"Files scanned: {len(text_files)}")
+    logger.info(f"Files with non-English content: {files_with_findings}")
+    logger.info(f"Total non-English lines found: {total_non_eng_lines}")
+    logger.info(f"Errors: {len(errors)}")
+    logger.info(f"Report saved to: {output_path.resolve()}")
+    logger.info("=" * 40)
+    return 0
 
 
 if __name__ == "__main__":

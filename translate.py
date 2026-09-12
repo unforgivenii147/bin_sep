@@ -1,26 +1,9 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-"""
-Translate lines in a text file using Google Translate with persistent SQLite caching,
-graceful interrupt handling, and periodic progress saving.
-
-Features:
-    * Translation cache stored in SQLite (deduplicated by source/target language pair).
-    * Chunked translation for efficient batch processing.
-    * Automatic Cyrillic detection when source language is Russian (ru).
-    * Periodic progress saving (text + JSON metadata).
-    * Graceful handling of SIGINT/SIGTERM.
-    * Concurrent processing via multiprocessing pool.
-
-Usage:
-    python translate.py -i input.txt -s ru -t en
-    python translate.py --cache-stats
-"""
-
 from __future__ import annotations
 
 import argparse
 import json
-import multiprocessing as mp
+import logging
 import os
 import random
 import re
@@ -29,44 +12,46 @@ import sqlite3
 import sys
 import threading
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-from typing import Any, Final
+from typing import Final
 
 from deep_translator import GoogleTranslator
-from loguru import logger
 
-MAX_WORKERS: Final[int] = 8
+MAX_WORKERS: Final[int] = 16
 RETRY_ATTEMPTS: Final[int] = 4
 RETRY_DELAY: Final[float] = 0.6
 MAX_CHUNK_SIZE: Final[int] = 2000
 SAVE_INTERVAL: Final[int] = 10
-CYRILLIC_RE: Final[re.Pattern[str]] = re.compile(
-    r"[\u0400-\u04FF\u0500-\u052F\u2DE0-\u2DFF\uA640-\uA69F\u1C80-\u1C8F]"
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    datefmt="%H:%M:%S",
 )
+logger = logging.getLogger(__name__)
+interrupted = False
 
-interrupted: bool = False
 
-
-def signal_handler(signum: int, frame: Any) -> None:
-    """Handle interrupt signals by setting the global ``interrupted`` flag."""
+def signal_handler(signum, frame):
     global interrupted
     interrupted = True
     logger.warning(
-        "Received interrupt signal (Ctrl+C). Saving progress and exiting gracefully..."
+        "\nReceived interrupt signal (Ctrl+C). Saving progress and exiting gracefully..."
     )
 
 
 def contains_cyrillic(text: str) -> bool:
-    """Return ``True`` if the given text contains at least one Cyrillic character."""
-    return bool(CYRILLIC_RE.search(text))
+    return bool(
+        re.search(
+            r"[\u0400-\u04FF\u0500-\u052F\u2DE0-\u2DFF\uA640-\uA69F\u1C80-\u1C8F]", text
+        )
+    )
 
 
 def create_chunks(lines: list[str], max_chunk_size: int) -> list[list[str]]:
-    """Split ``lines`` into chunks whose total size does not exceed ``max_chunk_size``."""
     chunks: list[list[str]] = []
     current_chunk: list[str] = []
-    current_size: int = 0
-
+    current_size = 0
     for line in lines:
         line_size = len(line) + 1
         if line_size > max_chunk_size:
@@ -88,16 +73,11 @@ def create_chunks(lines: list[str], max_chunk_size: int) -> list[list[str]]:
 
 
 class TranslationCache:
-    """SQLite-backed cache mapping (source_text, source_lang, target_lang) → translation."""
-
-    def __init__(self, db_path: Path) -> None:
-        """Initialize the cache and create the underlying table if needed."""
-        self.db_path: Path = db_path.expanduser()
-        parent: Path = Path(self.db_path).parent
+    def __init__(self, db_path: Path):
+        self.db_path = db_path.expanduser()
+        parent = Path(self.db_path).parent
         parent.mkdir(parents=True, exist_ok=True)
-        self.conn: sqlite3.Connection = sqlite3.connect(
-            str(self.db_path), check_same_thread=False
-        )
+        self.conn = sqlite3.connect(str(self.db_path), check_same_thread=False)
         self.conn.execute("""
             CREATE TABLE IF NOT EXISTS translations (
                 id INTEGER PRIMARY KEY,
@@ -110,12 +90,11 @@ class TranslationCache:
             )
             """)
         self.conn.commit()
-        self.lock: threading.Lock = threading.Lock()
+        self.lock = threading.Lock()
 
     def get_many(
         self, texts: list[str], source_lang: str, target_lang: str
     ) -> dict[str, str]:
-        """Return a mapping of cached translations for the given texts (missing texts omitted)."""
         if not texts:
             return {}
         with self.lock:
@@ -132,7 +111,6 @@ class TranslationCache:
     def set_many(
         self, translations: dict[str, str], source_lang: str, target_lang: str
     ) -> None:
-        """Insert or update many translations in the cache."""
         if not translations:
             return
         with self.lock:
@@ -152,8 +130,7 @@ class TranslationCache:
             )
             self.conn.commit()
 
-    def stats(self) -> dict[str, Any]:
-        """Return aggregate statistics about the cache contents."""
+    def stats(self) -> dict:
         with self.lock:
             cur = self.conn.execute("SELECT COUNT(*) FROM translations")
             total = cur.fetchone()[0] or 0
@@ -173,46 +150,43 @@ class TranslationCache:
             return {"total_entries": total, "last_updated": last, "pairs": pairs_list}
 
     def close(self) -> None:
-        """Commit and close the underlying SQLite connection."""
         with self.lock:
             self.conn.commit()
             self.conn.close()
 
 
-def translate_chunk(
-    chunk: list[str],
-    source_lang: str,
-    target_lang: str,
-) -> tuple[list[str], str | None]:
-    """Translate a single chunk of lines, returning the chunk and translation (or ``None``)."""
-    if interrupted:
-        return (chunk, None)
-    chunk_text = "\n".join(chunk)
-    translator = GoogleTranslator(source=source_lang, target=target_lang)
-    for attempt in range(1, RETRY_ATTEMPTS + 1):
+def translate_chunk_factory(source_lang: str, target_lang: str):
+    def translate_chunk(chunk: list[str]) -> tuple[list[str], str | None]:
         if interrupted:
             return (chunk, None)
-        try:
-            translated = translator.translate(chunk_text)
-            if translated is not None:
-                return (chunk, translated)
-        except Exception as e:
+        chunk_text = "\n".join(chunk)
+        translator = GoogleTranslator(source=source_lang, target=target_lang)
+        for attempt in range(1, RETRY_ATTEMPTS + 1):
             if interrupted:
                 return (chunk, None)
-            delay = RETRY_DELAY * (2 ** (attempt - 1))
-            jitter = random.uniform(0, delay * 0.25)
-            sleep_time = delay + jitter
-            logger.warning(
-                "Translate attempt {}/{} failed for chunk starting '{}...': {}. Retrying in {:.2f}s",
-                attempt,
-                RETRY_ATTEMPTS,
-                (chunk[0][:60] + "...") if chunk else "",
-                e,
-                sleep_time,
-            )
-            if attempt < RETRY_ATTEMPTS:
-                time.sleep(sleep_time)
-    return (chunk, None)
+            try:
+                translated = translator.translate(chunk_text)
+                if translated is not None:
+                    return (chunk, translated)
+            except Exception as e:
+                if interrupted:
+                    return (chunk, None)
+                delay = RETRY_DELAY * (2 ** (attempt - 1))
+                jitter = random.uniform(0, delay * 0.25)
+                sleep_time = delay + jitter
+                logger.warning(
+                    "Translate attempt %d/%d failed for chunk starting '%s...': %s. Retrying in %.2fs",
+                    attempt,
+                    RETRY_ATTEMPTS,
+                    (chunk[0][:60] + "...") if chunk else "",
+                    e,
+                    sleep_time,
+                )
+                if attempt < RETRY_ATTEMPTS:
+                    time.sleep(sleep_time)
+        return (chunk, None)
+
+    return translate_chunk
 
 
 def save_progress(
@@ -223,7 +197,6 @@ def save_progress(
     source_lang: str,
     target_lang: str,
 ) -> None:
-    """Write the current translation progress to the output text and JSON files."""
     try:
         with output_path.open("w", encoding="utf-8") as f:
             translated_count = 0
@@ -248,22 +221,20 @@ def save_progress(
         with json_path.open("w", encoding="utf-8") as f:
             json.dump(json_data, f, ensure_ascii=False, indent=2)
         logger.info(
-            "Progress saved: {}/{} lines translated (Output: {}, JSON: {})",
+            "Progress saved: %d/%d lines translated (Output: %s, JSON: %s)",
             translated_count,
             len(all_lines),
             output_path.name,
             json_path.name,
         )
     except Exception as e:
-        logger.error("Error saving progress: {}", e)
+        logger.error("Error saving progress: %s", e)
 
 
 def main() -> None:
-    """Parse CLI arguments, load input, translate missing lines, and persist results."""
     global interrupted
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
-
     parser = argparse.ArgumentParser(
         description="Translate lines in a text file with persistent caching and progress saving."
     )
@@ -283,7 +254,7 @@ def main() -> None:
         "--max-workers",
         type=int,
         default=MAX_WORKERS,
-        help=f"Max worker processes (default: {MAX_WORKERS})",
+        help=f"Max worker threads (default: {MAX_WORKERS})",
     )
     parser.add_argument(
         "--max-chunk-size",
@@ -301,10 +272,8 @@ def main() -> None:
         "--cache-stats", action="store_true", help="Show cache statistics and exit"
     )
     args = parser.parse_args()
-
     db_path = Path(os.path.expanduser(args.db))
     cache = TranslationCache(db_path)
-
     if args.cache_stats:
         stats = cache.stats()
         print("Translation cache stats")
@@ -320,98 +289,79 @@ def main() -> None:
             print("  (no entries)")
         cache.close()
         return
-
     if not args.input:
         parser.error(
             "the following arguments are required: -i/--input (unless --cache-stats is used)"
         )
-
     input_path = Path(args.input)
     if not input_path.exists():
-        logger.error("Input file not found: {}", input_path)
+        logger.error("Input file not found: %s", input_path)
         cache.close()
         return
-
     try:
         with input_path.open(encoding="utf-8") as f:
             all_lines = [w.rstrip("\n") for w in f if w.strip() != ""]
     except Exception as e:
-        logger.error("Error reading input file: {}", e)
+        logger.error("Error reading input file: %s", e)
         cache.close()
         return
-
     if not all_lines:
-        logger.info("No non-empty lines found in {}", input_path.name)
+        logger.info("No non-empty lines found in %s", input_path.name)
         cache.close()
         return
-
     source_lang = args.source
     target_lang = args.target
-
     if source_lang.lower() == "ru" or source_lang.lower().startswith("ru"):
         to_translate_raw = [line for line in all_lines if contains_cyrillic(line)]
         skipped_lines = [line for line in all_lines if not contains_cyrillic(line)]
     else:
-        to_translate_raw = list(all_lines)
+        to_translate_raw = [line for line in all_lines]
         skipped_lines = []
-
     logger.info(
-        "Loaded {} lines: {} flagged for translation, {} skipped",
+        "Loaded %d lines: %d flagged for translation, %d skipped",
         len(all_lines),
         len(to_translate_raw),
         len(skipped_lines),
     )
-
     if not to_translate_raw:
-        logger.info("No lines to translate for source_lang={}", source_lang)
+        logger.info("No lines to translate for source_lang=%s", source_lang)
         cache.close()
         return
-
     seen: set[str] = set()
     to_translate_unique: list[str] = []
-    for line in to_translate_raw:
-        if line not in seen:
-            seen.add(line)
-            to_translate_unique.append(line)
-
+    for l in to_translate_raw:
+        if l not in seen:
+            seen.add(l)
+            to_translate_unique.append(l)
     logger.info(
-        "Deduplicated: {} unique lines to translate (from {} total flagged)",
+        "Deduplicated: %d unique lines to translate (from %d total flagged)",
         len(to_translate_unique),
         len(to_translate_raw),
     )
-
     cached = cache.get_many(to_translate_unique, source_lang, target_lang)
-    logger.info("Cache hit: {}/{}", len(cached), len(to_translate_unique))
-
+    logger.info("Cache hit: %d/%d", len(cached), len(to_translate_unique))
     results: dict[str, str] = dict(cached)
-    remaining_to_translate = [
-        line for line in to_translate_unique if line not in results
-    ]
-
+    remaining_to_translate = [l for l in to_translate_unique if l not in results]
     output_path = input_path.with_name(
         f"{input_path.stem}_{target_lang}{input_path.suffix}"
     )
     json_path = input_path.with_name(f"{input_path.stem}_{target_lang}.json")
-
     save_progress(all_lines, results, output_path, json_path, source_lang, target_lang)
-
     if remaining_to_translate and not interrupted:
         chunks = create_chunks(remaining_to_translate, args.max_chunk_size)
         num_workers = min(max(1, args.max_workers), len(chunks))
         logger.info(
-            "Created {} chunk(s) from {} remaining lines (max {} chars per chunk), using {} worker(s)",
+            "Created %d chunk(s) from %d remaining lines (max %d chars per chunk), using %d worker(s)",
             len(chunks),
             len(remaining_to_translate),
             args.max_chunk_size,
             num_workers,
         )
-
+        translate_chunk = translate_chunk_factory(source_lang, target_lang)
         last_save_time = time.time()
         save_lock = threading.Lock()
 
-        def periodic_save() -> None:
-            """Background thread that periodically saves translation progress to disk."""
-            nonlocal last_save_time
+        def periodic_save():
             while not interrupted:
                 time.sleep(args.save_interval)
                 if not interrupted:
@@ -424,39 +374,29 @@ def main() -> None:
                             source_lang,
                             target_lang,
                         )
-                        last_save_time = time.time()
 
         save_thread = threading.Thread(target=periodic_save, daemon=True)
         save_thread.start()
-
         try:
-            with mp.Pool(processes=num_workers) as pool:
-                async_results = [
-                    (
-                        pool.apply_async(
-                            translate_chunk,
-                            (chunk, source_lang, target_lang),
-                        ),
-                        chunk,
-                    )
-                    for chunk in chunks
-                ]
-
+            with ThreadPoolExecutor(max_workers=num_workers) as executor:
+                future_to_chunk = {
+                    executor.submit(translate_chunk, chunk): chunk for chunk in chunks
+                }
                 completed = 0
-                total = len(async_results)
+                total = len(future_to_chunk)
                 to_cache: dict[str, str] = {}
-
-                for async_result, chunk in async_results:
+                for future in as_completed(future_to_chunk):
                     if interrupted:
                         logger.info(
                             "Interrupted. Waiting for running tasks to complete..."
                         )
-                        pool.terminate()
+                        for f in future_to_chunk:
+                            f.cancel()
                         break
-
+                    chunk = future_to_chunk[future]
                     completed += 1
                     try:
-                        original_lines, translated_text = async_result.get()
+                        original_lines, translated_text = future.result()
                         if translated_text and not interrupted:
                             translated_lines = translated_text.splitlines()
                             if len(translated_lines) == len(original_lines):
@@ -466,8 +406,7 @@ def main() -> None:
                                     to_cache[original_line] = tgt
                             else:
                                 logger.warning(
-                                    "Line-count mismatch in chunk ({} original vs {} translated). "
-                                    "Falling back to per-line translation for this chunk.",
+                                    "Line-count mismatch in chunk (%d original vs %d translated). Falling back to per-line translation for this chunk.",
                                     len(original_lines),
                                     len(translated_lines),
                                 )
@@ -485,14 +424,14 @@ def main() -> None:
                                         to_cache[line] = t
                                     except Exception as e:
                                         logger.error(
-                                            "Per-line fallback failed for '{}': {}",
+                                            "Per-line fallback failed for '%s': %s",
                                             line[:50],
                                             e,
                                         )
                                         results[line] = line
                                         to_cache[line] = line
                             logger.info(
-                                "Translated chunk {}/{} (sample: '{}' → '{}')",
+                                "Translated chunk %d/%d (sample: '%s' → '%s')",
                                 completed,
                                 total,
                                 original_lines[0][:40]
@@ -505,7 +444,7 @@ def main() -> None:
                         else:
                             if not interrupted:
                                 logger.error(
-                                    "Failed to translate chunk starting with: {}",
+                                    "Failed to translate chunk starting with: %s",
                                     (chunk[0][:60] + "...") if chunk else "",
                                 )
                                 for line in chunk:
@@ -519,7 +458,7 @@ def main() -> None:
                                         to_cache[line] = t
                                     except Exception as e:
                                         logger.error(
-                                            "Per-line retry failed for '{}': {}",
+                                            "Per-line retry failed for '%s': %s",
                                             line[:50],
                                             e,
                                         )
@@ -528,11 +467,10 @@ def main() -> None:
                     except Exception as e:
                         if not interrupted:
                             logger.error(
-                                "Unexpected error processing chunk starting with '{}': {}",
+                                "Unexpected error processing chunk starting with '%s': %s",
                                 (chunk[0][:60] + "...") if chunk else "",
                                 e,
                             )
-
                     if time.time() - last_save_time >= args.save_interval:
                         with save_lock:
                             save_progress(
@@ -544,19 +482,15 @@ def main() -> None:
                                 target_lang,
                             )
                             last_save_time = time.time()
-
-                if to_cache and not interrupted:
-                    cache.set_many(to_cache, source_lang, target_lang)
-                    logger.info("Saved {} new translations to cache", len(to_cache))
-
+            if to_cache and not interrupted:
+                cache.set_many(to_cache, source_lang, target_lang)
+                logger.info("Saved %d new translations to cache", len(to_cache))
         except KeyboardInterrupt:
-            logger.warning("Keyboard interrupt detected. Saving progress...")
+            logger.warning("\nKeyboard interrupt detected. Saving progress...")
             interrupted = True
         except Exception as e:
-            logger.error("Unexpected error: {}", e)
-
+            logger.error("Unexpected error: %s", e)
     save_progress(all_lines, results, output_path, json_path, source_lang, target_lang)
-
     if interrupted:
         logger.warning("Process was interrupted. Progress has been saved.")
         logger.info("You can resume by running the command again (cache will be used).")
@@ -565,11 +499,10 @@ def main() -> None:
             1 for line in all_lines if line in results and results[line] != line
         )
         logger.info(
-            "Translation complete: {}/{} lines translated successfully",
+            "Translation complete: %d/%d lines translated successfully",
             translated_count,
             len(all_lines),
         )
-
     cache.close()
 
 
@@ -577,5 +510,5 @@ if __name__ == "__main__":
     try:
         raise SystemExit(main())
     except KeyboardInterrupt:
-        logger.warning("Interrupted by user. Exiting...")
+        logger.warning("\nInterrupted by user. Exiting...")
         sys.exit(1)

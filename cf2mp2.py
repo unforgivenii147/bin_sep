@@ -9,7 +9,6 @@ import sys
 from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
 
 WORKERS = 8
 MAX_FILE_SIZE = 1024 * 1024

@@ -23,9 +23,8 @@ import brotli
 import lz4.frame
 import py7zr
 import zstandard as zstd
-from loguru import logger
-
 from dh import fsz, gsz
+from loguru import logger
 
 CHUNK: Final[int] = 1024 * 1024
 XZ_PRESET_9: Final[int] = 9

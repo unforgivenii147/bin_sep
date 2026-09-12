@@ -28,9 +28,8 @@ from pathlib import Path
 from typing import Final
 
 import ffmpeg  # type: ignore[import-untyped]
-from loguru import logger
-
 from dh import fsz
+from loguru import logger
 
 # ---------------------------------------------------------------------------
 # Constants

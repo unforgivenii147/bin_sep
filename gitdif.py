@@ -5,7 +5,6 @@ import subprocess
 import sys
 from multiprocessing import Pool, cpu_count
 from pathlib import Path
-from typing import Optional
 
 
 def get_repo_status(repo_path: Path) -> tuple[Path, bool, str | None]:

@@ -9,6 +9,7 @@ BIN: Path = Path.home() / "bin"
 
 def process_dir(cwd: Path, ext: str) -> None:
     for path in cwd.glob(f"*.{ext}"):
+        path = path.resolve()
         symlink_path = path.with_name(path.stem)
         if symlink_path.exists() and not symlink_path.is_symlink():
             symlink_path.unlink()

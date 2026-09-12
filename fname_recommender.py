@@ -1,18 +1,33 @@
 #!/data/data/com.termux/files/home/.local/bin/python
+"""
+Generate a Python CLI tool that scans Python files, extracts their purpose from
+module docstrings, argparse epilogs, or main() docstrings, suggests meaningful
+snake_case filenames from that purpose, and optionally renames files in place.
+Use multiprocessing.Pool.apply_async with a fixed pool of 8 workers for
+concurrency, loguru for logging, pathlib for all path handling, full type
+annotations, and docstrings on all public functions and classes.
+"""
+
 from __future__ import annotations
 
 import argparse
 import ast
 import re
-import sys
 from collections.abc import Generator
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
+from multiprocessing import Pool
 from pathlib import Path
+
+from loguru import logger
+
+MAX_WORKERS: int = 8
+DEFAULT_WORKERS: int = 8
 
 
 @dataclass
 class FileStats:
+    """Statistics and rename outcome for a single Python file."""
+
     path: Path
     current_name: str
     suggestion: str | None
@@ -23,7 +38,14 @@ class FileStats:
 
 
 class FileAnalyzer:
-    def __init__(self, filepath: Path):
+    """Analyze a Python file to determine whether its filename is meaningful."""
+
+    filepath: Path
+    tree: ast.Module | None
+    content: str
+
+    def __init__(self, filepath: Path) -> None:
+        """Parse *filepath* and read its contents for later inspection."""
         self.filepath = filepath
         self.tree = None
         self.content = ""
@@ -33,19 +55,22 @@ class FileAnalyzer:
         except SyntaxError:
             pass
         except Exception as e:
-            raise RuntimeError(f"Failed to read {filepath}: {e}")
+            raise RuntimeError(f"Failed to read {filepath}: {e}") from e
 
     def get_module_docstring(self) -> str | None:
+        """Return the module-level docstring, if any."""
         if not self.tree:
             return None
         return ast.get_docstring(self.tree)
 
     def get_argparse_epilog(self) -> str | None:
+        """Return the value of an argparse ``epilog=`` keyword, if present."""
         pattern = r'epilog\s*=\s*[\'"]([^\'"]+)[\'"]'
         match = re.search(pattern, self.content, re.IGNORECASE)
         return match.group(1) if match else None
 
     def get_main_docstring(self) -> str | None:
+        """Return the docstring of a top-level ``main`` function, if any."""
         if not self.tree:
             return None
         for node in ast.walk(self.tree):
@@ -54,6 +79,7 @@ class FileAnalyzer:
         return None
 
     def extract_purpose(self) -> str | None:
+        """Derive a human-readable purpose from docstrings or argparse epilog."""
         return (
             self.get_module_docstring()
             or self.get_argparse_epilog()
@@ -61,12 +87,14 @@ class FileAnalyzer:
         )
 
     def is_meaningful_name(self) -> bool:
+        """Return True when the filename stem looks descriptive enough."""
         name = self.filepath.stem
         if len(name) < 3 or name in {"main", "run", "test", "script", "app"}:
             return False
         return not re.match(r"^[a-z0-9]{1,2}$", name)
 
     def suggest_name(self) -> str | None:
+        """Suggest a snake_case filename derived from the file's purpose."""
         purpose = self.extract_purpose()
         if not purpose:
             return None
@@ -92,6 +120,7 @@ class FileAnalyzer:
 
 
 def collect_py_files(paths: list[Path]) -> Generator[Path, None, None]:
+    """Yield every ``*.py`` file reachable from the given files and directories."""
     for path in paths:
         if path.is_file() and path.suffix == ".py":
             yield path
@@ -100,8 +129,12 @@ def collect_py_files(paths: list[Path]) -> Generator[Path, None, None]:
 
 
 def analyze_file(filepath: Path) -> FileStats:
+    """Analyze a single file and return its :class:`FileStats` record."""
     stats = FileStats(
-        path=filepath, current_name=filepath.stem, suggestion=None, has_meaning=False
+        path=filepath,
+        current_name=filepath.stem,
+        suggestion=None,
+        has_meaning=False,
     )
     try:
         analyzer = FileAnalyzer(filepath)
@@ -114,6 +147,7 @@ def analyze_file(filepath: Path) -> FileStats:
 
 
 def rename_file(filepath: Path, new_name: str) -> tuple[bool, str | None]:
+    """Rename *filepath* to ``new_name.py`` in the same directory."""
     try:
         new_path = filepath.parent / f"{new_name}.py"
         if new_path == filepath:
@@ -126,17 +160,29 @@ def rename_file(filepath: Path, new_name: str) -> tuple[bool, str | None]:
         return False, str(e)
 
 
-def process_files(
-    paths: list[Path], apply: bool = False, max_workers: int = 4
-) -> list[FileStats]:
-    results = []
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        futures = {}
-        for filepath in collect_py_files(paths):
-            future = executor.submit(analyze_file, filepath)
-            futures[future] = filepath
-        for future in as_completed(futures):
-            stats = future.result()
+def process_files(paths: list[Path], apply: bool = False) -> list[FileStats]:
+    """Analyze all Python files under *paths* using a pool of 8 workers."""
+    results: list[FileStats] = []
+    file_list = list(collect_py_files(paths))
+    if not file_list:
+        return results
+
+    with Pool(processes=MAX_WORKERS) as pool:
+        async_results = [
+            (pool.apply_async(analyze_file, (filepath,)), filepath)
+            for filepath in file_list
+        ]
+        for async_result, filepath in async_results:
+            try:
+                stats = async_result.get()
+            except Exception as e:
+                stats = FileStats(
+                    path=filepath,
+                    current_name=filepath.stem,
+                    suggestion=None,
+                    has_meaning=False,
+                    error=str(e),
+                )
             if not stats.has_meaning and stats.suggestion and apply:
                 renamed, error = rename_file(stats.path, stats.suggestion)
                 if renamed:
@@ -145,48 +191,59 @@ def process_files(
                 else:
                     stats.error = f"Rename failed: {error}"
             results.append(stats)
+
     return sorted(results, key=lambda s: s.path)
 
 
 def report_stats(stats_list: list[FileStats], cwd: Path, apply: bool) -> None:
+    """Log a summary of analysis and rename results via loguru."""
     meaningful = sum(1 for s in stats_list if s.has_meaning)
     unnamed = sum(1 for s in stats_list if not s.has_meaning)
     renamed = sum(1 for s in stats_list if s.renamed)
     errors = sum(1 for s in stats_list if s.error)
     mode = "APPLY" if apply else "DRY RUN"
-    print(f"\n{'=' * 78}")
-    print(f"  Mode: {mode}")
-    print(
+
+    logger.info("=" * 78)
+    logger.info(f"  Mode: {mode}")
+    logger.info(
         f"  Total files: {len(stats_list)} | Meaningful: {meaningful} | Unnamed: {unnamed}"
     )
-    print(f"  Errors: {errors} | Renamed: {renamed}")
-    print(f"{'=' * 78}\n")
+    logger.info(f"  Errors: {errors} | Renamed: {renamed}")
+    logger.info("=" * 78)
+
     if unnamed > 0:
-        print("UNNAMED FILES:\n")
+        logger.info("UNNAMED FILES:")
         for stats in stats_list:
             if not stats.has_meaning:
-                rel_path = stats.path.relative_to(cwd)
-                print(f"  📄 {rel_path}")
-                print(f"     Current: {stats.current_name}")
+                try:
+                    rel_path = stats.path.relative_to(cwd)
+                except ValueError:
+                    rel_path = stats.path
+                logger.info(f"  📄 {rel_path}")
+                logger.info(f"     Current: {stats.current_name}")
                 if stats.suggestion:
-                    print(f"     Suggest: {stats.suggestion}")
+                    logger.info(f"     Suggest: {stats.suggestion}")
                 else:
-                    print("     Suggest: (no suggestion available)")
+                    logger.info("     Suggest: (no suggestion available)")
                 if stats.error:
-                    print(f"     Error:   {stats.error}")
+                    logger.info(f"     Error:   {stats.error}")
                 elif stats.renamed:
-                    print(f"     ✓ Renamed to: {stats.suggestion}")
-                print()
+                    logger.info(f"     ✓ Renamed to: {stats.suggestion}")
+
     if errors > 0:
-        print("\nFILES WITH ERRORS:\n")
+        logger.info("FILES WITH ERRORS:")
         for stats in stats_list:
             if stats.error:
-                rel_path = stats.path.relative_to(cwd)
-                print(f"  ❌ {rel_path}")
-                print(f"     {stats.error}\n")
+                try:
+                    rel_path = stats.path.relative_to(cwd)
+                except ValueError:
+                    rel_path = stats.path
+                logger.error(f"  ❌ {rel_path}")
+                logger.error(f"     {stats.error}")
 
 
-def main():
+def main() -> int:
+    """Parse CLI arguments, run the analysis, and report results."""
     parser = argparse.ArgumentParser(
         description="Analyze Python files and suggest meaningful filenames",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -211,25 +268,20 @@ Examples:
         action="store_true",
         help="Apply suggestions and rename files in place",
     )
-    parser.add_argument(
-        "-w",
-        "--workers",
-        type=int,
-        default=4,
-        help="Number of parallel workers (default: 4)",
-    )
     args = parser.parse_args()
+
     try:
         cwd = Path.cwd()
-        results = process_files(args.paths, apply=args.apply, max_workers=args.workers)
+        results = process_files(args.paths, apply=args.apply)
         if results:
             report_stats(results, cwd, args.apply)
         else:
-            print("No Python files found.")
-            sys.exit(1)
+            logger.warning("No Python files found.")
+            return 1
     except Exception as e:
-        print(f"Error: {e}", file=sys.stderr)
-        sys.exit(1)
+        logger.exception(f"Error: {e}")
+        return 1
+    return 0
 
 
 if __name__ == "__main__":

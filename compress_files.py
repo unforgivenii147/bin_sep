@@ -12,7 +12,6 @@ loguru, and uses pathlib throughout.
 from __future__ import annotations
 
 import argparse
-import sys
 import textwrap
 from multiprocessing import Pool
 from pathlib import Path

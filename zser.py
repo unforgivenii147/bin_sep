@@ -15,9 +15,9 @@ import shutil
 import sys
 import tarfile
 from io import BytesIO
+from multiprocessing.pool import AsyncResult, Pool
 from pathlib import Path
-from typing import Final, Dict, Any, List, Optional
-from multiprocessing.pool import Pool, AsyncResult
+from typing import Any, Dict, Final, List
 
 import zstandard as zstd
 

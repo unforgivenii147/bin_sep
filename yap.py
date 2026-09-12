@@ -5,6 +5,7 @@ import argparse
 from pathlib import Path
 from time import perf_counter as pff
 from typing import Any
+
 from dh import cprint, format_time, fsz, get_pyfiles, mpf_async
 
 MODE: str = "black"
@@ -29,7 +30,9 @@ def process_file(path: str | Path, mode: str = MODE):
 
                 code = fix_with_isort(original_code)
             case "black":
-                from black import Mode as _Mode, TargetVersion as _tv, format_str
+                from black import Mode as _Mode
+                from black import TargetVersion as _tv
+                from black import format_str
 
                 code = format_str(
                     original_code,
@@ -44,7 +47,9 @@ def process_file(path: str | Path, mode: str = MODE):
 
                 code, _ = fix_with_yapf(original_code)
             case _:
-                from black import Mode as _Mode, TargetVersion as _tv, format_str
+                from black import Mode as _Mode
+                from black import TargetVersion as _tv
+                from black import format_str
 
                 code = format_str(
                     original_code,

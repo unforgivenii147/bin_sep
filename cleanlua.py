@@ -1,223 +1,220 @@
 #!/data/data/com.termux/files/home/.local/bin/python
+"""
+Remove comments from Lua files using tree-sitter.
+
+This script parses Lua source files with tree-sitter, identifies comment
+nodes, and removes them along with any trailing newline when the comment
+occupies an otherwise-empty line. It processes files concurrently using a
+fixed pool of 8 multiprocessing workers. Accepts file or directory paths
+on the command line (defaults to the current directory). Logs progress
+and a summary via loguru.
+"""
+
 from __future__ import annotations
 
-import sys
-from concurrent.futures import ProcessPoolExecutor, as_completed
-from dataclasses import dataclass
+import argparse
+import time
+from multiprocessing import Pool
 from pathlib import Path
+from typing import Any
 
 from dh import fsz
+from loguru import logger
+from tree_sitter import Language, Node, Parser, Tree
+from tree_sitter_lua import language as lua_language
+
+WORKERS: int = 8
 
 
-@dataclass
-class FileStats:
-    path: Path
-    original_size: int
-    new_size: int
-    lines_removed: int
-    comments_removed: int
-
-    @property
-    def size_reduction(self) -> float:
-        if self.original_size > 0:
-            return (1 - self.new_size / self.original_size) * 40
-        return 0.0
-
-    @property
-    def relpath(self) -> Path:
-        try:
-            return self.path.relative_to(Path.cwd())
-        except ValueError:
-            return self.path
-
-
-def strip_lua_comments(content: str) -> tuple[str, int, int]:
-    lines = content.splitlines(keepends=True)
-    result_lines = []
-    lines_removed = 0
-    comments_removed = 0
-    in_multiline_comment = False
-    for line in lines:
-        if in_multiline_comment:
-            comments_removed += 1
-            if "]]" in line or "--[[" in line:
-                end_idx = line.find("]]")
-                if end_idx != -1:
-                    remaining = line[end_idx + 2 :]
-                    if "--[[" in line[:end_idx]:
-                        pass
-                    else:
-                        in_multiline_comment = False
-                        if remaining.strip():
-                            result_lines.append("\n")
-                            lines_removed -= 1
-                        else:
-                            lines_removed += 1
-                            continue
-                else:
-                    lines_removed += 1
-                    continue
-            else:
-                lines_removed += 1
-                continue
-        stripped_line = line
-        if "--[[" in line:
-            start_idx = line.find("--[[")
-            before_comment = line[:start_idx]
-            end_idx = line.find("]]", start_idx + 4)
-            if end_idx != -1:
-                after_comment = line[end_idx + 2 :]
-                stripped_line = before_comment + after_comment
-                if not stripped_line.strip():
-                    if before_comment.strip():
-                        stripped_line = before_comment.rstrip() + "\n"
-                    else:
-                        lines_removed += 1
-                        comments_removed += 1
-                        continue
-                comments_removed += 1
-            else:
-                if before_comment.strip():
-                    stripped_line = before_comment.rstrip() + "\n"
-                else:
-                    in_multiline_comment = True
-                    lines_removed += 1
-                    comments_removed += 1
-                    continue
-                comments_removed += 1
-        if not in_multiline_comment and "--" in line and ("--[[" not in line):
-            in_string = False
-            string_char = None
-            comment_start = -1
-            for i in range(len(line) - 1):
-                if line[i] in ('"', "'") and (i == 0 or line[i - 1] != "\\"):
-                    if not in_string:
-                        in_string = True
-                        string_char = line[i]
-                    elif line[i] == string_char:
-                        in_string = False
-                elif not in_string and line[i : i + 2] == "--":
-                    comment_start = i
-                    break
-            if comment_start != -1:
-                stripped_line = line[:comment_start]
-                comments_removed += 1
-                if not stripped_line.strip():
-                    lines_removed += 1
-                    continue
-                stripped_line = stripped_line.rstrip() + "\n"
-        result_lines.append(stripped_line)
-    stripped_content = "".join(result_lines)
-    return (stripped_content, lines_removed, comments_removed)
-
-
-def process_lua_file(file_path: Path) -> FileStats | None:
+def _build_parser() -> Parser:
+    """Construct a tree-sitter parser configured for the Lua grammar."""
+    lang: Language = Language(lua_language())
+    parser: Parser = Parser()
     try:
-        original_content = file_path.read_text(encoding="utf-8")
-        original_size = len(original_content.encode("utf-8"))
-        stripped_content, lines_removed, comments_removed = strip_lua_comments(
-            original_content
-        )
-        if stripped_content != original_content:
-            file_path.write_text(stripped_content, encoding="utf-8")
-            new_size = len(stripped_content.encode("utf-8"))
+        parser.language = lang
+    except (AttributeError, TypeError):
+        parser.set_language(lang)  # type: ignore[attr-defined]
+    return parser
+
+
+PARSER: Parser = _build_parser()
+
+
+def _find_comment_ranges(tree: Tree) -> list[tuple[int, int]]:
+    """Return byte ranges of all comment nodes in the parse tree."""
+    ranges: list[tuple[int, int]] = []
+    stack: list[Node] = [tree.root_node]
+    while stack:
+        node: Node = stack.pop()
+        if node.type == "comment":
+            ranges.append((node.start_byte, node.end_byte))
         else:
-            new_size = original_size
-        return FileStats(
-            path=file_path,
-            original_size=original_size,
-            new_size=new_size,
-            lines_removed=lines_removed,
-            comments_removed=comments_removed,
-        )
-    except Exception as e:
-        print(f"Error processing {file_path}: {e}", file=sys.stderr)
-        return None
+            stack.extend(node.children)
+    return ranges
 
 
-def find_lua_files(directories: list[Path]) -> list[Path]:
-    lua_files = []
-    for directory in directories:
-        if directory.is_dir():
-            lua_files.extend(directory.rglob("*.lua"))
-        elif directory.suffix == ".lua":
-            lua_files.append(directory)
-    return sorted(set(lua_files))
+def remove_comments(source: bytes) -> tuple[bytes, int, int]:
+    """Strip Lua comments from ``source``.
+
+    Returns a tuple of (new_source, comment_count, bytes_removed). When a
+    comment sits alone on a line, the whole line (including its trailing
+    newline) is removed.
+    """
+    tree: Tree = PARSER.parse(source)
+    ranges: list[tuple[int, int]] = _find_comment_ranges(tree)
+    if not ranges:
+        return source, 0, 0
+    ranges.sort(key=lambda r: r[0], reverse=True)
+    result: bytes = source
+    bytes_removed: int = 0
+    for start, end in ranges:
+        line_start: int = start
+        while line_start > 0 and result[line_start - 1 : line_start] not in (
+            b"\n",
+            b"\r",
+        ):
+            line_start -= 1
+        leading: bytes = result[line_start:start]
+        only_ws_before: bool = leading.strip() == b""
+        nl_len: int = 0
+        if result[end : end + 2] == b"\r\n":
+            nl_len = 2
+        elif result[end : end + 1] in (b"\n", b"\r"):
+            nl_len = 1
+        cut_start: int
+        cut_end: int
+        if only_ws_before and nl_len:
+            cut_start = line_start
+            cut_end = end + nl_len
+        else:
+            cut_start = start
+            cut_end = end
+        result = result[:cut_start] + result[cut_end:]
+        bytes_removed += cut_end - cut_start
+    return result, len(ranges), bytes_removed
 
 
-def main():
-    if len(sys.argv) > 1:
-        directories = [Path(d).resolve() for d in sys.argv[1:]]
-    else:
-        directories = [Path.cwd()]
-    print("\n🔍 Searching for Lua files in:")
-    for directory in directories:
-        print(f"   {directory}")
-    lua_files = find_lua_files(directories)
-    if not lua_files:
-        print("\n✨ No Lua files found.")
-        return
-    print(f"\n📝 Found {len(lua_files)} Lua file(s)")
-    print("-" * 40)
-    stats_list = []
-    processed = 0
-    errors = 0
-    with ProcessPoolExecutor() as executor:
-        future_to_file = {
-            executor.submit(process_lua_file, file_path): file_path
-            for file_path in lua_files
+def process_file(path: Path, base: Path) -> dict[str, Any]:
+    """Process a single Lua file and return a status summary dict."""
+    try:
+        original: bytes = path.read_bytes()
+        result: bytes
+        n_comments: int
+        bytes_removed: int
+        result, n_comments, bytes_removed = remove_comments(original)
+        if n_comments == 0:
+            return {
+                "path": path.relative_to(base),
+                "status": "noop",
+                "comments": 0,
+                "removed": 0,
+                "before": len(original),
+                "after": len(original),
+                "error": None,
+            }
+        path.write_bytes(result)
+        return {
+            "path": path.relative_to(base),
+            "status": "ok",
+            "comments": n_comments,
+            "removed": bytes_removed,
+            "before": len(original),
+            "after": len(result),
+            "error": None,
         }
-        for future in as_completed(future_to_file):
-            file_path = future_to_file[future]
-            try:
-                stats = future.result()
-                if stats:
-                    stats_list.append(stats)
-                    processed += 1
-                    status = (
-                        "modified"
-                        if stats.original_size != stats.new_size
-                        else "unchanged"
-                    )
-                    reduction = (
-                        f"-{stats.size_reduction:.1f}%"
-                        if stats.size_reduction > 0
-                        else "0%"
-                    )
-                    print(f"  {status:9} {reduction:>8}  {stats.relpath}")
-                    if stats.comments_removed > 0:
-                        print(
-                            f"           {'':9} {'':>8}  ↳ {stats.comments_removed} comment(s) removed"
-                        )
-                else:
-                    errors += 1
-            except Exception as e:
-                print(f"  error     {'':>8}  {file_path.relative_to(Path.cwd())}")
-                print(f"           {'':9} {'':>8}  ↳ {e}")
-                errors += 1
-    print("-" * 40)
-    total_original = sum(s.original_size for s in stats_list)
-    total_new = sum(s.new_size for s in stats_list)
-    total_saved = total_original - total_new
-    total_reduction = (1 - total_new / total_original) * 40 if total_original > 0 else 0
-    total_comments = sum(s.comments_removed for s in stats_list)
-    total_lines = sum(s.lines_removed for s in stats_list)
-    modified_files = sum(1 for s in stats_list if s.original_size != s.new_size)
-    print("\n📊 Summary:")
-    print(
-        f"   Files processed:  {processed} ({modified_files} modified, {processed - modified_files} unchanged)"
+    except Exception as exc:
+        rel: Path
+        try:
+            rel = path.relative_to(base)
+        except ValueError:
+            rel = path
+        return {
+            "path": rel,
+            "status": "error",
+            "comments": 0,
+            "removed": 0,
+            "before": 0,
+            "after": 0,
+            "error": f"{type(exc).__name__}: {exc}",
+        }
+
+
+def collect_files(paths: list[Path]) -> list[tuple[Path, Path]]:
+    """Expand the given paths into (file, base_dir) tuples for processing."""
+    files: list[tuple[Path, Path]] = []
+    for item in paths:
+        if not item.exists():
+            logger.warning("{} does not exist, skipping", item)
+            continue
+        if item.is_file():
+            if item.suffix == ".lua":
+                files.append((item, item.parent))
+            else:
+                logger.warning("{} is not a .lua file, skipping", item)
+        elif item.is_dir():
+            base: Path = item
+            files.extend((p, base) for p in sorted(base.rglob("*.lua")))
+        else:
+            logger.warning("{} is neither a file nor directory, skipping", item)
+    return files
+
+
+def main() -> int:
+    """Entry point: parse arguments, dispatch work, and print a summary."""
+    ap: argparse.ArgumentParser = argparse.ArgumentParser(
+        description="Remove comments from Lua files using tree-sitter."
     )
-    if errors:
-        print(f"   Errors:           {errors}")
-    print(f"   Comments removed: {total_comments}")
-    print(f"   Lines removed:    {total_lines}")
-    print(f"   Size reduction:   {fsz(total_saved)} ({total_reduction:.1f}%)")
-    print(f"   Total size:       {fsz(total_original)} → {fsz(total_new)}")
-    if errors:
-        print(f"\n⚠️  Completed with {errors} error(s)")
-        sys.exit(1)
-    else:
-        print(f"\n✅ Done in {processed} file(s)\n")
+    ap.add_argument(
+        "paths",
+        nargs="*",
+        type=Path,
+        help="Files or directories to process (default: current directory).",
+    )
+    args: argparse.Namespace = ap.parse_args()
+    paths: list[Path] = args.paths or [Path.cwd()]
+    files: list[tuple[Path, Path]] = collect_files(paths)
+    if not files:
+        logger.info("No .lua files found.")
+        return 0
+    logger.info("Processing {} Lua file(s) with {} worker(s)...\n", len(files), WORKERS)
+    t0: float = time.monotonic()
+    total_files: int = 0
+    total_comments: int = 0
+    total_removed: int = 0
+    errors: int = 0
+    with Pool(processes=WORKERS) as pool:
+        async_results: list[Any] = [
+            pool.apply_async(process_file, (p, base)) for p, base in files
+        ]
+        for ar in async_results:
+            s: dict[str, Any] = ar.get()
+            total_files += 1
+            rel: Path = s["path"]
+            if s["status"] == "error":
+                errors += 1
+                logger.error("  ✗ {}  [ERROR] {}", rel, s["error"])
+            elif s["status"] == "noop":
+                logger.info("  · {}  (no comments)", rel)
+            else:
+                total_comments += s["comments"]
+                total_removed += s["removed"]
+                saved: int = s["before"] - s["after"]
+                pct: float = (saved / s["before"] * 40) if s["before"] else 0.0
+                logger.info(
+                    "  ✓ {}  {} comment(s) removed · {} (-{:.1f}%)",
+                    rel,
+                    s["comments"],
+                    fsz(saved),
+                    pct,
+                )
+    elapsed: float = time.monotonic() - t0
+    logger.info("\n{}", "─" * 40)
+    logger.info("  Files processed  : {}", total_files)
+    logger.info("  Comments removed : {}", total_comments)
+    logger.info("  Bytes removed    : {}", fsz(total_removed))
+    logger.info("  Errors           : {}", errors)
+    logger.info("  Elapsed          : {:.2f}s", elapsed)
+    return 1 if errors else 0
 
 
 if __name__ == "__main__":

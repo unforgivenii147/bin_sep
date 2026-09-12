@@ -118,28 +118,21 @@ def truncate(s: str, width: int) -> str:
 def main() -> None:
     cwd = Path.cwd()
 
-    try:
-        term_w = shutil.get_terminal_size(fallback=(80, 24)).columns
-    except Exception:
-        term_w = 80
+    term_w = shutil.get_terminal_size(fallback=(80, 24)).columns
 
     dirz: list[tuple[Path, int, float]] = []
     otherz: list[tuple[Path, int, float]] = []
 
-    try:
-        entries = list(os.scandir(cwd))
-    except OSError as e:
-        print(f"error: {e}", file=sys.stderr)
-        return
+    entries = [p for p in cwd.iterdir()]
 
     for entry in entries:
-        p = Path(entry.path)
+        p = Path(entry)
         try:
             st = entry.stat(follow_symlinks=False)
         except OSError:
             continue
         try:
-            if entry.is_dir(follow_symlinks=False):
+            if entry.is_dir():
                 size = gsz(p)
                 dirz.append((p, size, st.st_ctime))
             else:
@@ -195,7 +188,7 @@ def main() -> None:
             emit(name, sz, ct, "92")
         else:
             # Non-executable file → bold blue
-            emit(name, sz, ct, "94")
+            emit(name, sz, ct, "96")
 
     for p, sz, ct in dirz:
         emit(p.name, sz, ct, "94")

@@ -8,12 +8,10 @@ concurrency, loguru for logging, pathlib for path handling, and complete
 type annotations throughout.
 """
 
-import sys
 import tarfile
 import zipfile
-from multiprocessing.pool import Pool, ApplyResult
+from multiprocessing.pool import ApplyResult, Pool
 from pathlib import Path
-from typing import Callable
 
 from loguru import logger
 

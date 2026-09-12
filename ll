@@ -1,1 +1,1 @@
-ll.py
+/data/data/com.termux/files/home/bin/ll.py

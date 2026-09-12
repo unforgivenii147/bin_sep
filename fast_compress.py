@@ -20,12 +20,11 @@ import json
 import sys
 from multiprocessing.pool import AsyncResult, Pool
 from pathlib import Path
-from typing import Iterator, Optional
+from typing import Iterator
 
 import zstandard as zstd
-from loguru import logger
-
 from dh import fsz
+from loguru import logger
 
 SKIP_EXTENSIONS_COMPRESS: frozenset[str] = frozenset(
     {

@@ -15,7 +15,6 @@ import argparse
 import base64
 import mimetypes
 import re
-import sys
 import urllib.error
 import urllib.request
 from multiprocessing import Pool

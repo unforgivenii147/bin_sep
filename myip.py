@@ -10,7 +10,6 @@ import sys
 import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
 
 BLACKLIST_IFACES_PREFIX = "lo"
 INTERFACE_PRIORITY = ["wlan", "eth", "rmnet", "tun", "ppp"]

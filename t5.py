@@ -6,7 +6,9 @@ import sys
 from pathlib import Path
 
 import tree_sitter_python as tspython
-from dh import fsz, get_pyfiles, gsz, mpf_async as mpf, remove_blank_lines
+from dh import fsz, get_pyfiles, gsz
+from dh import mpf_async as mpf
+from dh import remove_blank_lines
 from tree_sitter import Language, Parser, Query, QueryCursor
 
 CHUNK_SIZE = 1024 * 1024

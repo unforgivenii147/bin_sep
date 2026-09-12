@@ -23,7 +23,7 @@ import sys
 import tarfile
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
-from typing import Final, List, Tuple, Optional
+from typing import Final, List, Optional, Tuple
 
 import zstandard as zstd
 from dh import fsz

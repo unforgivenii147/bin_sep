@@ -10,7 +10,8 @@ from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
 
-from dh import TXT_EXT as TEXT_EXTENSIONS, get_nobinary
+from dh import TXT_EXT as TEXT_EXTENSIONS
+from dh import get_nobinary
 from joblib import Parallel, delayed
 
 LICENSE_FILE = Path("/sdcard/lic")

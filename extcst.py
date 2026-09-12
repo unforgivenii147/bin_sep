@@ -6,12 +6,11 @@ Generate a Python script that extracts entities (functions, classes, constants) 
 import argparse
 import json
 import re
-import sys
 from dataclasses import dataclass, field
 from datetime import datetime
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Dict, List, Optional, Set, Tuple
 
 import libcst as cst
 from libcst import MetadataWrapper

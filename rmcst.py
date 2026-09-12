@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 
 import libcst as cst
-from dh import get_files, mpf3
+from dh import get_files, mpf_async
 from libcst import EmptyLine, Pass, SimpleStatementLine
 from libcst.metadata import MetadataWrapper, PositionProvider
 
@@ -114,6 +114,7 @@ class StripTransformer(cst.CSTTransformer):
 def process_file(path: Path) -> None:
     path = Path(path)
     source = path.read_text(encoding="utf-8")
+    ROOT = path.parent
     try:
         module = cst.parse_module(source)
     except Exception as exc:
@@ -150,7 +151,7 @@ def main() -> None:
     if len(files) == 1:
         process_file(files[0])
         sys.exit(0)
-    mpf3(process_file, files)
+    mpf_async(process_file, files)
 
 
 if __name__ == "__main__":

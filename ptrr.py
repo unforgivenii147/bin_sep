@@ -1,145 +1,292 @@
 #!/data/data/com.termux/files/home/.local/bin/python
+"""
+Generate a Python script that archives the current directory into a
+tar.xz file in the parent directory, using multiprocessing.Pool with 8
+workers for concurrency, loguru for logging, pathlib for paths, full type
+annotations, and docstrings on every function/class. The script should remove the original directory,
+and exit with an error if anything fails.
+"""
+
 from __future__ import annotations
 
-import multiprocessing as mp
+import io
+import multiprocessing
+import os
 import shutil
 import sys
 import tarfile
-import tempfile
-from concurrent.futures import ThreadPoolExecutor
+from multiprocessing.pool import Pool
 from pathlib import Path
+from typing import Iterable, List, Tuple
 
-import zstandard as zstd
+from loguru import logger
+
+# Number of worker processes used for concurrent compression.
+WORKERS: int = 8
+
+# Suffix used for the produced archive.
+ARCHIVE_SUFFIX: str = ".tar.xz"
 
 
-def compress_chunk(chunk_data):
-    compressor = zstd.ZstdCompressor(level=3, threads=4)
-    return compressor.compress(chunk_data)
+def find_files(root: Path) -> List[Path]:
+    """
+    Recursively find all regular files under ``root``.
 
+    Parameters
+    ----------
+    root : Path
+        Directory to search for files.
 
-def get_file_list(directory, exclude_patterns=None):
-    if exclude_patterns is None:
-        exclude_patterns = {".git", ".tar.zst", ".zst"}
-    files = []
-    for item in directory.rglob("*"):
-        if any(pattern in item.parts for pattern in exclude_patterns):
-            continue
-        if item.name.endswith(".tar.zst") or item.name.endswith(".zst"):
-            continue
-        files.append(item)
+    Returns
+    -------
+    List[Path]
+        A list of absolute paths to regular files found under ``root``.
+
+    Raises
+    ------
+    FileNotFoundError
+        If ``root`` does not exist or is not a directory.
+    """
+    if not root.exists():
+        raise FileNotFoundError(f"Root directory does not exist: {root}")
+    if not root.is_dir():
+        raise NotADirectoryError(f"Root path is not a directory: {root}")
+
+    files: List[Path] = []
+    for dirpath, _dirnames, filenames in os.walk(root):
+        base = Path(dirpath)
+        for name in filenames:
+            candidate = base / name
+            # Skip broken symlinks and non-regular files.
+            if candidate.is_file() and not candidate.is_symlink():
+                files.append(candidate)
+            elif candidate.is_symlink() and not candidate.exists():
+                logger.warning(f"Skipping broken symlink: {candidate}")
     return files
 
 
-def create_archive_optimized():
-    current_dir = Path.cwd()
-    dir_name = current_dir.name
-    parent_dir = current_dir.parent
-    if str(current_dir) == "/" or str(current_dir) == str(Path.home()):
-        print("Error: Cannot archive root or home directory")
-        sys.exit(1)
-    archive_path = parent_dir / f"{dir_name}.tar.zst"
-    if archive_path.exists():
-        response = input(f"Overwrite {archive_path}? (y/n): ").strip().lower()
-        if response not in ["y", "yes"]:
-            print("Aborted")
-            sys.exit(0)
-    try:
-        files = get_file_list(current_dir)
-        if not files:
-            print("No files to archive")
-            sys.exit(1)
-        with tempfile.NamedTemporaryFile(suffix=".tar", delete=False) as tmp_tar:
-            tmp_tar_path = tmp_tar.name
-            with tarfile.open(tmp_tar_path, "w") as tar:
-                with ThreadPoolExecutor(max_workers=min(4, mp.cpu_count())) as executor:
+def _read_file(path: Path) -> Tuple[Path, bytes]:
+    """
+    Read the contents of a file into memory.
 
-                    def add_file(file_path):
-                        tar.add(file_path, arcname=file_path.relative_to(parent_dir))
+    This helper is designed to be executed inside worker processes.
 
-                    list(executor.map(add_file, files))
-            compressor = zstd.ZstdCompressor(level=3, threads=mp.cpu_count())
-            CHUNK_SIZE = 1024 * 1024 * 8
-            with open(tmp_tar_path, "rb") as f_in, open(archive_path, "wb") as f_out:
-                while True:
-                    chunk = f_in.read(CHUNK_SIZE)
-                    if not chunk:
-                        break
-                    compressed_chunk = compressor.compress(chunk)
-                    f_out.write(compressed_chunk)
-                f_out.write(compressor.flush())
-            Path(tmp_tar_path).unlink(missing_ok=True)
-        if archive_path.exists() and archive_path.stat().st_size > 0:
-            test_dir = parent_dir / f"{dir_name}_test"
+    Parameters
+    ----------
+    path : Path
+        Path of the file to read.
+
+    Returns
+    -------
+    Tuple[Path, bytes]
+        The original path and its raw bytes.
+
+    Raises
+    ------
+    OSError
+        If the file cannot be read.
+    """
+    return path, path.read_bytes()
+
+
+def compress_files(files: Iterable[Path]) -> List[Tuple[Path, bytes]]:
+    """
+    Compress file contents concurrently using a multiprocessing pool.
+
+    Each worker reads a file into memory; the result is returned to the
+    parent process, which is responsible for writing it into the archive.
+    This avoids interleaving writes to the same tar stream.
+
+    Parameters
+    ----------
+    files : Iterable[Path]
+        Paths of the files to read.
+
+    Returns
+    -------
+    List[Tuple[Path, bytes]]
+        A list of ``(path, content)`` tuples.
+
+    Raises
+    ------
+    Exception
+        Any exception raised by a worker is propagated to the caller.
+    """
+    file_list: List[Path] = list(files)
+    if not file_list:
+        return []
+
+    logger.info(f"Reading {len(file_list)} file(s) with {WORKERS} workers")
+    with Pool(processes=WORKERS) as pool:
+        results: List[Tuple[Path, bytes]] = pool.map(_read_file, file_list)
+    return results
+
+
+def build_archive(
+    archive_path: Path,
+    root: Path,
+    payload: List[Tuple[Path, bytes]],
+) -> None:
+    """
+    Write a ``tar.xz`` archive containing the given file payload.
+
+    Every member name is prefixed with ``root.name`` so that extracting
+    the archive recreates the original top-level directory.
+
+    Parameters
+    ----------
+    archive_path : Path
+        Destination path of the ``.tar.xz`` archive.
+    root : Path
+        Directory that the archived paths are made relative to. Its
+        basename is used as the top-level directory inside the archive.
+    payload : List[Tuple[Path, bytes]]
+        List of ``(path, content)`` tuples to write into the archive.
+
+    Raises
+    ------
+    OSError
+        If the archive cannot be created or written.
+    """
+    logger.info(f"Writing archive: {archive_path}")
+    top_level = root.name  # e.g. "myproject"
+
+    with tarfile.open(
+        name=str(archive_path),
+        mode="w:xz",
+        preset=6,
+        format=tarfile.PAX_FORMAT,
+    ) as tar:
+        for path, content in payload:
             try:
-                with tarfile.open(archive_path, "r:zstd") as tar:
-                    tar.extractall(test_dir)
-                shutil.rmtree(current_dir)
-                print(f"✓ Archive created: {archive_path}")
-                print(f"✓ Original directory removed: {current_dir}")
-            except Exception:
-                if test_dir.exists():
-                    shutil.rmtree(test_dir)
-                raise
-        else:
-            print("Error: Archive creation failed")
-            sys.exit(1)
-    except Exception as e:
-        print(f"Error: {e}")
-        if "tmp_tar_path" in locals():
-            Path(tmp_tar_path).unlink(missing_ok=True)
-        if archive_path.exists():
-            archive_path.unlink()
-        sys.exit(1)
+                rel = path.relative_to(root)
+            except ValueError:
+                # Fallback if the path is somehow outside ``root``.
+                rel = Path(path.name)
+
+            # Prefix with the top-level directory name so extraction
+            # recreates ``root.name/...``.
+            arcname = Path(top_level) / rel
+
+            info = tarfile.TarInfo(name=str(arcname))
+            info.size = len(content)
+            info.mtime = path.stat().st_mtime
+            tar.addfile(info, io.BytesIO(content))
+
+    logger.success(f"Archive created: {archive_path}")
 
 
-def create_archive_streaming_fixed():
-    current_dir = Path.cwd()
-    dir_name = current_dir.name
-    parent_dir = current_dir.parent
-    if str(current_dir) == "/" or str(current_dir) == str(Path.home()):
-        print("Error: Cannot archive root or home directory")
-        sys.exit(1)
-    archive_path = parent_dir / f"{dir_name}.tar.zst"
+def remove_directory(root: Path) -> None:
+    """
+    Remove the original directory tree.
+
+    Parameters
+    ----------
+    root : Path
+        Directory to delete.
+
+    Raises
+    ------
+    OSError
+        If the directory cannot be removed.
+    """
+    logger.info(f"Removing original directory: {root}")
+    shutil.rmtree(root)
+    logger.success(f"Removed: {root}")
+
+
+def archive_current_directory() -> Path:
+    """
+    Archive the current working directory into a ``.tar.xz`` in its parent.
+
+    The archive stores members under a top-level directory equal to the
+    basename of the current working directory, so extraction recreates
+    that directory.
+
+    Returns
+    -------
+    Path
+        The path of the created archive.
+
+    Raises
+    ------
+    RuntimeError
+        If no files are found, or if any part of the process fails.
+    """
+    cwd: Path = Path.cwd().resolve()
+    parent: Path = cwd.parent
+    top_level: str = cwd.name
+    archive_path: Path = parent / f"{top_level}{ARCHIVE_SUFFIX}"
+
+    logger.info(f"Current directory: {cwd}")
+    logger.info(f"Target archive:    {archive_path}")
+
     if archive_path.exists():
-        response = input(f"Overwrite {archive_path}? (y/n): ").strip().lower()
-        if response not in ["y", "yes"]:
-            print("Aborted")
-            sys.exit(0)
+        raise RuntimeError(f"Archive already exists: {archive_path}")
+
+    files = find_files(cwd)
+    if not files:
+        raise RuntimeError(f"No files found to archive in: {cwd}")
+
+    payload = compress_files(files)
+    build_archive(archive_path, cwd, payload)
+
+    # Verify the archive before deleting the source.
+    if not archive_path.is_file() or archive_path.stat().st_size == 0:
+        raise RuntimeError(f"Archive verification failed: {archive_path}")
+
+    with tarfile.open(archive_path, mode="r:xz") as tar:
+        members = tar.getnames()
+
+    # Every member should live under the top-level directory.
+    expected_prefix = f"{top_level}/"
+    unexpected = [m for m in members if not m.startswith(expected_prefix)]
+    if unexpected:
+        raise RuntimeError(
+            f"Archive contains members outside '{expected_prefix}': {unexpected[:5]}"
+        )
+
+    if len(members) != len(files):
+        raise RuntimeError(
+            f"Archive member count mismatch: expected {len(files)}, "
+            f"found {len(members)}"
+        )
+
+    os.chdir(parent)
+    remove_directory(cwd)
+    return archive_path
+
+
+def main() -> int:
+    """
+    Entry point for the archiving script.
+
+    Returns
+    -------
+    int
+        ``0`` on success, ``1`` on failure.
+    """
+    logger.remove()
+    logger.add(
+        sys.stderr,
+        level="INFO",
+        format=(
+            "<green>{time:YYYY-MM-DD HH:mm:ss}</green> | "
+            "<level>{level: <8}</level> | "
+            "<level>{message}</level>"
+        ),
+    )
+
     try:
-        compressor = zstd.ZstdCompressor(level=3, threads=mp.cpu_count())
-        with (
-            open(archive_path, "wb") as f_out,
-            compressor.stream_writer(f_out) as zstd_writer,
-            tarfile.open(fileobj=zstd_writer, mode="w:") as tar,
-        ):
-            files = get_file_list(current_dir)
-            if not files:
-                print("No files to archive")
-                sys.exit(1)
-            for file_path in files:
-                tar.add(file_path, arcname=file_path.relative_to(parent_dir))
-        if archive_path.exists() and archive_path.stat().st_size > 0:
-            test_dir = parent_dir / f"{dir_name}_test"
-            try:
-                with tarfile.open(archive_path, "r:zstd") as tar:
-                    tar.extractall(test_dir)
-                shutil.rmtree(test_dir)
-                shutil.rmtree(current_dir)
-                print(f"✓ Archive created: {archive_path}")
-                print(f"✓ Original directory removed: {current_dir}")
-            except Exception:
-                if test_dir.exists():
-                    shutil.rmtree(test_dir)
-                raise
-        else:
-            print("Error: Archive creation failed")
-            sys.exit(1)
-    except Exception as e:
-        print(f"Error: {e}")
-        if archive_path.exists():
-            archive_path.unlink()
-        sys.exit(1)
+        archive = archive_current_directory()
+    except Exception as exc:  # noqa: BLE001 - top-level safety net.
+        logger.exception(f"Archiving failed: {exc}")
+        return 1
+
+    logger.success(f"Done. Archive: {archive}")
+    return 0
 
 
 if __name__ == "__main__":
-    create_archive_optimized()
+    multiprocessing.freeze_support()
+    raise SystemExit(main())

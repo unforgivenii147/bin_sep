@@ -92,6 +92,11 @@ def main() -> None:
         print(f"Usage: {sys.argv[0]} [-a] <filename>", file=sys.stderr)
         sys.exit(1)
     filename = args[0]
+    if not "." in filename.strip():
+        print("you didnt provide an extension,continue?")
+        ans = input("y/n")
+        if not ans == "y":
+            sys.exit(0)
     output_path = Path(filename)
     is_script_dir = Path.cwd() in SCRIPT_DIRS or Path.cwd().name == "bin"
     if archive and output_path.exists():

@@ -15,12 +15,9 @@ import tarfile
 import zipfile
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Iterable, Iterator
 
 import chardet
 from loguru import logger
-
-from dh import is_binary
 
 TARGET_EXTENSIONS: set[str] = {
     ".tar.gz",

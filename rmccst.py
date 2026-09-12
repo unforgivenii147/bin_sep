@@ -1,18 +1,44 @@
 #!/data/data/com.termux/files/home/.local/bin/python
+"""Generate a Python script that strips comments and non-module docstrings from Python files.
+
+The script should:
+- Accept file and/or directory paths as positional arguments (default to '.').
+- Recursively discover all .py files under directories.
+- Parse each file with libcst, removing all comments and every docstring except the module docstring.
+- Preserve shebang lines.
+- Validate transformed code with ast.parse; skip writing and report errors when invalid.
+- Process files using multiprocessing.Pool.apply_async with a fixed pool of 8 workers.
+- Use loguru for logging and pathlib for all path handling.
+- Include complete type hints, a module docstring, and docstrings for all functions and classes.
+"""
+
 from __future__ import annotations
 
 import argparse
 import ast
 import io
+import multiprocessing
 from collections.abc import Iterable
-from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
+from typing import Any, Final
 
 import libcst as cst
 import libcst.matchers as m
+from loguru import logger
+
+POOL_SIZE: Final[int] = 8
 
 
 def find_module_docstring(source: str) -> tuple[int, int] | None:
+    """Return the (start_line, end_line) of the module docstring, or None if absent.
+
+    Args:
+        source: The Python source code to inspect.
+
+    Returns:
+        A tuple of start and end line numbers for the module docstring,
+        or None when no module docstring exists or the source is invalid.
+    """
     try:
         module = ast.parse(source)
     except SyntaxError:
@@ -38,7 +64,18 @@ def find_module_docstring(source: str) -> tuple[int, int] | None:
 
 
 class StripCommentsAndDocstrings(cst.CSTTransformer):
-    def __init__(self, module_doc_range: tuple[int, int] | None):
+    """CST transformer that removes comments and all non-module docstrings."""
+
+    module_doc_range: tuple[int, int] | None
+    comments_removed: int
+    docstrings_removed: int
+
+    def __init__(self, module_doc_range: tuple[int, int] | None) -> None:
+        """Initialize the transformer.
+
+        Args:
+            module_doc_range: Line range of the module docstring, if any.
+        """
         super().__init__()
         self.module_doc_range = module_doc_range
         self.comments_removed = 0
@@ -49,6 +86,15 @@ class StripCommentsAndDocstrings(cst.CSTTransformer):
         original_node: cst.TrailingWhitespace,
         updated_node: cst.TrailingWhitespace,
     ) -> cst.TrailingWhitespace:
+        """Remove trailing comments.
+
+        Args:
+            original_node: The original node.
+            updated_node: The updated node.
+
+        Returns:
+            The updated node with any comment removed.
+        """
         if updated_node.comment is not None:
             self.comments_removed += 1
             updated_node = updated_node.with_changes(comment=None)
@@ -57,12 +103,29 @@ class StripCommentsAndDocstrings(cst.CSTTransformer):
     def leave_EmptyLine(
         self, original_node: cst.EmptyLine, updated_node: cst.EmptyLine
     ) -> cst.EmptyLine:
+        """Remove comments on empty lines.
+
+        Args:
+            original_node: The original node.
+            updated_node: The updated node.
+
+        Returns:
+            The updated node with any comment removed.
+        """
         if updated_node.comment is not None:
             self.comments_removed += 1
             updated_node = updated_node.with_changes(comment=None)
         return updated_node
 
     def _is_docstring_expr(self, node: cst.CSTNode) -> bool:
+        """Return True if the node is a single string-expression statement.
+
+        Args:
+            node: The CST node to check.
+
+        Returns:
+            True if the node represents a docstring expression.
+        """
         if not isinstance(node, cst.SimpleStatementLine):
             return False
         if len(node.body) != 1:
@@ -84,6 +147,15 @@ class StripCommentsAndDocstrings(cst.CSTTransformer):
         original_node: cst.SimpleStatementLine,
         updated_node: cst.SimpleStatementLine,
     ) -> cst.CSTNode | None:
+        """Remove docstring statements.
+
+        Args:
+            original_node: The original node.
+            updated_node: The updated node.
+
+        Returns:
+            The updated node, or RemovalSentinel to drop the statement.
+        """
         if not self._is_docstring_expr(updated_node):
             return updated_node
         self.docstrings_removed += 1
@@ -91,6 +163,14 @@ class StripCommentsAndDocstrings(cst.CSTTransformer):
 
 
 def process_file(path: Path) -> tuple[Path, int, int, bool, str | None]:
+    """Strip comments and non-module docstrings from a single Python file.
+
+    Args:
+        path: Path to the Python file to process.
+
+    Returns:
+        A tuple of (path, comments_removed, docstrings_removed, written, error).
+    """
     text = path.read_text(encoding="utf-8")
     shebang = ""
     remainder = text
@@ -127,6 +207,14 @@ def process_file(path: Path) -> tuple[Path, int, int, bool, str | None]:
 
 
 def iter_python_files_from_paths(paths: Iterable[Path]) -> list[Path]:
+    """Expand paths into a list of Python files.
+
+    Args:
+        paths: Files and/or directories to scan.
+
+    Returns:
+        A list of paths to .py files.
+    """
     result: list[Path] = []
     for p in paths:
         if p.is_file() and p.suffix == ".py":
@@ -137,6 +225,11 @@ def iter_python_files_from_paths(paths: Iterable[Path]) -> list[Path]:
 
 
 def parse_args() -> argparse.Namespace:
+    """Parse command-line arguments.
+
+    Returns:
+        The parsed arguments namespace.
+    """
     parser = argparse.ArgumentParser(
         description="Strip comments and non-module docstrings from Python files."
     )
@@ -148,58 +241,51 @@ def parse_args() -> argparse.Namespace:
             "Files and/or directories to process. If omitted, '.' is used and searched recursively."
         ),
     )
-    parser.add_argument(
-        "-j",
-        "--jobs",
-        type=int,
-        default=0,
-        help=(
-            "Number of worker processes (default: CPU count). Use 1 to disable parallelism."
-        ),
-    )
     return parser.parse_args()
 
 
+def _log_result(result: tuple[Path, int, int, bool, str | None]) -> None:
+    """Log the outcome of processing a single file.
+
+    Args:
+        result: The tuple returned by process_file.
+    """
+    file_path, comments_removed, docstrings_removed, written, error = result
+    if written:
+        logger.info(
+            "{}: removed {} comments, {} docstrings",
+            file_path,
+            comments_removed,
+            docstrings_removed,
+        )
+    else:
+        logger.warning(
+            "{}: INVALID after transform, skipped write (removed {} comments, {} docstrings). Error: {}",
+            file_path,
+            comments_removed,
+            docstrings_removed,
+            error,
+        )
+
+
 def main() -> None:
+    """Entry point for the comment and docstring stripping script."""
     args = parse_args()
     input_paths: list[Path] = args.paths or [Path(".")]
     files = iter_python_files_from_paths(input_paths)
     if not files:
-        print("No Python files found to process.")
+        logger.info("No Python files found to process.")
         return
-    jobs = args.jobs or None
-    if jobs == 1:
-        for path in files:
-            file_path, comments_removed, docstrings_removed, written, error = (
-                process_file(path)
-            )
-            if written:
-                print(
-                    f"{file_path}: removed {comments_removed} comments, {docstrings_removed} docstrings"
-                )
-            else:
-                print(
-                    f"{file_path}: INVALID after transform, "
-                    f"skipped write (removed {comments_removed} comments, "
-                    f"{docstrings_removed} docstrings). Error: {error}"
-                )
-    else:
-        with ProcessPoolExecutor(max_workers=jobs) as executor:
-            futures = {executor.submit(process_file, path): path for path in files}
-            for fut in as_completed(futures):
-                file_path, comments_removed, docstrings_removed, written, error = (
-                    fut.result()
-                )
-                if written:
-                    print(
-                        f"{file_path}: removed {comments_removed} comments, {docstrings_removed} docstrings"
-                    )
-                else:
-                    print(
-                        f"{file_path}: INVALID after transform, "
-                        f"skipped write (removed {comments_removed} comments, "
-                        f"{docstrings_removed} docstrings). Error: {error}"
-                    )
+
+    with multiprocessing.Pool(processes=POOL_SIZE) as pool:
+        async_results: list[Any] = [
+            pool.apply_async(process_file, (path,)) for path in files
+        ]
+        pool.close()
+        pool.join()
+        for async_result in async_results:
+            result: tuple[Path, int, int, bool, str | None] = async_result.get()
+            _log_result(result)
 
 
 if __name__ == "__main__":

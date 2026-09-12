@@ -1,26 +1,49 @@
 #!/data/data/com.termux/files/home/.local/bin/python
+"""
+Generate a Python script that in-place preprocesses all supported images under
+the current working directory using OpenCV (or Pillow fallback), runs OCR with
+pytesseract, writes .txt sidecar files, and processes images concurrently with
+a fixed multiprocessing.Pool of 8 workers using apply_async, logging progress
+via loguru, using pathlib for all path operations, and including full type
+annotations and docstrings throughout.
+"""
+
 from __future__ import annotations
 
 import multiprocessing
 import sys
-from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
 import pytesseract
+from loguru import logger
 
-SUPPORTED_EXT = {".jpg", ".jpeg", ".png", ".tiff", ".bmp", ".webp"}
-BASE_DIR = Path.cwd()
 try:
     import cv2
 
-    HAS_CV2 = True
+    HAS_CV2: bool = True
 except ImportError:
     HAS_CV2 = False
     from PIL import Image, ImageEnhance, ImageFilter
 
+SUPPORTED_EXT: set[str] = {".jpg", ".jpeg", ".png", ".tiff", ".bmp", ".webp"}
+BASE_DIR: Path = Path.cwd()
+POOL_SIZE: int = 8
 
-def deskew(image):
+ImageType = Union[np.ndarray, "Image.Image"]
+
+
+def deskew(image: np.ndarray) -> np.ndarray:
+    """
+    Deskew an OpenCV image using its minimum-area rectangle angle.
+
+    Args:
+        image: Binary or grayscale OpenCV image.
+
+    Returns:
+        The deskewed image, or the original if no coordinates are found.
+    """
     if HAS_CV2:
         coords = np.column_stack(np.where(image > 0))
         if coords.size == 0:
@@ -33,11 +56,19 @@ def deskew(image):
         return cv2.warpAffine(
             image, M, (w, h), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REPLICATE
         )
-    else:
-        return image
+    return image
 
 
-def preprocess_image_cv2(img_path: Path):
+def preprocess_image_cv2(img_path: Path) -> Optional[np.ndarray]:
+    """
+    Preprocess an image using OpenCV.
+
+    Args:
+        img_path: Path to the source image.
+
+    Returns:
+        The preprocessed image as a numpy array, or None on failure.
+    """
     img = cv2.imread(str(img_path))
     if img is None:
         return None
@@ -54,7 +85,16 @@ def preprocess_image_cv2(img_path: Path):
     return deskew(cleaned)
 
 
-def preprocess_image_pillow(img_path: Path):
+def preprocess_image_pillow(img_path: Path) -> Optional["Image.Image"]:
+    """
+    Preprocess an image using Pillow as a fallback.
+
+    Args:
+        img_path: Path to the source image.
+
+    Returns:
+        The preprocessed PIL image, or None on failure.
+    """
     try:
         img = Image.open(str(img_path))
         if img.mode != "L":
@@ -71,28 +111,64 @@ def preprocess_image_pillow(img_path: Path):
         return None
 
 
-def preprocess_image(img_path: Path):
+def preprocess_image(img_path: Path) -> Optional[ImageType]:
+    """
+    Preprocess an image using OpenCV if available, otherwise Pillow.
+
+    Args:
+        img_path: Path to the source image.
+
+    Returns:
+        The preprocessed image, or None on failure.
+    """
     if HAS_CV2:
         return preprocess_image_cv2(img_path)
-    else:
-        return preprocess_image_pillow(img_path)
+    return preprocess_image_pillow(img_path)
 
 
 def should_skip(path: Path) -> bool:
+    """
+    Determine whether a path should be skipped based on extension.
+
+    Args:
+        path: Path to check.
+
+    Returns:
+        True if the path's extension is not in SUPPORTED_EXT.
+    """
     return path.suffix.lower() not in SUPPORTED_EXT
 
 
-def save_processed_image(img, img_path: Path):
+def save_processed_image(img: ImageType, img_path: Path) -> None:
+    """
+    Save a processed image back to disk.
+
+    Args:
+        img: The processed image (numpy array or PIL image).
+        img_path: Destination path.
+
+    Raises:
+        ValueError: If the image type is unsupported.
+    """
     if HAS_CV2 and isinstance(img, np.ndarray):
         cv2.imwrite(str(img_path), img)
-    elif not HAS_CV2 and img is not None:
+    elif not HAS_CV2 and not isinstance(img, np.ndarray):
         img.save(str(img_path))
     else:
         raise ValueError("Unsupported image format")
 
 
-def process_single_image(image_path: Path) -> dict:
-    result = {
+def process_single_image(image_path: Path) -> Dict[str, Any]:
+    """
+    Preprocess an image, overwrite it, and write a .txt sidecar with OCR text.
+
+    Args:
+        image_path: Path to the image to process.
+
+    Returns:
+        A result dictionary with keys: path, success, error, size_before, size_after.
+    """
+    result: Dict[str, Any] = {
         "path": str(image_path),
         "success": False,
         "error": None,
@@ -107,10 +183,7 @@ def process_single_image(image_path: Path) -> dict:
             return result
         save_processed_image(processed, image_path)
         txt_path = image_path.with_suffix(".txt")
-        if HAS_CV2:
-            text = pytesseract.image_to_string(processed, config="--oem 1 --psm 6")
-        else:
-            text = pytesseract.image_to_string(processed, config="--oem 1 --psm 6")
+        text = pytesseract.image_to_string(processed, config="--oem 1 --psm 6")
         txt_path.write_text(text, encoding="utf-8")
         result["size_after"] = image_path.stat().st_size
         result["success"] = True
@@ -119,38 +192,54 @@ def process_single_image(image_path: Path) -> dict:
     return result
 
 
-def get_image_files():
-    image_files = []
+def get_image_files() -> List[Path]:
+    """
+    Collect all supported image files under BASE_DIR recursively.
+
+    Returns:
+        A list of image file paths.
+    """
+    image_files: List[Path] = []
     for path in BASE_DIR.rglob("*"):
-        if should_skip(path):
-            continue
-        image_files.append(path)
+        if path.is_file() and not should_skip(path):
+            image_files.append(path)
     return image_files
 
 
 def process() -> None:
+    """
+    Run the full preprocessing + OCR pipeline over all discovered images
+    using a fixed multiprocessing.Pool of POOL_SIZE workers.
+    """
     if not HAS_CV2:
-        print("⚠️ OpenCV not found, using Pillow as fallback (limited functionality)")
+        logger.warning(
+            "OpenCV not found, using Pillow as fallback (limited functionality)"
+        )
+
     image_files = get_image_files()
     total_images = len(image_files)
     if total_images == 0:
-        print("No images found to process.")
+        logger.info("No images found to process.")
         return
-    print(f"📊 Found {total_images} images to process")
-    print(f"⚡ Using {multiprocessing.cpu_count()} CPU cores for parallel processing")
-    print("🔄 Processing images in-place...\n")
+
+    logger.info(f"📊 Found {total_images} images to process")
+    logger.info(f"⚡ Using {POOL_SIZE} workers for parallel processing")
+    logger.info("🔄 Processing images in-place...\n")
+
     processed_count = 0
     error_count = 0
     total_before = 0
     total_after = 0
-    with ProcessPoolExecutor(max_workers=multiprocessing.cpu_count()) as executor:
-        future_to_path = {
-            executor.submit(process_single_image, path): path for path in image_files
-        }
-        for future in as_completed(future_to_path):
-            path = future_to_path[future]
+
+    pool = multiprocessing.Pool(processes=POOL_SIZE)
+    try:
+        async_results = [
+            (path, pool.apply_async(process_single_image, (path,)))
+            for path in image_files
+        ]
+        for path, async_result in async_results:
             try:
-                result = future.result()
+                result = async_result.get()
                 if result["success"]:
                     processed_count += 1
                     total_before += result["size_before"]
@@ -160,38 +249,47 @@ def process() -> None:
                     error_count += 1
                     status = "❌"
                 relative = path.relative_to(BASE_DIR)
-                print(
+                logger.info(
                     f"{status} [{processed_count + error_count}/{total_images}] {relative}"
                 )
                 if result.get("error"):
-                    print(f"   ⚠️ Error: {result['error']}")
+                    logger.warning(f"   ⚠️ Error: {result['error']}")
             except Exception as e:
                 error_count += 1
-                print(
+                logger.error(
                     f"❌ [{processed_count + error_count}/{total_images}] {path.name}: {e}"
                 )
-    print("\n" + "=" * 40)
-    print("📊 Processing Summary:")
-    print(f"   ✅ Successfully processed: {processed_count} images")
-    print(f"   ❌ Errors: {error_count} images")
-    print(f"   📁 Total images: {total_images}")
+    finally:
+        pool.close()
+        pool.join()
+
+    logger.info("=" * 40)
+    logger.info("📊 Processing Summary:")
+    logger.info(f"   ✅ Successfully processed: {processed_count} images")
+    logger.info(f"   ❌ Errors: {error_count} images")
+    logger.info(f"   📁 Total images: {total_images}")
     if processed_count > 0:
         size_reduction = (
-            (total_before - total_after) / total_before * 40 if total_before > 0 else 0
+            (total_before - total_after) / total_before * 100 if total_before > 0 else 0
         )
-        print(f"   📦 Total size before: {total_before / (1024 * 1024):.2f} MB")
-        print(f"   📦 Total size after: {total_after / (1024 * 1024):.2f} MB")
-        print(f"   📉 Size reduction: {size_reduction:.1f}%")
-    print("-" * 40)
+        logger.info(f"   📦 Total size before: {total_before / (1024 * 1024):.2f} MB")
+        logger.info(f"   📦 Total size after: {total_after / (1024 * 1024):.2f} MB")
+        logger.info(f"   📉 Size reduction: {size_reduction:.1f}%")
+    logger.info("-" * 40)
 
 
-if __name__ == "__main__":
-    print("⚠️  WARNING: This script will MODIFY original image files in-place!")
-    print("⚠️  NO BACKUPS will be created.")
-    print("⚠️  CTRL+C to cancel, ENTER to continue...")
+def main() -> None:
+    """Entry point: prompt for confirmation and run the processing pipeline."""
+    logger.warning("⚠️  WARNING: This script will MODIFY original image files in-place!")
+    logger.warning("⚠️  NO BACKUPS will be created.")
+    logger.warning("⚠️  CTRL+C to cancel, ENTER to continue...")
     try:
         input()
     except KeyboardInterrupt:
-        print("\n❌ Cancelled by user.")
+        logger.info("\n❌ Cancelled by user.")
         sys.exit(0)
     process()
+
+
+if __name__ == "__main__":
+    main()

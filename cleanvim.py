@@ -2,10 +2,8 @@
 import multiprocessing as mp
 import sys
 import time
-from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Tuple, Union
 
 import tree_sitter_vim
 from tree_sitter import Language, Node, Parser
@@ -110,7 +108,6 @@ def process_file(file_path: Path) -> ProcessResult:
             with open(temp_path, "wb") as f:
                 f.write(processed_content)
             import os
-            import stat
 
             original_mode = os.stat(file_path).st_mode
             os.chmod(temp_path, original_mode)

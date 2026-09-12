@@ -15,7 +15,7 @@ import re
 import sys
 from multiprocessing import Pool
 from pathlib import Path
-from subprocess import PIPE, run
+from subprocess import run
 
 from loguru import logger
 

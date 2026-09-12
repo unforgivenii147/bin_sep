@@ -19,7 +19,7 @@ from datetime import datetime
 from multiprocessing import Pool
 from multiprocessing.pool import AsyncResult
 from pathlib import Path
-from typing import Any, Optional
+from typing import Optional
 
 from loguru import logger
 from pip._internal.commands.install import InstallCommand

@@ -26,9 +26,8 @@ from multiprocessing import Pool
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Union
 
-from loguru import logger
-
 from dh import fsz
+from loguru import logger
 
 try:
     from fontTools.ttLib import TTFont

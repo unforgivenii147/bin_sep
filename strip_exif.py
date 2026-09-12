@@ -24,10 +24,9 @@ from multiprocessing import Pool, cpu_count
 from pathlib import Path
 from typing import Any
 
+from dh import fsz, gsz
 from loguru import logger
 from PIL import Image
-
-from dh import fsz, gsz
 
 # ---------------------------------------------------------------------------
 # Constants

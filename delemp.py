@@ -23,7 +23,7 @@ import argparse
 import mmap
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Final, Iterable, Sequence
+from typing import Final, Sequence
 
 from binaryornot.check import is_binary
 from loguru import logger
@@ -201,21 +201,21 @@ def print_header(
     mmap_threshold: int,
 ) -> None:
     """Emit the run header via loguru."""
-    logger.info("=" * 42)
-    logger.info("         Blank Line Remover")
-    logger.info("=" * 42)
-    logger.info("Processing paths:")
+    print("=" * 42)
+    print("         Blank Line Remover")
+    print("=" * 42)
+    print("Processing paths:")
     for path in paths:
         path_type = "📄" if path.is_file() else "📁"
-        logger.info(f"  {path_type} {path.absolute()}")
+        print(f"  {path_type} {path.absolute()}")
     if preserve_single:
         mode = "Preserve single blank lines"
     else:
         mode = "Remove all blank lines"
     if remove_spaces:
         mode += " (+ whitespace-only lines)"
-    logger.info(f"Mode: {mode}")
-    logger.info(f"mmap threshold: {mmap_threshold:,} bytes")
+    print(f"Mode: {mode}")
+    print(f"mmap threshold: {mmap_threshold:,} bytes")
 
 
 def print_results(
@@ -226,7 +226,7 @@ def print_results(
     mmap_threshold: int = MMAP_THRESHOLD,
 ) -> None:
     """Emit the final summary via loguru."""
-    logger.info("-" * 40)
+    print("-" * 40)
     results.sort(key=lambda x: x[0])
     processed = [r for r in results if r[3].startswith("processed")]
     skipped_binary = [r for r in results if r[3] == "binary"]
@@ -238,26 +238,24 @@ def print_results(
     large_files_count = sum(1 for _, _, _, s in processed if "[mmap]" in s)
 
     if processed:
-        logger.info("✓ Modified files:")
+        print("✓ Modified files:")
         for path, total_lines, removed, status in processed:
             if removed > 0:
                 method_indicator = " [mmap]" if "[mmap]" in status else ""
-                logger.info(f"  ● {path}{method_indicator}")
-                logger.info(f"    Lines: {total_lines:,}  →  Removed: {removed:,}")
+                print(f"  ● {path}{method_indicator}")
+                print(f"    Lines: {total_lines:,}  →  Removed: {removed:,}")
             else:
-                logger.info(f"  ○ {path} (no blank lines found)")
+                print(f"  ○ {path} (no blank lines found)")
 
     if skipped_binary:
-        logger.info(f"⊘ Skipped binary files: {len(skipped_binary)}")
+        print(f"⊘ Skipped binary files: {len(skipped_binary)}")
         display_count = (
             len(skipped_binary) if show_all_binary else min(5, len(skipped_binary))
         )
         for path, _, _, _ in skipped_binary[:display_count]:
-            logger.info(f"  ⊘ {path}")
+            print(f"  ⊘ {path}")
         if len(skipped_binary) > display_count:
-            logger.info(
-                f"  ... and {len(skipped_binary) - display_count} more binary files"
-            )
+            print(f"  ... and {len(skipped_binary) - display_count} more binary files")
 
     if errors:
         logger.error("✗ Errors:")
@@ -265,18 +263,18 @@ def print_results(
             logger.error(f"  ✗ {path}")
             logger.error(f"    {status}")
 
-    logger.info("-" * 40)
-    logger.info("Summary:")
-    logger.info(f"  Total files found:     {total_files:,}")
-    logger.info(f"  Text files processed:  {len(processed):,}")
+    print("-" * 40)
+    print("Summary:")
+    print(f"  Total files found:     {total_files:,}")
+    print(f"  Text files processed:  {len(processed):,}")
     if large_files_count > 0:
-        logger.info(f"    Large files (mmap):  {large_files_count:,}")
-    logger.info(f"  Binary files skipped:  {len(skipped_binary):,}")
-    logger.info(f"  Files modified:        {sum(1 for r in processed if r[2] > 0):,}")
-    logger.info(f"  Lines removed:         {total_removed:,}")
+        print(f"    Large files (mmap):  {large_files_count:,}")
+    print(f"  Binary files skipped:  {len(skipped_binary):,}")
+    print(f"  Files modified:        {sum(1 for r in processed if r[2] > 0):,}")
+    print(f"  Lines removed:         {total_removed:,}")
     if errors:
         logger.error(f"  Errors:                {len(errors):,}")
-    logger.info("-" * 40)
+    print("-" * 40)
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
@@ -335,10 +333,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     paths: list[Path] = [Path(p).resolve() for p in args.paths]
 
     print_header(paths, args.preserve_single, args.space, MMAP_THRESHOLD)
-    logger.info("Scanning for files...")
+    print("Scanning for files...")
     file_list = collect_files(paths)
     total_files = len(file_list)
-    logger.info(f"Done! Found {total_files:,} files.")
+    print(f"Done! Found {total_files:,} files.")
 
     if not file_list:
         logger.warning("No files found to process.")
@@ -356,8 +354,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     error_count = 0
     large_count = 0
 
-    logger.info("Processing files...")
-    logger.info(
+    print("Processing files...")
+    print(
         f"(Using {POOL_WORKERS} worker processes, mmap for files > "
         f"{MMAP_THRESHOLD:,} bytes)"
     )
@@ -383,7 +381,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             except Exception as e:  # noqa: BLE001
                 error_count += 1
                 results.append(("<unknown>", 0, 0, f"error: {e!s}"))
-            logger.info(
+            print(
                 f"Progress: {completed:,}/{total:,} files processed "
                 f"({processed_count:,} text, {large_count:,} mmap, "
                 f"{skipped_count:,} binary, {error_count:,} errors)"
@@ -393,7 +391,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     finally:
         pool.terminate()
 
-    logger.info(
+    print(
         f"Complete! ({processed_count:,} text, {large_count:,} mmap, "
         f"{skipped_count:,} binary, {error_count:,} errors)"
     )

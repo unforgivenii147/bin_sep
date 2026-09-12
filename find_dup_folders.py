@@ -50,6 +50,8 @@ def hash_folder(folder_path: Path) -> str:
 def find_duplicate_folders(cwd: Path):
     folder_hashes = defaultdict(list)
     for path in get_dirs(cwd):
+        if ".git" in path.parts:
+            continue
         folder_hash = hash_folder(path)
         if folder_hash:
             folder_hashes.setdefault(folder_hash, []).append(path)

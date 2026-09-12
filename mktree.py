@@ -5,7 +5,7 @@ import argparse
 import re
 import sys
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 try:
     import cv2

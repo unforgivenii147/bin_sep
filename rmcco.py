@@ -21,17 +21,14 @@ from __future__ import annotations
 
 import argparse
 import ast
-import io
 import re
 import shutil
-import sys
 import tempfile
-import tokenize
 import zipfile
 from dataclasses import dataclass, field
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Any, Final, Iterable, Optional, Sequence
+from typing import Final, Optional
 
 from loguru import logger
 

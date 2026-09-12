@@ -20,11 +20,10 @@ import sys
 import tarfile
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Any, Final
-
-from loguru import logger
+from typing import Final
 
 from dh import fsz, get_files  # type: ignore[import-not-found]
+from loguru import logger
 from lzma_mt import compress, decompress  # type: ignore[import-not-found]
 
 MAX_WORKERS: Final[int] = 8

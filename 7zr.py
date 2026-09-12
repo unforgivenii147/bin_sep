@@ -24,7 +24,6 @@ import sys
 import tempfile
 from multiprocessing import Pool
 from pathlib import Path
-from types import TracebackType
 from typing import Any, Final
 
 import py7zr

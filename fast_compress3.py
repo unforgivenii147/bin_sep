@@ -19,12 +19,11 @@ import json
 import sys
 from multiprocessing.pool import AsyncResult, Pool
 from pathlib import Path
-from typing import Any, Generator, Iterable, Optional
+from typing import Any, Generator, Iterable
 
 import zstandard as zstd
-from loguru import logger
-
 from dh import fsz
+from loguru import logger
 
 SKIP_EXTENSIONS_COMPRESS: set[str] = {
     ".xz",

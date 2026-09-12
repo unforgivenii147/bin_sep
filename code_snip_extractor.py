@@ -6,7 +6,6 @@ import sys
 from collections.abc import Generator
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Optional
 
 
 def extract_snippets(file_path: Path) -> Generator[tuple[int, str], None, None]:

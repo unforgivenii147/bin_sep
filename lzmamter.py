@@ -20,20 +20,16 @@ from __future__ import annotations
 import argparse
 import lzma
 import shutil
-import sys
 import tarfile
 import time
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Any, Callable, Iterable, TypedDict
-
-from loguru import logger
+from typing import Any, Callable, TypedDict
 
 from dh import fsz
+from loguru import logger
 
 try:
-    import lzma_mt
-
     HAS_LZMAMT: bool = True
 except ImportError:
     HAS_LZMAMT = False

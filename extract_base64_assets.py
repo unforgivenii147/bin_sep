@@ -19,7 +19,7 @@ from datetime import datetime
 from functools import lru_cache
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Any, Optional, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from loguru import logger
 

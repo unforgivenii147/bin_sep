@@ -1,9 +1,6 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-import os
 import re
-import shutil
 import tarfile
-import tempfile
 from pathlib import Path
 
 
