@@ -1,11 +1,10 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 """
 translate.py — Translate lines in a text file using deep_translator.GoogleTranslator
-with a persistent SQLite cache, graceful interrupt handling, and periodic progress saving.
+with graceful interrupt handling and periodic progress saving.
 
 Features
 --------
-* SQLite cache deduplicated by (source_lang, target_lang, source_text).
 * Chunked batch translation inside each worker (TRANSLATE_CHUNK lines per API call).
 * Automatic Cyrillic detection when source language is "ru" — lines without any
   Cyrillic characters are passed through unchanged (they're likely already not Russian).
@@ -17,7 +16,6 @@ Usage
 -----
     python translate.py -i input.txt -s ru -t en
     python translate.py -i input.txt -s ru -t en --workers 8 --batch-size 200
-    python translate.py --cache-stats
 """
 
 from __future__ import annotations
@@ -27,13 +25,11 @@ import json
 import os
 import re
 import signal
-import sqlite3
 import sys
 import time
 from multiprocessing import Pool, cpu_count
 from pathlib import Path
 from queue import Empty, Queue
-from typing import Iterable
 
 try:
     from deep_translator import GoogleTranslator
@@ -47,12 +43,10 @@ except ImportError:  # pragma: no cover
 # ---------------------------------------------------------------------------
 
 CYRILLIC_RE = re.compile(r"[\u0400-\u04FF]")
-DEFAULT_CACHE = "translations.sqlite"
 TRANSLATE_CHUNK = 20          # lines per GoogleTranslator API call inside a worker
 DEFAULT_SAVE_INTERVAL = 10.0  # seconds between periodic saves
 
 _shutdown = False             # set by signal handler (main process only)
-_cache: "TranslationCache | None" = None  # per-worker cache instance
 
 
 def _has_cyrillic(text: str) -> bool:
@@ -66,83 +60,8 @@ def _handle_signal(signum, _frame) -> None:
 
 
 # ---------------------------------------------------------------------------
-# SQLite cache
-# ---------------------------------------------------------------------------
-
-class TranslationCache:
-    """Persistent SQLite cache keyed by (source_lang, target_lang, source_text)."""
-
-    def __init__(self, path: str | os.PathLike):
-        self.path = str(path)
-        self._conn: sqlite3.Connection | None = None
-
-    def connect(self) -> sqlite3.Connection:
-        if self._conn is None:
-            # check_same_thread=False is safe here: each process/thread owns its own instance.
-            self._conn = sqlite3.connect(self.path, timeout=30.0)
-            self._conn.execute("PRAGMA journal_mode=WAL")
-            self._conn.execute("PRAGMA synchronous=NORMAL")
-            self._conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS cache (
-                    src_lang        TEXT NOT NULL,
-                    tgt_lang        TEXT NOT NULL,
-                    source_text     TEXT NOT NULL,
-                    translated_text TEXT NOT NULL,
-                    created_at      REAL NOT NULL,
-                    PRIMARY KEY (src_lang, tgt_lang, source_text)
-                )
-                """
-            )
-            self._conn.commit()
-        return self._conn
-
-    def get(self, src: str, tgt: str, text: str) -> str | None:
-        conn = self.connect()
-        cur = conn.execute(
-            "SELECT translated_text FROM cache "
-            "WHERE src_lang = ? AND tgt_lang = ? AND source_text = ?",
-            (src, tgt, text),
-        )
-        row = cur.fetchone()
-        return row[0] if row else None
-
-    def put_many(self, src: str, tgt: str, pairs: Iterable[tuple[str, str]]) -> None:
-        conn = self.connect()
-        now = time.time()
-        conn.executemany(
-            "INSERT OR REPLACE INTO cache "
-            "(src_lang, tgt_lang, source_text, translated_text, created_at) "
-            "VALUES (?, ?, ?, ?, ?)",
-            [(src, tgt, s, t, now) for s, t in pairs],
-        )
-        conn.commit()
-
-    def stats(self) -> list[tuple[str, str, int]]:
-        conn = self.connect()
-        cur = conn.execute(
-            "SELECT src_lang, tgt_lang, COUNT(*) FROM cache "
-            "GROUP BY src_lang, tgt_lang "
-            "ORDER BY src_lang, tgt_lang"
-        )
-        return cur.fetchall()
-
-    def close(self) -> None:
-        if self._conn is not None:
-            self._conn.close()
-            self._conn = None
-
-
-# ---------------------------------------------------------------------------
 # Worker functions (run inside the multiprocessing pool)
 # ---------------------------------------------------------------------------
-
-def _worker_init(cache_path: str) -> None:
-    """Called once per worker process: open the cache connection."""
-    global _cache
-    _cache = TranslationCache(cache_path)
-    _cache.connect()
-
 
 def _translate_texts(texts: list[str], src: str, tgt: str) -> list[str]:
     """Call GoogleTranslator.translate_batch and validate the result."""
@@ -156,9 +75,8 @@ def _translate_texts(texts: list[str], src: str, tgt: str) -> list[str]:
 
 
 def _translate_task(task: tuple[str, str, list[tuple[int, str]]]) -> list[tuple[int, str]]:
-    """Translate a batch of (index, text) items, using the cache when possible."""
+    """Translate a batch of (index, text) items."""
     src, tgt, items = task
-    assert _cache is not None, "worker cache not initialised"
 
     results: list[tuple[int, str]] = []
     pending: list[tuple[int, str]] = []
@@ -171,11 +89,7 @@ def _translate_task(task: tuple[str, str, list[tuple[int, str]]]) -> list[tuple[
         if src == "ru" and not _has_cyrillic(text):
             results.append((idx, text))
             continue
-        cached = _cache.get(src, tgt, text)
-        if cached is not None:
-            results.append((idx, cached))
-        else:
-            pending.append((idx, text))
+        pending.append((idx, text))
 
     for i in range(0, len(pending), TRANSLATE_CHUNK):
         batch = pending[i : i + TRANSLATE_CHUNK]
@@ -186,14 +100,8 @@ def _translate_task(task: tuple[str, str, list[tuple[int, str]]]) -> list[tuple[
             sys.stderr.write(f"[translate] batch failed ({exc}); keeping originals\n")
             translated = texts
 
-        pairs: list[tuple[str, str]] = []
-        for (idx, original), tr in zip(batch, translated):
+        for (idx, _original), tr in zip(batch, translated):
             results.append((idx, tr))
-            pairs.append((original, tr))
-        try:
-            _cache.put_many(src, tgt, pairs)
-        except sqlite3.Error as exc:  # pragma: no cover
-            sys.stderr.write(f"[translate] cache write failed: {exc}\n")
 
     return results
 
@@ -270,7 +178,6 @@ def cmd_translate(args: argparse.Namespace) -> None:
         f"{args.workers} workers, src={args.source} tgt={args.target}",
         file=sys.stderr,
     )
-    print(f"[translate] cache  : {args.cache}", file=sys.stderr)
     print(f"[translate] output : {output_path}", file=sys.stderr)
 
     result_queue: Queue = Queue()
@@ -278,11 +185,7 @@ def cmd_translate(args: argparse.Namespace) -> None:
     def _on_ok(res):    result_queue.put(("ok", res))
     def _on_err(exc):   result_queue.put(("err", exc))
 
-    pool = Pool(
-        processes=args.workers,
-        initializer=_worker_init,
-        initargs=(args.cache,),
-    )
+    pool = Pool(processes=args.workers)
 
     try:
         for t in tasks:
@@ -319,8 +222,6 @@ def cmd_translate(args: argparse.Namespace) -> None:
     except KeyboardInterrupt:
         _shutdown = True
     finally:
-        # Terminate workers; results already in flight may be lost — that's OK
-        # because any completed translations are persisted in the cache.
         pool.terminate()
         pool.join()
 
@@ -335,31 +236,7 @@ def cmd_translate(args: argparse.Namespace) -> None:
     print(f"[translate] {tag}: wrote {output_path} ({done}/{len(lines)} lines)",
           file=sys.stderr)
     if not complete:
-        # Non-zero exit so shells/scripts can detect partial completion.
         sys.exit(130 if _shutdown else 1)
-
-
-def cmd_cache_stats(args: argparse.Namespace) -> None:
-    path = args.cache
-    if not Path(path).exists():
-        print(f"Cache not found: {path}")
-        return
-    cache = TranslationCache(path)
-    try:
-        rows = cache.stats()
-    finally:
-        cache.close()
-
-    if not rows:
-        print(f"Cache is empty: {path}")
-        return
-
-    print(f"Cache: {path}")
-    total = 0
-    for src, tgt, count in rows:
-        print(f"  {src} -> {tgt}: {count:,} entries")
-        total += count
-    print(f"Total: {total:,} entries")
 
 
 # ---------------------------------------------------------------------------
@@ -368,7 +245,7 @@ def cmd_cache_stats(args: argparse.Namespace) -> None:
 
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
-        description="Translate a text file with deep_translator + SQLite caching.",
+        description="Translate a text file with deep_translator.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     p.add_argument("-i", "--input", help="Path to the input text file.")
@@ -378,16 +255,12 @@ def build_parser() -> argparse.ArgumentParser:
                    help="Target language code (e.g. 'en').")
     p.add_argument("-o", "--output",
                    help="Output file path (default: <input>.translated.txt).")
-    p.add_argument("--cache", default=DEFAULT_CACHE,
-                   help="Path to the SQLite cache file.")
     p.add_argument("--workers", type=int, default=min(4, cpu_count() or 1),
                    help="Number of worker processes.")
     p.add_argument("--batch-size", type=int, default=100,
                    help="Number of lines per worker task.")
     p.add_argument("--save-interval", type=float, default=DEFAULT_SAVE_INTERVAL,
                    help="Seconds between periodic progress saves.")
-    p.add_argument("--cache-stats", action="store_true",
-                   help="Print cache statistics and exit.")
     return p
 
 
@@ -400,12 +273,8 @@ def main(argv: list[str] | None = None) -> None:
     if hasattr(signal, "SIGTERM"):
         signal.signal(signal.SIGTERM, _handle_signal)
 
-    if args.cache_stats:
-        cmd_cache_stats(args)
-        return
-
     if not args.input:
-        parser.error("--input/-i is required unless --cache-stats is used")
+        parser.error("--input/-i is required")
 
     if args.workers < 1:
         parser.error("--workers must be >= 1")
