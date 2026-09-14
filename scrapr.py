@@ -1,62 +1,91 @@
 #!/data/data/com.termux/files/home/.local/bin/python
+"""
+Crawl a movies directory listing site for 480p/720p MKV files under a size limit.
+
+Features:
+- Resumable crawl using a JSON state file (crawler_state.json)
+- Concurrent directory parsing with multiprocessing.Pool (fixed 8 workers)
+- Graceful interrupt handling (SIGINT) that saves progress
+- Outputs URLs to movies.txt and records to movies.json (JSONL)
+
+CLI:
+  -u/--url   Base URL to crawl (default: https://sr.moviesho.com/Series/)
+  -s/--size  Max file size in MB (default: 300)
+
+Usage:
+  python crawler.py -u https://example.com/Series/ -s 300
+"""
+
 from __future__ import annotations
 
 import argparse
 import json
 import re
 import signal
-from concurrent.futures import ProcessPoolExecutor, as_completed
-from multiprocessing import Manager, cpu_count
+from multiprocessing import Manager, Pool, cpu_count
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Set, Tuple
 from urllib.parse import urljoin
 
 import requests
 from bs4 import BeautifulSoup
+from loguru import logger
 
-DEFAULT_URL = "https://sr.moviesho.com/Series/"
-STATE_FILE = "crawler_state.json"
-TXT_OUTPUT = "movies.txt"
-JSON_OUTPUT = "movies.json"
-stop_flag = False
+DEFAULT_URL: str = "https://sr.moviesho.com/Series/"
+STATE_FILE: Path = Path("crawler_state.json")
+TXT_OUTPUT: Path = Path("movies.txt")
+JSON_OUTPUT: Path = Path("movies.json")
+FIXED_WORKERS: int = 8
+
+stop_flag: bool = False
 
 
-def signal_handler(sig, frame) -> None:
+def signal_handler(sig: int, frame: Any) -> None:
+    """Handle SIGINT by setting the global stop flag to save progress."""
     global stop_flag
-    print("\n⚠️  Interrupt received! Saving progress...")
+    logger.warning("⚠️  Interrupt received! Saving progress...")
     stop_flag = True
 
 
 signal.signal(signal.SIGINT, signal_handler)
 
 
-def size_to_mb(size_str: str) -> float | None:
+def size_to_mb(size_str: str) -> Optional[float]:
+    """Convert a size string like '123.4 MiB' to megabytes as float."""
     match = re.search(r"([\d.]+)\s*Mi?B", size_str)
     if match:
         return float(match.group(1))
     return None
 
 
-def extract_quality(filename: str) -> str | None:
-    if "480p" in filename.lower():
+def extract_quality(filename: str) -> Optional[str]:
+    """Extract '480' or '720' quality tag from a filename, if present."""
+    lower = filename.lower()
+    if "480p" in lower:
         return "480"
-    if "720p" in filename.lower():
+    if "720p" in lower:
         return "720"
     return None
 
 
-def fetch_directory(url) -> str | None:
+def fetch_directory(url: str) -> Optional[str]:
+    """Fetch the HTML content of a directory URL, returning None on failure."""
     try:
-        headers = {"User-Agent": "Mozilla/5.0"}
+        headers: Dict[str, str] = {"User-Agent": "Mozilla/5.0"}
         response = requests.get(url, headers=headers, timeout=10)
         response.raise_for_status()
         return response.text
-    except Exception:
+    except Exception as exc:
+        logger.debug(f"Failed to fetch {url}: {exc}")
         return None
 
 
-def parse_directory(url, max_size):
-    results = []
-    subdirs = []
+def parse_directory(
+    url: str, max_size: float
+) -> Tuple[List[Dict[str, Any]], List[str]]:
+    """Parse a directory listing for matching movie files and subdirectories."""
+    results: List[Dict[str, Any]] = []
+    subdirs: List[str] = []
     html = fetch_directory(url)
     if not html:
         return results, subdirs
@@ -71,6 +100,8 @@ def parse_directory(url, max_size):
             continue
         name = link_tag.text.strip()
         href = link_tag.get("href")
+        if not href:
+            continue
         size_text = cols[1].text.strip()
         if "Parent directory" in name:
             continue
@@ -90,74 +121,90 @@ def parse_directory(url, max_size):
     return results, subdirs
 
 
-def save_state(queue, visited) -> None:
-    state = {"queue": list(queue), "visited": list(visited)}
-    with open(STATE_FILE, "w", encoding="utf-8") as f:
+def save_state(queue: List[str], visited: Set[str]) -> None:
+    """Persist current crawl queue and visited set to the state file."""
+    state: Dict[str, List[str]] = {"queue": list(queue), "visited": list(visited)}
+    with STATE_FILE.open("w", encoding="utf-8") as f:
         json.dump(state, f)
 
 
-def load_state():
-    if not Path(STATE_FILE).exists():
+def load_state() -> Tuple[Optional[Set[str]], Optional[List[str]]]:
+    """Load previously saved crawl state, if any."""
+    if not STATE_FILE.exists():
         return None, None
-    with open(STATE_FILE, encoding="utf-8") as f:
-        state = json.load(f)
+    with STATE_FILE.open(encoding="utf-8") as f:
+        state: Dict[str, List[str]] = json.load(f)
     return set(state["visited"]), state["queue"]
 
 
-def append_results(results) -> None:
-    with open(TXT_OUTPUT, "a", encoding="utf-8") as f:
+def append_results(results: List[Dict[str, Any]]) -> None:
+    """Append crawl results to both TXT and JSONL output files."""
+    with TXT_OUTPUT.open("a", encoding="utf-8") as f:
         f.writelines(r["url"] + "\n" for r in results)
-    with open(JSON_OUTPUT, "a", encoding="utf-8") as f:
+    with JSON_OUTPUT.open("a", encoding="utf-8") as f:
         f.writelines(json.dumps(r) + "\n" for r in results)
 
 
-def main() -> None:
+def main() -> int:
+    """Entry point: parse args, manage crawl queue, and drive worker pool."""
+    global stop_flag
     parser = argparse.ArgumentParser()
     parser.add_argument("-u", "--url", default=DEFAULT_URL, help="Base URL to crawl")
     parser.add_argument(
         "-s", "--size", type=float, default=300, help="Max size in MB (default 300)"
     )
     args = parser.parse_args()
-    max_size = args.size
-    base_url = args.url if args.url.endswith("/") else args.url + "/"
+    max_size: float = args.size
+    base_url: str = args.url if args.url.endswith("/") else args.url + "/"
+
     manager = Manager()
     visited = manager.list()
     queue = manager.list()
+
     prev_visited, prev_queue = load_state()
     if prev_queue:
-        print("🔁 Resuming previous crawl...")
-        visited[:] = prev_visited
+        logger.info("🔁 Resuming previous crawl...")
+        visited[:] = prev_visited or []
         queue[:] = prev_queue
     else:
         queue.append(base_url)
-    workers = cpu_count()
-    print(f"🚀 Using {workers} processes")
-    with ProcessPoolExecutor(max_workers=workers) as executor:
+
+    logger.info(f"🚀 Using {FIXED_WORKERS} processes")
+
+    with Pool(processes=FIXED_WORKERS) as pool:
         while queue and not stop_flag:
-            futures = {}
-            for _ in range(min(len(queue), workers)):
-                url = queue.pop(0)
+            in_flight: List[Tuple[Any, str]] = []
+            for _ in range(min(len(queue), FIXED_WORKERS)):
+                url: str = queue.pop(0)
                 if url in visited:
                     continue
                 visited.append(url)
-                futures[executor.submit(parse_directory, url, max_size)] = url
-            for future in as_completed(futures):
+                async_result = pool.apply_async(parse_directory, (url, max_size))
+                in_flight.append((async_result, url))
+
+            for async_result, _ in in_flight:
                 if stop_flag:
                     break
-                results, subdirs = future.result()
+                try:
+                    results, subdirs = async_result.get()
+                except Exception as exc:
+                    logger.error(f"Worker error: {exc}")
+                    continue
                 if results:
                     append_results(results)
-                    print(f"✅ Found {len(results)} movies")
+                    logger.info(f"✅ Found {len(results)} movies")
                 for sub in subdirs:
                     if sub not in visited:
                         queue.append(sub)
-    save_state(queue, visited)
+
+    save_state(list(queue), set(visited))
     if stop_flag:
-        print("💾 Progress saved. Run again to continue.")
+        logger.info("💾 Progress saved. Run again to continue.")
     else:
-        if Path(STATE_FILE).exists():
-            Path(STATE_FILE).unlink()
-        print("✅ Crawl completed successfully.")
+        if STATE_FILE.exists():
+            STATE_FILE.unlink()
+        logger.info("✅ Crawl completed successfully.")
+    return 0
 
 
 if __name__ == "__main__":

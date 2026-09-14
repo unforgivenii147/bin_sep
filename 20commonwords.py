@@ -1,4 +1,11 @@
 #!/data/data/com.termux/files/home/.local/bin/python
+
+"""You are a senior Python engineer
+ refactor this code:
+ - use explicit type annotations and robust validation
+ - protect file and network operations
+ - use a fixed eight-worker multiprocessing.pool.apply_async design whenever concurrent work is required."""
+
 from __future__ import annotations
 
 import re
@@ -6,10 +13,10 @@ import sys
 from collections import Counter
 from pathlib import Path
 
-import regex as re
+import re
 from dh import unique_path
 
-USER_STOPWORDS_FILE = Path("/sdcard/stopwords")
+USER_STOPWORDS_FILE = Path("/sdcard/data/stopwords")
 
 
 def load_user_stopwords(path: Path):
@@ -27,30 +34,17 @@ def load_user_stopwords(path: Path):
 
 EXCLUDE = load_user_stopwords(USER_STOPWORDS_FILE)
 
-
 def extract_words(text: str):
     return re.findall("[a-z]{3,}", text.lower())
 
 
 def main() -> None:
-    if len(sys.argv) != 2:
-        print(f"Usage: {sys.argv[0]} <file>")
-        sys.exit(1)
-    src = sys.argv[1]
-    try:
-        text = Path(src).read_text(encoding="utf-8", errors="ignore")
-    except FileNotFoundError:
-        print("File not found")
-        sys.exit(1)
+    src = Path(sys.argv[1].strip())
+    text = src.read_text(encoding="utf-8", errors="ignore")
     words = extract_words(text)
     filtered = [w for w in words if w not in EXCLUDE]
-    dst = ""
     for word, count in Counter(filtered).most_common(50):
-        dst = dst + str(word) if count == 5 else dst + str(word) + "_"
         print(f"{word:<15} {count}")
-    p = Path(src)
-    dst = Path(str(dst)[:25] + p.suffix)
-    dst = unique_path(dst)
 
 
 if __name__ == "__main__":

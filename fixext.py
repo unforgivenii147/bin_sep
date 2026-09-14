@@ -184,16 +184,6 @@ def collect_files(inputs: Iterable[Path]) -> list[Path]:
     return list(dict.fromkeys(files))
 
 
-def print_detected_extension(
-    file_path: Path,
-    detected_ext: str | None,
-) -> None:
-    if detected_ext:
-        print(f"{file_path.name} -> {detected_ext}")
-    else:
-        print(f"{file_path} -> unknown")
-
-
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Detect and optionally fix file extension mismatches."
@@ -231,20 +221,24 @@ def main() -> None:
         ]
         for file_path, job in zip(files, jobs, strict=False):
             try:
-                result_path, is_mismatch, _old_ext, new_ext = job.get()
-                print_detected_extension(file_path, new_ext)
-                if is_mismatch:
-                    mismatches += 1
-                    if args.auto_fix and result_path != file_path:
+                result_path, is_mismatch, old_ext, new_ext = job.get()
+                if args.auto_fix:
+                    if is_mismatch and result_path != file_path:
                         fixed += 1
                         print(f"renamed: {file_path} -> {result_path}")
+                else:
+                    if is_mismatch:
+                        mismatches += 1
+                        print(f"{file_path}: {old_ext or 'none'} -> {new_ext}")
             except Exception as exc:
                 LOGGER.debug("Error processing %s: %s", file_path, exc)
                 print(f"{file_path} -> error: {exc}", file=sys.stderr)
-    print()
-    print(f"Total files scanned: {len(files)}")
-    print(f"Mismatches found: {mismatches}")
-    if args.auto_fix:
+    if not args.auto_fix:
+        print()
+        print(f"Total files scanned: {len(files)}")
+        print(f"Mismatches found: {mismatches}")
+    elif fixed:
+        print()
         print(f"Files fixed: {fixed}")
 
 

@@ -1,22 +1,35 @@
 #!/data/data/com.termux/files/home/.local/bin/python
+"""Generate a Python script that translates non-English comments and string literals in source files to English.
+
+The script walks the current working directory (or accepts explicit file paths as arguments),
+skips binary files and common cache/virtualenv directories, and processes each remaining file.
+Python files are tokenized so that only COMMENT tokens and STRING tokens containing non-ASCII
+text are translated via GoogleTranslator, preserving code structure. Non-Python text files are
+translated wholesale. Work is dispatched to a multiprocessing.Pool with 8 workers using
+apply_async, results are collected, and files are atomically overwritten via a temporary file
+in the same directory. Uses loguru for logging and pathlib for all path handling.
+"""
+
 from __future__ import annotations
 
 import io
-import logging
 import re
 import shutil
 import sys
 import tempfile
 import tokenize
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from multiprocessing import Pool
 from pathlib import Path
-from typing import Final
+from typing import Final, Optional, Union
 
 from deep_translator import GoogleTranslator
+from loguru import logger
+
 from dh import DOC_TH1, DOC_TH2, get_files, is_binary
 
 CHUNK_SIZE: Final[int] = 4990
-MAX_WORKERS: Final[int] = 6
+POOL_WORKERS: Final[int] = 8
+
 SKIP_DIRS: Final[frozenset[str]] = frozenset(
     {
         "lazy",
@@ -28,37 +41,52 @@ SKIP_DIRS: Final[frozenset[str]] = frozenset(
         ".venv",
     }
 )
-NON_ENGLISH_PATTERN: Final[re.Pattern] = re.compile(r"[^\x00-\x7F]")
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+
+NON_ENGLISH_PATTERN: Final[re.Pattern[str]] = re.compile(r"[^\x00-\x7F]")
+
+TokenTuple = tuple[int, str, tuple[int, int], tuple[int, int], str]
+TranslationTarget = Union[tuple[int, str], tuple[int, str, str]]
 
 
 def is_english(text: str) -> bool:
+    """Return True if the given text contains only ASCII characters."""
     return not NON_ENGLISH_PATTERN.search(text)
 
 
 def batch_translate(texts: list[str]) -> list[str]:
+    """Translate a list of strings to English using GoogleTranslator.
+
+    Attempts to translate all strings in a single batched request using a
+    unique separator. Falls back to individual translations if the batch
+    response cannot be split back into the same number of items.
+    """
     if not texts:
         return []
+
     separator = "\n===|||===\n"
     combined_text = separator.join(texts)
+
     try:
-        translated_combined = GoogleTranslator(source="auto", target="en").translate(
-            combined_text
-        )
+        translated_combined: Optional[str] = GoogleTranslator(
+            source="auto", target="en"
+        ).translate(combined_text)
         if not translated_combined:
             return texts
+
         translated_list = [
             t.strip() for t in translated_combined.split(separator.strip())
         ]
+
         if len(translated_list) != len(texts):
             logger.warning(
-                f"Batch mismatch ({len(translated_list)} vs {len(texts)}). Falling back to individual translation."
+                f"Batch mismatch ({len(translated_list)} vs {len(texts)}). "
+                "Falling back to individual translation."
             )
             return [
                 GoogleTranslator(source="auto", target="en").translate(t) or t
                 for t in texts
             ]
+
         return translated_list
     except Exception as e:
         logger.error(f"Batch translation error: {e}")
@@ -66,45 +94,63 @@ def batch_translate(texts: list[str]) -> list[str]:
 
 
 def safe_overwrite(filepath: Path, content: str) -> None:
+    """Atomically overwrite filepath with content via a temp file in the same dir."""
+    tmp_path: Path
     with tempfile.NamedTemporaryFile(
         mode="w", encoding="utf-8", delete=False, dir=filepath.parent
     ) as tmp:
         tmp.write(content)
         tmp_path = Path(tmp.name)
-    shutil.move(tmp_path, filepath)
+    shutil.move(str(tmp_path), str(filepath))
 
 
 def translate_python_file(source: str) -> str:
+    """Translate non-English comments and string literals within Python source."""
     try:
-        tokens = list(tokenize.generate_tokens(io.StringIO(source).readline))
+        tokens: list[TokenTuple] = list(
+            tokenize.generate_tokens(io.StringIO(source).readline)
+        )
     except (tokenize.TokenError, IndentationError):
         return batch_translate([source])[0]
-    to_translate = []
-    translation_targets = []
+
+    to_translate: list[str] = []
+    translation_targets: list[TranslationTarget] = []
+
     for idx, token in enumerate(tokens):
-        tok_type, tok_str = (token[0], token[1])
-        if tok_type == tokenize.COMMENT and (not is_english(tok_str)):
+        tok_type: int = token[0]
+        tok_str: str = token[1]
+
+        if tok_type == tokenize.COMMENT and not is_english(tok_str):
             comment_text = tok_str[1:].strip()
             if comment_text:
                 to_translate.append(comment_text)
                 translation_targets.append((idx, "COMMENT"))
         elif tok_type == tokenize.STRING:
             stripped = tok_str.strip("'\"")
-            if stripped and (not is_english(stripped)) and (len(stripped) > 5):
+            if stripped and not is_english(stripped) and len(stripped) > 5:
                 to_translate.append(stripped)
                 translation_targets.append((idx, "STRING", tok_str))
+
     if not to_translate:
         return source
+
     translated_texts = batch_translate(to_translate)
+
     for target_info, translated_str in zip(
         translation_targets, translated_texts, strict=False
     ):
         idx = target_info[0]
         tok_type = target_info[1]
         if tok_type == "COMMENT":
-            tokens[idx] = (tokenize.COMMENT, f"# {translated_str}") + tokens[idx][2:]
+            tokens[idx] = (
+                tokenize.COMMENT,
+                f"# {translated_str}",
+                tokens[idx][2],
+                tokens[idx][3],
+                tokens[idx][4],
+            )
         elif tok_type == "STRING":
-            orig_tok_str = target_info[2]
+            orig_tok_str = target_info[2]  # type: ignore[index]
             quote_char = (
                 orig_tok_str[:3]
                 if orig_tok_str.startswith((DOC_TH1, DOC_TH2))
@@ -113,28 +159,38 @@ def translate_python_file(source: str) -> str:
             tokens[idx] = (
                 tokenize.STRING,
                 f"{quote_char}{translated_str}{quote_char}",
-            ) + tokens[idx][2:]
+                tokens[idx][2],
+                tokens[idx][3],
+                tokens[idx][4],
+            )
+
     try:
-        return tokenize.untokenize(tokens).decode("utf-8")
+        return tokenize.untokenize(tokens).decode("utf-8")  # type: ignore[union-attr]
     except Exception as e:
         logger.error(f"Error rebuilding python file structure: {e}")
         return source
 
 
 def process_file(path: Path) -> None:
+    """Translate non-English content in the given file, overwriting it in place."""
     try:
         original = path.read_text(encoding="utf-8", errors="ignore")
     except Exception as e:
         logger.error(f"Error reading {path}: {e}")
         return
+
     if is_english(original.strip()):
         return
+
     logger.info(f"Processing {path.name}...")
+
     try:
+        translated: str
         if path.suffix == ".py":
             translated = translate_python_file(original)
         else:
             translated = batch_translate([original])[0]
+
         if translated.strip() != original.strip():
             safe_overwrite(path, translated)
             logger.info(f"✓ Updated {path.name}")
@@ -143,20 +199,23 @@ def process_file(path: Path) -> None:
 
 
 def main() -> None:
-    args = sys.argv[1:]
-    files = (
+    """Entry point: gather files and dispatch translation tasks to a Pool."""
+    args: list[str] = sys.argv[1:]
+    files: list[Path] = (
         [Path(p) for p in args]
         if args
         else [f for f in get_files(Path.cwd()) if not is_binary(f)]
     )
+
     if not files:
         logger.info("No files to process.")
         return
-    with ProcessPoolExecutor(max_workers=MAX_WORKERS) as executor:
-        futures = {executor.submit(process_file, f): f for f in files}
-        for future in as_completed(futures):
+
+    with Pool(processes=POOL_WORKERS) as pool:
+        async_results = [pool.apply_async(process_file, (f,)) for f in files]
+        for result in async_results:
             try:
-                future.result()
+                result.get()
             except Exception as e:
                 logger.error(f"Task failed: {e}")
 

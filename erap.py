@@ -142,7 +142,7 @@ Examples:
     paths = args.paths if args.paths else ["."]
     enabled_tools = []
     if args.all:
-        enabled_tools = ["ty", "pyright", "pylint", "pyrefly",'mypy']
+        enabled_tools = ["ty", "pyright", "pylint", "pyrefly", "mypy"]
     else:
         if args.ty:
             enabled_tools.append("ty")
