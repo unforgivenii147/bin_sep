@@ -80,8 +80,7 @@ class TranslationCache:
 
         # Use check_same_thread=False because multiple threads may access; guard with a lock
         self.conn = sqlite3.connect(str(self.db_path), check_same_thread=False)
-        self.conn.execute(
-            """
+        self.conn.execute("""
             CREATE TABLE IF NOT EXISTS translations (
                 id INTEGER PRIMARY KEY,
                 source_text TEXT NOT NULL,
@@ -91,8 +90,7 @@ class TranslationCache:
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 UNIQUE(source_text, source_lang, target_lang)
             )
-            """
-        )
+            """)
         self.conn.commit()
         self.lock = threading.Lock()
 
@@ -145,15 +143,13 @@ class TranslationCache:
             cur = self.conn.execute("SELECT MAX(updated_at) FROM translations")
             last = cur.fetchone()[0]
 
-            cur = self.conn.execute(
-                """
+            cur = self.conn.execute("""
                 SELECT source_lang, target_lang, COUNT(*) as cnt
                 FROM translations
                 GROUP BY source_lang, target_lang
                 ORDER BY cnt DESC
                 LIMIT 100
-                """
-            )
+                """)
             pairs = cur.fetchall()
             pairs_list = [
                 {"source": r[0], "target": r[1], "count": r[2]} for r in pairs

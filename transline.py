@@ -172,9 +172,8 @@ def load_progress(file_path: Path) -> ProgressMap:
         for line_num_str, segments in state.get("translations", {}).items():
             line_idx = int(line_num_str)
             restored[line_idx] = {
-                tuple(map(int, k.split(","))): v  # type: ignore[misc]
-                for k, v in segments.items()
-            }
+                tuple(map(int, k.split(","))): v for k, v in segments.items()
+            }  # type: ignore[misc]
         return restored
     except Exception:
         return {}

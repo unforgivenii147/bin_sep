@@ -243,7 +243,7 @@ class RegexFixer:
                 str_token: tokenize.TokenInfo = relevant[i + 4]
                 new_str: str | None = self.convert_string(str_token.string)
                 if new_str is not None and new_str != str_token.string:
-                    modifications.append(
+                        modifications.append(
                         StringModification(
                             start=str_token.start,
                             end=str_token.end,
@@ -482,16 +482,17 @@ def main() -> int:
         help="Files or directories to process (default: current directory)",
     )
     parser.add_argument(
-        "--no-backup", action="store_true", help="Disable backup creation"
+        "--no-backup", default=True, action="store_true", help="Disable backup creation"
     )
     parser.add_argument(
         "--dry-run",
         "-n",
+        default=True,
         action="store_true",
         help="Preview changes without modifying files",
     )
     parser.add_argument(
-        "--verbose", "-v", action="store_true", help="Show detailed output"
+        "--verbose", "-v",default=True, action="store_true", help="Show detailed output"
     )
     parser.add_argument("--quiet", "-q", action="store_true", help="Minimize output")
     args: argparse.Namespace = parser.parse_args()

@@ -33,7 +33,6 @@ from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
 from pathlib import Path
 
-
 WORKERS = 8
 JSONL_SUFFIXES = {".jsonl", ".ndjson"}
 

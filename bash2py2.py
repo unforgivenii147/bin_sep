@@ -27,7 +27,6 @@ import sys
 import re
 from pathlib import Path
 
-
 # Matches lines like:
 #   python - <<PY
 #   python3 <<'EOF'

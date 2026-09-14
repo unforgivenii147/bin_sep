@@ -34,7 +34,6 @@ from pathlib import Path
 
 from tqdm import tqdm
 
-
 CACHE_FILE = ".reqcache.json"
 
 

@@ -1,0 +1,17 @@
+ctypes_snappy
+google_api_python_client
+google_auth_oauthlib
+googlesearch
+googletrans
+huffman
+matplotlib
+nudenet
+nudepy
+opencv_python_headless
+pillow_heif
+pycld2
+pymupdf
+rapidocr_onnxruntime
+reportlab
+tree_sitter_languages
+whisper

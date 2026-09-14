@@ -242,9 +242,7 @@ def scan_files(
         files.extend(root_dir.rglob(f"*{ext}"))
     files = [f for f in files if not any(part in SKIP_DIRS for part in f.parts)]
 
-    logger.info(
-        f"Found {len(files)} text files. Analyzing with {MAX_WORKERS} workers..."
-    )
+    print(f"Found {len(files)} text files. Analyzing with {MAX_WORKERS} workers...")
 
     results: List[Dict[str, Any]] = []
     with Pool(processes=MAX_WORKERS) as pool:
@@ -255,7 +253,7 @@ def scan_files(
         for async_result in async_results:
             completed += 1
             if completed % 50 == 0:
-                logger.info(f"Progress: {completed}/{len(files)} files...")
+                print(f"Progress: {completed}/{len(files)} files...")
             try:
                 result = async_result.get()
                 if result:
@@ -298,8 +296,8 @@ def main() -> int:
         logger.error(f"Directory {root_dir} does not exist")
         return 1
 
-    logger.info(f"Scanning: {root_dir}")
-    logger.info(f"Detailed mode: {args.detailed}")
+    print(f"Scanning: {root_dir}")
+    print(f"Detailed mode: {args.detailed}")
 
     results = scan_files(root_dir, args.detailed)
     results.sort(key=lambda x: x.get("file", ""))
@@ -318,20 +316,18 @@ def main() -> int:
             ensure_ascii=False,
         )
 
-    logger.info(f"{'=' * 40}")
-    logger.info(f"Found {len(results)} non-English files")
-    logger.info(f"Results saved to: {output_path}")
+    print(f"{'=' * 40}")
+    print(f"Found {len(results)} non-English files")
+    print(f"Results saved to: {output_path}")
 
     if results:
-        logger.info("Sample (first 5 files):")
+        print("Sample (first 5 files):")
         for r in results[:5]:
             lang = r.get("language", "unknown")
             lines = r.get("non_eng_line_count", 0)
-            logger.info(
-                f"  {r['file']} → {lang} (confidence: {r.get('confidence', 0):.2%})"
-            )
+            print(f"  {r['file']} → {lang} (confidence: {r.get('confidence', 0):.2%})")
             if args.detailed and lines:
-                logger.info(f"    {lines} non-English lines")
+                print(f"    {lines} non-English lines")
 
     return 0
 

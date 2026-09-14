@@ -12,7 +12,6 @@ from collections import defaultdict
 import requests
 from bs4 import BeautifulSoup
 
-
 # Resource types we care about
 RESOURCE_ATTRS = {
     "link": ["href"],  # CSS, icons, fonts, preload

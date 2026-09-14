@@ -268,8 +268,7 @@ def main() -> int:
             "with parallel processing"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog=textwrap.dedent(
-            """
+        epilog=textwrap.dedent("""
             Examples:
               python compress_files.py
               python compress_files.py -c --preset 6 --threads 8
@@ -280,8 +279,7 @@ def main() -> int:
               - Directories: .git, __pycache__, .venv, venv, node_modules
               - Archives: .zip, .br, .xz, .gz, .bz2, .bz3, .zst, .7z, .lz4, etc.
               - Media: .mp4, .mkv, .mp3, .jpg, .png, .pdf, .exe, etc.
-            """
-        ),
+            """),
     )
     parser.add_argument(
         "-c",

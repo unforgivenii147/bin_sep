@@ -10,7 +10,7 @@ from pathlib import Path
 from dh import get_nobinary
 
 
-def extract_words(text: str):
+def extract_words(text: str) -> list[str]:
     splt = text.strip().lower().replace("/", " ")
     return re.findall("[a-z]{3,}", splt)
 
@@ -32,7 +32,7 @@ def main() -> None:
         pending = deque()
         for f in files:
             pending.append(pool.apply_async(process_file, (f,)))
-            if len(pending) > 16:
+            if len(pending) > 32:
                 pending.popleft().get()
         while pending:
             pending.popleft().get()

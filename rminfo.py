@@ -4,10 +4,7 @@ from pathlib import Path
 
 # Pattern matches the 3-line header block (author/email/time) with optional blank line after
 HEADER_PATTERN = re.compile(
-    r"^# Author\s*:.*\n"
-    r"# Email\s*:.*\n"
-    r"# Time\s*:.*\n"
-    r"\n?",
+    r"^# Author\s*:.*\n" r"# Email\s*:.*\n" r"# Time\s*:.*\n" r"\n?",
     re.MULTILINE,
 )
 

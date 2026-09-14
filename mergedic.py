@@ -1,11 +1,21 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 
 import json
+import re
 import sys
+from collections import defaultdict
 from pathlib import Path
 
 from dh import get_random_filename
 from loguru import logger
+
+# Matches strings that contain only ASCII letters, spaces, hyphens, apostrophes, and periods.
+# Used to decide whether a key "looks English".
+ENGLISH_RE = re.compile(r"^[A-Za-z][A-Za-z\s\-'.]*$")
+
+
+def looks_english(text: str) -> bool:
+    return bool(ENGLISH_RE.match(text))
 
 
 def load_json(path: Path) -> dict:
@@ -14,6 +24,29 @@ def load_json(path: Path) -> dict:
     if not isinstance(data, dict):
         raise ValueError(f"{path} does not contain a JSON object (dict).")
     return data
+
+
+def detect_direction(data: dict, path: Path) -> str:
+    """
+    Return 'en' if keys look English (en→fa dict),
+    'fa' if keys look Persian (fa→en dict),
+    or raise ValueError if mixed/undetermined.
+    """
+    if not data:
+        raise ValueError(f"{path} is empty.")
+
+    en_count = sum(1 for k in data if looks_english(k))
+    total = len(data)
+    ratio = en_count / total
+
+    if ratio >= 0.9:
+        return "en"
+    if ratio <= 0.1:
+        return "fa"
+    raise ValueError(
+        f"{path} has mixed key languages ({en_count}/{total} English-looking keys). "
+        "Refusing to merge ambiguous file."
+    )
 
 
 def unique_path(base: Path) -> Path:
@@ -57,27 +90,58 @@ def collect_inputs(argv: list[str]) -> list[Path]:
     return paths
 
 
+def normalize_value(value) -> list:
+    """Coerce a JSON value into a list of translations."""
+    if isinstance(value, list):
+        return list(value)
+    return [value]
+
+
 def main():
     input_paths = collect_inputs(sys.argv[1:])
 
-    merged: dict = {}
-    # Track which file first introduced each key: {key: Path}
-    origin: dict = {}
-    duplicates: list = []  # (key, first_file, dup_file, same_value: bool)
+    merged: dict[str, list] = defaultdict(list)
+    origin: dict[str, Path] = {}
+    direction: str | None = None
+    direction_source: Path | None = None
+    skipped: list[tuple[Path, str]] = []
 
     for path in input_paths:
         data = load_json(path)
+
+        try:
+            file_dir = detect_direction(data, path)
+        except ValueError as e:
+            logger.error(str(e))
+            skipped.append((path, str(e)))
+            continue
+
+        if direction is None:
+            direction = file_dir
+            direction_source = path
+            logger.info(f"Detected direction '{direction}' from {path.name}.")
+        elif file_dir != direction:
+            msg = (
+                f"{path.name} looks like a '{file_dir}' dict but we already "
+                f"committed to '{direction}' (from {direction_source.name}). Skipping."
+            )
+            logger.error(msg)
+            skipped.append((path, msg))
+            continue
+
         for key, value in data.items():
-            if key in merged:
-                same = merged[key] == value
-                duplicates.append((key, origin[key], path, same))
-                logger.warning(
-                    f"Duplicate key '{key}' in {path.name} "
-                    f"(first seen in {origin[key].name}) — "
-                    f"{'same value, keeping' if same else 'overriding with new value'}"
-                )
-            merged[key] = value
-            origin[key] = path
+            for translation in normalize_value(value):
+                if translation not in merged[key]:
+                    merged[key].append(translation)
+            if key not in origin:
+                origin[key] = path
+
+    if not merged:
+        logger.error("Nothing to merge — no valid input files.")
+        sys.exit(1)
+
+    # Preserve insertion order: defaultdict already does, but cast to plain dict for clarity.
+    merged = dict(merged)
 
     output_filename = get_random_filename() + ".json"
     output_path = unique_path(Path(output_filename))
@@ -85,16 +149,16 @@ def main():
     with output_path.open("w", encoding="utf-8") as f:
         json.dump(merged, f, ensure_ascii=False, indent=2)
 
+    merged_files = len(input_paths) - len(skipped)
     logger.success(
-        f"Merged {len(input_paths)} files → {output_path} ({len(merged)} records)"
+        f"Merged {merged_files} file(s) (direction: {direction}) "
+        f"→ {output_path} ({len(merged)} unique keys)"
     )
 
-    if duplicates:
-        logger.info(f"Encountered {len(duplicates)} duplicate key(s) across inputs.")
-    else:
-        logger.info("No duplicate keys found across inputs.")
+    multi = sum(1 for v in merged.values() if len(v) > 1)
+    if multi:
+        logger.info(f"{multi} key(s) have multiple translations.")
 
-    # Remove originals only after successful write
     for path in input_paths:
         try:
             path.unlink()
