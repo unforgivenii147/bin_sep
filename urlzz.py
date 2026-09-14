@@ -32,8 +32,8 @@ GITHUB_PATTERN: re.Pattern[str] = re.compile(
     r"""https?://(?:www\.)?github\.com/[^\s"'<>\)\]\}]+""",
     re.IGNORECASE,
 )
-ARCHIVE_SUFFIXES_ZIP: Set[str] = {".zip", ".whl"}
-ARCHIVE_SUFFIXES_TAR: Set[str] = {
+ARCHIVE_SUFFIXES_ZIP: set[str] = {".zip", ".whl"}
+ARCHIVE_SUFFIXES_TAR: set[str] = {
     ".tar",
     ".tar.gz",
     ".tgz",
@@ -45,21 +45,21 @@ ARCHIVE_SUFFIXES_TAR: Set[str] = {
     ".tbz",
     ".tbz2",
 }
-ARCHIVE_SUFFIXES_7Z: Set[str] = {".7z"}
+ARCHIVE_SUFFIXES_7Z: set[str] = {".7z"}
 OUTPUT_ALL: Path = Path("/sdcard/data/urlzz.txt")
 OUTPUT_GIT: Path = Path("/sdcard/data/gitlinks.txt")
 
 
-def extract_urls_from_text(content: str) -> Set[str]:
+def extract_urls_from_text(content: str) -> set[str]:
     """Extract all HTTP/HTTPS URLs from a text blob."""
-    result: Set[str] = set(URL_PATTERN.findall(content))
+    result: set[str] = set(URL_PATTERN.findall(content))
     cprint(result)
     return result
 
 
-def extract_urls_from_file(filepath: Path) -> Set[str]:
+def extract_urls_from_file(filepath: Path) -> set[str]:
     """Extract URLs from a plain text file."""
-    urls: Set[str] = set()
+    urls: set[str] = set()
     try:
         content: str = filepath.read_text(encoding="utf-8", errors="ignore")
         urls.update(extract_urls_from_text(content))
@@ -68,9 +68,9 @@ def extract_urls_from_file(filepath: Path) -> Set[str]:
     return urls
 
 
-def extract_urls_from_tar(filepath: Path) -> Set[str]:
+def extract_urls_from_tar(filepath: Path) -> set[str]:
     """Extract URLs from a tar archive (any compression)."""
-    urls: Set[str] = set()
+    urls: set[str] = set()
     try:
         with tarfile.open(filepath, mode="r:*") as tar:
             member: tarfile.TarInfo
@@ -87,9 +87,9 @@ def extract_urls_from_tar(filepath: Path) -> Set[str]:
     return urls
 
 
-def extract_urls_from_zip(filepath: Path) -> Set[str]:
+def extract_urls_from_zip(filepath: Path) -> set[str]:
     """Extract URLs from a zip archive (including wheels)."""
-    urls: Set[str] = set()
+    urls: set[str] = set()
     try:
         with zipfile.ZipFile(filepath, "r") as zf:
             name: str
@@ -105,9 +105,9 @@ def extract_urls_from_zip(filepath: Path) -> Set[str]:
     return urls
 
 
-def extract_urls_from_7z(filepath: Path) -> Set[str]:
+def extract_urls_from_7z(filepath: Path) -> set[str]:
     """Extract URLs from a 7z archive."""
-    urls: Set[str] = set()
+    urls: set[str] = set()
     try:
         with py7zr.SevenZipFile(filepath, mode="r") as archive:
             all_files = archive.readall()
@@ -123,7 +123,7 @@ def extract_urls_from_7z(filepath: Path) -> Set[str]:
     return urls
 
 
-def extract_urls(filepath: Path) -> Set[str]:
+def extract_urls(filepath: Path) -> set[str]:
     """Dispatch URL extraction based on the file suffix."""
     suffix: str = filepath.suffix.lower()
     name: str = filepath.name.lower()
@@ -138,7 +138,7 @@ def extract_urls(filepath: Path) -> Set[str]:
     return extract_urls_from_file(filepath)
 
 
-def _worker(path: Path) -> Set[str]:
+def _worker(path: Path) -> set[str]:
     """Multiprocessing worker wrapper around :func:`extract_urls`."""
     return extract_urls(path)
 
@@ -152,7 +152,7 @@ def main() -> None:
     )
     paths: list[Path] = list(file_paths)
 
-    all_urls: Set[str] = set()
+    all_urls: set[str] = set()
     with Pool(processes=POOL_SIZE) as pool:
         async_results = [pool.apply_async(_worker, (path,)) for path in paths]
         result = None
@@ -162,7 +162,7 @@ def main() -> None:
             except Exception as exc:  # noqa: BLE001
                 logger.warning(f"Worker failed: {exc}")
 
-    github_urls: Set[str] = {u for u in all_urls if GITHUB_PATTERN.match(u)}
+    github_urls: set[str] = {u for u in all_urls if GITHUB_PATTERN.match(u)}
 
     OUTPUT_ALL.parent.mkdir(parents=True, exist_ok=True)
     with OUTPUT_ALL.open("a", encoding="utf-8") as f:

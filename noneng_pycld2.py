@@ -18,7 +18,7 @@ from typing import Dict, Iterable, List, Optional, Sequence, Set, Tuple, Union
 import pycld2 as cld2
 from loguru import logger
 
-TEXT_EXTENSIONS: Set[str] = {
+TEXT_EXTENSIONS: set[str] = {
     ".txt",
     ".csv",
     ".log",
@@ -62,7 +62,7 @@ TEXT_EXTENSIONS: Set[str] = {
     ".dockerfile",
 }
 
-CLD2_LANG_MAP: Dict[str, str] = {
+CLD2_LANG_MAP: dict[str, str] = {
     "en": "ENGLISH",
     "es": "SPANISH",
     "fr": "FRENCH",
@@ -119,8 +119,8 @@ CLD2_LANG_MAP: Dict[str, str] = {
 FIXED_WORKERS: int = 8
 MAX_FILE_SIZE_BYTES: int = 10 * 1024 * 1024
 
-NonEnglishLine = Tuple[int, str, str, str, int]
-FileResult = Tuple[Path, Optional[List[NonEnglishLine]], Optional[str]]
+NonEnglishLine = tuple[int, str, str, str, int]
+FileResult = tuple[Path, Optional[list[NonEnglishLine]], Optional[str]]
 
 
 def is_likely_text_file(file_path: Path) -> bool:
@@ -128,7 +128,7 @@ def is_likely_text_file(file_path: Path) -> bool:
     return file_path.suffix.lower() in TEXT_EXTENSIONS
 
 
-def detect_language(text: str) -> Tuple[Optional[str], Optional[str], int, bool]:
+def detect_language(text: str) -> tuple[Optional[str], Optional[str], int, bool]:
     """
     Detect the language of a text fragment using pycld2.
 
@@ -157,14 +157,14 @@ def process_file(file_path: Path) -> FileResult:
     non_english_lines or error will be meaningful; non_english_lines may be an
     empty list when no non-English content is found.
     """
-    non_english_lines: List[NonEnglishLine] = []
+    non_english_lines: list[NonEnglishLine] = []
     try:
         if file_path.stat().st_size > MAX_FILE_SIZE_BYTES:
             return file_path, None, "File too large (>10MB)"
     except (OSError, PermissionError) as exc:
         return file_path, None, f"Cannot access file: {exc}"
 
-    content: Optional[List[str]] = None
+    content: Optional[list[str]] = None
     for encoding in ("utf-8", "latin-1", "cp1252"):
         try:
             with open(file_path, "r", encoding=encoding) as handle:
@@ -195,19 +195,19 @@ def process_file(file_path: Path) -> FileResult:
 
 
 def find_text_files(
-    root_dir: Union[str, Path] = ".", extensions: Iterable[str] = TEXT_EXTENSIONS
-) -> List[Path]:
+    root_dir: str | Path = ".", extensions: Iterable[str] = TEXT_EXTENSIONS
+) -> list[Path]:
     """
     Recursively locate files under root_dir whose suffix matches extensions.
 
     The returned list is de-duplicated and sorted for deterministic ordering.
     """
     root_path = Path(root_dir)
-    text_files: List[Path] = []
+    text_files: list[Path] = []
     for ext in extensions:
         text_files.extend(root_path.rglob(f"*{ext}"))
-    unique_files: List[Path] = list(set(text_files))
-    filtered_files: List[Path] = [f for f in unique_files if is_likely_text_file(f)]
+    unique_files: list[Path] = list(set(text_files))
+    filtered_files: list[Path] = [f for f in unique_files if is_likely_text_file(f)]
     filtered_files.sort()
     return filtered_files
 
@@ -247,8 +247,8 @@ def write_report(
     output_path: Path,
     scanned_directory: Path,
     text_files: Sequence[Path],
-    non_english_results: Sequence[Tuple[Path, List[NonEnglishLine]]],
-    errors: Sequence[Tuple[Path, str]],
+    non_english_results: Sequence[tuple[Path, list[NonEnglishLine]]],
+    errors: Sequence[tuple[Path, str]],
     min_confidence: int,
 ) -> None:
     """Write the final detection report to output_path."""
@@ -267,7 +267,7 @@ def write_report(
         handle.write("=" * 40 + "\n\n")
 
         if non_english_results:
-            lang_counts: Dict[str, int] = {}
+            lang_counts: dict[str, int] = {}
             for _, lines in non_english_results:
                 for _, _, lang_code, lang_name, _ in lines:
                     key = f"{lang_name} ({lang_code})"
@@ -310,7 +310,7 @@ def main() -> int:
     """Run the non-English line scanner and write the report."""
     args = parse_args()
 
-    extensions: Set[str] = set(TEXT_EXTENSIONS)
+    extensions: set[str] = set(TEXT_EXTENSIONS)
     if args.extensions:
         extensions.update(args.extensions)
 
@@ -320,8 +320,8 @@ def main() -> int:
     text_files = find_text_files(scanned_directory, extensions)
     logger.info("Found {} text files to process", len(text_files))
 
-    non_english_results: List[Tuple[Path, List[NonEnglishLine]]] = []
-    errors: List[Tuple[Path, str]] = []
+    non_english_results: list[tuple[Path, list[NonEnglishLine]]] = []
+    errors: list[tuple[Path, str]] = []
     files_with_findings = 0
     total_non_eng_lines = 0
 

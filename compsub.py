@@ -32,7 +32,7 @@ from loguru import logger
 # Module-level constants
 # ---------------------------------------------------------------------------
 
-SKIP_DIRS: Set[str] = {
+SKIP_DIRS: set[str] = {
     ".git",
     ".hg",
     ".svn",
@@ -49,16 +49,16 @@ ZSTD_LEVEL: int = 19
 BROTLI_QUALITY: int = 11
 LZMA_LEVEL: int = 9
 
-ARCHIVE_SUFFIXES: Tuple[str, ...] = (".tar.zst", ".tar.br", ".tar.xz")
+ARCHIVE_SUFFIXES: tuple[str, ...] = (".tar.zst", ".tar.br", ".tar.xz")
 
 # ---------------------------------------------------------------------------
 # Path scanning helpers
 # ---------------------------------------------------------------------------
 
 
-def iter_target_dirs(paths: Sequence[str], recursive: bool = True) -> List[Path]:
+def iter_target_dirs(paths: Sequence[str], recursive: bool = True) -> list[Path]:
     """Return a list of unique directories found under the given paths."""
-    out: List[Path] = []
+    out: list[Path] = []
     for raw in paths:
         p = Path(raw)
         if not p.exists():
@@ -75,8 +75,8 @@ def iter_target_dirs(paths: Sequence[str], recursive: bool = True) -> List[Path]
         elif p.is_file() and _has_archive_suffix(p):
             continue
 
-    seen: Set[str] = set()
-    uniq: List[Path] = []
+    seen: set[str] = set()
+    uniq: list[Path] = []
     for d in out:
         key = str(d.resolve())
         if key not in seen:
@@ -85,9 +85,9 @@ def iter_target_dirs(paths: Sequence[str], recursive: bool = True) -> List[Path]
     return uniq
 
 
-def iter_target_archives(paths: Sequence[str]) -> List[Path]:
+def iter_target_archives(paths: Sequence[str]) -> list[Path]:
     """Return a list of unique archive files found under the given paths."""
-    out: List[Path] = []
+    out: list[Path] = []
     for raw in paths:
         p = Path(raw)
         if not p.exists():
@@ -100,8 +100,8 @@ def iter_target_archives(paths: Sequence[str]) -> List[Path]:
                     if f.is_file():
                         out.append(f)
 
-    seen: Set[str] = set()
-    uniq: List[Path] = []
+    seen: set[str] = set()
+    uniq: list[Path] = []
     for a in out:
         key = str(a.resolve())
         if key not in seen:
@@ -207,7 +207,7 @@ class _BrotliWriter:
         return self._raw.tell()
 
 
-def compress_directory(subdir: Path, algo: str, level: int) -> Dict[str, Any]:
+def compress_directory(subdir: Path, algo: str, level: int) -> dict[str, Any]:
     """Compress a single directory and remove the original on success."""
     subdir = Path(subdir)
     suffix = _archive_suffix(algo)
@@ -323,7 +323,7 @@ class _ClosingReader:
             pass
 
 
-def decompress_archive(archive_path: Path) -> Dict[str, Any]:
+def decompress_archive(archive_path: Path) -> dict[str, Any]:
     """Decompress a single archive back into a directory."""
     archive_path = Path(archive_path)
     try:
@@ -465,7 +465,7 @@ def _run_compression(args: argparse.Namespace) -> int:
         ]
         for subdir, ar in async_results:
             try:
-                result: Dict[str, Any] = ar.get()
+                result: dict[str, Any] = ar.get()
             except Exception as exc:  # noqa: BLE001
                 failed += 1
                 logger.error(f"✗ {subdir.name}: Failed - {exc}")
@@ -521,7 +521,7 @@ def _run_decompression(args: argparse.Namespace) -> int:
         ]
         for archive, ar in async_results:
             try:
-                result: Dict[str, Any] = ar.get()
+                result: dict[str, Any] = ar.get()
             except Exception as exc:  # noqa: BLE001
                 failed += 1
                 logger.error(f"✗ {archive.name}: Failed - {exc}")

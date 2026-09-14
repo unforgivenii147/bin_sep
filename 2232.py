@@ -9,7 +9,7 @@ The script should:
 - Recursively discover matching files under directories using pathlib.
 - Use multiprocessing.Pool.apply_async with a fixed pool of 8 workers (no worker-count CLI flags).
 - Use a custom RefactoringTool subclass that captures output and errors.
-- Log all progress, results, and summaries with loguru instead of print or stdlib logging.
+- Log all progress, results, and summaries with loguru instead of print(or stdlib logging.)
 - Provide strict type annotations throughout and pass a strict type checker.
 - Exit with status 0 on full success, 1 if any file fails or no files are found.
 """
@@ -27,13 +27,13 @@ from loguru import logger
 
 # Module-level constants
 WORKER_COUNT: int = 8
-DEFAULT_EXTENSIONS: List[str] = [".py"]
+DEFAULT_EXTENSIONS: list[str] = [".py"]
 MAX_DIFF_LINES: int = 5
 MAX_DRY_RUN_DIFF_LINES: int = 20
 MAX_PREVIEW_CHARS: int = 80
 MAX_CHANGE_PREVIEW_CHARS: int = 50
 
-FALLBACK_FIXERS: List[str] = [
+FALLBACK_FIXERS: list[str] = [
     "lib2to3.fixes.fix_apply",
     "lib2to3.fixes.fix_asserts",
     "lib2to3.fixes.fix_basestring",
@@ -90,8 +90,8 @@ FALLBACK_FIXERS: List[str] = [
 class CustomRefactoringTool(RefactoringTool):
     """A RefactoringTool that captures log output and errors instead of printing them."""
 
-    output_lines: List[str]
-    errors: List[str]
+    output_lines: list[str]
+    errors: list[str]
 
     def __init__(
         self,
@@ -121,7 +121,7 @@ class CustomRefactoringTool(RefactoringTool):
         self.output_lines.append(msg)
 
 
-def get_all_fixers() -> List[str]:
+def get_all_fixers() -> list[str]:
     """Return the list of all available lib2to3 fixers, with a static fallback."""
     try:
         fixers = get_fixers_from_package("lib2to3.fixes")
@@ -137,7 +137,7 @@ def _build_diff(
     max_changes: int,
     preview_chars: int,
     numbered: bool,
-) -> Tuple[int, str]:
+) -> tuple[int, str]:
     """Build a human-readable diff summary between two versions of a file.
 
     Args:
@@ -152,7 +152,7 @@ def _build_diff(
     """
     original_lines = original_content.splitlines()
     refactored_lines = refactored.splitlines()
-    diff_lines: List[str] = []
+    diff_lines: list[str] = []
     changes = 0
     for i, (orig, new) in enumerate(
         zip(original_lines, refactored_lines, strict=False)
@@ -174,7 +174,7 @@ def _build_diff(
     return changes, message
 
 
-def apply_2to3_fixes(file_path: str) -> Tuple[str, bool, str]:
+def apply_2to3_fixes(file_path: str) -> tuple[str, bool, str]:
     """Apply all lib2to3 fixes to a single file.
 
     Args:
@@ -215,7 +215,7 @@ def apply_2to3_fixes(file_path: str) -> Tuple[str, bool, str]:
 
 def find_python_files(
     paths: Sequence[str], extensions: Optional[Sequence[str]] = None
-) -> List[str]:
+) -> list[str]:
     """Find all files matching the given extensions under the provided paths.
 
     Args:
@@ -226,7 +226,7 @@ def find_python_files(
         A list of matching file path strings.
     """
     exts = list(extensions) if extensions is not None else list(DEFAULT_EXTENSIONS)
-    python_files: List[str] = []
+    python_files: list[str] = []
     for path in paths:
         path_obj = Path(path)
         if not path_obj.exists():
@@ -241,7 +241,7 @@ def find_python_files(
     return python_files
 
 
-def process_files_parallel(file_paths: Sequence[str]) -> Tuple[List[str], List[str]]:
+def process_files_parallel(file_paths: Sequence[str]) -> tuple[list[str], list[str]]:
     """Process all files in parallel using a Pool of workers.
 
     Args:
@@ -250,8 +250,8 @@ def process_files_parallel(file_paths: Sequence[str]) -> Tuple[List[str], List[s
     Returns:
         A tuple of (successful_files, failed_files).
     """
-    successful: List[str] = []
-    failed: List[str] = []
+    successful: list[str] = []
+    failed: list[str] = []
     total = len(file_paths)
     logger.info(f"Processing {total} files using {WORKER_COUNT} workers...")
     logger.info("-" * 40)
@@ -284,7 +284,7 @@ def process_files_parallel(file_paths: Sequence[str]) -> Tuple[List[str], List[s
     return successful, failed
 
 
-def dry_run_file(file_path: str) -> Tuple[str, str, bool]:
+def dry_run_file(file_path: str) -> tuple[str, str, bool]:
     """Preview the changes that would be made to a single file.
 
     Args:
@@ -302,7 +302,7 @@ def dry_run_file(file_path: str) -> Tuple[str, str, bool]:
             if refactored and refactored != original_content:
                 original_lines = original_content.splitlines()
                 refactored_lines = refactored.splitlines()
-                diff: List[str] = []
+                diff: list[str] = []
                 for orig, new in zip(original_lines, refactored_lines, strict=False):
                     if orig != new:
                         diff.append(f"  - {orig[:MAX_PREVIEW_CHARS]}")

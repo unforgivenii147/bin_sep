@@ -71,7 +71,7 @@ def extract_quality(filename: str) -> Optional[str]:
 def fetch_directory(url: str) -> Optional[str]:
     """Fetch the HTML content of a directory URL, returning None on failure."""
     try:
-        headers: Dict[str, str] = {"User-Agent": "Mozilla/5.0"}
+        headers: dict[str, str] = {"User-Agent": "Mozilla/5.0"}
         response = requests.get(url, headers=headers, timeout=10)
         response.raise_for_status()
         return response.text
@@ -82,10 +82,10 @@ def fetch_directory(url: str) -> Optional[str]:
 
 def parse_directory(
     url: str, max_size: float
-) -> Tuple[List[Dict[str, Any]], List[str]]:
+) -> tuple[list[dict[str, Any]], list[str]]:
     """Parse a directory listing for matching movie files and subdirectories."""
-    results: List[Dict[str, Any]] = []
-    subdirs: List[str] = []
+    results: list[dict[str, Any]] = []
+    subdirs: list[str] = []
     html = fetch_directory(url)
     if not html:
         return results, subdirs
@@ -121,23 +121,23 @@ def parse_directory(
     return results, subdirs
 
 
-def save_state(queue: List[str], visited: Set[str]) -> None:
+def save_state(queue: list[str], visited: set[str]) -> None:
     """Persist current crawl queue and visited set to the state file."""
-    state: Dict[str, List[str]] = {"queue": list(queue), "visited": list(visited)}
+    state: dict[str, list[str]] = {"queue": list(queue), "visited": list(visited)}
     with STATE_FILE.open("w", encoding="utf-8") as f:
         json.dump(state, f)
 
 
-def load_state() -> Tuple[Optional[Set[str]], Optional[List[str]]]:
+def load_state() -> tuple[Optional[set[str]], Optional[list[str]]]:
     """Load previously saved crawl state, if any."""
     if not STATE_FILE.exists():
         return None, None
     with STATE_FILE.open(encoding="utf-8") as f:
-        state: Dict[str, List[str]] = json.load(f)
+        state: dict[str, list[str]] = json.load(f)
     return set(state["visited"]), state["queue"]
 
 
-def append_results(results: List[Dict[str, Any]]) -> None:
+def append_results(results: list[dict[str, Any]]) -> None:
     """Append crawl results to both TXT and JSONL output files."""
     with TXT_OUTPUT.open("a", encoding="utf-8") as f:
         f.writelines(r["url"] + "\n" for r in results)
@@ -173,7 +173,7 @@ def main() -> int:
 
     with Pool(processes=FIXED_WORKERS) as pool:
         while queue and not stop_flag:
-            in_flight: List[Tuple[Any, str]] = []
+            in_flight: list[tuple[Any, str]] = []
             for _ in range(min(len(queue), FIXED_WORKERS)):
                 url: str = queue.pop(0)
                 if url in visited:

@@ -100,7 +100,7 @@ def compress_chunked(in_path: Path, out_path: Path, file_size: int) -> bool:
                     for i, chunk in enumerate(chunks)
                 }
 
-                results: List[Optional[bytes]] = [None] * chunk_count
+                results: list[Optional[bytes]] = [None] * chunk_count
                 for future in as_completed(futures):
                     idx = futures[future]
                     results[idx] = future.result()
@@ -141,7 +141,7 @@ def compress_in_memory(infile: Path, outfile: Path) -> bool:
         return False
 
 
-def compress_file(path: Path) -> Tuple[bool, int, int]:
+def compress_file(path: Path) -> tuple[bool, int, int]:
     """
     Compress a single file and remove the original if space is saved.
 

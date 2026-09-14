@@ -1,13 +1,14 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-import os
-import re
-import sys
+import argparse
 import ast
 import json
-import argparse
+import os
+import re
 import subprocess
+import sys
 from pathlib import Path
-from dh import STDLIB, PKG_MAPPING
+
+from dh import PKG_MAPPING, STDLIB
 
 SKIP_DIRS = {
     "__pycache__",

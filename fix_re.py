@@ -243,7 +243,7 @@ class RegexFixer:
                 str_token: tokenize.TokenInfo = relevant[i + 4]
                 new_str: str | None = self.convert_string(str_token.string)
                 if new_str is not None and new_str != str_token.string:
-                        modifications.append(
+                    modifications.append(
                         StringModification(
                             start=str_token.start,
                             end=str_token.end,
@@ -492,7 +492,11 @@ def main() -> int:
         help="Preview changes without modifying files",
     )
     parser.add_argument(
-        "--verbose", "-v",default=True, action="store_true", help="Show detailed output"
+        "--verbose",
+        "-v",
+        default=True,
+        action="store_true",
+        help="Show detailed output",
     )
     parser.add_argument("--quiet", "-q", action="store_true", help="Minimize output")
     args: argparse.Namespace = parser.parse_args()

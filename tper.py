@@ -53,7 +53,7 @@ def translate_word(word: str) -> Optional[str]:
     return None
 
 
-def load_words(input_file: str) -> List[str]:
+def load_words(input_file: str) -> list[str]:
     """Load non-empty, stripped lines from a text file.
 
     Args:
@@ -63,7 +63,7 @@ def load_words(input_file: str) -> List[str]:
         A list of unique, non-empty words preserving input order.
     """
     seen: set[str] = set()
-    words: List[str] = []
+    words: list[str] = []
     with Path(input_file).open(encoding="utf-8") as fh:
         for raw in fh:
             word = raw.strip()
@@ -73,7 +73,7 @@ def load_words(input_file: str) -> List[str]:
     return words
 
 
-def load_existing_results(output_file: str) -> Dict[str, str]:
+def load_existing_results(output_file: str) -> dict[str, str]:
     """Load previously saved translations from a JSON file.
 
     Args:
@@ -97,7 +97,7 @@ def load_existing_results(output_file: str) -> Dict[str, str]:
     return {}
 
 
-def save_results_atomic(results: Dict[str, str], output_file: str) -> None:
+def save_results_atomic(results: dict[str, str], output_file: str) -> None:
     """Atomically write the translation dictionary to disk.
 
     Writes to a temporary file first, then replaces the target file to

@@ -151,7 +151,7 @@ def decompress_file(zst_path: Path) -> None:
         logger.warning(f"Skipping non-zst file: {zst_path.name}")
 
 
-def process_item(item: Union[Path, str], mode: str) -> None:
+def process_item(item: Path | str, mode: str) -> None:
     """
     Process a single item (file or directory) based on the operation mode.
 
@@ -195,12 +195,12 @@ def main() -> int:
     logger.add(lambda msg: print(msg, end=""), level="INFO")
 
     if mode == "compress":
-        subdirs: List[Path] = [
+        subdirs: list[Path] = [
             d
             for d in current_dir.iterdir()
             if d.is_dir() and not d.name.startswith(".")
         ]
-        files: List[Path] = [
+        files: list[Path] = [
             f
             for f in current_dir.iterdir()
             if f.is_file() and f.suffix != ".zst" and f.name != Path(__file__).name
@@ -212,11 +212,11 @@ def main() -> int:
         logger.info(f"Found {len(subdirs)} subdirs and {len(files)} files to compress.")
         logger.info(f"Starting parallel Zstandard compression (Level: {ZSTD_LEVEL})...")
 
-        items: List[Path] = subdirs + files
+        items: list[Path] = subdirs + files
         with Pool(processes=WORKER_COUNT) as pool:
             pool.starmap(process_item, [(item, mode) for item in items])
     else:
-        archives: List[Path] = [
+        archives: list[Path] = [
             f for f in current_dir.iterdir() if f.is_file() and f.suffix == ".zst"
         ]
         if not archives:

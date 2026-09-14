@@ -6,10 +6,11 @@ Usage:
     python translate_lines.py <input_file> [output_file]
 """
 
-import sys
 import json
-import subprocess
 import os
+import subprocess
+import sys
+
 from dh import runcmd
 
 

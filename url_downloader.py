@@ -92,7 +92,7 @@ def download_file(url: str, filepath: Path, timeout: int = DEFAULT_TIMEOUT) -> b
         return False
 
 
-def parse_urls_file(urls_file: Path) -> Tuple[List[str], List[Tuple[str, Path]]]:
+def parse_urls_file(urls_file: Path) -> tuple[list[str], list[tuple[str, Path]]]:
     """
     Parse the urls.txt file.
 
@@ -103,8 +103,8 @@ def parse_urls_file(urls_file: Path) -> Tuple[List[str], List[Tuple[str, Path]]]
         A tuple of (original_lines, download_tasks), where download_tasks is a list
         of (url, filepath) tuples for each valid URL.
     """
-    original_lines: List[str] = urls_file.read_text(encoding="utf-8").splitlines()
-    download_tasks: List[Tuple[str, Path]] = []
+    original_lines: list[str] = urls_file.read_text(encoding="utf-8").splitlines()
+    download_tasks: list[tuple[str, Path]] = []
 
     for line in original_lines:
         stripped: str = line.strip()
@@ -122,8 +122,8 @@ def parse_urls_file(urls_file: Path) -> Tuple[List[str], List[Tuple[str, Path]]]
 
 def update_urls_file(
     urls_file: Path,
-    original_lines: List[str],
-    successful_urls: Set[str],
+    original_lines: list[str],
+    successful_urls: set[str],
 ) -> int:
     """
     Rewrite urls.txt, removing lines whose URLs downloaded successfully.
@@ -136,7 +136,7 @@ def update_urls_file(
     Returns:
         Number of lines removed.
     """
-    remaining_lines: List[str] = []
+    remaining_lines: list[str] = []
     removed_count: int = 0
 
     for line in original_lines:
@@ -171,8 +171,8 @@ def main() -> int:
 
     logger.info(f"Found {len(download_tasks)} files to download.\n")
 
-    successful_urls: Set[str] = set()
-    results: List[Tuple[str, AsyncResult[bool]]] = []
+    successful_urls: set[str] = set()
+    results: list[tuple[str, AsyncResult[bool]]] = []
 
     with Pool(processes=MAX_WORKERS) as pool:
         for url, path in download_tasks:

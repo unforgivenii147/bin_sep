@@ -9,6 +9,8 @@ from pathlib import Path
 
 from dh import get_nobinary
 
+MAX_WORKERS = 8
+
 
 def extract_words(text: str) -> list[str]:
     splt = text.strip().lower().replace("/", " ")
@@ -22,13 +24,14 @@ def process_file(path: Path) -> None:
     filtered = list(words)
     for word, _count in Counter(filtered).most_common(30):
         print(f"{word}", end=" ")
+    print()
 
 
 def main() -> None:
     args = sys.argv[1:]
     cwd = Path.cwd()
     files = [Path(arg) for arg in args] if args else get_nobinary(cwd)
-    with Pool(8) as pool:
+    with Pool(processes=MAX_WORKERS) as pool:
         pending = deque()
         for f in files:
             pending.append(pool.apply_async(process_file, (f,)))

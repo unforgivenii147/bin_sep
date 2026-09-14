@@ -129,11 +129,11 @@ def decompress_file(file_path: Path, output_dir: Path) -> str:
 
 
 def process_files_parallel(
-    files: List[Path],
+    files: list[Path],
     output_dir: Path,
     mode: str,
     tar_subdirs_first: bool = False,
-) -> List[str]:
+) -> list[str]:
     """
     Process a list of files in parallel using a multiprocessing pool.
 
@@ -146,8 +146,8 @@ def process_files_parallel(
     Returns:
         A list of result/status strings from the workers.
     """
-    results: List[str] = []
-    tasks: List[Tuple[Tuple[Union[Path, str], Path, bool], str]] = []
+    results: list[str] = []
+    tasks: list[tuple[tuple[Path | str, Path, bool], str]] = []
 
     if mode == "compress":
         for file in files:
@@ -263,7 +263,7 @@ def main() -> int:
 
     if mode == "compress":
         output_dir.mkdir(exist_ok=True)
-        all_files: List[Path] = []
+        all_files: list[Path] = []
         for item in current_dir.rglob("*"):
             if item.is_file() or (item.is_dir() and not tar_subdirs_first):
                 try:
@@ -290,7 +290,7 @@ def main() -> int:
         process_files_parallel(all_files, output_dir, "compress", tar_subdirs_first)
     else:
         output_dir.mkdir(exist_ok=True)
-        compressed_files: List[Path] = []
+        compressed_files: list[Path] = []
         for item in current_dir.rglob("*"):
             if item.is_file() and (
                 item.suffix == ".7z" or item.name.endswith(".tar.7z")

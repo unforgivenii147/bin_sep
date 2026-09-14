@@ -126,8 +126,8 @@ def convert_mdb_to_json(
     output_path: Optional[str] = None,
     overwrite: bool = False,
     pretty: bool = False,
-    tables: Optional[List[str]] = None,
-) -> Tuple[str, bool, str]:
+    tables: Optional[list[str]] = None,
+) -> tuple[str, bool, str]:
     """
     Convert a single MDB file to JSON.
 
@@ -151,7 +151,7 @@ def convert_mdb_to_json(
             cursor = conn.cursor()
 
             # Discover tables
-            all_tables: List[str] = []
+            all_tables: list[str] = []
             for row in cursor.tables(tableType="TABLE"):
                 name = row.table_name
                 if name and not name.startswith("MSys"):
@@ -236,9 +236,9 @@ def convert_mdb_to_json(
 # ---------- Discovery ----------
 
 
-def discover_mdb_files(inputs: Iterable[str]) -> List[Path]:
+def discover_mdb_files(inputs: Iterable[str]) -> list[Path]:
     """Resolve inputs (files or dirs) into a list of MDB/ACCDB paths."""
-    found: List[Path] = []
+    found: list[Path] = []
     seen = set()
 
     def add(p: Path) -> None:
@@ -324,7 +324,7 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main(argv: Optional[List[str]] = None) -> int:
+def main(argv: Optional[list[str]] = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
 
@@ -340,7 +340,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     logger.info("Found %d MDB file(s). Using %d workers.", len(files), args.workers)
 
     # Build per-file output paths up-front (deterministic)
-    jobs: List[Tuple[str, Optional[str]]] = []
+    jobs: list[tuple[str, Optional[str]]] = []
     for f in files:
         if args.output_dir:
             out_dir = Path(args.output_dir).expanduser().resolve()

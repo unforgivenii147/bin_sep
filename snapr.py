@@ -18,7 +18,7 @@ COMPRESSED_EXT: str = ".snappy"
 POOL_SIZE: int = 8
 
 
-def compress_file(file_path: Path, remove_original: bool = True) -> Tuple[bool, str]:
+def compress_file(file_path: Path, remove_original: bool = True) -> tuple[bool, str]:
     """Compress a single file using Snappy and optionally remove the original.
 
     Args:
@@ -52,7 +52,7 @@ def compress_file(file_path: Path, remove_original: bool = True) -> Tuple[bool, 
         return False, str(e)
 
 
-def decompress_file(file_path: Path, remove_original: bool = True) -> Tuple[bool, str]:
+def decompress_file(file_path: Path, remove_original: bool = True) -> tuple[bool, str]:
     """Decompress a single Snappy-compressed file and optionally remove the original.
 
     Args:
@@ -83,7 +83,7 @@ def decompress_file(file_path: Path, remove_original: bool = True) -> Tuple[bool
         return False, str(e)
 
 
-def process_file_worker(args: Tuple[Path, str, bool]) -> Tuple[bool, str]:
+def process_file_worker(args: tuple[Path, str, bool]) -> tuple[bool, str]:
     """Worker entry point for processing a single file.
 
     Args:
@@ -173,7 +173,7 @@ def process_files(
     file_paths: list[Path],
     operation: str,
     remove_original: bool = True,
-) -> Tuple[int, int]:
+) -> tuple[int, int]:
     """Process a list of files concurrently using a fixed-size multiprocessing pool.
 
     Args:
@@ -192,13 +192,13 @@ def process_files(
     success_count: int = 0
     failure_count: int = 0
 
-    args_list: list[Tuple[Path, str, bool]] = [
+    args_list: list[tuple[Path, str, bool]] = [
         (fp, operation, remove_original) for fp in file_paths
     ]
 
     pool: multiprocessing.pool.Pool = multiprocessing.Pool(processes=POOL_SIZE)
     try:
-        async_results: list[Tuple[Path, Any]] = [
+        async_results: list[tuple[Path, Any]] = [
             (args[0], pool.apply_async(process_file_worker, (args,)))
             for args in args_list
         ]

@@ -32,11 +32,8 @@ try:
     logger.info("Using OpenCV for image processing")
 except ImportError:
     try:
-        from PIL import (
-            Image,
-            ImageEnhance,  # type: ignore[import-not-found]
-            ImageFilter,
-        )
+        from PIL import ImageEnhance  # type: ignore[import-not-found]
+        from PIL import Image, ImageFilter
 
         USE_CV2 = False
         logger.info("OpenCV not found, using Pillow for image processing")
@@ -44,7 +41,7 @@ except ImportError:
         logger.error("Neither OpenCV nor Pillow found. Please install at least one.")
         sys.exit(1)
 
-IMAGE_EXTENSIONS: Set[str] = {".png", ".jpg", ".jpeg", ".tiff", ".tif", ".bmp", ".gif"}
+IMAGE_EXTENSIONS: set[str] = {".png", ".jpg", ".jpeg", ".tiff", ".tif", ".bmp", ".gif"}
 POOL_SIZE: int = 8
 
 
@@ -102,7 +99,7 @@ def process_image_pil(image_path: Path) -> bool:
         return False
 
 
-def process_image(image_path: Path) -> Tuple[Path, bool]:
+def process_image(image_path: Path) -> tuple[Path, bool]:
     """Process a single image using the available backend.
 
     Args:
@@ -119,7 +116,7 @@ def process_image(image_path: Path) -> Tuple[Path, bool]:
     return (image_path, success)
 
 
-def find_images(paths: List[Path], recursive: bool = False) -> List[Path]:
+def find_images(paths: list[Path], recursive: bool = False) -> list[Path]:
     """Find all supported image files under the given paths.
 
     Args:
@@ -129,7 +126,7 @@ def find_images(paths: List[Path], recursive: bool = False) -> List[Path]:
     Returns:
         A deduplicated list of image file paths.
     """
-    image_files: List[Path] = []
+    image_files: list[Path] = []
     for path in paths:
         if path.is_file() and path.suffix.lower() in IMAGE_EXTENSIONS:
             image_files.append(path)
@@ -142,8 +139,8 @@ def find_images(paths: List[Path], recursive: bool = False) -> List[Path]:
                 for ext in IMAGE_EXTENSIONS:
                     image_files.extend(path.glob(f"*{ext}"))
                     image_files.extend(path.glob(f"*{ext.upper()}"))
-    seen: Set[Path] = set()
-    unique_files: List[Path] = []
+    seen: set[Path] = set()
+    unique_files: list[Path] = []
     for f in image_files:
         if f not in seen:
             seen.add(f)
@@ -151,7 +148,7 @@ def find_images(paths: List[Path], recursive: bool = False) -> List[Path]:
     return unique_files
 
 
-def process_images_parallel(image_files: List[Path]) -> Dict[str, int]:
+def process_images_parallel(image_files: list[Path]) -> dict[str, int]:
     """Process images in parallel using a fixed-size multiprocessing pool.
 
     Args:
@@ -167,7 +164,7 @@ def process_images_parallel(image_files: List[Path]) -> Dict[str, int]:
     workers: int = min(POOL_SIZE, len(image_files))
     logger.info(f"Processing {len(image_files)} images using {workers} workers")
 
-    results: Dict[str, int] = {"success": 0, "failed": 0}
+    results: dict[str, int] = {"success": 0, "failed": 0}
     with Pool(processes=workers) as pool:
         async_results = [
             (path, pool.apply_async(process_image, (path,))) for path in image_files
@@ -219,18 +216,18 @@ def main() -> int:
         logger.remove()
         logger.add(sys.stderr, level="DEBUG")
 
-    paths: List[Path] = args.paths if args.paths else [Path.cwd()]
+    paths: list[Path] = args.paths if args.paths else [Path.cwd()]
     if not args.paths:
         logger.info(f"No input specified, processing current directory: {Path.cwd()}")
 
-    image_files: List[Path] = find_images(paths, args.recursive)
+    image_files: list[Path] = find_images(paths, args.recursive)
     if not image_files:
         logger.error("No supported image files found")
         logger.info(f"Supported extensions: {', '.join(sorted(IMAGE_EXTENSIONS))}")
         return 1
 
     logger.info(f"Found {len(image_files)} image(s) to process")
-    results: Dict[str, int] = process_images_parallel(image_files)
+    results: dict[str, int] = process_images_parallel(image_files)
     logger.info("=" * 40)
     logger.info("Processing complete:")
     logger.info(f"  ✓ Success: {results['success']}")

@@ -5,6 +5,7 @@ to an 'error' subdirectory in their parent folder.
 """
 
 from pathlib import Path
+
 import tree_sitter_lua
 from tree_sitter import Language, Parser
 

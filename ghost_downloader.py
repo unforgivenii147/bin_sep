@@ -69,9 +69,9 @@ def download_chunk(
     start_byte: int,
     end_byte: int,
     chunk_id: int,
-    headers: Dict[str, str],
+    headers: dict[str, str],
     filename: str,
-) -> Tuple[str, int]:
+) -> tuple[str, int]:
     """
     Download a single byte-range chunk of a file.
 
@@ -86,7 +86,7 @@ def download_chunk(
     Returns:
         A tuple of (part_filename, start_byte).
     """
-    chunk_headers: Dict[str, str] = headers.copy()
+    chunk_headers: dict[str, str] = headers.copy()
     chunk_headers["Range"] = f"bytes={start_byte}-{end_byte}"
     part_filename: str = f"{filename}.part{chunk_id}"
     part_path: Path = Path(part_filename)
@@ -113,7 +113,7 @@ def _resolve_filename(url: str, output: Optional[str]) -> str:
 
 def _single_stream_download(
     url: str,
-    headers: Dict[str, str],
+    headers: dict[str, str],
     filename: str,
     total_size: int,
 ) -> None:
@@ -142,7 +142,7 @@ def main() -> int:
     url: str = args.url
     num_chunks: int = args.chunks
 
-    headers: Dict[str, str] = {
+    headers: dict[str, str] = {
         "User-Agent": args.user_agent,
         "Accept": "*/*",
         "Connection": "keep-alive",
@@ -188,7 +188,7 @@ def main() -> int:
         return 0
 
     chunk_size: int = total_size // num_chunks
-    part_files: List[Optional[str]] = [None] * num_chunks
+    part_files: list[Optional[str]] = [None] * num_chunks
 
     logger.info("Slicing chunks and initializing network connections...")
 
@@ -197,7 +197,7 @@ def main() -> int:
         with tqdm(
             total=total_size, unit="B", unit_scale=True, desc="Downloading"
         ) as pbar:
-            async_results: List[ApplyResult[Tuple[str, int]]] = []
+            async_results: list[ApplyResult[tuple[str, int]]] = []
             for i in range(num_chunks):
                 start_byte: int = i * chunk_size
                 end_byte: int = (

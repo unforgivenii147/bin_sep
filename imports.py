@@ -32,7 +32,7 @@ from dh import STDLIB, get_installed_pkgs
 # Constants for multiprocessing
 NUM_WORKERS = 8
 
-SKIP_DIRS: Set[str] = {
+SKIP_DIRS: set[str] = {
     ".git",
     "__pycache__",
     "tests",
@@ -51,7 +51,7 @@ class ImportVisitor(ast.NodeVisitor):
 
     def __init__(self) -> None:
         """Initialize the visitor with an empty set of imports."""
-        self.imports: Set[str] = set()
+        self.imports: set[str] = set()
 
     def visit_Import(self, node: ast.Import) -> None:
         """
@@ -76,7 +76,7 @@ class ImportVisitor(ast.NodeVisitor):
         self.generic_visit(node)
 
 
-def get_local_packages(start_path: Path) -> Set[str]:
+def get_local_packages(start_path: Path) -> set[str]:
     """
     Get the names of all local packages in the given directory.
 
@@ -86,7 +86,7 @@ def get_local_packages(start_path: Path) -> Set[str]:
     Returns:
         A set of package names
     """
-    packages: Set[str] = set()
+    packages: set[str] = set()
     for init_file in start_path.rglob("__init__.py"):
         if any(part in SKIP_DIRS for part in init_file.parts):
             continue
@@ -94,7 +94,7 @@ def get_local_packages(start_path: Path) -> Set[str]:
     return packages
 
 
-def _process_file(file_path: Path) -> Tuple[Path, Set[str], bool, Optional[str]]:
+def _process_file(file_path: Path) -> tuple[Path, set[str], bool, Optional[str]]:
     """
     Process a single Python file to extract its imports.
 
@@ -104,7 +104,7 @@ def _process_file(file_path: Path) -> Tuple[Path, Set[str], bool, Optional[str]]
     Returns:
         Tuple containing (file_path, imports_set, success_flag, error_message)
     """
-    imports: Set[str] = set()
+    imports: set[str] = set()
     error: Optional[str] = None
     try:
         code = file_path.read_text(encoding="utf-8")
@@ -142,8 +142,8 @@ def has_python_files(dir_path: Path) -> bool:
 
 
 def find_imports_for_directory(
-    dir_path: Path, start_path: Path, std_libs: Set[str], all_local_packages: Set[str]
-) -> List[str]:
+    dir_path: Path, start_path: Path, std_libs: set[str], all_local_packages: set[str]
+) -> list[str]:
     """
     Find all third-party imports in Python files within a directory.
 
@@ -156,7 +156,7 @@ def find_imports_for_directory(
     Returns:
         Sorted list of third-party module names
     """
-    files: List[Path] = []
+    files: list[Path] = []
     for py_file in dir_path.rglob("*.py"):
         if py_file.is_file():
             if py_file.name.startswith(("test_", "tests_")) or py_file.name.endswith(
@@ -170,7 +170,7 @@ def find_imports_for_directory(
     if not files:
         return []
 
-    all_imports: Set[str] = set()
+    all_imports: set[str] = set()
 
     # Use multiprocessing Pool for parallel processing
     with Pool(processes=NUM_WORKERS) as pool:
@@ -180,15 +180,15 @@ def find_imports_for_directory(
         if success:
             all_imports.update(imports)
 
-    local_modules: Set[str] = {
+    local_modules: set[str] = {
         p.stem
         for p in dir_path.glob("*.py")
         if not any(part in SKIP_DIRS for part in p.parts)
     }
-    local_packages: Set[str] = get_local_packages(dir_path)
-    local_names: Set[str] = local_modules | local_packages | all_local_packages
+    local_packages: set[str] = get_local_packages(dir_path)
+    local_names: set[str] = local_modules | local_packages | all_local_packages
 
-    result: List[str] = sorted(
+    result: list[str] = sorted(
         [
             imp
             for imp in all_imports
@@ -202,7 +202,7 @@ def find_imports_for_directory(
 
 
 def save_requirements_file(
-    modules: List[str], output_path: Path, pkgz: Set[str]
+    modules: list[str], output_path: Path, pkgz: set[str]
 ) -> bool:
     """
     Save a list of modules to a requirements.txt file.
@@ -216,7 +216,7 @@ def save_requirements_file(
         True if the file was created with content, False otherwise
     """
     modules = sorted(set(modules))
-    results: List[str] = []
+    results: list[str] = []
 
     for mod in modules:
         if mod.startswith("_"):
@@ -229,7 +229,7 @@ def save_requirements_file(
         return False
 
     output_path.write_text("\n".join(results), encoding="utf-8")
-    cleaned: List[str] = []
+    cleaned: list[str] = []
 
     with output_path.open(encoding="utf-8") as fin:
         lines = fin.readlines()
@@ -242,8 +242,8 @@ def save_requirements_file(
             for line in lines
         )
 
-    seen: Set[str] = set()
-    unique_cleaned: List[str] = []
+    seen: set[str] = set()
+    unique_cleaned: list[str] = []
 
     for p in cleaned:
         if p and p not in pkgz and not p.startswith("_") and p not in seen:
@@ -291,7 +291,7 @@ def get_version(module_name: str) -> str:
     return "Not Installed(NA)"
 
 
-def get_valid_subdirs(start_path: Path) -> List[Path]:
+def get_valid_subdirs(start_path: Path) -> list[Path]:
     """
     Get all valid subdirectories containing Python files.
 
@@ -301,7 +301,7 @@ def get_valid_subdirs(start_path: Path) -> List[Path]:
     Returns:
         Sorted list of subdirectory paths containing Python files
     """
-    subdirs: List[Path] = []
+    subdirs: list[Path] = []
     for d in start_path.iterdir():
         if not d.is_dir():
             continue
@@ -332,13 +332,13 @@ def main() -> None:
     overall_start = time.time()
     cwd = Path.cwd()
     output_file = cwd / "requirements.txt"
-    std_libs: Set[str] = set(STDLIB)  # Convert frozenset to set
-    pkgz: Set[str] = set(get_installed_pkgs())  # Convert list to set
-    all_local_packages: Set[str] = get_local_packages(cwd)
-    subdirs: List[Path] = get_valid_subdirs(cwd)
+    std_libs: set[str] = set(STDLIB)  # Convert frozenset to set
+    pkgz: set[str] = set(get_installed_pkgs())  # Convert list to set
+    all_local_packages: set[str] = get_local_packages(cwd)
+    subdirs: list[Path] = get_valid_subdirs(cwd)
 
     if args.save_separate and subdirs:
-        total_imports: Set[str] = set()
+        total_imports: set[str] = set()
         created_count: int = 0
         skipped_count: int = 0
 
@@ -373,7 +373,7 @@ def main() -> None:
 
         if total_imports:
             print("\n📦 Generating root requirements.txt with all unique imports...")
-            root_modules: List[str] = sorted(set(total_imports))
+            root_modules: list[str] = sorted(set(total_imports))
             root_created = save_requirements_file(root_modules, output_file, pkgz)
 
             if root_created:
@@ -390,7 +390,7 @@ def main() -> None:
                 output_file.unlink()
     else:
         print("\n📦 Processing entire directory...")
-        files: List[Path] = []
+        files: list[Path] = []
         for py_file in cwd.rglob("*.py"):
             if py_file.is_file():
                 try:
@@ -407,7 +407,7 @@ def main() -> None:
                 output_file.unlink()
             return
 
-        files_by_dir: Dict[str, List[Path]] = defaultdict(list)
+        files_by_dir: dict[str, list[Path]] = defaultdict(list)
         for f in files:
             try:
                 rel_path = f.relative_to(cwd)
@@ -426,7 +426,7 @@ def main() -> None:
             )
             print("-" * 40)
 
-        all_imports: Set[str] = set()
+        all_imports: set[str] = set()
         dir_count: int = 0
 
         for subdir, dir_files in sorted(files_by_dir.items()):
@@ -451,14 +451,14 @@ def main() -> None:
         if show_progress:
             print("-" * 40)
 
-        local_modules: Set[str] = {
+        local_modules: set[str] = {
             p.stem
             for p in cwd.glob("*.py")
             if not any(part in SKIP_DIRS for part in p.parts)
         }
-        local_names: Set[str] = local_modules | all_local_packages
+        local_names: set[str] = local_modules | all_local_packages
 
-        modules: List[str] = sorted(
+        modules: list[str] = sorted(
             {
                 imp
                 for imp in all_imports

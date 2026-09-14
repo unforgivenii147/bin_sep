@@ -56,8 +56,8 @@ class CleanTransformer(cst.CSTTransformer):
 
     def _strip_docstring(
         self,
-        node: Union[cst.FunctionDef, cst.ClassDef],
-    ) -> Union[cst.FunctionDef, cst.ClassDef]:
+        node: cst.FunctionDef | cst.ClassDef,
+    ) -> cst.FunctionDef | cst.ClassDef:
         """Remove a leading string-literal docstring from the given node.
 
         If the body becomes empty after removal, a `pass` statement is
@@ -91,7 +91,7 @@ class CleanTransformer(cst.CSTTransformer):
         self,
         original_node: cst.Comment,
         updated_node: cst.Comment,
-    ) -> Union[cst.RemovalSentinel, cst.Comment]:
+    ) -> cst.RemovalSentinel | cst.Comment:
         """Drop comments unless they are shebangs, `# fmt:`, or `# type:`."""
         comment_text = original_node.value.strip()
         if comment_text.startswith(PRESERVED_PREFIXES) or any(

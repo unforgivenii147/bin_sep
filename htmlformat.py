@@ -121,7 +121,7 @@ class HTMLFormatter:
         except Exception as e:
             raise RuntimeError(f"Failed to initialize Tree-sitter parser: {e}")
 
-    def format_html(self, source_code: str) -> Tuple[str, int]:
+    def format_html(self, source_code: str) -> tuple[str, int]:
         """
         Format HTML source code so every tag starts on a new line.
 
@@ -160,7 +160,7 @@ class HTMLFormatter:
             logger.error(f"Error formatting HTML: {e}")
             return source_code, 0
 
-    def _collect_edits(self, node: Node, source: str) -> List[Tuple[int, str, int]]:
+    def _collect_edits(self, node: Node, source: str) -> list[tuple[int, str, int]]:
         """
         Collect all edit operations needed for formatting.
 
@@ -296,7 +296,7 @@ def write_file_atomic(file_path: Path, content: str) -> bool:
         return False
 
 
-def find_html_files(paths: List[Path]) -> Iterator[Path]:
+def find_html_files(paths: list[Path]) -> Iterator[Path]:
     """
     Find all HTML files in the given paths.
 

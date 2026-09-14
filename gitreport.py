@@ -6,6 +6,7 @@ Uses dulwich (pure Python git implementation) - no subprocess.
 
 import json
 import sys
+
 from dulwich.repo import Repo
 
 

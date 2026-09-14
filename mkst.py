@@ -30,7 +30,7 @@ logger.add(
     sys.stderr, level="WARNING", format="<red>{level}</red> | <cyan>{message}</cyan>"
 )
 
-IMAGE_EXTENSIONS: Set[str] = {
+IMAGE_EXTENSIONS: set[str] = {
     ".png",
     ".jpg",
     ".jpeg",
@@ -46,7 +46,7 @@ CSS_URL_PATTERN: re.Pattern[str] = re.compile(r'url\((["\']?)([^)"\']+)\1\)')
 TIMEOUT: int = 10
 POOL_SIZE: int = 8
 
-Stats = Dict[str, Any]
+Stats = dict[str, Any]
 
 
 def is_remote(url: str) -> bool:
@@ -101,7 +101,7 @@ def read_local(path: Path) -> Optional[bytes]:
 
 def process_css_content(
     css_content: str, base_path: Path, base_url: Optional[str] = None
-) -> Tuple[str, int, int]:
+) -> tuple[str, int, int]:
     """Embed all url(...) references in CSS content as base64 data URIs.
 
     Returns a tuple of (processed_css, local_count, remote_count).
@@ -305,7 +305,7 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    targets: List[Path] = []
+    targets: list[Path] = []
     for p_str in args.paths:
         p = Path(p_str)
         if p.is_file() and p.suffix.lower() in (".html", ".css"):
@@ -326,7 +326,7 @@ def main() -> None:
     start_time = time.perf_counter()
 
     with Pool(processes=POOL_SIZE) as pool:
-        async_results: List[Tuple[AsyncResult[Stats], Path]] = [
+        async_results: list[tuple[AsyncResult[Stats], Path]] = [
             (pool.apply_async(process_file, (p,)), p) for p in targets
         ]
         for ar, p in async_results:

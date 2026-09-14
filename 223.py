@@ -12,12 +12,12 @@ from typing import Iterable, List, Sequence, Tuple
 WORKERS = 8
 
 
-def all_fixers() -> List[str]:
+def all_fixers() -> list[str]:
     """Return every fixer shipped with lib2to3."""
     return list(get_fixers_from_package("lib2to3.fixes"))
 
 
-def fix_file(path_str: str) -> Tuple[str, bool, str]:
+def fix_file(path_str: str) -> tuple[str, bool, str]:
     """Apply all fixes to one file. Returns (path, ok, message)."""
     path = Path(path_str)
     try:
@@ -34,9 +34,9 @@ def fix_file(path_str: str) -> Tuple[str, bool, str]:
         return path_str, False, f"error: {e!s}"
 
 
-def find_files(paths: Sequence[str], exts: Iterable[str] = (".py",)) -> List[str]:
+def find_files(paths: Sequence[str], exts: Iterable[str] = (".py",)) -> list[str]:
     """Expand files/dirs into a deduped list of matching file paths."""
-    found: List[str] = []
+    found: list[str] = []
     for p in paths:
         path = Path(p)
         if path.is_file() and path.suffix in exts:

@@ -10,7 +10,7 @@ The script should:
 - Support optional filename hints inside code comments (e.g. "# filename: foo.py").
 - Save each extracted block as a .py file under output/<source_name>/, avoiding filename collisions.
 - Use multiprocessing.Pool.apply_async with a fixed pool of 8 workers for parallel processing.
-- Use loguru for all logging (no print statements, no stdlib logging).
+- Use loguru for all logging (no print(statements, no stdlib logging).)
 - Use pathlib exclusively for filesystem operations.
 - Include complete type annotations on all functions, methods, attributes, and module-level variables.
 """

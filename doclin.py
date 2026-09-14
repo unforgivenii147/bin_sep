@@ -30,7 +30,7 @@ from loguru import logger
 
 POOL_SIZE: Final[int] = 8
 
-RST_IMAGE_PATTERNS: Final[List[re.Pattern[str]]] = [
+RST_IMAGE_PATTERNS: Final[list[re.Pattern[str]]] = [
     re.compile(r"^\s*\.\.\s+image::\s+https?://[^\s]+", re.IGNORECASE | re.MULTILINE),
     re.compile(r"^\s*\.\.\s+figure::\s+https?://[^\s]+", re.IGNORECASE | re.MULTILINE),
     re.compile(
@@ -49,7 +49,7 @@ RST_IMAGE_PATTERNS: Final[List[re.Pattern[str]]] = [
     ),
 ]
 
-MD_IMAGE_PATTERNS: Final[List[re.Pattern[str]]] = [
+MD_IMAGE_PATTERNS: Final[list[re.Pattern[str]]] = [
     re.compile(r"^\[!\[.*?\]\(https?://[^\)]+\)\]\(https?://[^\)]+\)", re.MULTILINE),
     re.compile(r"!\[.*?\]\(https?://[^\)]+\)", re.MULTILINE),
     re.compile(r"!\[.*?\]\((?!https?://)[^\)]+\)", re.MULTILINE),
@@ -60,7 +60,7 @@ MD_IMAGE_PATTERNS: Final[List[re.Pattern[str]]] = [
     ),
 ]
 
-BADGE_DOMAINS: Final[List[str]] = [
+BADGE_DOMAINS: Final[list[str]] = [
     "shields.io",
     "img.shields.io",
     "badge.fury.io",
@@ -127,13 +127,13 @@ def is_image_extension_url(line: str) -> bool:
     return bool(re.search(image_extensions, line, re.IGNORECASE))
 
 
-def remove_image_lines_rst(content: str) -> Tuple[str, int]:
+def remove_image_lines_rst(content: str) -> tuple[str, int]:
     """Remove image/figure directives from RST content.
 
     Returns the cleaned content and the number of removed references.
     """
-    lines: List[str] = content.split("\n")
-    new_lines: List[str] = []
+    lines: list[str] = content.split("\n")
+    new_lines: list[str] = []
     removed_count: int = 0
     i: int = 0
     while i < len(lines):
@@ -159,13 +159,13 @@ def remove_image_lines_rst(content: str) -> Tuple[str, int]:
     return "\n".join(new_lines), removed_count
 
 
-def remove_image_lines_md(content: str) -> Tuple[str, int]:
+def remove_image_lines_md(content: str) -> tuple[str, int]:
     """Remove markdown image/badge references from ``content``.
 
     Returns the cleaned content and the number of removed references.
     """
-    lines: List[str] = content.split("\n")
-    new_lines: List[str] = []
+    lines: list[str] = content.split("\n")
+    new_lines: list[str] = []
     removed_count: int = 0
     for raw_line in lines:
         line: str = raw_line
@@ -187,7 +187,7 @@ def remove_image_lines_md(content: str) -> Tuple[str, int]:
                         break
 
         if not should_remove:
-            matches: List[Tuple[str, str]] = _MD_LINK_PATTERN.findall(line)
+            matches: list[tuple[str, str]] = _MD_LINK_PATTERN.findall(line)
             for _text, url in matches:
                 if has_badge_domain(url) or is_image_extension_url(url):
                     if "!" in line or "badge" in url.lower() or "shield" in url.lower():
@@ -250,9 +250,9 @@ def process_file(file_path: Path) -> Optional[FileStats]:
     return None
 
 
-def collect_files(directories: Sequence[Path]) -> List[Path]:
+def collect_files(directories: Sequence[Path]) -> list[Path]:
     """Collect all ``.rst`` and ``.md`` files under the given directories."""
-    files: List[Path] = []
+    files: list[Path] = []
     for directory in directories:
         if not directory.exists():
             logger.warning(f"Directory '{directory}' does not exist, skipping...")
@@ -338,11 +338,11 @@ def print_stats(all_stats: Sequence[FileStats], base_path: Path) -> None:
 
 def main() -> int:
     """Run the image reference remover over the requested directories."""
-    argv: List[str] = sys.argv[1:]
-    directories: List[Path] = [Path(arg) for arg in argv] if argv else [Path.cwd()]
+    argv: list[str] = sys.argv[1:]
+    directories: list[Path] = [Path(arg) for arg in argv] if argv else [Path.cwd()]
 
     logger.info("🔍 Scanning for .rst and .md files...")
-    files: List[Path] = collect_files(directories)
+    files: list[Path] = collect_files(directories)
     logger.info(f"Found {len(files)} files to process")
     if not files:
         logger.info("No .rst or .md files found in the specified directories.")
@@ -350,12 +350,12 @@ def main() -> int:
 
     logger.info(f"⚡ Processing files in parallel with {POOL_SIZE} workers...")
 
-    stats_list: List[FileStats] = []
+    stats_list: list[FileStats] = []
     completed: int = 0
     total: int = len(files)
 
     with Pool(processes=POOL_SIZE) as pool:
-        async_results: List[Tuple[AsyncResult[Optional[FileStats]], Path]] = [
+        async_results: list[tuple[AsyncResult[Optional[FileStats]], Path]] = [
             (pool.apply_async(process_file, (file,)), file) for file in files
         ]
         for result, file in async_results:

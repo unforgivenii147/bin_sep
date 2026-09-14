@@ -42,7 +42,7 @@ except ImportError:
     regex = re
 
 # Constants
-SUPPORTED_EXTENSIONS: Set[str] = {".html", ".htm"}
+SUPPORTED_EXTENSIONS: set[str] = {".html", ".htm"}
 WORKERS: int = 8
 CHUNK_SIZE: int = 8192
 MAX_FILE_SIZE: int = 50 * 1024 * 1024
@@ -69,7 +69,7 @@ logger.add(
 )
 
 # Transliteration maps
-PERSIAN_MAP: Dict[str, str] = {
+PERSIAN_MAP: dict[str, str] = {
     "ا": "a",
     "ب": "b",
     "پ": "p",
@@ -114,7 +114,7 @@ PERSIAN_MAP: Dict[str, str] = {
     "ٍ": "",
 }
 
-ARABIC_MAP: Dict[str, str] = {
+ARABIC_MAP: dict[str, str] = {
     "ا": "a",
     "ب": "b",
     "ت": "t",
@@ -151,7 +151,7 @@ ARABIC_MAP: Dict[str, str] = {
     "ة": "a",
 }
 
-CYRILLIC_MAP: Dict[str, str] = {
+CYRILLIC_MAP: dict[str, str] = {
     "а": "a",
     "б": "b",
     "в": "v",
@@ -220,7 +220,7 @@ CYRILLIC_MAP: Dict[str, str] = {
     "Я": "ya",
 }
 
-GREEK_MAP: Dict[str, str] = {
+GREEK_MAP: dict[str, str] = {
     "α": "a",
     "β": "b",
     "γ": "g",
@@ -271,7 +271,7 @@ GREEK_MAP: Dict[str, str] = {
     "Ω": "o",
 }
 
-CHINESE_MAP: Dict[str, str] = {
+CHINESE_MAP: dict[str, str] = {
     "中": "zhong",
     "国": "guo",
     "人": "ren",
@@ -289,7 +289,7 @@ CHINESE_MAP: Dict[str, str] = {
     "木": "mu",
 }
 
-TRANSLITERATION_MAPS: List[Dict[str, str]] = [
+TRANSLITERATION_MAPS: list[dict[str, str]] = [
     PERSIAN_MAP,
     ARABIC_MAP,
     CYRILLIC_MAP,
@@ -351,7 +351,7 @@ class LanguageTransliterator:
         devanagari_count: int = sum(1 for c in text if "\u0900" <= c <= "\u097f")
 
         total: int = len(text)
-        script_counts: Dict[str, int] = {
+        script_counts: dict[str, int] = {
             "persian": persian_count,
             "cyrillic": cyrillic_count,
             "greek": greek_count,
@@ -518,7 +518,7 @@ class HtmlTitleExtractor:
         Returns:
             The extracted title, or None if no title was found.
         """
-        patterns: List[str] = [
+        patterns: list[str] = [
             r"<title[^>]*>(.*?)</title>",
             r"<TITLE[^>]*>(.*?)</TITLE>",
             r"<Title[^>]*>(.*?)</Title>",
@@ -596,7 +596,7 @@ class FilenameNormalizer:
     UNDERSCORE_PATTERN: re.Pattern = re.compile(r"_+")
     DASH_PATTERN: re.Pattern = re.compile(r"-+")
     LEADING_TRAILING_PATTERN: re.Pattern = re.compile(r"^[\s_-]+|[\s_-]+$")
-    RESERVED_NAMES: Set[str] = {
+    RESERVED_NAMES: set[str] = {
         "con",
         "prn",
         "aux",
@@ -659,7 +659,7 @@ class FilenameNormalizer:
         return f"{text}{extension}"
 
     @staticmethod
-    def ensure_unique(filename: Path, existing_files: Set[Path]) -> Path:
+    def ensure_unique(filename: Path, existing_files: set[Path]) -> Path:
         """Ensure filename uniqueness by appending a counter if needed.
 
         Args:
@@ -688,7 +688,7 @@ class HtmlFileProcessor:
 
     def __init__(self) -> None:
         self.title_extractor: HtmlTitleExtractor = HtmlTitleExtractor()
-        self.existing_names: Set[str] = set()
+        self.existing_names: set[str] = set()
 
     def process_file(self, file_path: Path) -> ProcessingResult:
         """Process a single HTML file for renaming.
@@ -803,7 +803,7 @@ class HtmlFileProcessor:
 class FileDiscovery:
     """Discovers HTML files in directories."""
 
-    SKIP_DIRS: Set[str] = {
+    SKIP_DIRS: set[str] = {
         ".git",
         ".svn",
         "__pycache__",
@@ -829,7 +829,7 @@ class FileDiscovery:
     }
 
     @staticmethod
-    def discover_files(paths: List[str]) -> List[Path]:
+    def discover_files(paths: list[str]) -> list[Path]:
         """Discover HTML files in the given paths.
 
         Args:
@@ -838,8 +838,8 @@ class FileDiscovery:
         Returns:
             Sorted list of discovered HTML file paths.
         """
-        discovered: List[Path] = []
-        seen: Set[Path] = set()
+        discovered: list[Path] = []
+        seen: set[Path] = set()
 
         with ThreadPoolExecutor(max_workers=4) as executor:
             futures = []
@@ -863,7 +863,7 @@ class FileDiscovery:
                 except Exception as e:
                     logger.error(f"Error during file discovery: {e}")
 
-        unique_files: List[Path] = []
+        unique_files: list[Path] = []
         for f in discovered:
             if f not in seen:
                 unique_files.append(f)
@@ -872,7 +872,7 @@ class FileDiscovery:
         return sorted(unique_files)
 
     @staticmethod
-    def _discover_in_directory(directory: Path) -> List[Path]:
+    def _discover_in_directory(directory: Path) -> list[Path]:
         """Discover HTML files in a directory recursively.
 
         Args:
@@ -881,7 +881,7 @@ class FileDiscovery:
         Returns:
             List of HTML file paths found.
         """
-        files: List[Path] = []
+        files: list[Path] = []
         try:
             for item in directory.rglob("*"):
                 if any(part in FileDiscovery.SKIP_DIRS for part in item.parts):
@@ -912,9 +912,9 @@ def process_file_task(file_path: Path) -> ProcessingResult:
 class HtmlRenamerApp:
     """Main application class for HTML file renaming."""
 
-    def __init__(self, paths: Optional[List[str]] = None) -> None:
-        self.paths: List[str] = paths or ["."]
-        self.results: List[ProcessingResult] = []
+    def __init__(self, paths: Optional[list[str]] = None) -> None:
+        self.paths: list[str] = paths or ["."]
+        self.results: list[ProcessingResult] = []
 
     def run(self) -> None:
         """Run the HTML file renaming application."""
@@ -923,7 +923,7 @@ class HtmlRenamerApp:
         logger.info("=" * 70)
         logger.info(f"Discovering HTML files in: {', '.join(self.paths)}")
 
-        files: List[Path] = FileDiscovery.discover_files(self.paths)
+        files: list[Path] = FileDiscovery.discover_files(self.paths)
         if not files:
             logger.warning("No HTML files found")
             return
@@ -994,7 +994,7 @@ class HtmlRenamerApp:
 
 def main() -> None:
     """Main entry point for the script."""
-    paths: List[str] = sys.argv[1:] if len(sys.argv) > 1 else ["."]
+    paths: list[str] = sys.argv[1:] if len(sys.argv) > 1 else ["."]
     app: HtmlRenamerApp = HtmlRenamerApp(paths)
     app.run()
 

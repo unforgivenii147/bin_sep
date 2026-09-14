@@ -23,9 +23,8 @@ from pathlib import Path
 from typing import Final, Optional, Union
 
 from deep_translator import GoogleTranslator
-from loguru import logger
-
 from dh import DOC_TH1, DOC_TH2, get_files, is_binary
+from loguru import logger
 
 CHUNK_SIZE: Final[int] = 4990
 POOL_WORKERS: Final[int] = 8

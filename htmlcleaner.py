@@ -52,7 +52,7 @@ class HTMLExtractor(html.parser.HTMLParser):
     def __init__(self):
         super().__init__(convert_charrefs=False)
         self.reset_state()
-        self.extractions: List[Tuple[str, str, dict]] = []  # (type, content, attrs)
+        self.extractions: list[tuple[str, str, dict]] = []  # (type, content, attrs)
 
     def reset_state(self):
         """Reset parser state for reuse."""
@@ -63,7 +63,7 @@ class HTMLExtractor(html.parser.HTMLParser):
         self.in_script = False
         self.script_has_src = False
 
-    def handle_starttag(self, tag: str, attrs: List[Tuple[str, Optional[str]]]):
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, Optional[str]]]):
         """Handle opening tags."""
         tag_lower = tag.lower()
 
@@ -150,7 +150,7 @@ def get_unique_filename(base_name: str, extension: str, assets_dir: Path) -> str
 
 def extract_assets_from_html(
     html_content: str, html_path: Path, assets_base_dir: Path
-) -> Tuple[str, int, int]:
+) -> tuple[str, int, int]:
     """
     Extract inline CSS and JS from HTML content and return modified HTML.
 
@@ -188,7 +188,7 @@ def extract_assets_from_html(
         rel_assets_path = Path(*[".."] * len(html_path.parent.parts)) / assets_base_dir
 
     # Prepare replacements
-    replacements: List[Tuple[str, str]] = []
+    replacements: list[tuple[str, str]] = []
     css_count = 0
     js_count = 0
 
@@ -371,7 +371,7 @@ def process_html_file(file_path: Path) -> ExtractionResult:
         )
 
 
-def find_html_files(paths: List[Path]) -> Iterator[Path]:
+def find_html_files(paths: list[Path]) -> Iterator[Path]:
     """
     Find all HTML files from given paths (files and directories).
 
@@ -403,7 +403,7 @@ def find_html_files(paths: List[Path]) -> Iterator[Path]:
             print(f"Warning: Path does not exist: {path}", file=sys.stderr)
 
 
-def get_default_paths() -> List[Path]:
+def get_default_paths() -> list[Path]:
     """Get default paths (current directory) when no input provided."""
     return [Path.cwd()]
 

@@ -17,7 +17,7 @@ from typing import Dict, List, Set
 from loguru import logger
 
 
-def extract_definitions(file_path: Path) -> Dict[str, List[str]]:
+def extract_definitions(file_path: Path) -> dict[str, list[str]]:
     """
     Extract top-level definitions from a Python file.
 
@@ -61,7 +61,7 @@ def extract_definitions(file_path: Path) -> Dict[str, List[str]]:
     return definitions
 
 
-def extract_exports_from_init(init_path: Path) -> Set[str]:
+def extract_exports_from_init(init_path: Path) -> set[str]:
     """
     Extract names exported from __init__.py.
     Handles both __all__ and direct imports.
@@ -105,7 +105,7 @@ def extract_exports_from_init(init_path: Path) -> Set[str]:
     return exported
 
 
-def check_directory(directory: Path = None) -> Dict[str, Dict[str, List[str]]]:
+def check_directory(directory: Path = None) -> dict[str, dict[str, list[str]]]:
     """
     Check all Python files in directory against __init__.py exports.
 
@@ -156,7 +156,7 @@ def check_directory(directory: Path = None) -> Dict[str, Dict[str, List[str]]]:
     return missing
 
 
-def build_import_block(missing: Dict[str, Dict[str, List[str]]]) -> str:
+def build_import_block(missing: dict[str, dict[str, list[str]]]) -> str:
     """
     Build import statements + __all__ block for missing definitions.
 
@@ -202,7 +202,7 @@ def build_import_block(missing: Dict[str, Dict[str, List[str]]]) -> str:
 
 
 def autofix_init(
-    init_path: Path, missing: Dict[str, Dict[str, List[str]]], dry_run: bool = False
+    init_path: Path, missing: dict[str, dict[str, list[str]]], dry_run: bool = False
 ) -> bool:
     """
     Append missing imports and __all__ entries to __init__.py.

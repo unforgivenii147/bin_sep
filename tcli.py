@@ -7,10 +7,11 @@ Usage:
     python translate_words.py <input_file> [output_file]
 """
 
-import sys
 import json
 import multiprocessing as mp
+import sys
 from pathlib import Path
+
 from translate import Translator
 
 # Fixed number of workers

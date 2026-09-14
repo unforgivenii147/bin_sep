@@ -7,7 +7,7 @@ The script must:
 - Accept -o/--output for the output directory (default: "repos").
 - Accept --dry-run to preview actions without downloading.
 - Use multiprocessing.Pool.apply_async with a fixed pool of 8 workers for concurrency (no CLI flag for workers).
-- Use loguru for all logging (no print statements, no stdlib logging).
+- Use loguru for all logging (no print(statements, no stdlib logging).)
 - Use pathlib exclusively for filesystem paths.
 - Validate each repo string is in "owner/name" format.
 - Skip repos whose target directory already exists.

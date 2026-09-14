@@ -94,7 +94,7 @@ def read_local(path: Path) -> Optional[bytes]:
 
 def process_css_content(
     css_content: str, base_path: Path, base_url: Optional[str] = None
-) -> Tuple[str, int, int]:
+) -> tuple[str, int, int]:
     """Inline url(...) references in CSS as data URIs.
 
     Returns the transformed CSS and counts of embedded local and remote assets.
@@ -137,9 +137,9 @@ def process_css_content(
     return new_css, loc, rem
 
 
-def process_html_file(file_path: Path) -> Dict[str, Any]:
+def process_html_file(file_path: Path) -> dict[str, Any]:
     """Inline assets referenced by an HTML file and rewrite it in place."""
-    stats: Dict[str, Any] = {
+    stats: dict[str, Any] = {
         "path": str(file_path),
         "local": 0,
         "remote": 0,
@@ -259,9 +259,9 @@ def process_html_file(file_path: Path) -> Dict[str, Any]:
     return stats
 
 
-def process_css_file(file_path: Path) -> Dict[str, Any]:
+def process_css_file(file_path: Path) -> dict[str, Any]:
     """Inline assets referenced by a standalone CSS file and rewrite it."""
-    stats: Dict[str, Any] = {
+    stats: dict[str, Any] = {
         "path": str(file_path),
         "local": 0,
         "remote": 0,
@@ -282,7 +282,7 @@ def process_css_file(file_path: Path) -> Dict[str, Any]:
     return stats
 
 
-def process_file(path: Path) -> Dict[str, Any]:
+def process_file(path: Path) -> dict[str, Any]:
     """Dispatch a single file to the correct processor based on extension."""
     if path.suffix.lower() == ".html":
         return process_html_file(path)
@@ -308,7 +308,7 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    targets: List[Path] = []
+    targets: list[Path] = []
     for p_str in args.paths:
         p = Path(p_str)
         if p.is_file() and p.suffix.lower() in (".html", ".css"):
@@ -318,7 +318,7 @@ def main() -> None:
             targets.extend(p.rglob("*.css"))
 
     # Deduplicate while preserving resolved identity
-    unique: Dict[Path, Path] = {p.resolve(): p for p in targets}
+    unique: dict[Path, Path] = {p.resolve(): p for p in targets}
     targets = list(unique.values())
 
     if not targets:
@@ -337,7 +337,7 @@ def main() -> None:
     try:
         async_results = [pool.apply_async(process_file, (p,)) for p in targets]
         for async_result in async_results:
-            s: Dict[str, Any] = async_result.get()
+            s: dict[str, Any] = async_result.get()
             raw_path = Path(s["path"])
             try:
                 display_path: Path = raw_path.relative_to(Path.cwd())

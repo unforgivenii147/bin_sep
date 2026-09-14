@@ -212,7 +212,7 @@ class SpaceStats:
             self.original_size += original
             self.compressed_size += compressed
 
-    def get_savings(self) -> Tuple[int, float, float]:
+    def get_savings(self) -> tuple[int, float, float]:
         """Return (bytes_saved, ratio_percent, percent_saved)."""
         if self.original_size == 0:
             return 0, 0.0, 0.0
@@ -364,7 +364,7 @@ def compress_file(
     level: int = 3,
     threads: int = 4,
     remove_original: bool = False,
-) -> Tuple[bool, Path, Path | str, int, int]:
+) -> tuple[bool, Path, Path | str, int, int]:
     """Compress a single file to Zstandard. Returns a result tuple."""
     try:
         original_size = input_path.stat().st_size
@@ -392,7 +392,7 @@ def decompress_file(
     output_path: Path,
     threads: int = 4,
     remove_original: bool = False,
-) -> Tuple[bool, Path, Path | str, int, int]:
+) -> tuple[bool, Path, Path | str, int, int]:
     """Decompress a single ``.zst`` file. Returns a result tuple."""
     try:
         compressed_size = input_path.stat().st_size

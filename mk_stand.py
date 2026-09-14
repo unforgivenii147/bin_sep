@@ -21,7 +21,7 @@ logger.add(
     sys.stderr, level="WARNING", format="<red>{level}</red> | <cyan>{message}</cyan>"
 )
 
-IMAGE_EXTENSIONS: Set[str] = {
+IMAGE_EXTENSIONS: set[str] = {
     ".png",
     ".jpg",
     ".jpeg",
@@ -90,7 +90,7 @@ def read_local(path: Path) -> Optional[bytes]:
 
 def process_css_content(
     css_content: str, base_path: Path, base_url: Optional[str] = None
-) -> Tuple[str, int, int]:
+) -> tuple[str, int, int]:
     """Inline url() references in CSS content with base64 data URIs.
 
     Returns the transformed CSS, the number of local resources inlined, and
@@ -134,9 +134,9 @@ def process_css_content(
     return new_css, loc, rem
 
 
-def process_html_file(file_path: Path) -> Dict[str, Any]:
+def process_html_file(file_path: Path) -> dict[str, Any]:
     """Inline linked CSS/JS and image references in a single HTML file."""
-    stats: Dict[str, Any] = {
+    stats: dict[str, Any] = {
         "path": str(file_path),
         "local": 0,
         "remote": 0,
@@ -244,9 +244,9 @@ def process_html_file(file_path: Path) -> Dict[str, Any]:
     return stats
 
 
-def process_css_file(file_path: Path) -> Dict[str, Any]:
+def process_css_file(file_path: Path) -> dict[str, Any]:
     """Inline url() references in a single CSS file."""
-    stats: Dict[str, Any] = {
+    stats: dict[str, Any] = {
         "path": str(file_path),
         "local": 0,
         "remote": 0,
@@ -267,7 +267,7 @@ def process_css_file(file_path: Path) -> Dict[str, Any]:
     return stats
 
 
-def process_file(path: Path) -> Dict[str, Any]:
+def process_file(path: Path) -> dict[str, Any]:
     """Dispatch a file to the appropriate processor based on its extension."""
     if path.suffix.lower() == ".html" or path.suffix.lower() == ".htm":
         return process_html_file(path)
@@ -292,7 +292,7 @@ def main() -> int:
         help="Files or directories to process (default: current directory)",
     )
     args = parser.parse_args()
-    targets: List[Path] = []
+    targets: list[Path] = []
     for p_str in args.paths:
         p = Path(p_str)
         if p.is_file() and p.suffix.lower() in (".html", ".css", ".htm"):
@@ -312,7 +312,7 @@ def main() -> int:
     with Pool(processes=POOL_SIZE) as pool:
         async_results = [pool.apply_async(process_file, (p,)) for p in targets]
         for async_result in async_results:
-            s: Dict[str, Any] = async_result.get()
+            s: dict[str, Any] = async_result.get()
             raw_path = Path(s["path"])
             try:
                 display_path: Path = raw_path.relative_to(Path.cwd())

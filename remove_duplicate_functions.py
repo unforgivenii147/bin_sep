@@ -47,10 +47,10 @@ def normalize_function_body(lines: Sequence[str], start_idx: int, end_idx: int) 
         A normalized, dedented string containing only non-blank lines joined
         by newlines, or an empty string if there is no body.
     """
-    body_lines: List[str] = list(lines[start_idx:end_idx])
+    body_lines: list[str] = list(lines[start_idx:end_idx])
     if not body_lines:
         return ""
-    stripped: List[str] = [line for line in body_lines if line.strip()]
+    stripped: list[str] = [line for line in body_lines if line.strip()]
     if not stripped:
         return ""
     min_indent: int = min(len(line) - len(line.lstrip()) for line in stripped)
@@ -71,7 +71,7 @@ def compute_function_hash(filepath: Path, func_node: ast.FunctionDef) -> Optiona
         A hexadecimal MD5 digest, or None if the file could not be read.
     """
     try:
-        lines: List[str] = filepath.read_text().splitlines(keepends=True)
+        lines: list[str] = filepath.read_text().splitlines(keepends=True)
     except Exception:
         return None
 
@@ -79,7 +79,7 @@ def compute_function_hash(filepath: Path, func_node: ast.FunctionDef) -> Optiona
     end_line: int = (
         func_node.end_lineno if func_node.end_lineno is not None else start_line + 1
     )
-    func_lines: List[str] = lines[start_line:end_line]
+    func_lines: list[str] = lines[start_line:end_line]
 
     body_start: int = 0
     for i, line in enumerate(func_lines):
@@ -98,7 +98,7 @@ def compute_function_hash(filepath: Path, func_node: ast.FunctionDef) -> Optiona
 
 def extract_top_level_functions(
     filepath: Path,
-) -> Optional[Dict[str, Dict[str, Any]]]:
+) -> Optional[dict[str, dict[str, Any]]]:
     """Extract all top-level function definitions from a Python file.
 
     Args:
@@ -115,7 +115,7 @@ def extract_top_level_functions(
     except Exception:
         return None
 
-    functions: Dict[str, Dict[str, Any]] = {}
+    functions: dict[str, dict[str, Any]] = {}
     for node in ast.iter_child_nodes(tree):
         if isinstance(node, ast.FunctionDef):
             content_hash: Optional[str] = compute_function_hash(filepath, node)
@@ -131,9 +131,9 @@ def extract_top_level_functions(
 
 def process_target_file(
     target_path: Path,
-    ref_hashes: Dict[str, str],
+    ref_hashes: dict[str, str],
     apply: bool = False,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Process a single target file, optionally removing duplicate functions.
 
     Args:
@@ -144,13 +144,13 @@ def process_target_file(
     Returns:
         A result dict with keys: file, status, duplicates, and optionally error.
     """
-    funcs: Optional[Dict[str, Dict[str, Any]]] = extract_top_level_functions(
+    funcs: Optional[dict[str, dict[str, Any]]] = extract_top_level_functions(
         target_path
     )
     if funcs is None or not funcs:
         return {"file": target_path, "status": "skipped", "duplicates": []}
 
-    duplicates: List[Dict[str, Any]] = []
+    duplicates: list[dict[str, Any]] = []
     for func_name, func_info in funcs.items():
         if func_info["hash"] in ref_hashes:
             duplicates.append(
@@ -167,9 +167,9 @@ def process_target_file(
 
     if apply:
         try:
-            lines: List[str] = target_path.read_text().splitlines(keepends=True)
+            lines: list[str] = target_path.read_text().splitlines(keepends=True)
             duplicates.sort(key=lambda x: x["lineno"], reverse=True)
-            removed: List[str] = []
+            removed: list[str] = []
             for dup in duplicates:
                 start: int = dup["lineno"] - 1
                 end: int = dup["end_lineno"]
@@ -197,7 +197,7 @@ def process_target_file(
     return {"file": target_path, "status": "found", "duplicates": duplicates}
 
 
-def expand_input_paths(inputs: Sequence[str]) -> List[Path]:
+def expand_input_paths(inputs: Sequence[str]) -> list[Path]:
     """Expand CLI inputs into a sorted list of unique Python files.
 
     Args:
@@ -272,7 +272,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         return 1
 
     logger.info(f"📖 Analyzing reference: {ref_path}")
-    ref_funcs: Optional[Dict[str, Dict[str, Any]]] = extract_top_level_functions(
+    ref_funcs: Optional[dict[str, dict[str, Any]]] = extract_top_level_functions(
         ref_path
     )
     if ref_funcs is None:
@@ -282,12 +282,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         logger.warning("⚠️  No functions found in reference")
         return 1
 
-    ref_hashes: Dict[str, str] = {
+    ref_hashes: dict[str, str] = {
         info["hash"]: info["name"] for info in ref_funcs.values()
     }
     logger.info(f"  Found {len(ref_hashes)} functions")
 
-    target_files: List[Path] = expand_input_paths(args.inputs)
+    target_files: list[Path] = expand_input_paths(args.inputs)
     target_files = [f for f in target_files if f != ref_path]
     if not target_files:
         logger.warning("⚠️  No target files found")
@@ -301,12 +301,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     total_updated: int = 0
 
     with Pool(processes=POOL_SIZE) as pool:
-        async_results: List[Any] = [
+        async_results: list[Any] = [
             pool.apply_async(process_target_file, (f, ref_hashes, args.apply))
             for f in target_files
         ]
         for async_result in async_results:
-            result: Dict[str, Any] = async_result.get()
+            result: dict[str, Any] = async_result.get()
             status: str = result["status"]
             if status == "skipped":
                 logger.info(f"⊘  {result['file']}")

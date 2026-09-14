@@ -13,7 +13,6 @@ import sys
 from collections import Counter
 from pathlib import Path
 
-import re
 from dh import unique_path
 
 USER_STOPWORDS_FILE = Path("/sdcard/data/stopwords")

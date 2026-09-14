@@ -30,7 +30,7 @@ except ImportError:
 SKIP_DIRS = frozenset(
     {".git", "__pycache__", ".venv", "node_modules", ".env", ".pytest_cache"}
 )
-COMMON_IMPORTS: Dict[str, Set[str]] = {
+COMMON_IMPORTS: dict[str, set[str]] = {
     "typing": {
         "List",
         "Dict",
@@ -182,8 +182,8 @@ class Entity:
     full_name: str
     source_file: str
     line_number: int
-    imports: Set[str] = field(default_factory=set)
-    decorators: List[str] = field(default_factory=list)
+    imports: set[str] = field(default_factory=set)
+    decorators: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -191,16 +191,16 @@ class ExtractionResult:
     """Contains extraction results for a single file."""
 
     filepath: str
-    entities: List[Entity] = field(default_factory=list)
-    errors: List[str] = field(default_factory=list)
-    imports: Set[str] = field(default_factory=set)
+    entities: list[Entity] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
+    imports: set[str] = field(default_factory=set)
 
 
 class CodeValidator:
     """Validates Python code before writing to files."""
 
     @staticmethod
-    def validate_python_code(source: str) -> Tuple[bool, Optional[str]]:
+    def validate_python_code(source: str) -> tuple[bool, Optional[str]]:
         """Validate Python source code.
 
         Args:
@@ -265,7 +265,7 @@ class CodeValidator:
             return (False, f"Validation error: {e}")
 
     @staticmethod
-    def _find_undefined_names(tree: ast.AST) -> Set[str]:
+    def _find_undefined_names(tree: ast.AST) -> set[str]:
         """Find potentially undefined names in AST.
 
         Args:
@@ -395,7 +395,7 @@ class ImportAnalyzer:
     """Analyzes and manages Python imports."""
 
     @staticmethod
-    def extract_imports_from_source(source: str) -> Set[str]:
+    def extract_imports_from_source(source: str) -> set[str]:
         """Extract import statements from source code.
 
         Args:
@@ -404,7 +404,7 @@ class ImportAnalyzer:
         Returns:
             Set of import statements found in the source
         """
-        imports: Set[str] = set()
+        imports: set[str] = set()
         try:
             tree = ast.parse(source)
             for node in ast.walk(tree):
@@ -422,7 +422,7 @@ class ImportAnalyzer:
         return imports
 
     @staticmethod
-    def detect_needed_imports(source: str) -> Set[str]:
+    def detect_needed_imports(source: str) -> set[str]:
         """Detect imports needed based on symbols used in the code.
 
         Args:
@@ -431,7 +431,7 @@ class ImportAnalyzer:
         Returns:
             Set of import statements that might be needed
         """
-        needed: Set[str] = set()
+        needed: set[str] = set()
         for module, symbols in COMMON_IMPORTS.items():
             for symbol in symbols:
                 if re.search(f"\\b{re.escape(symbol)}\\b", source):
@@ -456,7 +456,7 @@ class ImportAnalyzer:
         return needed
 
     @staticmethod
-    def consolidate_imports(existing: Set[str], needed: Set[str]) -> List[str]:
+    def consolidate_imports(existing: set[str], needed: set[str]) -> list[str]:
         """Organize and deduplicate imports.
 
         Args:
@@ -467,10 +467,10 @@ class ImportAnalyzer:
             List of organized import statements
         """
         all_imports = existing | needed
-        organized: List[str] = []
-        stdlib_imports: List[str] = []
-        thirdparty_imports: List[str] = []
-        local_imports: List[str] = []
+        organized: list[str] = []
+        stdlib_imports: list[str] = []
+        thirdparty_imports: list[str] = []
+        local_imports: list[str] = []
 
         for imp in sorted(all_imports):
             if imp.startswith(("from .", "import .")):
@@ -507,7 +507,7 @@ class ImportAnalyzer:
 class EntityVisitor(ast.NodeVisitor):
     """Visits AST nodes to extract code entities."""
 
-    def __init__(self, source_lines: List[str], filepath: str):
+    def __init__(self, source_lines: list[str], filepath: str):
         """Initialize the entity visitor.
 
         Args:
@@ -516,7 +516,7 @@ class EntityVisitor(ast.NodeVisitor):
         """
         self.source_lines = source_lines
         self.filepath = filepath
-        self.entities: List[Entity] = []
+        self.entities: list[Entity] = []
         self.current_class: Optional[str] = None
 
     def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
@@ -573,7 +573,7 @@ class EntityVisitor(ast.NodeVisitor):
 
     def _process_function(
         self,
-        node: Union[ast.FunctionDef, ast.AsyncFunctionDef],
+        node: ast.FunctionDef | ast.AsyncFunctionDef,
         is_async: bool = False,
         in_class: bool = False,
     ) -> None:
@@ -693,7 +693,7 @@ def extract_from_file(filepath: Path) -> ExtractionResult:
 
 def extract_from_archive(
     archive_path: Path, archive_type: str
-) -> List[Tuple[str, str]]:
+) -> list[tuple[str, str]]:
     """Extract Python files from an archive.
 
     Args:
@@ -703,7 +703,7 @@ def extract_from_archive(
     Returns:
         List of tuples (virtual_path, source_code)
     """
-    results: List[Tuple[str, str]] = []
+    results: list[tuple[str, str]] = []
     if archive_type in {".zip", ".whl"}:
         try:
             with zipfile.ZipFile(archive_path, "r") as zf:
@@ -791,13 +791,13 @@ def process_file_worker(filepath: Path) -> ExtractionResult:
     return extract_from_file(filepath)
 
 
-def process_archive_member_worker(args: Tuple[str, str]) -> ExtractionResult:
+def process_archive_member_worker(args: tuple[str, str]) -> ExtractionResult:
     """Worker function for processing archive members in parallel."""
     virtual_path, source = args
     return extract_from_archive_member(virtual_path, source)
 
 
-def scan_directory(directory: str) -> Tuple[List[Path], List[Tuple[str, str]]]:
+def scan_directory(directory: str) -> tuple[list[Path], list[tuple[str, str]]]:
     """Scan a directory for Python files and archives.
 
     Args:
@@ -807,8 +807,8 @@ def scan_directory(directory: str) -> Tuple[List[Path], List[Tuple[str, str]]]:
         Tuple of (python_files, archive_members)
     """
     base_dir = Path(directory).resolve()
-    python_files: List[Path] = []
-    archive_members: List[Tuple[str, str]] = []
+    python_files: list[Path] = []
+    archive_members: list[tuple[str, str]] = []
 
     for root, dirs, files in os.walk(base_dir):
         dirs[:] = [d for d in dirs if d not in SKIP_DIRS]
@@ -866,7 +866,7 @@ def write_entity(output_dir: Path, entity: Entity) -> Optional[Path]:
     needed_imports = ImportAnalyzer.detect_needed_imports(entity.source)
     imports = ImportAnalyzer.consolidate_imports(existing_imports, needed_imports)
 
-    lines: List[str] = []
+    lines: list[str] = []
     lines.append(f"# Extracted from: {entity.source_file}:{entity.line_number}\n")
     if imports:
         lines.extend([imp + "\n" for imp in imports])
@@ -892,7 +892,7 @@ def write_entity(output_dir: Path, entity: Entity) -> Optional[Path]:
         return None
 
 
-def write_imports_file(output_dir: Path, all_imports: Set[str]) -> None:
+def write_imports_file(output_dir: Path, all_imports: set[str]) -> None:
     """Write aggregated imports to a file.
 
     Args:
@@ -957,13 +957,13 @@ def main() -> int:
         f"Found {len(python_files):,} Python files and {len(archive_members):,} archive members\n"
     )
 
-    all_entities: List[Entity] = []
-    all_imports: Set[str] = set()
-    entity_count: Dict[str, int] = {"function": 0, "class": 0, "constant": 0}
+    all_entities: list[Entity] = []
+    all_imports: set[str] = set()
+    entity_count: dict[str, int] = {"function": 0, "class": 0, "constant": 0}
     error_count = 0
 
     with ProcessPoolExecutor(max_workers=args.workers) as executor:
-        futures: Dict = {
+        futures: dict = {
             executor.submit(process_file_worker, fpath): ("file", str(fpath))
             for fpath in python_files
         }

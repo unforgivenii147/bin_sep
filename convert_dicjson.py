@@ -1,8 +1,8 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 import json
 import multiprocessing as mp
-from pathlib import Path
 from collections import defaultdict
+from pathlib import Path
 
 
 def process_file(json_file):

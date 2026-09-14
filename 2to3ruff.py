@@ -9,7 +9,7 @@ from pathlib import Path
 from dh import get_files, mpf3
 
 
-def fix_print_statements_manually(content):
+def fix_print_statements_manually(content: str):
     lines = content.split("\n")
     new_lines = []
     for line in lines:
@@ -32,7 +32,7 @@ def fix_print_statements_manually(content):
     return "\n".join(new_lines)
 
 
-def is_in_string(line, text):
+def is_in_string(line: str, text: str) -> bool:
     in_string = False
     quote_char = None
     for i, char in enumerate(line):
@@ -48,7 +48,7 @@ def is_in_string(line, text):
     return False
 
 
-def process_file(path):
+def process_file(path: str | Path) -> bool:
     path = Path(path)
     try:
         with open(path, encoding="utf-8") as f:
@@ -77,7 +77,7 @@ def process_file(path):
         return False
 
 
-def main():
+def main() -> None:
     cwd = Path.cwd()
     args = sys.argv[1:]
     files = []

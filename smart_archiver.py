@@ -26,7 +26,7 @@ import lz4.frame
 import zstandard as zstd
 from loguru import logger
 
-EXTENSION_MAP: Dict[str, Dict[str, Union[str, int]]] = {
+EXTENSION_MAP: dict[str, dict[str, str | int]] = {
     ".txt": {"algo": "brotli", "level": 11},
     ".log": {"algo": "brotli", "level": 11},
     ".csv": {"algo": "brotli", "level": 11},
@@ -87,7 +87,7 @@ EXTENSION_MAP: Dict[str, Dict[str, Union[str, int]]] = {
     ".tar": {"algo": "zstd", "level": 19},
 }
 
-DEFAULT_SETTINGS: Dict[str, Dict[str, Union[str, int]]] = {
+DEFAULT_SETTINGS: dict[str, dict[str, str | int]] = {
     "small_text": {"algo": "brotli", "level": 11},
     "large_text": {"algo": "zstd", "level": 19},
     "small_binary": {"algo": "zstd", "level": 19},
@@ -137,7 +137,7 @@ def compress_brotli_streaming(
         Compressed bytes
     """
     compressor = brotli.Compressor(quality=level)
-    result_parts: List[bytes] = []
+    result_parts: list[bytes] = []
     for i in range(0, len(data), chunk_size):
         chunk = data[i : i + chunk_size]
         result_parts.append(compressor.process(chunk))
@@ -247,7 +247,7 @@ def is_already_compressed(data: bytes, sample_size: int = 4096) -> bool:
     if len(data) < 4:
         return False
 
-    magic_bytes: List[Tuple[bytes, str]] = [
+    magic_bytes: list[tuple[bytes, str]] = [
         (b"\x1f\x8b", "gzip"),
         (b"BZh", "bzip2"),
         (b"\xfd7zXZ", "xz"),
@@ -263,10 +263,10 @@ def is_already_compressed(data: bytes, sample_size: int = 4096) -> bool:
 
 
 def choose_algorithm(
-    file_path: Union[str, Path],
+    file_path: str | Path,
     data: Optional[bytes] = None,
     file_size: Optional[int] = None,
-) -> Dict[str, Union[str, int]]:
+) -> dict[str, str | int]:
     """Choose optimal compression algorithm for a file.
 
     Args:
@@ -310,11 +310,11 @@ def choose_algorithm(
 
 
 def compress_single_file(
-    file_path: Union[str, Path],
-    output_path: Optional[Union[str, Path]] = None,
+    file_path: str | Path,
+    output_path: Optional[str | Path] = None,
     remove_original: bool = False,
     verbose: bool = False,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Compress a single file.
 
     Args:
@@ -381,12 +381,12 @@ def compress_single_file(
 
 
 def compress_multiple_files(
-    file_paths: List[Union[str, Path]],
-    output_dir: Optional[Union[str, Path]] = None,
+    file_paths: list[str | Path],
+    output_dir: Optional[str | Path] = None,
     max_workers: Optional[int] = None,
     remove_original: bool = False,
     verbose: bool = False,
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """Compress multiple files in parallel.
 
     Args:
@@ -405,10 +405,10 @@ def compress_multiple_files(
     if output_dir:
         Path(output_dir).mkdir(parents=True, exist_ok=True)
 
-    results: List[Dict[str, Any]] = []
+    results: list[dict[str, Any]] = []
 
     with ProcessPoolExecutor(max_workers=max_workers) as executor:
-        futures: Dict[Any, Union[str, Path]] = {}
+        futures: dict[Any, str | Path] = {}
         for file_path in file_paths:
             output_path = (
                 Path(output_dir) / (Path(file_path).name + ".compressed")
@@ -431,13 +431,13 @@ def compress_multiple_files(
 
 
 def create_tar_archive(
-    source_dir: Union[str, Path],
-    output_path: Optional[Union[str, Path]] = None,
+    source_dir: str | Path,
+    output_path: Optional[str | Path] = None,
     compression: str = "auto",
     level: Optional[int] = None,
     parallel: bool = False,
     max_workers: Optional[int] = None,
-) -> Tuple[Path, Dict[str, Any]]:
+) -> tuple[Path, dict[str, Any]]:
     """Create a compressed tar archive.
 
     Args:
@@ -542,10 +542,10 @@ def create_tar_archive(
 
 
 def decompress_file(
-    compressed_path: Union[str, Path],
-    output_dir: Optional[Union[str, Path]] = None,
+    compressed_path: str | Path,
+    output_dir: Optional[str | Path] = None,
     verbose: bool = False,
-) -> Union[Path, str]:
+) -> Path | str:
     """Decompress a file.
 
     Args:
@@ -699,7 +699,7 @@ Examples:
         sys.exit(1)
 
     if args.command == "compress":
-        files: List[Path] = []
+        files: list[Path] = []
         for pattern in args.files:
             files.extend(Path().glob(pattern))
 

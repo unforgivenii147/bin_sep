@@ -118,8 +118,8 @@ class DocstringRemover(ast.NodeTransformer):
         return node
 
     def _process_function_like(
-        self, node: Union[ast.FunctionDef, ast.AsyncFunctionDef]
-    ) -> Union[ast.FunctionDef, ast.AsyncFunctionDef]:
+        self, node: ast.FunctionDef | ast.AsyncFunctionDef
+    ) -> ast.FunctionDef | ast.AsyncFunctionDef:
         """Process a function-like node by stripping its docstring.
 
         Args:
@@ -197,7 +197,7 @@ def validate_python_code(code: str) -> bool:
         return False
 
 
-def process_file(file_path: Path) -> Tuple[Path, bool, Optional[str]]:
+def process_file(file_path: Path) -> tuple[Path, bool, Optional[str]]:
     """Process a single Python file, removing docstrings in place.
 
     Args:

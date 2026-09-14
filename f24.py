@@ -22,7 +22,7 @@ NOW: Final[float] = time.time()
 EXCLUDE_DIRS: Final[frozenset[str]] = frozenset({".git"})
 POOL_WORKERS: Final[int] = 8
 
-PathCTime = Tuple[float, Path]
+PathCTime = tuple[float, Path]
 
 
 def iter_files(root: Path) -> list[Path]:

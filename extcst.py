@@ -33,28 +33,28 @@ class Entity:
     line_end: int
     docstring: str = ""
     parent: str = ""
-    imports: List[str] = field(default_factory=list)
-    decorators: List[str] = field(default_factory=list)
+    imports: list[str] = field(default_factory=list)
+    decorators: list[str] = field(default_factory=list)
 
 
 class EntityExtractor(cst.CSTTransformer):
     """CST transformer that collects functions, classes, and module-level constants."""
 
-    def __init__(self, file_path: str, source_lines: List[str]) -> None:
+    def __init__(self, file_path: str, source_lines: list[str]) -> None:
         """Initialize the extractor with the source file path and its lines."""
         self.file_path: str = file_path
-        self.source_lines: List[str] = source_lines
-        self.entities: List[Entity] = []
+        self.source_lines: list[str] = source_lines
+        self.entities: list[Entity] = []
         self.current_class: str = ""
-        self.module_imports: List[str] = []
-        self.constants: Set[str] = set()
+        self.module_imports: list[str] = []
+        self.constants: set[str] = set()
         self.wrapper: Optional[MetadataWrapper] = None
 
     def set_wrapper(self, wrapper: MetadataWrapper) -> None:
         """Attach a MetadataWrapper so that positions can be resolved."""
         self.wrapper = wrapper
 
-    def _get_node_position(self, node: cst.CSTNode) -> Tuple[int, int]:
+    def _get_node_position(self, node: cst.CSTNode) -> tuple[int, int]:
         """Return the (start_line, end_line) of a node, or (0, 0) on failure."""
         if self.wrapper is None:
             return (0, 0)
@@ -97,7 +97,7 @@ class EntityExtractor(cst.CSTTransformer):
         start_line, end_line = self._get_node_position(original_node)
         source_code = self._get_source_code(original_node, start_line, end_line)
         docstring = self._extract_docstring(original_node)
-        decorators: List[str] = []
+        decorators: list[str] = []
         if original_node.decorators:
             for decorator in original_node.decorators:
                 decorators.append(
@@ -130,7 +130,7 @@ class EntityExtractor(cst.CSTTransformer):
         start_line, end_line = self._get_node_position(original_node)
         source_code = self._get_source_code(original_node, start_line, end_line)
         docstring = self._extract_docstring(original_node)
-        decorators: List[str] = []
+        decorators: list[str] = []
         if original_node.decorators:
             for decorator in original_node.decorators:
                 decorators.append(
@@ -220,20 +220,20 @@ def sanitize_filename(name: str) -> str:
     return name
 
 
-def process_file(args: Tuple[Path, Path]) -> Dict[str, int]:
+def process_file(args: tuple[Path, Path]) -> dict[str, int]:
     """Extract entities from a single Python file and write them to disk."""
     file_path, output_dir = args
     try:
         with open(file_path, "r", encoding="utf-8") as f:
             content: str = f.read()
-        source_lines: List[str] = content.splitlines(keepends=True)
+        source_lines: list[str] = content.splitlines(keepends=True)
         module = cst.parse_module(content)
         wrapper = MetadataWrapper(module)
         extractor = EntityExtractor(str(file_path), source_lines)
         extractor.set_wrapper(wrapper)
         wrapper.visit(extractor)
 
-        entities_by_type: Dict[str, List[Entity]] = {
+        entities_by_type: dict[str, list[Entity]] = {
             "function": [],
             "class": [],
             "constant": [],
@@ -242,7 +242,7 @@ def process_file(args: Tuple[Path, Path]) -> Dict[str, int]:
             if entity.type in entities_by_type:
                 entities_by_type[entity.type].append(entity)
 
-        stats: Dict[str, int] = {}
+        stats: dict[str, int] = {}
         for entity_type, entities in entities_by_type.items():
             if not entities:
                 continue
@@ -308,9 +308,9 @@ def process_file(args: Tuple[Path, Path]) -> Dict[str, int]:
         return {}
 
 
-def get_py_files(paths: List[Path]) -> List[Path]:
+def get_py_files(paths: list[Path]) -> list[Path]:
     """Return a sorted list of all .py files contained in the given paths."""
-    py_files: List[Path] = []
+    py_files: list[Path] = []
     for path in paths:
         if path.is_file() and path.suffix == ".py":
             py_files.append(path)
@@ -319,7 +319,7 @@ def get_py_files(paths: List[Path]) -> List[Path]:
     return sorted(py_files)
 
 
-def process_entity_extraction(input_paths: List[Path], output_base: Path) -> None:
+def process_entity_extraction(input_paths: list[Path], output_base: Path) -> None:
     """Run entity extraction across all discovered Python files."""
     py_files = get_py_files(input_paths)
     if not py_files:
@@ -328,8 +328,8 @@ def process_entity_extraction(input_paths: List[Path], output_base: Path) -> Non
     logger.info(f"Found {len(py_files)} Python files to process")
     output_base.mkdir(parents=True, exist_ok=True)
 
-    total_stats: Dict[str, int] = {}
-    tasks: List[Tuple[Path, Path]] = [(p, output_base) for p in py_files]
+    total_stats: dict[str, int] = {}
+    tasks: list[tuple[Path, Path]] = [(p, output_base) for p in py_files]
 
     with Pool(processes=WORKER_COUNT) as pool:
         async_results = [
@@ -356,7 +356,7 @@ def process_entity_extraction(input_paths: List[Path], output_base: Path) -> Non
     logger.info("=" * 40)
 
 
-def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
+def parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
     """Parse command-line arguments."""
     parser = argparse.ArgumentParser(
         description="Extract entities (functions, classes, constants) from Python files."
@@ -375,7 +375,7 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
-def main(argv: Optional[List[str]] = None) -> int:
+def main(argv: Optional[list[str]] = None) -> int:
     """Entry point: parse arguments and run entity extraction."""
     args = parse_args(argv)
 
@@ -384,7 +384,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     else:
         input_paths = [Path.cwd()]
 
-    valid_paths: List[Path] = []
+    valid_paths: list[Path] = []
     for path in input_paths:
         if path.exists():
             valid_paths.append(path)

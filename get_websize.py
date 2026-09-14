@@ -6,8 +6,8 @@ Works well for documentation sites (docs.astral.sh, readthedocs.io, etc.)
 
 import argparse
 import sys
-from urllib.parse import urljoin, urlparse
 from collections import defaultdict
+from urllib.parse import urljoin, urlparse
 
 import requests
 from bs4 import BeautifulSoup

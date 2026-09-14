@@ -42,12 +42,12 @@ try:
 except ImportError:
     _HAS_BROTLI = False
 
-SUPPORTED_FORMATS: Set[str] = {"ttf", "otf", "woff", "woff2"}
-SFNT_VERSIONS: Dict[str, Union[int, str]] = {
+SUPPORTED_FORMATS: set[str] = {"ttf", "otf", "woff", "woff2"}
+SFNT_VERSIONS: dict[str, int | str] = {
     "ttf": 0x00010000,
     "otf": "OTTO",
 }
-FLAVORS: Dict[str, str] = {
+FLAVORS: dict[str, str] = {
     "woff": "woff",
     "woff2": "woff2",
 }
@@ -79,9 +79,9 @@ def convert_font(
     remove_original: bool,
     output_dir: Optional[Path],
     force: bool,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Convert a single font file to the requested format and return a stats dict."""
-    stats: Dict[str, Any] = {
+    stats: dict[str, Any] = {
         "input": str(input_path),
         "output": None,
         "input_format": None,
@@ -148,9 +148,9 @@ def convert_font(
     return stats
 
 
-def find_font_files(paths: List[Path]) -> List[Path]:
+def find_font_files(paths: list[Path]) -> list[Path]:
     """Recursively discover supported font files from the given paths, deduplicated."""
-    files: List[Path] = []
+    files: list[Path] = []
     for path in paths:
         if path.is_file():
             if detect_format(path):
@@ -163,8 +163,8 @@ def find_font_files(paths: List[Path]) -> List[Path]:
                 files.extend(path.rglob(f"*.{ext.upper()}"))
         else:
             logger.warning("path not found: {}", path)
-    seen: Set[Path] = set()
-    unique: List[Path] = []
+    seen: set[Path] = set()
+    unique: list[Path] = []
     for f in files:
         r = f.resolve()
         if r not in seen:
@@ -173,7 +173,7 @@ def find_font_files(paths: List[Path]) -> List[Path]:
     return unique
 
 
-def print_file_stats(stats: Dict[str, Any]) -> None:
+def print_file_stats(stats: dict[str, Any]) -> None:
     """Log per-file conversion statistics."""
     name = Path(stats["input"]).name
     status = "✓" if stats["success"] else "✗"
@@ -199,7 +199,7 @@ def print_file_stats(stats: Dict[str, Any]) -> None:
         logger.error("  {} {} — ERROR: {}", status, name, stats["error"])
 
 
-def print_summary(all_stats: List[Dict[str, Any]]) -> None:
+def print_summary(all_stats: list[dict[str, Any]]) -> None:
     """Log an aggregate summary of all conversions."""
     total = len(all_stats)
     ok = sum(1 for s in all_stats if s["success"])
@@ -303,14 +303,14 @@ def main() -> None:
         sys.stderr.write("WOFF2 output requires brotli.\n  pip install brotli\n")
         sys.exit(1)
 
-    input_paths: List[Path] = args.inputs if args.inputs else [Path.cwd()]
+    input_paths: list[Path] = args.inputs if args.inputs else [Path.cwd()]
     font_files = find_font_files(input_paths)
     if not font_files:
         logger.info("No font files found.")
         sys.exit(0)
 
-    to_convert: List[Path] = []
-    already_target: List[Path] = []
+    to_convert: list[Path] = []
+    already_target: list[Path] = []
     for f in font_files:
         if detect_format(f) == args.output_format:
             already_target.append(f)
@@ -340,7 +340,7 @@ def main() -> None:
             logger.info("  {}  →  {}", f, out)
         sys.exit(0)
 
-    all_stats: List[Dict[str, Any]] = []
+    all_stats: list[dict[str, Any]] = []
 
     if len(to_convert) == 1:
         all_stats.append(
@@ -372,7 +372,7 @@ def main() -> None:
             ]
             try:
                 for ar in async_results:
-                    stats: Dict[str, Any] = ar.get()
+                    stats: dict[str, Any] = ar.get()
                     all_stats.append(stats)
                     print_file_stats(stats)
             except KeyboardInterrupt:

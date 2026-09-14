@@ -158,7 +158,7 @@ def save_processed_image(img: ImageType, img_path: Path) -> None:
         raise ValueError("Unsupported image format")
 
 
-def process_single_image(image_path: Path) -> Dict[str, Any]:
+def process_single_image(image_path: Path) -> dict[str, Any]:
     """
     Preprocess an image, overwrite it, and write a .txt sidecar with OCR text.
 
@@ -168,7 +168,7 @@ def process_single_image(image_path: Path) -> Dict[str, Any]:
     Returns:
         A result dictionary with keys: path, success, error, size_before, size_after.
     """
-    result: Dict[str, Any] = {
+    result: dict[str, Any] = {
         "path": str(image_path),
         "success": False,
         "error": None,
@@ -192,14 +192,14 @@ def process_single_image(image_path: Path) -> Dict[str, Any]:
     return result
 
 
-def get_image_files() -> List[Path]:
+def get_image_files() -> list[Path]:
     """
     Collect all supported image files under BASE_DIR recursively.
 
     Returns:
         A list of image file paths.
     """
-    image_files: List[Path] = []
+    image_files: list[Path] = []
     for path in BASE_DIR.rglob("*"):
         if path.is_file() and not should_skip(path):
             image_files.append(path)

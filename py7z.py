@@ -25,7 +25,7 @@ from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 import pylzma
 from loguru import logger
 
-_COMPRESS_OPTS: Dict[str, int] = {
+_COMPRESS_OPTS: dict[str, int] = {
     "dictionary": 27,
     "fastBytes": 273,
     "algorithm": 2,
@@ -165,9 +165,9 @@ def _decompress(src: Path, keep: bool) -> str:
         return f"Error decompressing {src}: {e}"
 
 
-def _collect_targets(paths: Sequence[str], mode: str) -> List[Path]:
+def _collect_targets(paths: Sequence[str], mode: str) -> list[Path]:
     """Collect unique target paths to process based on mode."""
-    targets: List[Path] = []
+    targets: list[Path] = []
     cwd = Path.cwd()
     if mode == "compress":
         if not paths:
@@ -208,7 +208,7 @@ def _collect_targets(paths: Sequence[str], mode: str) -> List[Path]:
                         if child.is_file() and child.name.endswith(".7z"):
                             targets.append(child.resolve())
     seen: set[Path] = set()
-    out: List[Path] = []
+    out: list[Path] = []
     for t in targets:
         if t not in seen:
             seen.add(t)
@@ -216,12 +216,12 @@ def _collect_targets(paths: Sequence[str], mode: str) -> List[Path]:
     return out
 
 
-def _compress_star(args: Tuple[Path, bool]) -> str:
+def _compress_star(args: tuple[Path, bool]) -> str:
     """Wrapper for Pool.apply_async using star-args for _compress."""
     return _compress(*args)
 
 
-def _decompress_star(args: Tuple[Path, bool]) -> str:
+def _decompress_star(args: tuple[Path, bool]) -> str:
     """Wrapper for Pool.apply_async using star-args for _decompress."""
     return _decompress(*args)
 
@@ -268,13 +268,13 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     total_original = sum(gsz(t) for t in targets)
 
     worker_func = _decompress_star if mode == "decompress" else _compress_star
-    payloads: Iterable[Tuple[Path, bool]] = ((t, bool(args.keep)) for t in targets)
+    payloads: Iterable[tuple[Path, bool]] = ((t, bool(args.keep)) for t in targets)
 
     with Pool(processes=_POOL_SIZE) as pool:
-        async_results: List[Any] = [
+        async_results: list[Any] = [
             pool.apply_async(worker_func, (payload,)) for payload in payloads
         ]
-        results: List[str] = [r.get() for r in async_results]
+        results: list[str] = [r.get() for r in async_results]
 
     for res in results:
         logger.info(res)

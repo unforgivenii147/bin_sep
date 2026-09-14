@@ -3,15 +3,12 @@ from __future__ import annotations
 
 import argparse
 import logging
-from multiprocessing import Pool, cpu_count
+from multiprocessing import Pool
 from pathlib import Path
 
-from dh import BIN_EXT, TXT_EXT
+from dh import is_binary,get_nobinary
 
-logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
-logger = logging.getLogger(__name__)
-CHUNK_SIZE = 8192
-BINARY_EXTENSIONS = BIN_EXT
+CHUNK_SIZE = 32768
 SKIP_DIRS = {
     ".git",
     "__pycache__",
@@ -21,39 +18,12 @@ SKIP_DIRS = {
     ".egg-info",
     ".idea",
 }
-TEXT_EXTENSIONS = TXT_EXT
 
 
 def should_skip_dir(directory: Path) -> bool:
     return directory.name in SKIP_DIRS
 
 
-def is_text_file(file_path: Path) -> bool:
-    if file_path.suffix.lower() in BINARY_EXTENSIONS:
-        return False
-    if file_path.suffix.lower() in TEXT_EXTENSIONS:
-        return True
-    name_lower = file_path.name.lower()
-    if name_lower in {
-        "makefile",
-        "dockerfile",
-        "dockerfile.prod",
-        "dockerfile.dev",
-        "gemfile",
-        "rakefile",
-    }:
-        return True
-    try:
-        with open(file_path, "rb") as f:
-            chunk = f.read(8192)
-            if not chunk:
-                return True
-            if b"\x00" in chunk:
-                return False
-            text_characters = bytearray({7, 8, 9, 10, 12, 13, 27} | set(range(32, 256)))
-            return all(byte in text_characters for byte in chunk)
-    except OSError:
-        return False
 
 
 def convert_dos_to_unix_chunk(chunk: bytes) -> bytes:
@@ -64,22 +34,12 @@ def convert_file(file_path: Path) -> tuple[str, bool, str]:
     try:
         if not file_path.is_file():
             return (str(file_path), False, "Not a file")
-        if not is_text_file(file_path):
+        if is_binary(file_path):
             return (str(file_path), False, "Binary file (skipped)")
         converted = False
-        temp_data = bytearray()
+        temp_data = bytes()
         try:
             with open(file_path, "rb") as f:
-                while True:
-                    chunk = f.read(CHUNK_SIZE)
-                    if not chunk:
-                        break
-                    converted_chunk = convert_dos_to_unix_chunk(chunk)
-                    if converted_chunk != chunk:
-                        converted = True
-                    temp_data.extend(converted_chunk)
-            if converted:
-                with open(file_path, "wb") as f:
                     f.write(temp_data)
                 return (str(file_path), True, "Converted")
             else:

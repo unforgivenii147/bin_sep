@@ -27,7 +27,7 @@ IMPORT_RE: re.Pattern[str] = re.compile(
     re.VERBOSE,
 )
 
-USAGE_PATTERNS: List[Tuple[re.Pattern[str], str, bool, bool]] = [
+USAGE_PATTERNS: list[tuple[re.Pattern[str], str, bool, bool]] = [
     (
         re.compile(r"pkg_resources\.get_distribution\(\s*([^)]+?)\s*\)\.version"),
         r"importlib.metadata.version(\1)",
@@ -121,7 +121,7 @@ class FileReport:
     """Aggregated scan results for a single Python file."""
 
     path: Path
-    findings: List[Finding] = field(default_factory=list)
+    findings: list[Finding] = field(default_factory=list)
     needs_metadata: bool = False
     needs_resources: bool = False
     has_pkg_resources_import: bool = False
@@ -209,7 +209,7 @@ def scan_file(path: Path) -> FileReport:
     return report
 
 
-def autofix_file(path: Path) -> Tuple[bool, List[str]]:
+def autofix_file(path: Path) -> tuple[bool, list[str]]:
     """Apply mechanical ``pkg_resources`` replacements to a single file."""
     try:
         text = path.read_text(encoding="utf-8")
@@ -217,7 +217,7 @@ def autofix_file(path: Path) -> Tuple[bool, List[str]]:
         return False, [f"cannot read {path}"]
 
     original = text
-    notes: List[str] = []
+    notes: list[str] = []
     needs_metadata = False
     needs_resources = False
 
@@ -230,7 +230,7 @@ def autofix_file(path: Path) -> Tuple[bool, List[str]]:
             text = new_text
 
     lines = text.splitlines(keepends=True)
-    new_lines: List[str] = []
+    new_lines: list[str] = []
     removed_import = False
     skipped_alias = False
 
@@ -253,7 +253,7 @@ def autofix_file(path: Path) -> Tuple[bool, List[str]]:
     text = "".join(new_lines)
 
     if removed_import or needs_metadata or needs_resources:
-        insertion_lines: List[str] = []
+        insertion_lines: list[str] = []
         if needs_metadata:
             insertion_lines.append("import importlib.metadata\n")
         if needs_resources:
@@ -303,7 +303,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     args = parser.parse_args(argv)
 
     root = Path.cwd()
-    files: List[Path] = list(iter_python_files(root))
+    files: list[Path] = list(iter_python_files(root))
     if not files:
         logger.info("no .py files found")
         return 0
@@ -311,7 +311,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     total_findings = 0
     files_with_findings = 0
     autofixed_files = 0
-    reports: List[FileReport] = []
+    reports: list[FileReport] = []
 
     with Pool(processes=POOL_SIZE) as pool:
         async_results = [pool.apply_async(scan_file, (p,)) for p in files]
@@ -345,7 +345,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     if args.autofix:
         logger.info("--autofix enabled--")
         with Pool(processes=POOL_SIZE) as pool:
-            targets: List[Path] = [r.path for r in reports if r.has_findings]
+            targets: list[Path] = [r.path for r in reports if r.has_findings]
             async_results = [pool.apply_async(autofix_file, (p,)) for p in targets]
             for p, ar in zip(targets, async_results):
                 try:

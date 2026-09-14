@@ -23,8 +23,8 @@ produces `script.py` in the current directory (or `script_1.py`,
 heredocs).
 """
 
-import sys
 import re
+import sys
 from pathlib import Path
 
 # Matches lines like:

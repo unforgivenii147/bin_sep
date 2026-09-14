@@ -88,7 +88,7 @@ class Downloader:
     filename: Optional[str]
     expected_hash: Optional[str]
     state_file: Optional[Path]
-    progress_data: Dict[str, Any]
+    progress_data: dict[str, Any]
     lock: threading.Lock
 
     def __init__(
@@ -176,7 +176,7 @@ class Downloader:
         if self.state_file is not None and self.state_file.exists():
             try:
                 with self.state_file.open(encoding="utf-8") as f:
-                    loaded: Dict[str, Any] = json.load(f)
+                    loaded: dict[str, Any] = json.load(f)
                 self.progress_data = loaded
             except (OSError, json.JSONDecodeError) as exc:
                 logger.warning(f"Could not load state file: {exc}")
@@ -212,7 +212,7 @@ class Downloader:
         if self.stop_event.is_set():
             return
 
-        headers: Dict[str, str] = {"Range": f"bytes={start}-{end}"}
+        headers: dict[str, str] = {"Range": f"bytes={start}-{end}"}
         try:
             with requests.get(
                 self.url, headers=headers, stream=True, timeout=HTTP_TIMEOUT
@@ -256,14 +256,14 @@ class Downloader:
             with Path(self.filename).open("wb") as f:
                 f.truncate(self.file_size)
 
-        chunks: List[Tuple[int, int]] = [
+        chunks: list[tuple[int, int]] = [
             (i, min(i + RANGE_CHUNK_SIZE - 1, self.file_size - 1))
             for i in range(0, self.file_size, RANGE_CHUNK_SIZE)
         ]
         self.progress_data["total_chunks"] = len(chunks)
 
-        downloaded: List[int] = list(self.progress_data.get("downloaded_chunks", []))
-        pending_chunks: List[Tuple[int, int, int]] = [
+        downloaded: list[int] = list(self.progress_data.get("downloaded_chunks", []))
+        pending_chunks: list[tuple[int, int, int]] = [
             (idx, s, e) for idx, (s, e) in enumerate(chunks) if idx not in downloaded
         ]
 
@@ -294,7 +294,7 @@ class Downloader:
             )
 
             pool: Pool = multiprocessing.Pool(processes=MAX_WORKERS)
-            async_results: List[AsyncResult] = []
+            async_results: list[AsyncResult] = []
             try:
                 for cid, s, e in pending_chunks:
                     ar: AsyncResult = pool.apply_async(

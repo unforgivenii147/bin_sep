@@ -11,7 +11,7 @@ from typing import Dict, List, Set
 from loguru import logger
 
 
-def extract_definitions(file_path: Path) -> Dict[str, List[str]]:
+def extract_definitions(file_path: Path) -> dict[str, list[str]]:
     """
     Extract top-level definitions from a Python file.
 
@@ -60,7 +60,7 @@ def extract_definitions(file_path: Path) -> Dict[str, List[str]]:
     return definitions
 
 
-def extract_exports_from_init(init_path: Path) -> Set[str]:
+def extract_exports_from_init(init_path: Path) -> set[str]:
     """
     Extract names exported from __init__.py.
     Handles both __all__ and direct imports.
@@ -110,7 +110,7 @@ def extract_exports_from_init(init_path: Path) -> Set[str]:
     return exported
 
 
-def check_directory(directory: Path = None) -> Dict[str, Dict[str, List[str]]]:
+def check_directory(directory: Path = None) -> dict[str, dict[str, list[str]]]:
     """
     Check all Python files in directory against __init__.py exports.
 

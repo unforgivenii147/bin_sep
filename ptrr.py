@@ -28,7 +28,7 @@ WORKERS: int = 8
 ARCHIVE_SUFFIX: str = ".tar.xz"
 
 
-def find_files(root: Path) -> List[Path]:
+def find_files(root: Path) -> list[Path]:
     """
     Recursively find all regular files under ``root``.
 
@@ -52,7 +52,7 @@ def find_files(root: Path) -> List[Path]:
     if not root.is_dir():
         raise NotADirectoryError(f"Root path is not a directory: {root}")
 
-    files: List[Path] = []
+    files: list[Path] = []
     for dirpath, _dirnames, filenames in os.walk(root):
         base = Path(dirpath)
         for name in filenames:
@@ -65,7 +65,7 @@ def find_files(root: Path) -> List[Path]:
     return files
 
 
-def _read_file(path: Path) -> Tuple[Path, bytes]:
+def _read_file(path: Path) -> tuple[Path, bytes]:
     """
     Read the contents of a file into memory.
 
@@ -89,7 +89,7 @@ def _read_file(path: Path) -> Tuple[Path, bytes]:
     return path, path.read_bytes()
 
 
-def compress_files(files: Iterable[Path]) -> List[Tuple[Path, bytes]]:
+def compress_files(files: Iterable[Path]) -> list[tuple[Path, bytes]]:
     """
     Compress file contents concurrently using a multiprocessing pool.
 
@@ -112,20 +112,20 @@ def compress_files(files: Iterable[Path]) -> List[Tuple[Path, bytes]]:
     Exception
         Any exception raised by a worker is propagated to the caller.
     """
-    file_list: List[Path] = list(files)
+    file_list: list[Path] = list(files)
     if not file_list:
         return []
 
     logger.info(f"Reading {len(file_list)} file(s) with {WORKERS} workers")
     with Pool(processes=WORKERS) as pool:
-        results: List[Tuple[Path, bytes]] = pool.map(_read_file, file_list)
+        results: list[tuple[Path, bytes]] = pool.map(_read_file, file_list)
     return results
 
 
 def build_archive(
     archive_path: Path,
     root: Path,
-    payload: List[Tuple[Path, bytes]],
+    payload: list[tuple[Path, bytes]],
 ) -> None:
     """
     Write a ``tar.xz`` archive containing the given file payload.

@@ -38,7 +38,7 @@ POOL_SIZE: Final[int] = 8
 # ---------------------------------------------------------------------------
 
 
-def load_code_block() -> List[str]:
+def load_code_block() -> list[str]:
     """Read the code block from ~/lic and return its lines (rstripped)."""
     try:
         content = LIC_PATH.read_text(encoding="utf-8")
@@ -51,7 +51,7 @@ def load_code_block() -> List[str]:
 
 def find_block_range(
     lines: list[str], block_lines: list[str]
-) -> Optional[Tuple[int, int]]:
+) -> Optional[tuple[int, int]]:
     """
     Find the range (start, end) of the block in the given lines.
 

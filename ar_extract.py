@@ -64,7 +64,7 @@ class ExtractionStats:
 class ArchiveExtractor:
     """Extract various archive formats using external tools."""
 
-    EXTRACTION_COMMANDS: Dict[str, List[str]] = {
+    EXTRACTION_COMMANDS: dict[str, list[str]] = {
         ".7z": ["7z", "x", "-y", "-o"],
         ".zip": ["unzip", "-o"],
         ".rar": ["unrar", "x", "-y"],
@@ -86,16 +86,16 @@ class ArchiveExtractor:
         ".ace": ["unace", "x"],
     }
 
-    SINGLE_FILE_EXTENSIONS: Set[str] = {".gz", ".bz2", ".xz", ".lz4", ".lzma", ".zst"}
+    SINGLE_FILE_EXTENSIONS: set[str] = {".gz", ".bz2", ".xz", ".lz4", ".lzma", ".zst"}
 
     def __init__(self, current_dir: Path) -> None:
         """Initialize the extractor with the working directory."""
         self.current_dir: Path = current_dir
         self._check_available_tools()
 
-    def _check_available_tools(self) -> Dict[str, bool]:
+    def _check_available_tools(self) -> dict[str, bool]:
         """Check which extraction tools are available on the system."""
-        available: Dict[str, bool] = {}
+        available: dict[str, bool] = {}
         for ext, cmd in self.EXTRACTION_COMMANDS.items():
             tool: str = cmd[0]
             if shutil.which(tool):
@@ -119,16 +119,16 @@ class ArchiveExtractor:
                     timeout=30,
                 )
                 if result.returncode == 0:
-                    lines: List[str] = result.stdout.strip().split("\n")
-                    entries: List[str] = []
+                    lines: list[str] = result.stdout.strip().split("\n")
+                    entries: list[str] = []
                     for line in lines[3:-2]:
-                        parts: List[str] = line.strip().split()
+                        parts: list[str] = line.strip().split()
                         if len(parts) >= 4:
                             entries.append(" ".join(parts[3:]))
                     if entries:
-                        first_parts: Set[str] = set()
+                        first_parts: set[str] = set()
                         for entry in entries:
-                            parts: Tuple[str, ...] = Path(entry).parts
+                            parts: tuple[str, ...] = Path(entry).parts
                             if parts:
                                 first_parts.add(parts[0])
                         return len(first_parts) == 1 and not all(
@@ -150,15 +150,15 @@ class ArchiveExtractor:
                     timeout=30,
                 )
                 if result.returncode == 0:
-                    entries: List[str] = [
+                    entries: list[str] = [
                         line.strip()
                         for line in result.stdout.split("\n")
                         if line.strip()
                     ]
                     if entries:
-                        first_parts: Set[str] = set()
+                        first_parts: set[str] = set()
                         for entry in entries:
-                            parts: Tuple[str, ...] = Path(entry).parts
+                            parts: tuple[str, ...] = Path(entry).parts
                             if parts:
                                 first_parts.add(parts[0])
                         return len(first_parts) == 1 and not all(
@@ -227,7 +227,7 @@ class ArchiveExtractor:
             if needs_subdir:
                 output_dir.mkdir(exist_ok=True)
 
-            cmd: List[str] = list(self.EXTRACTION_COMMANDS[ext])
+            cmd: list[str] = list(self.EXTRACTION_COMMANDS[ext])
             if ext == ".7z":
                 cmd.append(str(archive_path))
                 cmd[-2] = f"-o{output_dir}"
@@ -317,9 +317,9 @@ class ArchiveExtractor:
         return stats
 
 
-def find_archives(directory: Path) -> List[Path]:
+def find_archives(directory: Path) -> list[Path]:
     """Find all supported archive files in the given directory."""
-    archive_extensions: Set[str] = {
+    archive_extensions: set[str] = {
         ".7z",
         ".zip",
         ".rar",
@@ -341,7 +341,7 @@ def find_archives(directory: Path) -> List[Path]:
         ".ace",
     }
 
-    archives: List[Path] = []
+    archives: list[Path] = []
     for item in directory.iterdir():
         if item.is_file():
             name_lower: str = item.name.lower()
@@ -356,7 +356,7 @@ def main() -> int:
     """Main entry point for the script."""
     current_dir: Path = Path.cwd()
     logger.info(f"Scanning for archivesin: {current_dir}")
-    archives: List[Path] = find_archives(current_dir)
+    archives: list[Path] = find_archives(current_dir)
     if not archives:
         logger.info("No archive files found.")
         return 0
@@ -370,11 +370,11 @@ def main() -> int:
     logger.info(f"Processing with {max_workers} parallel worker(s)...")
 
     extractor: ArchiveExtractor = ArchiveExtractor(current_dir)
-    results: List[ExtractionStats] = []
+    results: list[ExtractionStats] = []
     start_time: float = time.time()
 
     with Pool(processes=max_workers) as pool:
-        async_results: List[Tuple[Any, Path]] = []
+        async_results: list[tuple[Any, Path]] = []
         for archive in archives:
             async_result: Any = pool.apply_async(extractor.extract_archive, (archive,))
             async_results.append((async_result, archive))

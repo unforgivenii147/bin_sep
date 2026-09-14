@@ -15,7 +15,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 from lingua import Language, LanguageDetector, LanguageDetectorBuilder
 from loguru import logger
 
-TEXT_EXTENSIONS: Set[str] = {
+TEXT_EXTENSIONS: set[str] = {
     ".txt",
     ".py",
     ".js",
@@ -52,7 +52,7 @@ TEXT_EXTENSIONS: Set[str] = {
     ".env",
 }
 
-SKIP_DIRS: Set[str] = {
+SKIP_DIRS: set[str] = {
     ".git",
     "__pycache__",
     "node_modules",
@@ -79,7 +79,7 @@ def _get_detector() -> LanguageDetector:
     return _DETECTOR
 
 
-def is_english(text: str) -> Tuple[bool, float]:
+def is_english(text: str) -> tuple[bool, float]:
     """Detect whether a short text snippet is English.
 
     Args:
@@ -122,7 +122,7 @@ def _read_file_content(filepath: Path) -> Optional[str]:
     return None
 
 
-def _collect_non_english_lines(lines: List[str]) -> List[Dict[str, Any]]:
+def _collect_non_english_lines(lines: list[str]) -> list[dict[str, Any]]:
     """Return detailed information for each non-English line.
 
     Args:
@@ -131,7 +131,7 @@ def _collect_non_english_lines(lines: List[str]) -> List[Dict[str, Any]]:
     Returns:
         A list of dictionaries with line number, text, confidence, and full text.
     """
-    non_eng_lines: List[Dict[str, Any]] = []
+    non_eng_lines: list[dict[str, Any]] = []
     for idx, line in enumerate(lines, 1):
         if not line.strip():
             continue
@@ -151,7 +151,7 @@ def _collect_non_english_lines(lines: List[str]) -> List[Dict[str, Any]]:
 def analyze_file(
     filepath: Path,
     detailed: bool = False,
-) -> Optional[Dict[str, Any]]:
+) -> Optional[dict[str, Any]]:
     """Analyze a single file for non-English content.
 
     Args:
@@ -176,7 +176,7 @@ def analyze_file(
                 content[:10000]
             )
             confidence = float(confidence_values[0].value) if confidence_values else 0.0
-            result: Dict[str, Any] = {
+            result: dict[str, Any] = {
                 "file": str(filepath),
                 "language": file_result.name.lower(),
                 "confidence": confidence,
@@ -211,8 +211,8 @@ def analyze_file(
 
 
 def _analyze_file_wrapper(
-    args: Tuple[Path, bool],
-) -> Optional[Dict[str, Any]]:
+    args: tuple[Path, bool],
+) -> Optional[dict[str, Any]]:
     """Wrapper for analyze_file to unpack arguments for Pool.apply_async.
 
     Args:
@@ -227,7 +227,7 @@ def _analyze_file_wrapper(
 def scan_files(
     root_dir: Path,
     detailed: bool = False,
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """Recursively scan a directory for non-English text files.
 
     Args:
@@ -237,14 +237,14 @@ def scan_files(
     Returns:
         A list of result dictionaries for files with non-English content.
     """
-    files: List[Path] = []
+    files: list[Path] = []
     for ext in TEXT_EXTENSIONS:
         files.extend(root_dir.rglob(f"*{ext}"))
     files = [f for f in files if not any(part in SKIP_DIRS for part in f.parts)]
 
     print(f"Found {len(files)} text files. Analyzing with {MAX_WORKERS} workers...")
 
-    results: List[Dict[str, Any]] = []
+    results: list[dict[str, Any]] = []
     with Pool(processes=MAX_WORKERS) as pool:
         async_results = [
             pool.apply_async(_analyze_file_wrapper, ((f, detailed),)) for f in files

@@ -1,22 +1,22 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-import sys
-import json
 import hashlib
+import json
 import subprocess
-from pathlib import Path
-import urllib.request
+import sys
 import urllib.error
+import urllib.request
+from pathlib import Path
 
+from rich.console import Console
 from rich.progress import (
-    Progress,
-    TextColumn,
     BarColumn,
     DownloadColumn,
-    TransferSpeedColumn,
-    TimeRemainingColumn,
+    Progress,
+    TextColumn,
     TimeElapsedColumn,
+    TimeRemainingColumn,
+    TransferSpeedColumn,
 )
-from rich.console import Console
 
 console = Console()
 

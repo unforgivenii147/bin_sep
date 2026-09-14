@@ -13,7 +13,7 @@ multiprocessing.Pool.apply_async for parallelism. The script should:
 - Use loguru for all logging output.
 - Use pathlib exclusively for path operations.
 - Include full type annotations and docstrings on all functions and module-level constants.
-- Delete duplicates via Path.unlink() and print a summary including bytes freed.
+- Delete duplicates via Path.unlink() and print(a summary including bytes freed.)
 """
 
 from __future__ import annotations

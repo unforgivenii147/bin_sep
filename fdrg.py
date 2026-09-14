@@ -20,9 +20,9 @@ from loguru import logger
 pause_event: threading.Event = threading.Event()
 pause_event.set()
 
-DEFAULT_EXCLUDED_DIRS: Set[str] = {".git"}
-DEFAULT_SKIPPED_EXTS: Set[str] = {".pyc", ".bak"}
-ARCHIVE_EXTENSIONS: Tuple[str, ...] = (
+DEFAULT_EXCLUDED_DIRS: set[str] = {".git"}
+DEFAULT_SKIPPED_EXTS: set[str] = {".pyc", ".bak"}
+ARCHIVE_EXTENSIONS: tuple[str, ...] = (
     ".tar.gz",
     ".tar",
     ".tar.xz",
@@ -34,7 +34,7 @@ ARCHIVE_EXTENSIONS: Tuple[str, ...] = (
 )
 WORKER_COUNT: int = 8
 
-SearchResult = Tuple[str, Optional[int]]
+SearchResult = tuple[str, Optional[int]]
 
 
 def setup_keyboard_listener() -> bool:
@@ -63,8 +63,8 @@ def setup_keyboard_listener() -> bool:
 
 def is_excluded(
     path: Path,
-    excluded_dirs: Set[str],
-    excluded_patterns: Set[str],
+    excluded_dirs: set[str],
+    excluded_patterns: set[str],
 ) -> bool:
     """Return True if ``path`` lies under an excluded directory or matches an excluded glob."""
     for part in path.parts:
@@ -82,14 +82,14 @@ def search_in_file(
     file_path: Path,
     search_string: str,
     search_content: bool,
-) -> List[SearchResult]:
+) -> list[SearchResult]:
     """Search a single regular file for ``search_string``.
 
     When ``search_content`` is False, only the file name is checked; otherwise
     each line of the file is scanned. Returns a list of ``(path, line_or_None)``.
     """
     pause_event.wait()
-    results: List[SearchResult] = []
+    results: list[SearchResult] = []
     if not search_content:
         if search_string.lower() in file_path.name.lower():
             results.append((str(file_path), None))
@@ -109,14 +109,14 @@ def extract_and_search_archive(
     archive_path: Path,
     search_string: str,
     search_content: bool,
-) -> List[SearchResult]:
+) -> list[SearchResult]:
     """Search inside a zip/whl/apk or tar archive for ``search_string``.
 
     Matches archive member names when ``search_content`` is False, otherwise
     scans the decoded text of each member. Returns a list of
     ``("archive::member", line_or_None)`` tuples.
     """
-    results: List[SearchResult] = []
+    results: list[SearchResult] = []
     try:
         if archive_path.suffix == ".zip" or archive_path.name.endswith(
             (".whl", ".apk")
@@ -165,7 +165,7 @@ def process_file(
     path: Path,
     search_string: str,
     search_content: bool,
-) -> List[SearchResult]:
+) -> list[SearchResult]:
     """Dispatch a single path to either archive or plain-file searching.
 
     Returns the list of matches so results can be aggregated by the caller.
@@ -178,11 +178,11 @@ def process_file(
 
 def collect_files(
     root: Path,
-    excluded_dirs: Set[str],
-    excluded_patterns: Set[str],
-) -> List[Path]:
+    excluded_dirs: set[str],
+    excluded_patterns: set[str],
+) -> list[Path]:
     """Walk ``root`` and return all files that pass exclusion/skip filters."""
-    files: List[Path] = []
+    files: list[Path] = []
     for pth in walk_files(root):
         path = Path(pth)
         if path.is_dir():
@@ -225,10 +225,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     """Entry point: parse args, walk files, and search with a multiprocessing pool."""
     args = parse_args(argv)
 
-    excluded_dirs: Set[str] = DEFAULT_EXCLUDED_DIRS | {
+    excluded_dirs: set[str] = DEFAULT_EXCLUDED_DIRS | {
         e for e in args.exclude if not any(ch in e for ch in "*?[]")
     }
-    excluded_patterns: Set[str] = {
+    excluded_patterns: set[str] = {
         e for e in args.exclude if any(ch in e for ch in "*?[]")
     }
 
@@ -247,7 +247,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     total: int = 0
     pool: Pool = Pool(processes=WORKER_COUNT)
     try:
-        async_results: List[AsyncResult] = [
+        async_results: list[AsyncResult] = [
             pool.apply_async(process_file, (p, args.search_string, args.content))
             for p in files
         ]

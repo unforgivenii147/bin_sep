@@ -25,10 +25,10 @@ from loguru import logger
 POOL_SIZE: int = 8
 DEFAULT_OUTPUT_NAME: str = "repeated_functions.py"
 IMPORT_MODULE_NAME: str = "dh"
-DefinitionKey = Tuple[str, str]
-DefinitionMap = Dict[DefinitionKey, List[str]]
-SourceMap = Dict[DefinitionKey, str]
-RepeatedItem = Dict[str, Any]
+DefinitionKey = tuple[str, str]
+DefinitionMap = dict[DefinitionKey, list[str]]
+SourceMap = dict[DefinitionKey, str]
+RepeatedItem = dict[str, Any]
 
 
 def get_source(node: ast.AST, content: str) -> str:
@@ -43,14 +43,14 @@ def normalize_source(source: str) -> str:
     return "\n".join(line.rstrip() for line in source.strip().splitlines())
 
 
-def analyze_file(file_path: Path) -> Dict[str, Any]:
+def analyze_file(file_path: Path) -> dict[str, Any]:
     """Analyze a single Python file for top-level function definitions.
 
     Returns a dict with ``definitions`` mapping (name, normalized source) to a
     list of file paths, and ``source_map`` mapping the same key to the original
     source text.
     """
-    definitions: DefaultDict[DefinitionKey, List[str]] = defaultdict(list)
+    definitions: defaultdict[DefinitionKey, list[str]] = defaultdict(list)
     source_map: SourceMap = {}
     try:
         content: str = file_path.read_text(encoding="utf-8")
@@ -68,24 +68,24 @@ def analyze_file(file_path: Path) -> Dict[str, Any]:
     return {"definitions": dict(definitions), "source_map": dict(source_map)}
 
 
-def analyze_files(target_dirs: Optional[List[Path]] = None) -> List[RepeatedItem]:
+def analyze_files(target_dirs: Optional[list[Path]] = None) -> list[RepeatedItem]:
     """Find duplicate top-level functions across all Python files in *target_dirs*.
 
     Returns a list of dicts sorted by descending duplicate count, each containing
     ``name``, ``source``, ``count``, and ``files``.
     """
-    resolved_dirs: List[Path] = target_dirs if target_dirs else [Path.cwd()]
-    py_files: List[Path] = []
+    resolved_dirs: list[Path] = target_dirs if target_dirs else [Path.cwd()]
+    py_files: list[Path] = []
     for target_dir in resolved_dirs:
         py_files.extend(target_dir.rglob("*.py"))
     py_files = [f for f in py_files if ".git" not in f.parts]
 
-    definitions: DefaultDict[DefinitionKey, List[str]] = defaultdict(list)
+    definitions: defaultdict[DefinitionKey, list[str]] = defaultdict(list)
     source_map: SourceMap = {}
 
     with Pool(processes=POOL_SIZE) as pool:
         async_results = [pool.apply_async(analyze_file, (f,)) for f in py_files]
-        results: List[Dict[str, Any]] = [r.get() for r in async_results]
+        results: list[dict[str, Any]] = [r.get() for r in async_results]
 
     for result in results:
         result_defs: DefinitionMap = result["definitions"]
@@ -94,9 +94,9 @@ def analyze_files(target_dirs: Optional[List[Path]] = None) -> List[RepeatedItem
             definitions[key].extend(paths)
         source_map.update(result_sources)
 
-    repeated: List[RepeatedItem] = []
+    repeated: list[RepeatedItem] = []
     for key, paths in definitions.items():
-        unique_paths: List[str] = list(set(paths))
+        unique_paths: list[str] = list(set(paths))
         if len(unique_paths) >= 2:
             repeated.append(
                 {
@@ -111,11 +111,11 @@ def analyze_files(target_dirs: Optional[List[Path]] = None) -> List[RepeatedItem
 
 
 def save_dh_module(
-    repeated: List[RepeatedItem],
+    repeated: list[RepeatedItem],
     output_path: Path = Path(DEFAULT_OUTPUT_NAME),
 ) -> None:
     """Write the source of all repeated functions to *output_path*."""
-    lines: List[str] = []
+    lines: list[str] = []
     for item in repeated:
         source: str = item["source"]
         lines.append(source)
@@ -123,7 +123,7 @@ def save_dh_module(
     output_path.write_text("\n".join(lines), encoding="utf-8")
 
 
-def refactor_file(file_path: Path, repeated: List[RepeatedItem]) -> None:
+def refactor_file(file_path: Path, repeated: list[RepeatedItem]) -> None:
     """Remove duplicated functions from *file_path* and add imports for them."""
     try:
         content: str = file_path.read_text(encoding="utf-8")
@@ -131,9 +131,9 @@ def refactor_file(file_path: Path, repeated: List[RepeatedItem]) -> None:
     except Exception:
         return
 
-    imports_to_add: Set[str] = set()
-    lines: List[str] = content.splitlines(keepends=True)
-    nodes_to_remove: List[ast.FunctionDef] = []
+    imports_to_add: set[str] = set()
+    lines: list[str] = content.splitlines(keepends=True)
+    nodes_to_remove: list[ast.FunctionDef] = []
 
     for node in tree.body:
         if isinstance(node, ast.FunctionDef):
@@ -147,7 +147,7 @@ def refactor_file(file_path: Path, repeated: List[RepeatedItem]) -> None:
     if not imports_to_add:
         return
 
-    lines_to_keep: List[str] = []
+    lines_to_keep: list[str] = []
     for i, line in enumerate(lines):
         skip: bool = False
         for node in nodes_to_remove:
@@ -174,12 +174,12 @@ def refactor_file(file_path: Path, repeated: List[RepeatedItem]) -> None:
 
 
 def apply_refactoring(
-    repeated: List[RepeatedItem],
-    target_dirs: Optional[List[Path]] = None,
+    repeated: list[RepeatedItem],
+    target_dirs: Optional[list[Path]] = None,
 ) -> None:
     """Apply refactoring to every Python file under *target_dirs* using a pool."""
-    resolved_dirs: List[Path] = target_dirs if target_dirs else [Path.cwd()]
-    py_files: List[Path] = []
+    resolved_dirs: list[Path] = target_dirs if target_dirs else [Path.cwd()]
+    py_files: list[Path] = []
     for target_dir in resolved_dirs:
         py_files.extend(target_dir.rglob("*.py"))
     py_files = [
@@ -212,10 +212,10 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    target_dirs: Optional[List[Path]] = (
+    target_dirs: Optional[list[Path]] = (
         [Path(p) for p in args.paths] if args.paths else None
     )
-    repeated: List[RepeatedItem] = analyze_files(target_dirs)
+    repeated: list[RepeatedItem] = analyze_files(target_dirs)
     save_dh_module(repeated)
 
     if args.apply:

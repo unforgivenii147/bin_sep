@@ -80,8 +80,8 @@ def remove_tree(path: Path) -> None:
 
 
 def stream_copy(
-    src_file: Union[object, zstd.ZstdDecompressionReader],
-    dst_file: Union[object, zstd.ZstdCompressionWriter],
+    src_file: object | zstd.ZstdDecompressionReader,
+    dst_file: object | zstd.ZstdCompressionWriter,
     chunk_size: int = 1024 * 1024,
 ) -> None:
     """
@@ -239,8 +239,8 @@ def decompress_folder_task(zst_path: Path, output_dir: Path) -> FolderResult:
 
 
 def process_targets_with_progress(
-    targets: List[Path], mode: str, root: Path, workers: int, level: int
-) -> List[FolderResult]:
+    targets: list[Path], mode: str, root: Path, workers: int, level: int
+) -> list[FolderResult]:
     """
     Process targets with rich progress bar display.
 
@@ -255,7 +255,7 @@ def process_targets_with_progress(
         List of FolderResult objects.
     """
     console = Console()
-    results: List[FolderResult] = []
+    results: list[FolderResult] = []
 
     with Progress(
         SpinnerColumn(),
@@ -267,7 +267,7 @@ def process_targets_with_progress(
         task = progress.add_task(f"{mode}...", total=len(targets))
 
         with Pool(processes=min(workers, 8)) as pool:
-            async_results: List[AsyncResult] = []
+            async_results: list[AsyncResult] = []
 
             if mode == "Decompressing":
                 for t in targets:
@@ -303,8 +303,8 @@ def process_targets_with_progress(
 
 
 def process_targets_without_progress(
-    targets: List[Path], mode: str, root: Path, workers: int, level: int
-) -> List[FolderResult]:
+    targets: list[Path], mode: str, root: Path, workers: int, level: int
+) -> list[FolderResult]:
     """
     Process targets without rich progress bar display.
 
@@ -318,10 +318,10 @@ def process_targets_without_progress(
     Returns:
         List of FolderResult objects.
     """
-    results: List[FolderResult] = []
+    results: list[FolderResult] = []
 
     with Pool(processes=min(workers, 8)) as pool:
-        async_results: List[AsyncResult] = []
+        async_results: list[AsyncResult] = []
 
         if mode == "Decompressing":
             for t in targets:

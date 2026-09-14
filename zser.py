@@ -90,7 +90,7 @@ def get_dir_size(path: Path) -> int:
     return total
 
 
-def compress_file(path: Path, level: int = 21) -> Dict[str, Any]:
+def compress_file(path: Path, level: int = 21) -> dict[str, Any]:
     """Compress a single file using Zstandard compression.
 
     Args:
@@ -128,7 +128,7 @@ def compress_file(path: Path, level: int = 21) -> Dict[str, Any]:
         return {"status": "error", "path": str(path), "error": str(e)}
 
 
-def decompress_file(path: Path) -> Dict[str, Any]:
+def decompress_file(path: Path) -> dict[str, Any]:
     """Decompress a Zstandard compressed file.
 
     Args:
@@ -183,7 +183,7 @@ def decompress_file(path: Path) -> Dict[str, Any]:
         return {"status": "error", "path": str(path), "error": str(e)}
 
 
-def compress_dir(path: Path, level: int = 21) -> Dict[str, Any]:
+def compress_dir(path: Path, level: int = 21) -> dict[str, Any]:
     """Compress an entire directory into a tar.zst archive.
 
     Args:
@@ -220,7 +220,7 @@ def compress_dir(path: Path, level: int = 21) -> Dict[str, Any]:
         return {"status": "error", "path": str(path), "error": str(e)}
 
 
-def process_files_async(files: List[Path], operation: str, level: int = 21) -> None:
+def process_files_async(files: list[Path], operation: str, level: int = 21) -> None:
     """Process multiple files in parallel using multiprocessing pool.
 
     Args:
@@ -229,7 +229,7 @@ def process_files_async(files: List[Path], operation: str, level: int = 21) -> N
         level: Compression level (for compression only, default: 21)
     """
     with Pool(processes=FIXED_WORKERS) as pool:
-        async_results: List[AsyncResult] = []
+        async_results: list[AsyncResult] = []
 
         # Submit all tasks
         for file_path in files:
@@ -244,7 +244,7 @@ def process_files_async(files: List[Path], operation: str, level: int = 21) -> N
         # Collect and process results
         for async_result in async_results:
             try:
-                res: Dict[str, Any] = async_result.get(timeout=300)  # 5 minute timeout
+                res: dict[str, Any] = async_result.get(timeout=300)  # 5 minute timeout
                 if res["status"] == "ok":
                     if operation == "compress":
                         logger.info(
@@ -302,7 +302,7 @@ def main() -> int:
     )
 
     if args.decompress:
-        files: List[Path] = list(target.glob(f"*{ZST_EXT}"))
+        files: list[Path] = list(target.glob(f"*{ZST_EXT}"))
         if not files:
             logger.info("No .zst files found")
             return 0
@@ -310,12 +310,12 @@ def main() -> int:
     else:
         # Process directories first (sequential)
         if not args.no_dirs:
-            dirs: List[Path] = [
+            dirs: list[Path] = [
                 p for p in target.iterdir() if p.is_dir() and p.name not in SKIP_DIRS
             ]
             for d in dirs:
                 logger.info(f"  dir  {d.name}...")
-                res: Dict[str, Any] = compress_dir(d, args.level)
+                res: dict[str, Any] = compress_dir(d, args.level)
                 if res["status"] == "ok":
                     logger.info(
                         f"    ✓ {fsize(res['original'])} → {fsize(res['compressed'])}"
@@ -324,7 +324,7 @@ def main() -> int:
                     logger.error(f"    ✗ {res.get('error', 'Unknown error')}")
 
         # Process files in parallel
-        files: List[Path] = [
+        files: list[Path] = [
             p for p in target.iterdir() if p.is_file() and p.suffix not in SKIP_EXTS
         ]
         if files:

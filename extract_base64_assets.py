@@ -29,7 +29,7 @@ WORKERS = 8
 CHUNK_SIZE = 8192
 MAX_FILE_SIZE = 100 * 1024 * 1024  # 100 MB
 
-BASE64_SIGNATURES: Dict[str, Tuple[bytes, str, str]] = {
+BASE64_SIGNATURES: dict[str, tuple[bytes, str, str]] = {
     "image/png": (b"\x89PNG\r\n\x1a\n", ".png", "images"),
     "image/jpeg": (b"\xff\xd8\xff", ".jpg", "images"),
     "image/gif": (b"GIF87a", ".gif", "images"),
@@ -84,7 +84,7 @@ class ProcessingResult:
 @lru_cache(maxsize=256)
 def detect_base64_mime_type(
     data: bytes,
-) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+) -> tuple[Optional[str], Optional[str], Optional[str]]:
     """
     Detect MIME type from decoded base64 data.
 
@@ -140,7 +140,7 @@ class Base64PatternDetector:
     """Detects base64-encoded data using regex patterns."""
 
     BASE64 = r"[A-Za-z0-9+/]+={0,2}"
-    PATTERNS: Dict[str, re.Pattern] = {
+    PATTERNS: dict[str, re.Pattern] = {
         "url": re.compile(
             rf"""
             url\s*\(\s*["']?
@@ -203,7 +203,7 @@ class Base64PatternDetector:
     }
 
     @staticmethod
-    def find_all_base64(text: str, file_path: Path) -> List[Base64Match]:
+    def find_all_base64(text: str, file_path: Path) -> list[Base64Match]:
         """
         Find all base64-encoded data in text.
 
@@ -214,7 +214,7 @@ class Base64PatternDetector:
         Returns:
             List of Base64Match objects
         """
-        matches: List[Base64Match] = []
+        matches: list[Base64Match] = []
         seen_hashes: set[str] = set()
 
         for pattern_name, pattern in Base64PatternDetector.PATTERNS.items():
@@ -272,7 +272,7 @@ class TreeSitterParser:
 
     def __init__(self) -> None:
         self.available = False
-        self.parsers: Dict[str, Any] = {}
+        self.parsers: dict[str, Any] = {}
 
     def parse_file(self, file_path: Path) -> Optional[str]:
         """
@@ -297,7 +297,7 @@ class AssetExtractor:
 
     def __init__(self, assets_dir: Path = ASSETS_DIR) -> None:
         self.assets_dir = assets_dir
-        self.extracted_assets: List[ExtractedAsset] = []
+        self.extracted_assets: list[ExtractedAsset] = []
         self._ensure_assets_dir()
 
     def _ensure_assets_dir(self) -> None:
@@ -437,7 +437,7 @@ class FileProcessor:
                     duration=(datetime.now() - start_time).total_seconds(),
                 )
 
-            replacements: List[Tuple[str, str]] = []
+            replacements: list[tuple[str, str]] = []
             extracted_count = 0
 
             for match in matches:
@@ -550,7 +550,7 @@ class FileDiscovery:
     }
 
     @staticmethod
-    def discover_files(paths: List[str]) -> List[Path]:
+    def discover_files(paths: list[str]) -> list[Path]:
         """
         Discover supported files in given paths.
 
@@ -560,7 +560,7 @@ class FileDiscovery:
         Returns:
             Sorted list of discovered file paths
         """
-        discovered: List[Path] = []
+        discovered: list[Path] = []
         seen: set[Path] = set()
 
         with ThreadPoolExecutor(max_workers=4) as executor:
@@ -594,7 +594,7 @@ class FileDiscovery:
         return sorted(unique_files)
 
     @staticmethod
-    def _discover_in_directory(directory: Path) -> List[Path]:
+    def _discover_in_directory(directory: Path) -> list[Path]:
         """
         Recursively discover supported files in a directory.
 
@@ -604,7 +604,7 @@ class FileDiscovery:
         Returns:
             List of discovered file paths
         """
-        files: List[Path] = []
+        files: list[Path] = []
         try:
             for item in directory.rglob("*"):
                 if any(part in FileDiscovery.SKIP_DIRS for part in item.parts):
@@ -618,7 +618,7 @@ class FileDiscovery:
         return files
 
 
-def process_file_task(args: Tuple[Path, AssetExtractor]) -> ProcessingResult:
+def process_file_task(args: tuple[Path, AssetExtractor]) -> ProcessingResult:
     """
     Process a single file (used as multiprocessing task).
 
@@ -636,10 +636,10 @@ def process_file_task(args: Tuple[Path, AssetExtractor]) -> ProcessingResult:
 class Base64AssetExtractor:
     """Main orchestrator for base64 asset extraction."""
 
-    def __init__(self, paths: Optional[List[str]] = None) -> None:
+    def __init__(self, paths: Optional[list[str]] = None) -> None:
         self.paths = paths or ["."]
         self.asset_extractor = AssetExtractor()
-        self.results: List[ProcessingResult] = []
+        self.results: list[ProcessingResult] = []
 
     def run(self) -> None:
         """Execute the base64 asset extraction process."""
