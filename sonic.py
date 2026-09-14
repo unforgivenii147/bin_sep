@@ -25,8 +25,8 @@ class LineProcessor:
         if self.verbose:
             print(f"[INFO] {message}")
 
-    def get_file_size(self, file_path: Path) -> int:
-        return file_path.stat().st_size
+    def get_file_size(self, path: Path) -> int:
+        return path.stat().st_size
 
 
 class MmapReader(LineProcessor):
@@ -34,12 +34,12 @@ class MmapReader(LineProcessor):
         super().__init__(verbose=verbose)
 
     def read_lines_mmap(
-        self, file_path: Path, encoding: str = "utf-8", skip_empty: bool = False
+        self, path: Path, encoding: str = "utf-8", skip_empty: bool = False
     ) -> Generator[str, None, None]:
-        get_size = self.get_file_size(file_path)
-        self.log(f"Reading {file_path} ({fsz(get_size)})")
+        get_size = self.get_file_size(path)
+        self.log(f"Reading {path} ({fsz(get_size)})")
         try:
-            with Path(file_path).open("rb") as f:
+            with Path(path).open("rb") as f:
                 if get_size > 1024 * 1024:
                     with mmap.mmap(
                         f.fileno(), 0, access=mmap.ACCESS_READ
@@ -73,11 +73,11 @@ class MmapReader(LineProcessor):
             raise OSError(msg)
 
     def read_lines_regular(
-        self, file_path: Path, encoding: str = "utf-8", skip_empty: bool = False
+        self, path: Path, encoding: str = "utf-8", skip_empty: bool = False
     ) -> Generator[str, None, None]:
-        self.log(f"Reading {file_path} (regular mode)")
+        self.log(f"Reading {path} (regular mode)")
         try:
-            with Path(file_path).open("r", encoding=encoding) as f:
+            with Path(path).open("r", encoding=encoding) as f:
                 for line in f:
                     decoded_line = line.rstrip("\r\n")
                     if not skip_empty or decoded_line.strip():
@@ -88,15 +88,15 @@ class MmapReader(LineProcessor):
 
     def read_lines(
         self,
-        file_path: Path,
+        path: Path,
         encoding: str = "utf-8",
         skip_empty: bool = False,
         use_mmap: bool = True,
     ) -> Generator[str, None, None]:
         if use_mmap:
-            yield from self.read_lines_mmap(file_path, encoding, skip_empty)
+            yield from self.read_lines_mmap(path, encoding, skip_empty)
         else:
-            yield from self.read_lines_regular(file_path, encoding, skip_empty)
+            yield from self.read_lines_regular(path, encoding, skip_empty)
 
 
 class LineSorter(LineProcessor):
@@ -113,7 +113,7 @@ class LineSorter(LineProcessor):
 
     def sort_with_temp_files(
         self,
-        file_path: Path,
+        path: Path,
         chunk_size: int = 100000,
         reverse: bool = False,
         encoding: str = "utf-8",
@@ -127,7 +127,7 @@ class LineSorter(LineProcessor):
         try:
             chunk = []
             temp_dir = Path(tempfile.gettempdir())
-            for _i, line in enumerate(reader.read_lines(file_path, encoding)):
+            for _i, line in enumerate(reader.read_lines(path, encoding)):
                 chunk.append(line)
                 if len(chunk) >= chunk_size:
                     sorted_chunk = self.sort_in_memory(chunk, reverse, case_insensitive)
@@ -199,7 +199,7 @@ class FileSorter(LineProcessor):
 
     def process_file(
         self,
-        file_path: str,
+        path: str,
         output_path: str | None = None,
         sort: bool = True,
         unique: bool = True,
@@ -209,7 +209,7 @@ class FileSorter(LineProcessor):
         backup: bool = True,
         encoding: str = "utf-8",
     ) -> dict:
-        input_path = Path(file_path)
+        input_path = Path(path)
         if not input_path.exists():
             msg = "error"
             raise FileNotFoundError(msg)
@@ -325,16 +325,16 @@ class FileAnalyzer(LineProcessor):
         super().__init__(verbose=verbose)
         self.reader = MmapReader(verbose=verbose)
 
-    def analyze_file(self, file_path: Path, encoding: str = "utf-8") -> dict:
-        get_size = self.get_file_size(file_path)
-        lines = list(self.reader.read_lines(file_path, encoding))
+    def analyze_file(self, path: Path, encoding: str = "utf-8") -> dict:
+        get_size = self.get_file_size(path)
+        lines = list(self.reader.read_lines(path, encoding))
         line_counts = Counter(lines)
         duplicate_count = sum(count - 1 for count in line_counts.values())
         max_length = max((len(line) for line in lines), default=0)
         avg_length = sum(len(line) for line in lines) / len(lines) if lines else 0
         most_common = line_counts.most_common(10)
         return {
-            "file": str(file_path),
+            "file": str(path),
             "size_bytes": get_size,
             "size": fsz(get_size),
             "total_lines": len(lines),
@@ -346,10 +346,10 @@ class FileAnalyzer(LineProcessor):
             "most_common_lines": most_common,
         }
 
-    def print_analysis(self, file_path: Path, encoding: str = "utf-8") -> None:
-        analysis = self.analyze_file(file_path, encoding)
+    def print_analysis(self, path: Path, encoding: str = "utf-8") -> None:
+        analysis = self.analyze_file(path, encoding)
         print(f"\n{'=' * 40}")
-        print(f"File Analysis: {file_path.name}")
+        print(f"File Analysis: {path.name}")
         print(f"{'=' * 40}")
         print("\nBasic Statistics:")
         print(f"  Size: {analysis['size']}")

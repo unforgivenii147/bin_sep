@@ -13,8 +13,8 @@ MAX_WORKERS = 8
 SUPPORTED_EXTENSIONS = {".tar.gz", ".tar.xz", ".tar.zst", ".tar.br", ".tgz"}
 
 
-def get_compression_type(file_path):
-    name = file_path.name.lower()
+def get_compression_type(path):
+    name = path.name.lower()
     if name.endswith((".tar.gz", ".tgz")):
         return "gz"
     elif name.endswith(".tar.xz"):

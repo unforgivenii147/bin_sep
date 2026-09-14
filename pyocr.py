@@ -10,8 +10,8 @@ import pytesseract
 SUPPORTED_FORMATS = {".png", ".bmp", ".tiff", ".webp", ".jpg", ".jpeg"}
 
 
-def extract_text(file_path: str) -> bool:
-    path = Path(file_path)
+def extract_text(path: str) -> bool:
+    path = Path(path)
     if not path.is_file() or path.suffix.lower() not in SUPPORTED_FORMATS:
         print(f"Error: '{path.name}' is not a supported image file.")
         return False

@@ -62,7 +62,7 @@ class Colors:
 class ConversionStats:
     """Statistics for a single MP3 bitrate conversion attempt."""
 
-    file_path: Path
+    path: Path
     original_bitrate: int
     new_bitrate: int
     original_size: int
@@ -151,7 +151,7 @@ def convert_single_file(mp3_file: Path, base_dir: Path) -> ConversionStats:
 
     if original_bitrate is None or original_size is None:
         return ConversionStats(
-            file_path=rel_path,
+            path=rel_path,
             original_bitrate=0,
             new_bitrate=0,
             original_size=0,
@@ -164,7 +164,7 @@ def convert_single_file(mp3_file: Path, base_dir: Path) -> ConversionStats:
     new_bitrate = original_bitrate // 2
     if new_bitrate < MIN_BITRATE_KBPS:
         return ConversionStats(
-            file_path=rel_path,
+            path=rel_path,
             original_bitrate=original_bitrate,
             new_bitrate=new_bitrate,
             original_size=original_size,
@@ -201,7 +201,7 @@ def convert_single_file(mp3_file: Path, base_dir: Path) -> ConversionStats:
             new_size = temp_file.stat().st_size
             temp_file.replace(mp3_file)
             return ConversionStats(
-                file_path=rel_path,
+                path=rel_path,
                 original_bitrate=original_bitrate,
                 new_bitrate=new_bitrate,
                 original_size=original_size,
@@ -211,7 +211,7 @@ def convert_single_file(mp3_file: Path, base_dir: Path) -> ConversionStats:
             )
         temp_file.unlink(missing_ok=True)
         return ConversionStats(
-            file_path=rel_path,
+            path=rel_path,
             original_bitrate=original_bitrate,
             new_bitrate=new_bitrate,
             original_size=original_size,
@@ -224,7 +224,7 @@ def convert_single_file(mp3_file: Path, base_dir: Path) -> ConversionStats:
         duration = time.time() - start_time
         temp_file.unlink(missing_ok=True)
         return ConversionStats(
-            file_path=rel_path,
+            path=rel_path,
             original_bitrate=original_bitrate,
             new_bitrate=new_bitrate,
             original_size=original_size,
@@ -250,7 +250,7 @@ def print_file_result(stat: ConversionStats, index: int, total: int) -> None:
             else 0.0
         )
         logger.opt(colors=True).info(
-            f"<green>✓</green> [{index}/{total}] <cyan>{stat.file_path}</cyan>"
+            f"<green>✓</green> [{index}/{total}] <cyan>{stat.path}</cyan>"
         )
         logger.opt(colors=True).info(
             f"  <dim>{fsz(stat.original_size)} → {fsz(stat.new_size)} "
@@ -260,7 +260,7 @@ def print_file_result(stat: ConversionStats, index: int, total: int) -> None:
         )
     else:
         logger.opt(colors=True).error(
-            f"<red>✗</red> [{index}/{total}] <red>{stat.file_path}</red>"
+            f"<red>✗</red> [{index}/{total}] <red>{stat.path}</red>"
         )
         logger.opt(colors=True).error(f"  <red>Error: {stat.error_message}</red>")
 
@@ -348,13 +348,13 @@ def process_directory(directory: Path) -> None:
             print_file_result(stat, i, total)
 
     total_duration = time.time() - start_time
-    stats.sort(key=lambda s: str(s.file_path))
+    stats.sort(key=lambda s: str(s.path))
     failed = [s for s in stats if not s.success]
     if failed:
         logger.opt(colors=True).error("<red><bold>Failed conversions:</bold></red>")
         for stat in failed:
             logger.opt(colors=True).error(
-                f"  <red>✗</red> {stat.file_path}: {stat.error_message}"
+                f"  <red>✗</red> {stat.path}: {stat.error_message}"
             )
     print_final_summary(stats, total_duration)
 

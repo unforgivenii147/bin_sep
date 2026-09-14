@@ -80,10 +80,10 @@ SCRIPT_PATH: Path = Path(__file__).resolve()
 POOL_SIZE: int = 8
 
 
-def _read_file_text(file_path: Path) -> str | None:
+def _read_file_text(path: Path) -> str | None:
     """Read a file as text (utf-8, ignoring errors) and return its content, or None on OSError."""
     try:
-        with open(file_path, encoding="utf-8", errors="ignore") as f:
+        with open(path, encoding="utf-8", errors="ignore") as f:
             return f.read()
     except OSError:
         return None
@@ -94,29 +94,29 @@ def _contains_skip_signature(content: str) -> bool:
     return any(sig in content for sig in SKIP_CONTENT_SIGNATURES)
 
 
-def should_skip_file(file_path: Path) -> bool:
+def should_skip_file(path: Path) -> bool:
     """Return True if the file should be skipped based on extension, path patterns, symlink status, being this script, or known content signatures."""
-    if file_path.resolve() == SCRIPT_PATH:
+    if path.resolve() == SCRIPT_PATH:
         return True
-    if file_path.suffix.lower() in SKIP_EXTENSIONS:
+    if path.suffix.lower() in SKIP_EXTENSIONS:
         return True
     for pattern in SKIP_PATTERNS:
-        if pattern in file_path.parts:
+        if pattern in path.parts:
             return True
-    if file_path.is_symlink():
+    if path.is_symlink():
         return True
-    content = _read_file_text(file_path)
+    content = _read_file_text(path)
     if content is not None and _contains_skip_signature(content):
         return True
     return False
 
 
-def scan_file(file_path: Path) -> tuple[str, list[dict[str, Any]]]:
+def scan_file(path: Path) -> tuple[str, list[dict[str, Any]]]:
     """Scan a single file for secret patterns and return its path along with a list of leak dictionaries."""
     leaks: list[dict[str, Any]] = []
-    content: str | None = _read_file_text(file_path)
+    content: str | None = _read_file_text(path)
     if content is None:
-        return str(file_path), leaks
+        return str(path), leaks
 
     for secret_name, pattern in SECRET_PATTERNS.items():
         matches = re.finditer(pattern, content, re.IGNORECASE)
@@ -137,7 +137,7 @@ def scan_file(file_path: Path) -> tuple[str, list[dict[str, Any]]]:
                     else line_content,
                 }
             )
-    return str(file_path), leaks
+    return str(path), leaks
 
 
 def get_all_files(root_dir: Path = Path(".")) -> list[Path]:
@@ -168,10 +168,10 @@ def check_secrets(root_dir: Path = Path(".")) -> tuple[int, int, int]:
         async_results = [pool.apply_async(scan_file, (file,)) for file in files]
 
         for async_result in async_results:
-            file_path, leaks = async_result.get()
+            path, leaks = async_result.get()
             if leaks:
                 files_with_leaks += 1
-                logger.warning(f"⚠️  Found {len(leaks)} secret(s) in: {file_path}")
+                logger.warning(f"⚠️  Found {len(leaks)} secret(s) in: {path}")
                 for leak in leaks:
                     logger.warning(
                         f"   - {leak['secret_type']} at line {leak['line_number']}"

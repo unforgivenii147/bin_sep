@@ -9,28 +9,28 @@ from pathlib import Path
 from tqdm import tqdm
 
 
-def extract_regex_patterns(file_path):
+def extract_regex_patterns(path):
     patterns = []
     regex_pattern = re.compile(
         r"re\.(compile|search|match|findall|fullmatch|finditer)\(\s*([rR]?[\r'\"])(.*?)(?<!\)\2"
     )
     try:
-        content = Path(file_path).read_text(encoding="utf-8")
+        content = Path(path).read_text(encoding="utf-8")
         patterns = regex_pattern.findall(content)
     except (OSError, UnicodeDecodeError):
         pass
     return [match[2] for match in patterns]
 
 
-def process_file(file_path, output_dir):
+def process_file(path, output_dir):
     Path(path)
-    patterns = extract_regex_patterns(file_path)
+    patterns = extract_regex_patterns(path)
     if patterns:
-        relative_path = os.path.relpath(file_path, Path.cwd())
+        relative_path = os.path.relpath(path, Path.cwd())
         output_file = output_dir / f"{relative_path.replace(os.sep, '_')}.txt"
         output_file.parent.mkdir(parents=True, exist_ok=True)
         Path(output_file).write_text("\n".join(patterns), encoding="utf-8")
-    return file_path, len(patterns)
+    return path, len(patterns)
 
 
 def find_regex_in_dir(start_dir: Path, output_dir: str, max_workers=4) -> None:
@@ -46,8 +46,8 @@ def find_regex_in_dir(start_dir: Path, output_dir: str, max_workers=4) -> None:
     progress_bar = tqdm(total=total_files, desc="Progress", unit="file")
     with ThreadPoolExecutor(max_workers=8) as executor:
         futures = {
-            executor.submit(process_file, file_path, output_dir): file_path
-            for file_path in files_to_process
+            executor.submit(process_file, path, output_dir): path
+            for path in files_to_process
         }
         processed_files = 0
         for future in as_completed(futures):

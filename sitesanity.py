@@ -29,10 +29,10 @@ def parse_arguments():
     return parser.parse_args()
 
 
-def should_ignore_file(file_path: Path, ignore_patterns: list[str]) -> bool:
-    if file_path.suffix == ".pyc":
+def should_ignore_file(path: Path, ignore_patterns: list[str]) -> bool:
+    if path.suffix == ".pyc":
         return True
-    name = file_path.name
+    name = path.name
     return any(fnmatch(name, pattern) for pattern in ignore_patterns)
 
 
@@ -41,10 +41,10 @@ def check_package_files(dist, ignore_patterns: list[str]) -> list[str]:
     if dist.files is None:
         return missing_files
     for package_file in dist.files:
-        file_path = Path(dist.locate_file(package_file))
-        if should_ignore_file(file_path, ignore_patterns):
+        path = Path(dist.locate_file(package_file))
+        if should_ignore_file(path, ignore_patterns):
             continue
-        if not file_path.exists():
+        if not path.exists():
             missing_files.append(str(package_file))
     return missing_files
 

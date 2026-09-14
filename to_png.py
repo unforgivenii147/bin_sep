@@ -18,8 +18,8 @@ except ImportError:
 IGNORED_DIRS = {".git", "dist", "build", "__pycache__", ".venv", "node_modules"}
 
 
-def convert_file(file_path: str) -> bool:
-    path = Path(file_path)
+def convert_file(path: str) -> bool:
+    path = Path(path)
     if not path.is_file() or path.suffix.lower() not in IMGEXT:
         print(f"Skipping: {path.name} (Unsupported format or not a file)")
         return False

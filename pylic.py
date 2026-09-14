@@ -85,8 +85,8 @@ def report(repeated: dict[str, list[tuple[Path, int, list[str]]]]) -> None:
         for line in block_text.split("\n"):
             print(f"  {line}")
         print("  Found in:")
-        for filepath, lineno, _ in occurrences:
-            print(f"    {Path(filepath).name}:{lineno}")
+        for path, lineno, _ in occurrences:
+            print(f"    {Path(path).name}:{lineno}")
 
 
 def remove_repeated_blocks(
@@ -94,16 +94,16 @@ def remove_repeated_blocks(
 ) -> None:
     file_removals: dict[Path, list[tuple[int, list[str]]]] = defaultdict(list)
     for occurrences in repeated.values():
-        for filepath, start_lineno, original_lines in occurrences:
-            file_removals[filepath].append((start_lineno, original_lines))
+        for path, start_lineno, original_lines in occurrences:
+            file_removals[path].append((start_lineno, original_lines))
     removed_total = 0
     files_changed = 0
-    for filepath, removals in file_removals.items():
+    for path, removals in file_removals.items():
         try:
-            with open(filepath, encoding="utf-8") as f:
+            with open(path, encoding="utf-8") as f:
                 original_lines = f.readlines()
         except OSError as e:
-            print(f"Warning: cannot read {filepath} for removal: {e}", file=sys.stderr)
+            print(f"Warning: cannot read {path} for removal: {e}", file=sys.stderr)
             continue
         lines_to_remove = set()
         for start_lineno, block_lines in removals:
@@ -121,18 +121,18 @@ def remove_repeated_blocks(
         try:
             new_content = "".join(new_lines)
             _ = ast.parse(new_content)
-            with open(filepath, "w", encoding="utf-8") as f:
+            with open(path, "w", encoding="utf-8") as f:
                 f.writelines(new_lines)
             removed_total += file_removed
             files_changed += 1
-            print(f"Removed {file_removed} line(s) from {filepath.name}")
+            print(f"Removed {file_removed} line(s) from {path.name}")
         except SyntaxError as e:
             print(
-                f"Warning: Removing blocks from {filepath} would create invalid Python, skipping: {e}",
+                f"Warning: Removing blocks from {path} would create invalid Python, skipping: {e}",
                 file=sys.stderr,
             )
         except Exception as e:
-            print(f"Error: cannot write {filepath}: {e}", file=sys.stderr)
+            print(f"Error: cannot write {path}: {e}", file=sys.stderr)
     print(
         f"\nDone. Removed {removed_total} repeated comment line(s) from {files_changed} file(s)."
     )

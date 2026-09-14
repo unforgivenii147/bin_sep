@@ -89,12 +89,12 @@ def hash_function_body(node: ast.FunctionDef) -> str:
 
 
 def extract_functions(
-    filepath: Path,
+    path: Path,
 ) -> dict[str, tuple[str, ast.FunctionDef, str]]:
     """Extract top-level and nested function definitions from a Python file.
 
     Args:
-        filepath: Path to the Python file to parse.
+        path: Path to the Python file to parse.
 
     Returns:
         Mapping from function name to a tuple of
@@ -102,7 +102,7 @@ def extract_functions(
         parsed.
     """
     try:
-        tree = ast.parse(filepath.read_text())
+        tree = ast.parse(path.read_text())
     except (SyntaxError, UnicodeDecodeError):
         return {}
     functions: dict[str, tuple[str, ast.FunctionDef, str]] = {}
@@ -145,7 +145,7 @@ def load_dh_functions(dh_path: Path) -> dict[str, tuple[str, str]]:
 
 
 def transform_file(
-    filepath: Path,
+    path: Path,
     dh_functions: dict[str, tuple[str, str]],
     apply: bool,
     debug: bool = False,
@@ -153,21 +153,21 @@ def transform_file(
     """Rewrite a single file to import matching functions from `dh`.
 
     Args:
-        filepath: Path to the target Python file.
+        path: Path to the target Python file.
         dh_functions: Mapping of dh function names to (hash, normalized source).
         apply: If True, write changes to disk; otherwise dry-run.
         debug: If True, emit per-function match diagnostics.
 
     Returns:
-        Tuple of (filepath, updated_flag, message).
+        Tuple of (path, updated_flag, message).
     """
     try:
-        content = filepath.read_text()
+        content = path.read_text()
         tree = ast.parse(content)
     except (SyntaxError, UnicodeDecodeError):
-        return filepath, False, ""
+        return path, False, ""
 
-    file_functions = extract_functions(filepath)
+    file_functions = extract_functions(path)
     to_import: set[str] = set()
     debug_info: list[str] = []
 
@@ -186,12 +186,12 @@ def transform_file(
                 debug_info.append(f"  ? {fname}: not in dh package")
 
     if debug and debug_info:
-        logger.debug(f"{filepath.name}:")
+        logger.debug(f"{path.name}:")
         for info in debug_info:
             logger.debug(info)
 
     if not to_import:
-        return filepath, False, ""
+        return path, False, ""
 
     new_body: list[str] = []
     import_added = False
@@ -220,13 +220,13 @@ def transform_file(
 
     new_content = "\n".join(new_body)
     if apply:
-        filepath.write_text(new_content)
-        return filepath, True, f"Updated {filepath.name}: removed {sorted(to_import)}"
+        path.write_text(new_content)
+        return path, True, f"Updated {path.name}: removed {sorted(to_import)}"
     else:
         return (
-            filepath,
+            path,
             False,
-            f"Would update {filepath.name}: remove {sorted(to_import)}",
+            f"Would update {path.name}: remove {sorted(to_import)}",
         )
 
 
@@ -296,13 +296,13 @@ def _transform_worker(
     """Multiprocessing worker wrapper around `transform_file`.
 
     Args:
-        args: Tuple of (filepath, dh_functions, apply, debug).
+        args: Tuple of (path, dh_functions, apply, debug).
 
     Returns:
         Result of `transform_file`.
     """
-    filepath, dh_functions, apply, debug = args
-    return transform_file(filepath, dh_functions, apply, debug)
+    path, dh_functions, apply, debug = args
+    return transform_file(path, dh_functions, apply, debug)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -347,7 +347,7 @@ def main(argv: list[str] | None = None) -> int:
         pool.join()
 
     for result in async_results:
-        _filepath, updated, message = result.get()
+        _path, updated, message = result.get()
         if message:
             logger.info(message)
         if updated:

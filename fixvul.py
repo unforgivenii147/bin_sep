@@ -6,10 +6,10 @@ import re
 import sys
 
 
-def parse_vulture_output(filepath):
+def parse_vulture_output(path):
     skip_dirs_fixes = {}
     try:
-        with open(filepath, "r") as f:
+        with open(path, "r") as f:
             for line in f:
                 line = line.strip()
                 match = re.match(
@@ -23,7 +23,7 @@ def parse_vulture_output(filepath):
                     if line_num not in skip_dirs_fixes[filename]:
                         skip_dirs_fixes[filename].append(line_num)
     except FileNotFoundError:
-        print(f"Error: File not found: {filepath}")
+        print(f"Error: File not found: {path}")
         sys.exit(1)
     except Exception as e:
         print(f"Error reading file: {e}")
@@ -55,13 +55,13 @@ def main():
     skipped = 0
     not_found = 0
     for filename, line_numbers in skip_dirs_fixes.items():
-        filepath = find_file(filename)
-        if not filepath:
+        path = find_file(filename)
+        if not path:
             print(f"✗ Not found: {filename}")
             not_found += 1
             continue
         try:
-            with open(filepath, "r") as f:
+            with open(path, "r") as f:
                 lines = f.readlines()
             modified = False
             for line_num in sorted(line_numbers):
@@ -80,7 +80,7 @@ def main():
                         )
                         skipped += 1
             if modified:
-                with open(filepath, "w") as f:
+                with open(path, "w") as f:
                     f.writelines(lines)
         except Exception as e:
             print(f"✗ Error in {filename}: {e}")

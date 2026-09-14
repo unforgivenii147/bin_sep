@@ -48,10 +48,10 @@ def translate_text(
     return text
 
 
-def process_file(file_path: Path) -> None:
-    logger.info("Processing: %s", file_path)
+def process_file(path: Path) -> None:
+    logger.info("Processing: %s", path)
     try:
-        content = file_path.read_text(encoding="utf-8", errors="ignore")
+        content = path.read_text(encoding="utf-8", errors="ignore")
         lines = content.splitlines(keepends=True)
         translator = GoogleTranslator(source="auto", target="en")
         translated_count = 0
@@ -70,14 +70,14 @@ def process_file(file_path: Path) -> None:
         if translated_count == 0:
             logger.info("  No non-English lines found, skipping.")
             return
-        file_path.write_text("".join(new_lines), encoding="utf-8", errors="ignore")
+        path.write_text("".join(new_lines), encoding="utf-8", errors="ignore")
         logger.info("  ✓ Completed: %d lines translated", translated_count)
     except Exception as e:
-        logger.error("  ✗ Error processing %s: %s", file_path, e)
+        logger.error("  ✗ Error processing %s: %s", path, e)
 
 
-def worker(file_path: Path) -> None:
-    process_file(file_path)
+def worker(path: Path) -> None:
+    process_file(path)
 
 
 def main() -> None:

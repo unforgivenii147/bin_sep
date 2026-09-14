@@ -21,9 +21,9 @@ def is_executable(mode: int) -> bool:
     return bool(mode & (stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH))
 
 
-def has_shebang(file_path: Path) -> bool:
+def has_shebang(path: Path) -> bool:
     try:
-        with file_path.open("rb") as f:
+        with path.open("rb") as f:
             first_line = f.readline()
         return first_line.startswith(b"#!")
     except OSError:

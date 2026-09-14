@@ -19,14 +19,14 @@ def get_first_13(path: Path) -> str:
 def main() -> None:
     output_path = Path("all.txt").resolve()
     collected = []
-    for file_path in Path.cwd().rglob("*"):
-        if not file_path.is_file():
+    for path in Path.cwd().rglob("*"):
+        if not path.is_file():
             continue
-        if file_path.suffix not in EXT:
+        if path.suffix not in EXT:
             continue
-        if file_path.resolve() == output_path:
+        if path.resolve() == output_path:
             continue
-        snippet = get_first_13(file_path)
+        snippet = get_first_13(path)
         if snippet:
             collected.append(snippet)
     unique_collected = list(set(collected))

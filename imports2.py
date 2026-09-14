@@ -316,12 +316,12 @@ class PythonImportExtractor:
                     except:
                         pass
 
-    def extract_from_file(self, filepath: Path) -> set[str]:
+    def extract_from_file(self, path: Path) -> set[str]:
         try:
-            code = filepath.read_text(encoding="utf-8", errors="ignore")
-            return self._extract_imports_from_ast(code, str(filepath))
+            code = path.read_text(encoding="utf-8", errors="ignore")
+            return self._extract_imports_from_ast(code, str(path))
         except Exception as e:
-            logger.debug(f"Error reading {filepath}: {e}")
+            logger.debug(f"Error reading {path}: {e}")
             return set()
 
     def extract_from_zip(self, zippath: Path) -> set[str]:
@@ -368,17 +368,15 @@ class PythonImportExtractor:
     def extract_from_whl(self, whlpath: Path) -> set[str]:
         return self.extract_from_zip(whlpath)
 
-    def process_file(self, filepath: Path) -> set[str]:
-        if filepath.suffix == ".zip" or filepath.suffix == ".whl":
-            return self.extract_from_zip(filepath)
-        elif filepath.suffixes[-2:] == [".tar", ".gz"] or filepath.name.endswith(
+    def process_file(self, path: Path) -> set[str]:
+        if path.suffix == ".zip" or path.suffix == ".whl":
+            return self.extract_from_zip(path)
+        elif path.suffixes[-2:] == [".tar", ".gz"] or path.name.endswith(
             (".tar.xz", ".tar.zst")
         ):
-            return self.extract_from_tar(filepath)
-        elif filepath.suffix in {".py", ".pyw"} or (
-            filepath.is_file() and filepath.suffix == ""
-        ):
-            return self.extract_from_file(filepath)
+            return self.extract_from_tar(path)
+        elif path.suffix in {".py", ".pyw"} or (path.is_file() and path.suffix == ""):
+            return self.extract_from_file(path)
         return set()
 
     def filter_packages(self, imports: set[str]) -> set[str]:
@@ -435,10 +433,10 @@ def find_python_files(directory: str = ".") -> list[Path]:
 def process_single_file(
     args: tuple[Path, PythonImportExtractor],
 ) -> tuple[Path, set[str]]:
-    filepath, extractor = args
-    imports = extractor.process_file(filepath)
+    path, extractor = args
+    imports = extractor.process_file(path)
     filtered = extractor.filter_packages(imports)
-    return (filepath, filtered)
+    return (path, filtered)
 
 
 def main():
@@ -490,9 +488,9 @@ def main():
     all_packages = defaultdict(set)
     with Pool(args.workers) as pool:
         results = pool.map(process_single_file, [(f, extractor) for f in python_files])
-    for filepath, packages in results:
+    for path, packages in results:
         for package in packages:
-            all_packages[package].add(str(filepath))
+            all_packages[package].add(str(path))
     sorted_packages = sorted(all_packages.keys())
     logger.info(f"Found {len(sorted_packages)} unique packages")
     output_path = Path(args.output)

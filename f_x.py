@@ -8,14 +8,14 @@ from multiprocessing import Pool
 from pathlib import Path
 
 
-def check_file_age(file_path):
+def check_file_age(path):
     try:
-        mod_time = file_path.stat().st_mtime
+        mod_time = path.stat().st_mtime
         current_time = time.time()
         age_minutes = (current_time - mod_time) / 60
         if age_minutes <= n_minutes:
             mod_datetime = datetime.fromtimestamp(mod_time)
-            return str(file_path), mod_datetime
+            return str(path), mod_datetime
     except (OSError, PermissionError):
         pass
     return None
@@ -57,9 +57,9 @@ def main():
         print(
             f"Found {len(recent_files)} file(s) modified in the last {n_minutes} minute(s):\n"
         )
-        for file_path, mod_time in recent_files:
+        for path, mod_time in recent_files:
             print(
-                f"{mod_time.strftime('%Y-%m-%d %H:%M:%S')} - {Path(file_path).relative_to(cwd)}"
+                f"{mod_time.strftime('%Y-%m-%d %H:%M:%S')} - {Path(path).relative_to(cwd)}"
             )
     else:
         print(f"No files modified in the last {n_minutes} minute(s)")

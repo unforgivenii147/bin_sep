@@ -5,18 +5,18 @@ import sys
 from pathlib import Path
 
 
-def replace_in_file(filepath: Path, old_text: str, new_text: str) -> bool:
+def replace_in_file(path: Path, old_text: str, new_text: str) -> bool:
     try:
-        with open(filepath, encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             content = f.read()
         if old_text not in content:
             return False
         new_content = content.replace(old_text, new_text)
-        with open(filepath, "w", encoding="utf-8") as f:
+        with open(path, "w", encoding="utf-8") as f:
             f.write(new_content)
         return True
     except Exception as e:
-        print(f"Error processing {filepath}: {e}")
+        print(f"Error processing {path}: {e}")
         return False
 
 

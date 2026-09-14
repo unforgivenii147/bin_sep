@@ -9,8 +9,8 @@ def speak_text(text: str) -> None:
     subprocess.run(["termux-tts-speak", text], check=True)
 
 
-def read_text_file(file_path: str) -> str:
-    path = Path(file_path)
+def read_text_file(path: str) -> str:
+    path = Path(path)
     if not path.exists():
         msg = "error: file not found"
         raise FileNotFoundError(msg)
@@ -35,8 +35,8 @@ def chunk_text(text: str, max_chars=3000):
     return chunks
 
 
-def text_file_to_speech(file_path: str) -> None:
-    text = read_text_file(file_path)
+def text_file_to_speech(path: str) -> None:
+    text = read_text_file(path)
     chunks = chunk_text(text)
     for i, chunk in enumerate(chunks, start=1):
         print(f"Speaking chunk {i}/{len(chunks)}...")

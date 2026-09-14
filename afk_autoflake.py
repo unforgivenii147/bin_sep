@@ -6,15 +6,15 @@ import subprocess
 from pathlib import Path
 
 
-def check_or_fix_imports(file_path, autofix=False):
-    if not Path(file_path).exists():
-        print(f"Error: The file `{file_path}` does not exist.")
+def check_or_fix_imports(path, autofix=False):
+    if not Path(path).exists():
+        print(f"Error: The file `{path}` does not exist.")
         return
     command = [
         "autoflake",
         "--remove-all-unused-imports",
         "--ignore-init-module-imports",
-        file_path,
+        path,
     ]
     if autofix:
         command.append("--in-place")
@@ -26,9 +26,9 @@ def check_or_fix_imports(file_path, autofix=False):
             print("No unused imports found.")
         elif result.returncode == 1:
             if autofix:
-                print(f"Successfully removed unused imports from `{file_path}`.")
+                print(f"Successfully removed unused imports from `{path}`.")
             else:
-                print(f"Unused imports found in `{file_path}`. Run with -a to fix.")
+                print(f"Unused imports found in `{path}`. Run with -a to fix.")
         else:
             print(f"An error occurred: {result.stderr}")
     except FileNotFoundError:

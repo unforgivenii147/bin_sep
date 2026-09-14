@@ -48,8 +48,8 @@ def process_timestamp_line(line: str, shift_ms: int) -> str:
     return TIMESTAMP_RE.sub(replacer, line)
 
 
-def detect_encoding(file_path: Path) -> str:
-    with open(file_path, "rb") as f:
+def detect_encoding(path: Path) -> str:
+    with open(path, "rb") as f:
         chunk = f.read(8192)
     for enc in ENCODINGS:
         try:
@@ -60,31 +60,31 @@ def detect_encoding(file_path: Path) -> str:
     return "utf-8"
 
 
-def process_file(file_path: Path, shift_ms: int) -> None:
-    enc = detect_encoding(file_path)
-    temp_path = file_path.with_suffix(".srt.tmp")
+def process_file(path: Path, shift_ms: int) -> None:
+    enc = detect_encoding(path)
+    temp_path = path.with_suffix(".srt.tmp")
     try:
         with (
-            open(file_path, "r", encoding=enc, errors="replace", newline="") as fin,
+            open(path, "r", encoding=enc, errors="replace", newline="") as fin,
             open(temp_path, "w", encoding=enc, newline="") as fout,
         ):
             for line in fin:
                 if "-->" in line:
                     line = process_timestamp_line(line, shift_ms)
                 fout.write(line)
-        temp_path.replace(file_path)
+        temp_path.replace(path)
     except Exception as e:
         if temp_path.exists():
             temp_path.unlink()
-        raise RuntimeError(f"Failed to process {file_path}: {e}") from e
+        raise RuntimeError(f"Failed to process {path}: {e}") from e
 
 
-def process_file_wrapper(file_path: Path, shift_ms: int) -> str:
+def process_file_wrapper(path: Path, shift_ms: int) -> str:
     try:
-        process_file(file_path, shift_ms)
-        return f"[OK]   {file_path}"
+        process_file(path, shift_ms)
+        return f"[OK]   {path}"
     except Exception as e:
-        return f"[FAIL] {file_path} -> {e}"
+        return f"[FAIL] {path} -> {e}"
 
 
 def discover_srt_files(paths: list[Path]) -> list[Path]:

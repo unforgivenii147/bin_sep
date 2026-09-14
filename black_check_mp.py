@@ -29,13 +29,13 @@ def unique_destination(dest: Path) -> Path:
         counter += 1
 
 
-def black_check(file_path: Path) -> tuple[Path, bool]:
-    print(f"[OK] {file_path}")
+def black_check(path: Path) -> tuple[Path, bool]:
+    print(f"[OK] {path}")
     try:
-        ast.parse(file_path.read_text(encoding="utf-8"))
-        return file_path, True
+        ast.parse(path.read_text(encoding="utf-8"))
+        return path, True
     except:
-        return file_path, False
+        return path, False
 
 
 def collect_python_files() -> list[Path]:
@@ -62,12 +62,12 @@ def main() -> None:
     with ProcessPoolExecutor(max_workers=8) as executor:
         futures = [executor.submit(black_check, f) for f in files]
         results.extend(future.result() for future in as_completed(futures))
-    for file_path, passed in results:
+    for path, passed in results:
         target_dir = OK_DIR if passed else ERROR_DIR
-        dest = unique_destination(target_dir / file_path.name)
-        shutil.move(str(file_path), str(dest))
+        dest = unique_destination(target_dir / path.name)
+        shutil.move(str(path), str(dest))
         status = "OK" if passed else "ERROR"
-        print(f"{status:6} → {file_path} → {dest}")
+        print(f"{status:6} → {path} → {dest}")
 
 
 if __name__ == "__main__":

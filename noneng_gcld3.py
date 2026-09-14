@@ -81,9 +81,9 @@ def _get_detector() -> gcld3.NNetLanguageIdentifier:
     return _DETECTOR
 
 
-def is_likely_text_file(file_path: Path) -> bool:
+def is_likely_text_file(path: Path) -> bool:
     """Return True if the file's extension is in the known text-file set."""
-    return file_path.suffix.lower() in TEXT_EXTENSIONS
+    return path.suffix.lower() in TEXT_EXTENSIONS
 
 
 def detect_language(text: str) -> tuple[Optional[str], Optional[float], bool]:
@@ -100,7 +100,7 @@ def detect_language(text: str) -> tuple[Optional[str], Optional[float], bool]:
     return result.language, result.probability, result.is_reliable
 
 
-def process_file(file_path: Path) -> FileResult:
+def process_file(path: Path) -> FileResult:
     """Scan a single file and return its non-English line findings.
 
     Returns (path, findings, error). If successful, error is None and findings
@@ -108,23 +108,23 @@ def process_file(file_path: Path) -> FileResult:
     human-readable message.
     """
     try:
-        if file_path.stat().st_size > MAX_FILE_SIZE_BYTES:
-            return file_path, None, "File too large (>10MB)"
+        if path.stat().st_size > MAX_FILE_SIZE_BYTES:
+            return path, None, "File too large (>10MB)"
     except (OSError, PermissionError) as exc:
-        return file_path, None, f"Cannot access file: {exc}"
+        return path, None, f"Cannot access file: {exc}"
 
     try:
         content: Optional[list[str]] = None
         for encoding in ("utf-8", "latin-1", "cp1252"):
             try:
-                with open(file_path, "r", encoding=encoding) as handle:
+                with open(path, "r", encoding=encoding) as handle:
                     content = handle.readlines()
                 break
             except UnicodeDecodeError:
                 continue
 
         if content is None:
-            return file_path, None, "Cannot decode file"
+            return path, None, "Cannot decode file"
 
         findings: list[LineFinding] = []
         for line_num, line in enumerate(content, 1):
@@ -136,9 +136,9 @@ def process_file(file_path: Path) -> FileResult:
                 findings.append((line_num, stripped, lang, prob))
             elif lang == "und" and not reliable and prob is not None:
                 findings.append((line_num, stripped, "und", prob))
-        return file_path, findings, None
+        return path, findings, None
     except Exception as exc:  # noqa: BLE001 - reported to caller
-        return file_path, None, f"Error processing file: {exc}"
+        return path, None, f"Error processing file: {exc}"
 
 
 def find_text_files(
@@ -201,9 +201,9 @@ def write_report(
         handle.write("=" * 40 + "\n\n")
 
         if non_english_results:
-            for file_path, lines in non_english_results:
+            for path, lines in non_english_results:
                 handle.write(f"\n{'─' * 40}\n")
-                handle.write(f"File: {file_path}\n")
+                handle.write(f"File: {path}\n")
                 handle.write(f"Non-English lines: {len(lines)}\n")
                 handle.write(f"{'─' * 40}\n\n")
                 for line_num, line_text, lang, prob in lines:
@@ -218,8 +218,8 @@ def write_report(
             handle.write(f"\n{'=' * 40}\n")
             handle.write(f"Errors encountered: {len(errors)}\n")
             handle.write(f"{'=' * 40}\n\n")
-            for file_path, error in errors:
-                handle.write(f"  {file_path}: {error}\n")
+            for path, error in errors:
+                handle.write(f"  {path}: {error}\n")
 
 
 def main() -> int:
@@ -250,13 +250,13 @@ def main() -> int:
             completed += 1
             if completed % 100 == 0 or completed == total:
                 logger.info(f"Progress: {completed}/{total} files processed")
-            file_path, results, error = async_result.get()
+            path, results, error = async_result.get()
             if error:
-                errors.append((file_path, error))
+                errors.append((path, error))
             elif results:
                 files_with_findings += 1
                 total_non_eng_lines += len(results)
-                non_english_results.append((file_path, results))
+                non_english_results.append((path, results))
     finally:
         pool.close()
         pool.join()

@@ -9,9 +9,9 @@ from pathlib import Path
 from dh import unique_path
 
 
-def load_json_file(file_path):
+def load_json_file(path):
     try:
-        with open(file_path, encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             data = json.load(f)
             if isinstance(data, list):
                 return data

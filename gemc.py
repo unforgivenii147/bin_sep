@@ -28,11 +28,11 @@ def should_preserve_comment(content: str) -> bool:
     return any(content.startswith(p) for p in ["#!", "# type:", "# fmt:"])
 
 
-def strip_file(file_path) -> None:
+def strip_file(path) -> None:
     cursor = QueryCursor()
     query = Query(PY_LANGUAGE, QUERY_STRING)
     try:
-        source_code = Path(file_path).read_text(encoding="utf-8")
+        source_code = Path(path).read_text(encoding="utf-8")
         source_bytes = bytes(source_code, "utf8")
         tree = parser.parse(source_bytes)
         captures = cursor.captures(query, tree.root_node)
@@ -56,11 +56,11 @@ def strip_file(file_path) -> None:
             working_code = working_code[:start] + replacement + working_code[end:]
         try:
             ast.parse(working_code)
-            Path(file_path).write_text(working_code, encoding="utf-8")
+            Path(path).write_text(working_code, encoding="utf-8")
         except SyntaxError:
             pass
     except Exception as e:
-        print(f"Error in {file_path}: {e}")
+        print(f"Error in {path}: {e}")
 
 
 def main() -> None:

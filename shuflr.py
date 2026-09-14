@@ -14,8 +14,8 @@ def enhanced_shuffle(
 ) -> None:
     if methods is None:
         methods = ["basic", "crypto", "shuffle3"]
-    input_file_path = Path(input_file)
-    file_size = input_file_path.stat().st_size
+    input_path = Path(input_file)
+    file_size = input_path.stat().st_size
     print(f"Read {file_size} bytes from {input_file}")
     lines = []
     if file_size > 5 * 1024 * 1024:

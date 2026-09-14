@@ -39,43 +39,43 @@ def _mime_to_ext(mime_type: str) -> str | None:
     return extensions
 
 
-def detect_with_pure_magic(file_path: Path) -> str | None:
+def detect_with_pure_magic(path: Path) -> str | None:
     try:
         import magic
 
         mime = magic.Magic(mime=True)
-        return _mime_to_ext(mime.from_file(str(file_path)))
+        return _mime_to_ext(mime.from_file(str(path)))
     except Exception as exc:
-        LOGGER.debug("pure-magic failed for %s: %s", file_path, exc)
+        LOGGER.debug("pure-magic failed for %s: %s", path, exc)
         return None
 
 
-def detect_with_python_magic(file_path: Path) -> str | None:
+def detect_with_python_magic(path: Path) -> str | None:
     try:
         import magic
 
-        mime_type = magic.from_file(str(file_path), mime=True)
+        mime_type = magic.from_file(str(path), mime=True)
         return _mime_to_ext(mime_type)
     except Exception as exc:
-        LOGGER.debug("python-magic failed for %s: %s", file_path, exc)
+        LOGGER.debug("python-magic failed for %s: %s", path, exc)
         return None
 
 
-def detect_with_filetype(file_path: Path) -> str | None:
+def detect_with_filetype(path: Path) -> str | None:
     try:
         import filetype
 
-        kind = filetype.guess(str(file_path))
+        kind = filetype.guess(str(path))
         return f".{kind.extension}" if kind else None
     except Exception as exc:
-        LOGGER.debug("filetype failed for %s: %s", file_path, exc)
+        LOGGER.debug("filetype failed for %s: %s", path, exc)
         return None
 
 
-def detect_with_file_command(file_path: Path) -> str | None:
+def detect_with_file_command(path: Path) -> str | None:
     try:
         result = subprocess.run(
-            ["file", "--brief", "--mime-type", str(file_path)],
+            ["file", "--brief", "--mime-type", str(path)],
             capture_output=True,
             text=True,
             timeout=5,
@@ -84,13 +84,13 @@ def detect_with_file_command(file_path: Path) -> str | None:
         if result.returncode == 0:
             return _mime_to_ext(result.stdout.strip())
     except Exception as exc:
-        LOGGER.debug("file command failed for %s: %s", file_path, exc)
+        LOGGER.debug("file command failed for %s: %s", path, exc)
     return None
 
 
-def detect_shebang_ext(file_path: Path) -> str | None:
+def detect_shebang_ext(path: Path) -> str | None:
     try:
-        with file_path.open("rb") as file:
+        with path.open("rb") as file:
             first_line = file.readline()
         if not first_line.startswith(b"#!"):
             return None
@@ -99,11 +99,11 @@ def detect_shebang_ext(file_path: Path) -> str | None:
             if key in shebang:
                 return extension
     except Exception as exc:
-        LOGGER.debug("shebang detection failed for %s: %s", file_path, exc)
+        LOGGER.debug("shebang detection failed for %s: %s", path, exc)
     return None
 
 
-def detect_extension(file_path: Path) -> str | None:
+def detect_extension(path: Path) -> str | None:
     detectors = (
         detect_shebang_ext,
         detect_with_pure_magic,
@@ -112,7 +112,7 @@ def detect_extension(file_path: Path) -> str | None:
         detect_with_file_command,
     )
     for detector in detectors:
-        extension = detector(file_path)
+        extension = detector(path)
         if extension:
             if not extension.startswith("."):
                 extension = f".{extension}"
@@ -120,12 +120,12 @@ def detect_extension(file_path: Path) -> str | None:
     return None
 
 
-def get_current_extension(file_path: Path) -> str:
-    name = file_path.name.lower()
+def get_current_extension(path: Path) -> str:
+    name = path.name.lower()
     for extension in sorted(PROTECTED_EXTENSIONS, key=len, reverse=True):
         if name.endswith(extension):
             return extension
-    return file_path.suffix.lower()
+    return path.suffix.lower()
 
 
 def is_protected_extension(extension: str) -> bool:
@@ -133,41 +133,41 @@ def is_protected_extension(extension: str) -> bool:
 
 
 def rename_with_extension(
-    file_path: Path,
+    path: Path,
     detected_ext: str,
 ) -> tuple[Path, bool]:
-    new_name = file_path.with_suffix(detected_ext)
-    if new_name == file_path:
-        return file_path, False
+    new_name = path.with_suffix(detected_ext)
+    if new_name == path:
+        return path, False
     if new_name.exists():
         LOGGER.debug("Destination already exists; skipping: %s", new_name)
-        return file_path, False
+        return path, False
     try:
-        file_path.rename(new_name)
+        path.rename(new_name)
         return new_name, True
     except OSError as exc:
-        LOGGER.debug("Could not rename %s: %s", file_path, exc)
-        return file_path, False
+        LOGGER.debug("Could not rename %s: %s", path, exc)
+        return path, False
 
 
 def check_file(
-    file_path: Path,
+    path: Path,
     auto_fix: bool = False,
 ) -> tuple[Path, bool, str | None, str | None]:
-    if not file_path.is_file():
-        return file_path, False, None, None
-    current_ext = get_current_extension(file_path)
-    detected_ext = detect_extension(file_path)
+    if not path.is_file():
+        return path, False, None, None
+    current_ext = get_current_extension(path)
+    detected_ext = detect_extension(path)
     if not detected_ext:
-        return file_path, False, current_ext or None, None
+        return path, False, current_ext or None, None
     if current_ext == detected_ext:
-        return file_path, False, current_ext or None, detected_ext
+        return path, False, current_ext or None, detected_ext
     if is_protected_extension(current_ext) and detected_ext == ".txt":
-        LOGGER.debug("Protected extension; skipping %s", file_path)
-        return file_path, False, current_ext, detected_ext
+        LOGGER.debug("Protected extension; skipping %s", path)
+        return path, False, current_ext, detected_ext
     if not auto_fix:
-        return file_path, True, current_ext or None, detected_ext
-    renamed_path, renamed = rename_with_extension(file_path, detected_ext)
+        return path, True, current_ext or None, detected_ext
+    renamed_path, renamed = rename_with_extension(path, detected_ext)
     return renamed_path, renamed, current_ext or None, detected_ext
 
 
@@ -215,24 +215,21 @@ def main() -> None:
     mismatches = 0
     fixed = 0
     with mp.Pool(processes=8) as pool:
-        jobs = [
-            pool.apply_async(check_file, (file_path, args.auto_fix))
-            for file_path in files
-        ]
-        for file_path, job in zip(files, jobs, strict=False):
+        jobs = [pool.apply_async(check_file, (path, args.auto_fix)) for path in files]
+        for path, job in zip(files, jobs, strict=False):
             try:
                 result_path, is_mismatch, old_ext, new_ext = job.get()
                 if args.auto_fix:
-                    if is_mismatch and result_path != file_path:
+                    if is_mismatch and result_path != path:
                         fixed += 1
-                        print(f"renamed: {file_path} -> {result_path}")
+                        print(f"renamed: {path} -> {result_path}")
                 else:
                     if is_mismatch:
                         mismatches += 1
-                        print(f"{file_path}: {old_ext or 'none'} -> {new_ext}")
+                        print(f"{path}: {old_ext or 'none'} -> {new_ext}")
             except Exception as exc:
-                LOGGER.debug("Error processing %s: %s", file_path, exc)
-                print(f"{file_path} -> error: {exc}", file=sys.stderr)
+                LOGGER.debug("Error processing %s: %s", path, exc)
+                print(f"{path} -> error: {exc}", file=sys.stderr)
     if not args.auto_fix:
         print()
         print(f"Total files scanned: {len(files)}")

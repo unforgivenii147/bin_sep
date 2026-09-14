@@ -49,16 +49,16 @@ def main():
     filename = Path(parsed.path).name
     if not filename or filename == "/":
         filename = "downloaded_file"
-    filepath = Path.cwd() / filename
-    if filepath.exists():
-        print(f"{filepath} exists.")
+    path = Path.cwd() / filename
+    if path.exists():
+        print(f"{path} exists.")
         sys.exit(0)
     downloaded = 0
     start_time = time.time()
 
     def write_function(data):
         nonlocal downloaded
-        with open(filepath, "ab") as f:
+        with open(path, "ab") as f:
             f.write(data)
         downloaded += len(data)
         elapsed = time.time() - start_time
@@ -88,18 +88,18 @@ def main():
         http_code = c.getinfo(c.HTTP_CODE)
         if http_code >= 400:
             print(f"\n\nError: Server returned HTTP {http_code}")
-            if filepath.exists():
-                print(f"{filepath} exists")
+            if path.exists():
+                print(f"{path} exists")
                 sys.exit(0)
             sys.exit(1)
     except pycurl.error as e:
         print(f"\n\nDownload error: {e}")
-        if filepath.exists():
+        if path.exists():
             print("file exists.")
         sys.exit(1)
     finally:
         c.close()
-    print(f"\n\nDownload complete! Saved to: {filepath}")
+    print(f"\n\nDownload complete! Saved to: {path}")
 
 
 if __name__ == "__main__":

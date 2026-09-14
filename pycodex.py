@@ -291,10 +291,10 @@ class FileProcessor:
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.extractor: CodeBlockExtractor = CodeBlockExtractor()
 
-    def process_file(self, file_path: str) -> int:
+    def process_file(self, path: str) -> int:
         """Extract code blocks from a single HTML file. Returns the count."""
         try:
-            path: Path = Path(file_path)
+            path: Path = Path(path)
             if path.suffix.lower() != ".html":
                 return 0
             html_content: str = path.read_text(encoding="utf-8", errors="ignore")
@@ -306,7 +306,7 @@ class FileProcessor:
                 logger.info("Extracted {} code blocks from {}", len(code_blocks), path)
             return len(code_blocks)
         except Exception as exc:  # noqa: BLE001
-            logger.exception("Error processing {}: {}", file_path, exc)
+            logger.exception("Error processing {}: {}", path, exc)
             return 0
 
     def process_url(self, url: str) -> int:
@@ -342,19 +342,19 @@ class FileProcessor:
                 block.suggested_name
                 or f"{source_name}_block_{block.block_index:03d}.py"
             )
-            filepath: Path = source_dir / filename
+            path: Path = source_dir / filename
             counter: int = 1
-            original_filepath: Path = filepath
-            while filepath.exists():
-                name_parts: list[str] = original_filepath.stem.rsplit("_", 1)
+            original_path: Path = path
+            while path.exists():
+                name_parts: list[str] = original_path.stem.rsplit("_", 1)
                 if len(name_parts) == 2 and name_parts[1].isdigit():
                     base_name: str = name_parts[0]
                 else:
-                    base_name = original_filepath.stem
-                filepath = source_dir / f"{base_name}_{counter}.py"
+                    base_name = original_path.stem
+                path = source_dir / f"{base_name}_{counter}.py"
                 counter += 1
-            filepath.write_text(block.content, encoding="utf-8")
-            logger.debug("Saved code block to {}", filepath)
+            path.write_text(block.content, encoding="utf-8")
+            logger.debug("Saved code block to {}", path)
 
     def close(self) -> None:
         """Release resources held by the underlying extractor."""
@@ -374,10 +374,10 @@ def find_html_files(directory: str) -> list[str]:
 
 def _process_file_worker(args: tuple[str, str]) -> int:
     """Worker function for multiprocessing: process a single file."""
-    file_path, output_dir = args
+    path, output_dir = args
     processor: FileProcessor = FileProcessor(output_dir=output_dir)
     try:
-        return processor.process_file(file_path)
+        return processor.process_file(path)
     finally:
         processor.close()
 
@@ -433,8 +433,8 @@ def _process_directory(path: str, output_dir: str) -> int:
     pool: Pool = Pool(processes=POOL_SIZE)
     try:
         results: list[AsyncResult[int]] = [
-            pool.apply_async(_process_file_worker, ((file_path, output_dir),))
-            for file_path in html_files
+            pool.apply_async(_process_file_worker, ((path, output_dir),))
+            for path in html_files
         ]
         pool.close()
         for result in results:

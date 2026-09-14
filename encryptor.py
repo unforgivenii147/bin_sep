@@ -20,23 +20,23 @@ def random_key(length: int = 32) -> str:
     )
 
 
-def encrypt_file(file_path: Path, key: str) -> None:
+def encrypt_file(path: Path, key: str) -> None:
     from os import urandom
 
     backend = default_backend()
     iv = urandom(16)
     cipher = Cipher(algorithms.AES(key.encode()), modes.CBC(iv), backend=backend)
     encryptor = cipher.encryptor()
-    data = file_path.read_bytes()
+    data = path.read_bytes()
     padder = padding.PKCS7(128).padder()
     padded_data = padder.update(data) + padder.finalize()
     encrypted_data = encryptor.update(padded_data) + encryptor.finalize()
-    file_path.write_bytes(iv + encrypted_data)
+    path.write_bytes(iv + encrypted_data)
 
 
-def decrypt_file(file_path: Path, key: str) -> None:
+def decrypt_file(path: Path, key: str) -> None:
     backend = default_backend()
-    raw = file_path.read_bytes()
+    raw = path.read_bytes()
     iv = raw[:16]
     ciphertext = raw[16:]
     cipher = Cipher(algorithms.AES(key.encode()), modes.CBC(iv), backend=backend)
@@ -44,7 +44,7 @@ def decrypt_file(file_path: Path, key: str) -> None:
     padded_data = decryptor.update(ciphertext) + decryptor.finalize()
     unpadder = padding.PKCS7(128).unpadder()
     data = unpadder.update(padded_data) + unpadder.finalize()
-    file_path.write_bytes(data)
+    path.write_bytes(data)
 
 
 def main() -> None:
@@ -68,8 +68,8 @@ def main() -> None:
         action = decrypt_file
     else:
         raise SystemExit(msg)
-    for file_path_str in walk_files("."):
-        path = Path(file_path_str)
+    for path_str in walk_files("."):
+        path = Path(path_str)
         if path.is_file() and path.name != "key":
             action(path, key)
 

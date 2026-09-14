@@ -39,22 +39,22 @@ class ShellScriptFinder:
         self.skip_hidden = skip_hidden
         self.script_count = 0
 
-    def is_bash_script(self, file_path: Path) -> bool:
-        if not file_path.is_file():
+    def is_bash_script(self, path: Path) -> bool:
+        if not path.is_file():
             return False
-        if self.skip_hidden and file_path.name.startswith("."):
+        if self.skip_hidden and path.name.startswith("."):
             return False
-        if file_path.suffix == ".sh":
+        if path.suffix == ".sh":
             return True
         if not self.include_extensionless:
             return False
         try:
-            if file_path.stat().st_size > 1000000:
+            if path.stat().st_size > 1000000:
                 return False
         except OSError:
             return False
         try:
-            with open(file_path, "rb") as f:
+            with open(path, "rb") as f:
                 first_bytes = f.read(2)
                 if b"\x00" in first_bytes:
                     return False

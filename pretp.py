@@ -8,17 +8,17 @@ from pathlib import Path
 from tqdm import tqdm
 
 
-def format_file(file_path: str) -> str | None:
+def format_file(path: str) -> str | None:
     try:
         subprocess.run(
-            ["npx", "prettier", "--write", str(file_path)],
+            ["npx", "prettier", "--write", str(path)],
             capture_output=True,
             text=True,
             check=True,
         )
         return None
     except (subprocess.CalledProcessError, FileNotFoundError) as e:
-        return f"{file_path}: {(e.stderr if hasattr(e, 'stderr') else str(e))}"
+        return f"{path}: {(e.stderr if hasattr(e, 'stderr') else str(e))}"
 
 
 def main() -> None:
@@ -38,20 +38,20 @@ def main() -> None:
     files_to_format = []
     print("Scanning directory for files...")
     base_path = Path(".")
-    for file_path in base_path.rglob("*"):
-        if not file_path.is_file():
+    for path in base_path.rglob("*"):
+        if not path.is_file():
             continue
-        if any(part in exclude_dirs for part in file_path.parts):
+        if any(part in exclude_dirs for part in path.parts):
             continue
         if (
             (
-                file_path.suffix in target_extensions
-                or any(file_path.name.endswith(ext) for ext in target_extensions)
+                path.suffix in target_extensions
+                or any(path.name.endswith(ext) for ext in target_extensions)
             )
-            and any(file_path.name.endswith(ext) for ext in target_extensions)
-            and (not any(file_path.name.endswith(ext) for ext in exclude_extensions))
+            and any(path.name.endswith(ext) for ext in target_extensions)
+            and (not any(path.name.endswith(ext) for ext in exclude_extensions))
         ):
-            files_to_format.append(str(file_path))
+            files_to_format.append(str(path))
     if not files_to_format:
         print("No matching files found.")
         return

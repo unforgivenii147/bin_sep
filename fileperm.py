@@ -18,65 +18,65 @@ def walk_files(root_path="."):
     for dirpath, dirnames, filenames in os.walk(root_path):
         dirnames[:] = [d for d in dirnames if not should_skip_dir(d)]
         for filename in filenames:
-            filepath = os.path.join(dirpath, filename)
-            if os.path.islink(filepath):
+            path = os.path.join(dirpath, filename)
+            if os.path.islink(path):
                 continue
-            yield filepath
+            yield path
 
 
-def has_shebang(filepath):
+def has_shebang(path):
     try:
-        with open(filepath, "rb") as f:
+        with open(path, "rb") as f:
             first_line = f.readline()
             return first_line.startswith(b"#!")
     except OSError:
         return False
 
 
-def is_executable(filepath):
+def is_executable(path):
     try:
-        return os.access(filepath, os.X_OK)
+        return os.access(path, os.X_OK)
     except:
         return False
 
 
-def get_current_mode(filepath):
+def get_current_mode(path):
     try:
-        return stat.S_IMODE(os.stat(filepath).st_mode)
+        return stat.S_IMODE(os.stat(path).st_mode)
     except:
         return None
 
 
-def determine_target_mode(filepath):
-    if is_executable(filepath):
+def determine_target_mode(path):
+    if is_executable(path):
         return None
-    parent_dir = os.path.basename(os.path.dirname(filepath))
-    if has_shebang(filepath) or parent_dir == "bin":
+    parent_dir = os.path.basename(os.path.dirname(path))
+    if has_shebang(path) or parent_dir == "bin":
         return 493
     return 420
 
 
-def analyze_file(filepath):
-    target_mode = determine_target_mode(filepath)
+def analyze_file(path):
+    target_mode = determine_target_mode(path)
     if target_mode is None:
-        return ("skip_executable", filepath, None, None)
-    current_mode = get_current_mode(filepath)
+        return ("skip_executable", path, None, None)
+    current_mode = get_current_mode(path)
     if current_mode is None:
-        return ("error", filepath, None, None)
+        return ("error", path, None, None)
     if current_mode != target_mode:
-        return ("change", filepath, current_mode, target_mode)
+        return ("change", path, current_mode, target_mode)
     else:
-        return ("skip_correct", filepath, current_mode, target_mode)
+        return ("skip_correct", path, current_mode, target_mode)
 
 
-def process_file(filepath, target_mode, dry_run=False):
+def process_file(path, target_mode, dry_run=False):
     if dry_run:
         return True
     try:
-        os.chmod(filepath, target_mode)
+        os.chmod(path, target_mode)
         return True
     except Exception as e:
-        print(f"Error: {filepath}: {e}")
+        print(f"Error: {path}: {e}")
         return False
 
 
@@ -91,9 +91,9 @@ def scan_and_report(root_path="."):
     }
     print("Scanning files...")
     file_generator = walk_files(root_path)
-    for filepath in tqdm(file_generator, desc="Analyzing", unit="files"):
+    for path in tqdm(file_generator, desc="Analyzing", unit="files"):
         stats["total"] += 1
-        status, path, current, target = analyze_file(filepath)
+        status, path, current, target = analyze_file(path)
         if status == "skip_executable":
             stats["skip_executable"].append(path)
         elif status == "skip_correct":
@@ -116,10 +116,10 @@ def apply_changes(stats, dry_run=False):
     print(f"\nApplying changes to {len(changes)} files...")
     success = 0
     failed = 0
-    for filepath, _current, target in tqdm(
+    for path, _current, target in tqdm(
         changes, desc="Changing permissions", unit="files"
     ):
-        if process_file(filepath, target, dry_run):
+        if process_file(path, target, dry_run):
             success += 1
         else:
             failed += 1

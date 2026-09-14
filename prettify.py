@@ -8,36 +8,36 @@ import yapf
 from bs4 import BeautifulSoup
 
 
-def beautify_html(file_path) -> bool:
+def beautify_html(path) -> bool:
     try:
-        content = Path(file_path).read_text(encoding="utf-8")
+        content = Path(path).read_text(encoding="utf-8")
         soup = BeautifulSoup(content, "html.parser")
         beautified_content = soup.prettify()
-        Path(file_path).write_text(beautified_content, encoding="utf-8")
+        Path(path).write_text(beautified_content, encoding="utf-8")
     except Exception as e:
-        print(f"Error beautifying HTML file {file_path}: {e}")
+        print(f"Error beautifying HTML file {path}: {e}")
         return False
     return True
 
 
-def beautify_css(file_path) -> bool:
+def beautify_css(path) -> bool:
     try:
-        content = Path(file_path).read_text(encoding="utf-8")
+        content = Path(path).read_text(encoding="utf-8")
         beautified_content = cssbeautifier.beautify(content)
-        Path(file_path).write_text(beautified_content, encoding="utf-8")
+        Path(path).write_text(beautified_content, encoding="utf-8")
     except Exception as e:
-        print(f"Error beautifying CSS file {file_path}: {e}")
+        print(f"Error beautifying CSS file {path}: {e}")
         return False
     return True
 
 
-def beautify_js(file_path) -> bool:
+def beautify_js(path) -> bool:
     try:
-        content = Path(file_path).read_text(encoding="utf-8")
+        content = Path(path).read_text(encoding="utf-8")
         beautified_content, _ = yapf.yapf_api.FormatCode(content)
-        Path(file_path).write_text(beautified_content, encoding="utf-8")
+        Path(path).write_text(beautified_content, encoding="utf-8")
     except Exception as e:
-        print(f"Error beautifying JS file {file_path}: {e}")
+        print(f"Error beautifying JS file {path}: {e}")
         return False
     return True
 
@@ -45,24 +45,24 @@ def beautify_js(file_path) -> bool:
 def beautify_directory(directory: str) -> None:
     failed_files = []
     base_path = Path(directory)
-    for file_path in base_path.rglob("*"):
-        if not file_path.is_file():
+    for path in base_path.rglob("*"):
+        if not path.is_file():
             continue
-        file = file_path.name
+        file = path.name
         success = False
         if file.endswith(".html"):
-            print(f"Beautifying HTML: {file_path}")
-            success = beautify_html(file_path)
+            print(f"Beautifying HTML: {path}")
+            success = beautify_html(path)
         elif file.endswith(".css"):
-            print(f"Beautifying CSS: {file_path}")
-            success = beautify_css(file_path)
+            print(f"Beautifying CSS: {path}")
+            success = beautify_css(path)
         elif file.endswith(".js"):
-            print(f"Beautifying JS: {file_path}")
-            success = beautify_js(file_path)
+            print(f"Beautifying JS: {path}")
+            success = beautify_js(path)
         else:
             continue
         if not success:
-            failed_files.append(str(file_path))
+            failed_files.append(str(path))
     if failed_files:
         print("\nThe following files failed to be beautified:")
         for failed_file in failed_files:

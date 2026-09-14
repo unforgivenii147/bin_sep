@@ -316,20 +316,20 @@ def main():
             filename = file_meta["filename"]
             file_size = file_meta.get("size", 0)
             digests = file_meta.get("digests", {})
-            target_file_path = output_dir / filename
+            target_path = output_dir / filename
 
             console.print(f"Selected file : [green]{filename}[/green]")
             console.print(f"Target URL    : {download_url}")
 
             # Download package file
-            download_file(download_url, target_file_path, file_size, backend)
+            download_file(download_url, target_path, file_size, backend)
 
             # Verify hash digests
-            if not verify_file_hash(target_file_path, digests):
+            if not verify_file_hash(target_path, digests):
                 console.print(
                     "[bold red]Deleting corrupted/incomplete file...[/bold red]"
                 )
-                target_file_path.unlink(missing_ok=True)
+                target_path.unlink(missing_ok=True)
 
         except Exception as err:
             console.print(f"[bold red]Failed to process '{pkg_spec}': {err}[/bold red]")

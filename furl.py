@@ -24,14 +24,14 @@ def is_git_url(url: str) -> bool:
     return any(domain in url.lower() for domain in GIT_DOMAINS)
 
 
-def extract_urls_from_file(file_path: Path) -> tuple[set[str], set[str]]:
+def extract_urls_from_file(path: Path) -> tuple[set[str], set[str]]:
     regular_urls = set()
     git_urls = set()
     try:
-        if file_path.stat().st_size > 10 * 1024 * 1024:
+        if path.stat().st_size > 10 * 1024 * 1024:
             return regular_urls, git_urls
         try:
-            with open(file_path, encoding="utf-8", errors="ignore") as f:
+            with open(path, encoding="utf-8", errors="ignore") as f:
                 content = f.read()
         except Exception:
             return regular_urls, git_urls
@@ -74,8 +74,7 @@ def main():
     max_workers = 4
     with ProcessPoolExecutor(max_workers=max_workers) as executor:
         future_to_file = {
-            executor.submit(extract_urls_from_file, file_path): file_path
-            for file_path in all_files
+            executor.submit(extract_urls_from_file, path): path for path in all_files
         }
         with tqdm(total=len(all_files), desc="Processing files", unit="file") as pbar:
             for future in as_completed(future_to_file):

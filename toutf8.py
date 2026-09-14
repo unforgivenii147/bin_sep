@@ -11,9 +11,9 @@ import chardet
 from dh import get_nobinary, is_binary
 
 
-def detect_encoding(file_path: Path) -> str:
+def detect_encoding(path: Path) -> str:
     try:
-        with open(file_path, "rb") as f:
+        with open(path, "rb") as f:
             raw_data = f.read(100000)
             result = chardet.detect(raw_data)
             return result.get("encoding", "utf-8") or "utf-8"
@@ -21,20 +21,20 @@ def detect_encoding(file_path: Path) -> str:
         return "utf-8"
 
 
-def convert_file(file_path: Path) -> tuple[Path, bool, str]:
+def convert_file(path: Path) -> tuple[Path, bool, str]:
     try:
-        if is_binary(file_path):
-            return file_path, False, "Skipped (binary/unsupported)"
-        encoding = detect_encoding(file_path)
+        if is_binary(path):
+            return path, False, "Skipped (binary/unsupported)"
+        encoding = detect_encoding(path)
         if encoding and encoding.lower() == "utf-8":
-            return file_path, True, "Already UTF8"
-        with open(file_path, "r", encoding=encoding, errors="replace") as f:
+            return path, True, "Already UTF8"
+        with open(path, "r", encoding=encoding, errors="replace") as f:
             content = f.read()
-        with open(file_path, "w", encoding="utf-8") as f:
+        with open(path, "w", encoding="utf-8") as f:
             f.write(content)
-        return file_path, True, f"Converted from {encoding}"
+        return path, True, f"Converted from {encoding}"
     except Exception as e:
-        return file_path, False, f"Error: {e!s}"
+        return path, False, f"Error: {e!s}"
 
 
 def collect_files(paths: list[str | Path]) -> Generator[Path, None, None]:
@@ -86,10 +86,10 @@ def main():
     with ThreadPoolExecutor(max_workers=args.workers) as executor:
         futures = {executor.submit(convert_file, f): f for f in files}
         for future in as_completed(futures):
-            file_path, success, message = future.result()
+            path, success, message = future.result()
             if args.verbose:
                 status = "✓" if success else "✗"
-                print(f"{status} {file_path.relative_to(Path.cwd())} - {message}")
+                print(f"{status} {path.relative_to(Path.cwd())} - {message}")
             if success:
                 if "Already UTF8" in message or "Skipped" in message:
                     skipped += 1

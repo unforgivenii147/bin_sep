@@ -6,8 +6,8 @@ import sys
 from pathlib import Path
 
 
-def parse_cargo_lock(filepath: str) -> dict:
-    with open(filepath, "r", encoding="utf-8") as f:
+def parse_cargo_lock(path: str) -> dict:
+    with open(path, "r", encoding="utf-8") as f:
         content = f.read()
     version_match = re.search(r"^version\s*=\s*(\d+)", content, re.MULTILINE)
     lock_version = int(version_match.group(1)) if version_match else 3

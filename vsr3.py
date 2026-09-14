@@ -49,12 +49,8 @@ def read_record_file(
         for row in reader:
             if not row or not row[0]:
                 continue
-            file_path = row[0]
-            full_path = (
-                Path(file_path)
-                if Path(file_path).is_absolute()
-                else site_packages / file_path
-            )
+            path = row[0]
+            full_path = Path(path) if Path(path).is_absolute() else site_packages / path
             if full_path.suffix == ".pyc":
                 continue
             if full_path.exists():
@@ -76,17 +72,17 @@ def get_wheel_tag(dist_dir: Path) -> str | None:
 
 
 def copy_files_to_temp(files: list[Path], site_packages: Path, temp_dir: Path) -> None:
-    for file_path in files:
+    for path in files:
         try:
-            rel_path = file_path.relative_to(site_packages)
+            rel_path = path.relative_to(site_packages)
         except ValueError:
-            rel_path = Path(file_path.name)
+            rel_path = Path(path.name)
         dest_path = temp_dir / rel_path
         dest_path.parent.mkdir(parents=True, exist_ok=True)
-        if file_path.is_file():
-            shutil.copy2(file_path, dest_path)
-        elif file_path.is_dir():
-            shutil.copytree(file_path, dest_path, dirs_exist_ok=True)
+        if path.is_file():
+            shutil.copy2(path, dest_path)
+        elif path.is_dir():
+            shutil.copytree(path, dest_path, dirs_exist_ok=True)
 
 
 def create_wheel(
@@ -113,10 +109,10 @@ def create_wheel(
         if result.returncode == 0:
             return True
         with zipfile.ZipFile(wheel_file, "w", zipfile.ZIP_DEFLATED) as whl:
-            for file_path in temp_dir.rglob("*"):
-                if file_path.is_file():
-                    arcname = file_path.relative_to(temp_dir)
-                    whl.write(file_path, arcname)
+            for path in temp_dir.rglob("*"):
+                if path.is_file():
+                    arcname = path.relative_to(temp_dir)
+                    whl.write(path, arcname)
         return True
     except Exception as e:
         print(f"Error creating wheel: {e}")
@@ -136,15 +132,15 @@ def repack_package(
     if has_missing_critical:
         pkg_not_repacked = not_repacked_dir / pkg_name
         pkg_not_repacked.mkdir(parents=True, exist_ok=True)
-        for file_path in existing_files:
+        for path in existing_files:
             try:
-                rel_path = file_path.relative_to(site_packages)
+                rel_path = path.relative_to(site_packages)
                 dest = pkg_not_repacked / rel_path
                 dest.parent.mkdir(parents=True, exist_ok=True)
-                if file_path.is_file():
-                    shutil.copy2(file_path, dest)
+                if path.is_file():
+                    shutil.copy2(path, dest)
             except Exception as e:
-                print(f"Error copying {file_path}: {e}")
+                print(f"Error copying {path}: {e}")
         return False
     wheel_tag = get_wheel_tag(dist_dir)
     with tempfile.TemporaryDirectory() as temp_dir_str:

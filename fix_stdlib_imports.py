@@ -353,18 +353,18 @@ class ImportChecker(ast.NodeVisitor):
 
 
 def find_missing_imports(
-    filepath: str, stdlib_names: dict[str, set[str]]
+    path: str, stdlib_names: dict[str, set[str]]
 ) -> list[tuple[str, str]]:
     try:
-        with open(filepath, encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             source = f.read()
     except Exception as e:
-        print(f"Error reading {filepath}: {e}", file=sys.stderr)
+        print(f"Error reading {path}: {e}", file=sys.stderr)
         return []
     try:
-        tree = ast.parse(source, filename=filepath)
+        tree = ast.parse(source, filename=path)
     except SyntaxError as e:
-        print(f"Syntax error in {filepath}: {e}", file=sys.stderr)
+        print(f"Syntax error in {path}: {e}", file=sys.stderr)
         return []
     checker = ImportChecker(stdlib_names)
     checker.visit(tree)
@@ -417,10 +417,10 @@ def scan_directory(
         f for f in python_files if not any(excl in f.parts for excl in exclude_dirs)
     ]
     print(f"Scanning {len(python_files)} Python files in {root_dir}...")
-    for filepath in python_files:
-        missing = find_missing_imports(str(filepath), stdlib_names)
+    for path in python_files:
+        missing = find_missing_imports(str(path), stdlib_names)
         if missing:
-            results[str(filepath)] = missing
+            results[str(path)] = missing
     return results
 
 
@@ -435,8 +435,8 @@ def print_results(results: dict[str, list[tuple[str, str]]], show_all: bool = Fa
         f" Found {total_missing} potentially missing import(s) in {total_files} file(s)"
     )
     print(f"{'=' * 40}\n")
-    for filepath, missing in sorted(results.items()):
-        rel_path = os.path.relpath(filepath)
+    for path, missing in sorted(results.items()):
+        rel_path = os.path.relpath(path)
         print(f"📄 {rel_path}")
         print(f"   {'─' * 40}")
         for name, suggestion in missing:
@@ -502,10 +502,10 @@ Examples:
         print(" All scanned files:")
         print(f"{'=' * 40}")
         root_path = Path(args.directory)
-        for filepath in sorted(root_path.rglob("*.py")):
-            if not any(excl in filepath.parts for excl in exclude_dirs):
-                rel_path = os.path.relpath(filepath)
-                status = "❌" if str(filepath) in results else "✅"
+        for path in sorted(root_path.rglob("*.py")):
+            if not any(excl in path.parts for excl in exclude_dirs):
+                rel_path = os.path.relpath(path)
+                status = "❌" if str(path) in results else "✅"
                 print(f"  {status} {rel_path}")
     return 1 if results else 0
 

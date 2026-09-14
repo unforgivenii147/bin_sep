@@ -13,38 +13,38 @@ def extract_font_id(svg_text):
     return None
 
 
-def rename_svg_font(file_path_obj: Path) -> None:
-    if not file_path_obj.is_file():
-        print(f"Skipping: Not a file - {file_path_obj.name}")
+def rename_svg_font(path_obj: Path) -> None:
+    if not path_obj.is_file():
+        print(f"Skipping: Not a file - {path_obj.name}")
         return
     try:
-        text = file_path_obj.read_text(encoding="utf-8", errors="ignore")
+        text = path_obj.read_text(encoding="utf-8", errors="ignore")
     except Exception as e:
-        print(f"Error reading {file_path_obj.name}: {e}")
+        print(f"Error reading {path_obj.name}: {e}")
         return
     font_id = extract_font_id(text)
     if not font_id:
-        print(f'Skipping {file_path_obj.name}: Could not find <font id="..."> tag.')
+        print(f'Skipping {path_obj.name}: Could not find <font id="..."> tag.')
         return
     sanitized_font_id = re.sub(r'[<>:"/\\|?*]', "_", font_id)
     if sanitized_font_id != font_id:
         print(
-            f"Warning: Sanitized font ID for '{font_id}' in '{file_path_obj.name}' to '{sanitized_font_id}'."
+            f"Warning: Sanitized font ID for '{font_id}' in '{path_obj.name}' to '{sanitized_font_id}'."
         )
         font_id = sanitized_font_id
-    new_name_obj = file_path_obj.with_name(font_id + ".svg")
-    if new_name_obj == file_path_obj:
-        print(f"No rename needed for {file_path_obj.name}: already correct name.")
+    new_name_obj = path_obj.with_name(font_id + ".svg")
+    if new_name_obj == path_obj:
+        print(f"No rename needed for {path_obj.name}: already correct name.")
         return
     try:
-        file_path_obj.rename(new_name_obj)
-        print(f"Renamed '{file_path_obj.name}' to '{new_name_obj.name}'")
+        path_obj.rename(new_name_obj)
+        print(f"Renamed '{path_obj.name}' to '{new_name_obj.name}'")
     except FileExistsError:
         print(
-            f"Error renaming '{file_path_obj.name}' to '{new_name_obj.name}': Target file already exists."
+            f"Error renaming '{path_obj.name}' to '{new_name_obj.name}': Target file already exists."
         )
     except Exception as e:
-        print(f"Error renaming '{file_path_obj.name}': {e}")
+        print(f"Error renaming '{path_obj.name}': {e}")
 
 
 if __name__ == "__main__":

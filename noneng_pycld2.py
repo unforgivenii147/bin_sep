@@ -123,9 +123,9 @@ NonEnglishLine = tuple[int, str, str, str, int]
 FileResult = tuple[Path, Optional[list[NonEnglishLine]], Optional[str]]
 
 
-def is_likely_text_file(file_path: Path) -> bool:
+def is_likely_text_file(path: Path) -> bool:
     """Return True when the file suffix is in the supported text extensions."""
-    return file_path.suffix.lower() in TEXT_EXTENSIONS
+    return path.suffix.lower() in TEXT_EXTENSIONS
 
 
 def detect_language(text: str) -> tuple[Optional[str], Optional[str], int, bool]:
@@ -149,32 +149,32 @@ def detect_language(text: str) -> tuple[Optional[str], Optional[str], int, bool]
         return "un", "UNKNOWN", 0, False
 
 
-def process_file(file_path: Path) -> FileResult:
+def process_file(path: Path) -> FileResult:
     """
     Process a single file and return detected non-English lines.
 
-    Returns a tuple of (file_path, non_english_lines, error). Exactly one of
+    Returns a tuple of (path, non_english_lines, error). Exactly one of
     non_english_lines or error will be meaningful; non_english_lines may be an
     empty list when no non-English content is found.
     """
     non_english_lines: list[NonEnglishLine] = []
     try:
-        if file_path.stat().st_size > MAX_FILE_SIZE_BYTES:
-            return file_path, None, "File too large (>10MB)"
+        if path.stat().st_size > MAX_FILE_SIZE_BYTES:
+            return path, None, "File too large (>10MB)"
     except (OSError, PermissionError) as exc:
-        return file_path, None, f"Cannot access file: {exc}"
+        return path, None, f"Cannot access file: {exc}"
 
     content: Optional[list[str]] = None
     for encoding in ("utf-8", "latin-1", "cp1252"):
         try:
-            with open(file_path, "r", encoding=encoding) as handle:
+            with open(path, "r", encoding=encoding) as handle:
                 content = handle.readlines()
             break
         except UnicodeDecodeError:
             continue
 
     if content is None:
-        return file_path, None, "Cannot decode file"
+        return path, None, "Cannot decode file"
 
     try:
         for line_num, line in enumerate(content, 1):
@@ -189,9 +189,9 @@ def process_file(file_path: Path) -> FileResult:
                 non_english_lines.append(
                     (line_num, line.strip(), lang_code, lang_name, confidence)
                 )
-        return file_path, non_english_lines, None
+        return path, non_english_lines, None
     except Exception as exc:
-        return file_path, None, f"Error processing file: {exc}"
+        return path, None, f"Error processing file: {exc}"
 
 
 def find_text_files(
@@ -284,9 +284,9 @@ def write_report(
                 )
                 handle.write("\n")
 
-            for file_path, lines in non_english_results:
+            for path, lines in non_english_results:
                 handle.write(f"\n{'─' * 40}\n")
-                handle.write(f"File: {file_path}\n")
+                handle.write(f"File: {path}\n")
                 handle.write(f"Non-English lines: {len(lines)}\n")
                 handle.write(f"{'─' * 40}\n\n")
                 for line_num, line_text, lang_code, lang_name, confidence in lines:
@@ -302,8 +302,8 @@ def write_report(
             handle.write(f"\n{'=' * 40}\n")
             handle.write(f"Errors encountered: {len(errors)}\n")
             handle.write(f"{'=' * 40}\n\n")
-            for file_path, error in errors:
-                handle.write(f"  {file_path}: {error}\n")
+            for path, error in errors:
+                handle.write(f"  {path}: {error}\n")
 
 
 def main() -> int:
@@ -336,14 +336,14 @@ def main() -> int:
             if completed % 100 == 0 or completed == total:
                 logger.info("Progress: {}/{} files processed", completed, total)
 
-            file_path, results, error = async_result.get()
+            path, results, error = async_result.get()
 
             if error:
-                errors.append((file_path, error))
+                errors.append((path, error))
             elif results:
                 files_with_findings += 1
                 total_non_eng_lines += len(results)
-                non_english_results.append((file_path, results))
+                non_english_results.append((path, results))
 
     output_path = Path(args.output)
     logger.info("Generating report: {}", output_path)

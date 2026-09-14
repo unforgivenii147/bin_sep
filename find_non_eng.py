@@ -24,12 +24,12 @@ class LanguageDetector:
             "languages": Counter(),
         }
 
-    def is_text_file(self, filepath: Path) -> bool:
-        return not is_binary(filepath)
+    def is_text_file(self, path: Path) -> bool:
+        return not is_binary(path)
 
-    def detect_language(self, filepath: Path):
+    def detect_language(self, path: Path):
         try:
-            with Path(filepath).open(encoding="utf-8", errors="ignore") as f:
+            with Path(path).open(encoding="utf-8", errors="ignore") as f:
                 content = f.read(self.max_bytes)
             if len(content) < self.min_bytes:
                 return False, "TOO_SHORT", None, None
@@ -56,22 +56,20 @@ class LanguageDetector:
             root_path = Path(root)
             dirs[:] = [d for d in dirs if not d.startswith(".")]
             for file in files:
-                filepath = root_path / file
+                path = root_path / file
                 if file.startswith("."):
                     continue
                 self.stats["total_files"] += 1
                 if show_progress:
                     print(
-                        f"\n{filepath} [Files: {self.stats['total_files']}]",
+                        f"\n{path} [Files: {self.stats['total_files']}]",
                         end="",
                         flush=True,
                     )
-                if not self.is_text_file(filepath):
+                if not self.is_text_file(path):
                     self.stats["skipped_binary"] += 1
                     continue
-                is_reliable, lang_name, lang_code, percent = self.detect_language(
-                    filepath
-                )
+                is_reliable, lang_name, lang_code, percent = self.detect_language(path)
                 if lang_name in {"TOO_SHORT", "UNKNOWN", None} or lang_name.startswith(
                     ("ERROR:", "CLD2_ERROR:")
                 ):
@@ -86,7 +84,7 @@ class LanguageDetector:
                 ):
                     self.stats["non_english"].append(
                         {
-                            "file": filepath,
+                            "file": path,
                             "language": lang_name,
                             "code": lang_code,
                             "reliable": is_reliable,

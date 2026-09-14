@@ -296,28 +296,28 @@ def walk_files(directory: Path, compress: bool) -> Generator[Path, None, None]:
         stats.dirs += 1
 
         for file_name in files:
-            file_path = root_path / file_name
+            path = root_path / file_name
 
-            if file_path.is_symlink():
+            if path.is_symlink():
                 stats.skipped_symlinks += 1
                 continue
 
-            if ".egg-info" in str(file_path) or ".dist-info" in str(file_path):
+            if ".egg-info" in str(path) or ".dist-info" in str(path):
                 stats.skipped_extensions += 1
                 continue
 
             if compress:
-                if file_path.suffix.lower() in SKIP_EXTENSIONS_COMPRESS:
+                if path.suffix.lower() in SKIP_EXTENSIONS_COMPRESS:
                     stats.skipped_extensions += 1
-                    if file_path.suffix.lower() in MEDIA_EXTENSIONS:
+                    if path.suffix.lower() in MEDIA_EXTENSIONS:
                         stats.skipped_media += 1
                     continue
-            elif file_path.suffix not in VALID_DECOMPRESS_EXTENSIONS:
+            elif path.suffix not in VALID_DECOMPRESS_EXTENSIONS:
                 stats.skipped_extensions += 1
                 continue
 
             stats.files += 1
-            yield file_path
+            yield path
 
     if stats.skipped_symlinks > 0:
         logger.warning(f"⚠️  Skipped {stats.skipped_symlinks} symlinks")
@@ -462,33 +462,29 @@ def process_files(
     async_results: list[AsyncResult[tuple[bool, Path, str, int, int]]] = []
 
     try:
-        for file_path in files_list:
+        for path in files_list:
             if compress:
-                output_path = file_path.with_suffix(file_path.suffix + ".zst")
+                output_path = path.with_suffix(path.suffix + ".zst")
                 if output_path.exists():
-                    logger.warning(
-                        f"⚠️  Skipping {file_path.name} - output already exists"
-                    )
+                    logger.warning(f"⚠️  Skipping {path.name} - output already exists")
                     skipped += 1
                     continue
                 async_results.append(
                     pool.apply_async(
                         compress_file,
-                        (file_path, output_path, level, threads, remove_original),
+                        (path, output_path, level, threads, remove_original),
                     )
                 )
             else:
-                output_path = file_path.with_suffix("")
+                output_path = path.with_suffix("")
                 if output_path.exists():
-                    logger.warning(
-                        f"⚠️  Skipping {file_path.name} - output already exists"
-                    )
+                    logger.warning(f"⚠️  Skipping {path.name} - output already exists")
                     skipped += 1
                     continue
                 async_results.append(
                     pool.apply_async(
                         decompress_file,
-                        (file_path, output_path, threads, remove_original),
+                        (path, output_path, threads, remove_original),
                     )
                 )
 

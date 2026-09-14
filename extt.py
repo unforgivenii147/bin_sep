@@ -55,11 +55,11 @@ def extract_functions_and_classes(src: bytes, tree: Tree):
     return definitions
 
 
-def get_relative_path(file_path: Path, base_path: Path) -> Path:
+def get_relative_path(path: Path, base_path: Path) -> Path:
     try:
-        return file_path.relative_to(base_path)
+        return path.relative_to(base_path)
     except ValueError:
-        return file_path
+        return path
 
 
 folder_definitions = defaultdict(lambda: defaultdict(list))

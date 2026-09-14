@@ -48,9 +48,9 @@ def walk_files(root_path="."):
             yield path
 
 
-def has_shebang(filepath):
+def has_shebang(path):
     try:
-        with open(filepath, "rb") as f:
+        with open(path, "rb") as f:
             first_line = f.readline()
             return first_line.startswith(b"#!")
     except OSError:
@@ -75,11 +75,11 @@ def determine_dir_target_mode():
     return 509
 
 
-def determine_file_target_mode(filepath):
-    if is_executable(filepath):
+def determine_file_target_mode(path):
+    if is_executable(path):
         return None
-    parent_dir = Path(filepath).parent.name
-    if has_shebang(filepath) or parent_dir == "bin":
+    parent_dir = Path(path).parent.name
+    if has_shebang(path) or parent_dir == "bin":
         return 493
     return 420
 

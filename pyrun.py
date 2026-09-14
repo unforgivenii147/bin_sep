@@ -29,31 +29,31 @@ MAX_ERROR_MSG_LEN: int = 200
 
 
 def run_python_file(
-    file_path: Path, timeout: int = DEFAULT_TIMEOUT
+    path: Path, timeout: int = DEFAULT_TIMEOUT
 ) -> tuple[Path, bool, str | None, str | None]:
     """Execute a single Python file and report success or a classified failure.
 
     Args:
-        file_path: Path to the Python file to execute.
+        path: Path to the Python file to execute.
         timeout: Maximum execution time in seconds.
 
     Returns:
-        A tuple of (file_path, success, error_type, error_msg). On success,
+        A tuple of (path, success, error_type, error_msg). On success,
         error_type and error_msg are None.
     """
     try:
         result = runpy.run_path(
-            str(file_path),
+            str(path),
             run_name="__main__",
         )
         _ = result  # execution succeeded
-        return (file_path, True, None, None)
+        return (path, True, None, None)
     except SystemExit as e:
         code = e.code
         if code in (0, None):
-            return (file_path, True, None, None)
+            return (path, True, None, None)
         return (
-            file_path,
+            path,
             False,
             f"SystemExit (code: {code})",
             f"Process exited with code {code}",
@@ -61,7 +61,7 @@ def run_python_file(
     except Exception as e:
         error_msg = f"{type(e).__name__}: {e!s}"
         error_type = _classify_exception(e)
-        return (file_path, False, error_type, error_msg)
+        return (path, False, error_type, error_msg)
 
 
 def _classify_exception(exc: BaseException) -> str:
@@ -100,44 +100,44 @@ def _classify_exception(exc: BaseException) -> str:
 
 
 def _run_with_timeout(
-    file_path: Path, timeout: int
+    path: Path, timeout: int
 ) -> tuple[Path, bool, str | None, str | None]:
     """Run a Python file in a subprocess with a hard timeout.
 
     Args:
-        file_path: Path to the Python file.
+        path: Path to the Python file.
         timeout: Timeout in seconds.
 
     Returns:
-        A tuple of (file_path, success, error_type, error_msg).
+        A tuple of (path, success, error_type, error_msg).
     """
     try:
         proc = subprocess.run(
-            [sys.executable, str(file_path)],
+            [sys.executable, str(path)],
             capture_output=True,
             text=True,
             timeout=timeout,
-            cwd=str(file_path.parent),
+            cwd=str(path.parent),
         )
     except subprocess.TimeoutExpired:
         return (
-            file_path,
+            path,
             False,
             "TimeoutError",
             f"Execution exceeded {timeout} seconds",
         )
     except subprocess.SubprocessError as e:
-        return (file_path, False, "SubprocessError", str(e))
+        return (path, False, "SubprocessError", str(e))
     except Exception as e:  # noqa: BLE001
         return (
-            file_path,
+            path,
             False,
             "UnexpectedError",
             f"{type(e).__name__}: {e!s}",
         )
 
     if proc.returncode == 0:
-        return (file_path, True, None, None)
+        return (path, True, None, None)
 
     stderr = (proc.stderr or "").lower()
     error_msg = (proc.stderr or proc.stdout or "").strip()
@@ -157,11 +157,11 @@ def _run_with_timeout(
         error_type = "KeyboardInterrupt"
     else:
         error_type = f"RuntimeError (exit code: {proc.returncode})"
-    return (file_path, False, error_type, error_msg)
+    return (path, False, error_type, error_msg)
 
 
 def _worker_entry(
-    file_path: Path, timeout: int
+    path: Path, timeout: int
 ) -> tuple[Path, bool, str | None, str | None]:
     """Worker entrypoint used by the multiprocessing pool.
 
@@ -170,13 +170,13 @@ def _worker_entry(
     timeout behavior.
 
     Args:
-        file_path: Path to the Python file.
+        path: Path to the Python file.
         timeout: Timeout in seconds.
 
     Returns:
-        A tuple of (file_path, success, error_type, error_msg).
+        A tuple of (path, success, error_type, error_msg).
     """
-    return _run_with_timeout(file_path, timeout)
+    return _run_with_timeout(path, timeout)
 
 
 def find_python_files(root_dir: Path, recursive: bool = True) -> list[Path]:
@@ -217,11 +217,10 @@ def run_files_parallel(
     pool = multiprocessing.Pool(processes=NUM_WORKERS)
     try:
         async_results = [
-            pool.apply_async(_worker_entry, args=(file_path, timeout))
-            for file_path in files
+            pool.apply_async(_worker_entry, args=(path, timeout)) for path in files
         ]
         pool.close()
-        for file_path, async_result in zip(files, async_results, strict=True):
+        for path, async_result in zip(files, async_results, strict=True):
             try:
                 result_path, success, error_type, error_msg = async_result.get()
                 if success:
@@ -235,9 +234,9 @@ def run_files_parallel(
                         if error_msg:
                             logger.debug(f"   {error_msg}")
             except Exception as e:  # noqa: BLE001
-                results["failed"].append((file_path, "FutureError", str(e)))
+                results["failed"].append((path, "FutureError", str(e)))
                 if verbose:
-                    logger.error(f"{file_path}: FutureError - {e}")
+                    logger.error(f"{path}: FutureError - {e}")
         pool.join()
     except KeyboardInterrupt:
         pool.terminate()
@@ -347,8 +346,8 @@ def main() -> int:
         logger.info("-" * 40)
         logger.info("FAILED FILES:")
         logger.info("-" * 40)
-        for file_path, error_type, error_msg in failed:
-            logger.error(f"{file_path}")
+        for path, error_type, error_msg in failed:
+            logger.error(f"{path}")
             logger.error(f"   Error: {error_type}")
             if error_msg:
                 if len(error_msg) > MAX_ERROR_MSG_LEN:

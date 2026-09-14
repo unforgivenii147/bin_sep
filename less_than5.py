@@ -8,9 +8,9 @@ from pathlib import Path
 TIME_THRESHOLD = 8 * 40
 
 
-def get_file_age(filepath: Path) -> float:
+def get_file_age(path: Path) -> float:
     current_time = time.time()
-    file_creation_time = filepath.stat().st_ctime
+    file_creation_time = path.stat().st_ctime
     return current_time - file_creation_time
 
 
@@ -38,25 +38,25 @@ def move_recent_files(start_dir: Path | str = ".") -> None:
     moved_count = 0
     skipped_count = 0
     error_count = 0
-    for file_path in start_dir.rglob("*"):
-        if not file_path.is_file():
+    for path in start_dir.rglob("*"):
+        if not path.is_file():
             continue
-        if target_dir in file_path.parents or file_path.parent == target_dir:
+        if target_dir in path.parents or path.parent == target_dir:
             continue
         try:
-            if get_file_age(file_path) <= TIME_THRESHOLD:
-                rel_path = file_path.parent.relative_to(start_dir)
+            if get_file_age(path) <= TIME_THRESHOLD:
+                rel_path = path.parent.relative_to(start_dir)
                 dest_dir = target_dir / rel_path if str(rel_path) != "." else target_dir
                 dest_dir.mkdir(exist_ok=True, parents=True)
-                dest_path = get_unique_filename(dest_dir, file_path.name)
-                shutil.move(str(file_path), str(dest_path))
-                print(f"Moved: {file_path.name} -> {dest_path.relative_to(start_dir)}")
+                dest_path = get_unique_filename(dest_dir, path.name)
+                shutil.move(str(path), str(dest_path))
+                print(f"Moved: {path.name} -> {dest_path.relative_to(start_dir)}")
                 moved_count += 1
         except (OSError, PermissionError) as e:
-            print(f"Error processing {file_path.name}: {e}")
+            print(f"Error processing {path.name}: {e}")
             error_count += 1
         except Exception as e:
-            print(f"Unexpected error processing {file_path.name}: {e}")
+            print(f"Unexpected error processing {path.name}: {e}")
             error_count += 1
     print("\n" + "=" * 40)
     print("SUMMARY")
@@ -85,28 +85,28 @@ def move_recent_files_with_filters(
         files = [f for f in start_dir.iterdir() if f.is_file()]
     moved_count = 0
     filtered_count = 0
-    for file_path in files:
-        if not file_path.is_file():
+    for path in files:
+        if not path.is_file():
             continue
-        if target_dir in file_path.parents or file_path.parent == target_dir:
+        if target_dir in path.parents or path.parent == target_dir:
             continue
-        if extensions and file_path.suffix.lower() not in extensions:
+        if extensions and path.suffix.lower() not in extensions:
             filtered_count += 1
             continue
-        if min_size and file_path.stat().st_size < min_size:
+        if min_size and path.stat().st_size < min_size:
             filtered_count += 1
             continue
         try:
-            if get_file_age(file_path) <= TIME_THRESHOLD:
-                rel_path = file_path.parent.relative_to(start_dir)
+            if get_file_age(path) <= TIME_THRESHOLD:
+                rel_path = path.parent.relative_to(start_dir)
                 dest_dir = target_dir / rel_path if str(rel_path) != "." else target_dir
                 dest_dir.mkdir(exist_ok=True, parents=True)
-                dest_path = get_unique_filename(dest_dir, file_path.name)
-                shutil.move(str(file_path), str(dest_path))
-                print(f"Moved: {file_path.name} -> {dest_path.relative_to(start_dir)}")
+                dest_path = get_unique_filename(dest_dir, path.name)
+                shutil.move(str(path), str(dest_path))
+                print(f"Moved: {path.name} -> {dest_path.relative_to(start_dir)}")
                 moved_count += 1
         except Exception as e:
-            print(f"Error processing {file_path.name}: {e}")
+            print(f"Error processing {path.name}: {e}")
     print(f"\nMoved {moved_count} files ({filtered_count} filtered out)")
 
 
@@ -121,24 +121,22 @@ def move_recent_files_by_age(
     target_dir = start_dir / destination
     target_dir.mkdir(exist_ok=True, parents=True)
     moved_count = 0
-    for file_path in start_dir.rglob("*"):
-        if not file_path.is_file():
+    for path in start_dir.rglob("*"):
+        if not path.is_file():
             continue
-        if target_dir in file_path.parents or file_path.parent == target_dir:
+        if target_dir in path.parents or path.parent == target_dir:
             continue
         try:
-            if get_file_age(file_path) > age_threshold:
-                rel_path = file_path.parent.relative_to(start_dir)
+            if get_file_age(path) > age_threshold:
+                rel_path = path.parent.relative_to(start_dir)
                 dest_dir = target_dir / rel_path if str(rel_path) != "." else target_dir
                 dest_dir.mkdir(exist_ok=True, parents=True)
-                dest_path = get_unique_filename(dest_dir, file_path.name)
-                shutil.move(str(file_path), str(dest_path))
-                print(
-                    f"Moved (old): {file_path.name} -> {dest_path.relative_to(start_dir)}"
-                )
+                dest_path = get_unique_filename(dest_dir, path.name)
+                shutil.move(str(path), str(dest_path))
+                print(f"Moved (old): {path.name} -> {dest_path.relative_to(start_dir)}")
                 moved_count += 1
         except Exception as e:
-            print(f"Error processing {file_path.name}: {e}")
+            print(f"Error processing {path.name}: {e}")
     print(f"\nMoved {moved_count} old files to {destination}/")
 
 

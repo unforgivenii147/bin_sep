@@ -84,15 +84,15 @@ def main() -> None:
         help="Include comment lines in sorting and uniqueness",
     )
     args = parser.parse_args()
-    file_path = Path(args.filename)
-    if not file_path.exists():
-        print(f"Error: File '{file_path}' does not exist.", file=sys.stderr)
+    path = Path(args.filename)
+    if not path.exists():
+        print(f"Error: File '{path}' does not exist.", file=sys.stderr)
         sys.exit(1)
     if args.start_line < 1 or args.end_line < args.start_line:
         print("Error: Invalid line range.", file=sys.stderr)
         sys.exit(1)
     try:
-        with file_path.open("r", encoding="utf-8") as f:
+        with path.open("r", encoding="utf-8") as f:
             lines = f.readlines()
         total_lines = len(lines)
         if args.end_line > total_lines:
@@ -109,7 +109,7 @@ def main() -> None:
         ) as tmp_file:
             tmp_file.writelines(new_lines)
             temp_name = tmp_file.name
-        shutil.move(temp_name, file_path)
+        shutil.move(temp_name, path)
         if args.unique and removed_lines:
             print("Removed duplicate lines:")
             for line in removed_lines:

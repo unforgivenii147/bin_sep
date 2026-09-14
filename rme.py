@@ -17,8 +17,8 @@ except Exception:
     HAVE_READCHAR = False
 
 
-def read_markdown(file_path: str | Path) -> str:
-    path = Path(file_path)
+def read_markdown(path: str | Path) -> str:
+    path = Path(path)
     if not path.is_file():
         raise FileNotFoundError(f"File not found: {path}")
     return path.read_text(encoding="utf-8")

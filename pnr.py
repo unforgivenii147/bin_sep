@@ -123,24 +123,24 @@ def rename_by_template(
                 padding = 3
             else:
                 padding = 4
-            for i, file_path in enumerate(sorted(files), 1):
-                _name, ext = (file_path.stem, file_path.suffix)
+            for i, path in enumerate(sorted(files), 1):
+                _name, ext = (path.stem, path.suffix)
                 number_str = str(i).zfill(padding)
                 new_name = f"{template}{number_str}{ext}"
-                if new_name == file_path.name:
+                if new_name == path.name:
                     continue
                 new_path = current_path / new_name
                 if new_path.exists():
                     new_path = unique_path(new_path)
                 if dry_run:
-                    print(f"[DRY RUN] Would rename: {file_path.name} -> {new_name}")
+                    print(f"[DRY RUN] Would rename: {path.name} -> {new_name}")
                 else:
                     try:
-                        file_path.rename(new_path)
-                        print(f"{file_path.name} -> {new_name}")
+                        path.rename(new_path)
+                        print(f"{path.name} -> {new_name}")
                         renamed_count += 1
                     except OSError as e:
-                        print(f"Error renaming '{file_path.name}': {e}")
+                        print(f"Error renaming '{path.name}': {e}")
     except PermissionError:
         print(f"Permission denied: {current_path}")
         return renamed_count

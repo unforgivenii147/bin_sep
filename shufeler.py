@@ -11,10 +11,10 @@ from pathlib import Path
 MMAP_THRESHOLD_BYTES = 1 * 1024 * 1024
 
 
-def get_line_offsets(file_path: Path):
+def get_line_offsets(path: Path):
     offsets = []
     with (
-        file_path.open("rb") as f,
+        path.open("rb") as f,
         mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ) as mm,
     ):
         offset = 0
@@ -53,11 +53,11 @@ def weighted_shuffle_offsets(offsets) -> None:
             offsets[i], offsets[swap_pos] = offsets[swap_pos], offsets[i]
 
 
-def enhanced_shuffle_large_file(input_file_path: Path, output_file_path: Path) -> bool:
-    input_path = Path(input_file_path)
-    output_path = Path(output_file_path)
+def enhanced_shuffle_large_file(input_path: Path, output_path: Path) -> bool:
+    input_path = Path(input_path)
+    output_path = Path(output_path)
     if not input_path.exists():
-        print(f"Error: Input file '{input_file_path}' not found.", file=sys.stderr)
+        print(f"Error: Input file '{input_path}' not found.", file=sys.stderr)
         return False
     file_size = input_path.stat().st_size
     print(f"Input file size: {file_size / (1024 * 1024):.2f} MB")
@@ -108,20 +108,20 @@ def enhanced_shuffle_large_file(input_file_path: Path, output_file_path: Path) -
         return False
 
 
-def enhanced_shuffle_small_file(input_file_path: Path, output_file_path: Path) -> bool:
-    input_path = Path(input_file_path)
-    output_path = Path(output_file_path)
+def enhanced_shuffle_small_file(input_path: Path, output_path: Path) -> bool:
+    input_path = Path(input_path)
+    output_path = Path(output_path)
     if not input_path.exists():
-        print(f"Error: Input file '{input_file_path}' not found.", file=sys.stderr)
+        print(f"Error: Input file '{input_path}' not found.", file=sys.stderr)
         return False
-    print(f"Reading all lines from {input_file_path} into memory...")
+    print(f"Reading all lines from {input_path} into memory...")
     try:
         with input_path.open(encoding="utf-8") as f:
             lines = f.readlines()
     except MemoryError:
         print(
             f"MemoryError: File '{
-                input_file_path
+                input_path
             }' is too large to load into memory. Consider increasing 1mb or using a system with more RAM.",
             file=sys.stderr,
         )
@@ -139,7 +139,7 @@ def enhanced_shuffle_small_file(input_file_path: Path, output_file_path: Path) -
     crypto_shuffle(lines)
     shuffle3(lines)
     weighted_shuffle(lines)
-    print(f"Writing shuffled lines to: {output_file_path}")
+    print(f"Writing shuffled lines to: {output_path}")
     try:
         with output_path.open("w", encoding="utf-8") as f:
             f.writelines(lines)

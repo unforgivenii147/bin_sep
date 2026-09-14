@@ -10,8 +10,8 @@ from rich.markdown import Markdown
 from rich.text import Text
 
 
-def read_markdown(file_path: str) -> str:
-    path = Path(file_path).expanduser()
+def read_markdown(path: str) -> str:
+    path = Path(path).expanduser()
     if not path.is_file():
         raise FileNotFoundError(f"File not found: {path}")
     return path.read_text(encoding="utf-8")

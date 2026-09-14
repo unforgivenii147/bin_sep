@@ -22,9 +22,9 @@ def get_filez(root_dir: str | Path):
                     dirnames.remove(dirname)
                 visited_dirs.add(resolved_path)
             for filename in filenames:
-                filepath = Path(dirpath) / filename
-                if not should_skip(filepath):
-                    yield filepath
+                path = Path(dirpath) / filename
+                if not should_skip(path):
+                    yield path
     else:
         yield root_dir
 

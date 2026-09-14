@@ -7,9 +7,9 @@ from datetime import datetime
 from pathlib import Path
 
 
-def get_file_creation_time(filepath: str) -> datetime | None:
+def get_file_creation_time(path: str) -> datetime | None:
     try:
-        stat = os.stat(filepath)
+        stat = os.stat(path)
         if sys.platform == "win32":
             return datetime.fromtimestamp(stat.st_ctime)
         return datetime.fromtimestamp(stat.st_mtime)
@@ -36,10 +36,10 @@ def main() -> None:
     print("-" * 40)
     found_files = []
     for file in os.listdir(directory):
-        filepath = os.path.join(directory, file)
-        if not Path(filepath).is_file() or Path(filepath).samefile(filename):
+        path = os.path.join(directory, file)
+        if not Path(path).is_file() or Path(path).samefile(filename):
             continue
-        file_time = get_file_creation_time(filepath)
+        file_time = get_file_creation_time(path)
         if file_time and file_time.date() == target_date:
             found_files.append((file_time, file))
     found_files.sort()

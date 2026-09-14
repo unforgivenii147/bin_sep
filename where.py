@@ -28,16 +28,16 @@ def parse_csv_exts(s: str | None) -> set[str] | None:
     return norm
 
 
-def file_matches_extensions(file_path: Path, allowed_exts: set[str] | None) -> bool:
+def file_matches_extensions(path: Path, allowed_exts: set[str] | None) -> bool:
     if allowed_exts is None:
         return True
-    return file_path.suffix.lower() in allowed_exts
+    return path.suffix.lower() in allowed_exts
 
 
-def file_matches_exclude(file_path: Path, excluded_exts: set[str] | None) -> bool:
+def file_matches_exclude(path: Path, excluded_exts: set[str] | None) -> bool:
     if excluded_exts is None:
         return False
-    return file_path.suffix.lower() in excluded_exts
+    return path.suffix.lower() in excluded_exts
 
 
 def safe_copy_file(

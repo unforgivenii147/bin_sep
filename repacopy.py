@@ -148,15 +148,15 @@ class PackageRepacker:
         dist_info_dir = wheel_dir / f"{package_name}-{version}.dist-info"
         wheel_dir / f"{package_name}-{version}.data"
         dist_info_dir.mkdir(parents=True, exist_ok=True)
-        for file_path in files:
-            relative_path = file_path
+        for path in files:
+            relative_path = path
             target_path: Path
             if ".dist-info" in str(relative_path):
                 target_path = dist_info_dir / relative_path.name
             else:
                 target_path = wheel_dir / relative_path
             target_path.parent.mkdir(parents=True, exist_ok=True)
-            source_path = site_packages_path / file_path
+            source_path = site_packages_path / path
             if source_path.exists():
                 shutil.copy2(source_path, target_path)
             else:
@@ -200,15 +200,13 @@ class PackageRepacker:
             is_pure_python = True
             with Path(record_file).open(encoding="utf-8") as f:
                 for line in f:
-                    file_path_str = line.split(",")[0].strip()
-                    if file_path_str and not file_path_str.endswith(
-                        ".dist-info/RECORD"
-                    ):
-                        if file_path_str.endswith(".so"):
+                    path_str = line.split(",")[0].strip()
+                    if path_str and not path_str.endswith(".dist-info/RECORD"):
+                        if path_str.endswith(".so"):
                             is_pure_python = False
-                        full_path = site_packages_path / file_path_str
+                        full_path = site_packages_path / path_str
                         if full_path.exists():
-                            files_to_include.append(Path(file_path_str))
+                            files_to_include.append(Path(path_str))
             if not files_to_include:
                 logger.warning("No files found for package %s", package_name)
                 return False

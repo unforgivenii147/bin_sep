@@ -125,11 +125,11 @@ class UniversalCommentRemover:
             print(f"Warning: Failed to load {module_name}: {e}")
             return None
 
-    def get_parser_for_file(self, file_path: Path) -> tuple[Parser, str] | None:
-        extension = file_path.suffix.lower()
-        if file_path.name.lower() == "dockerfile":
+    def get_parser_for_file(self, path: Path) -> tuple[Parser, str] | None:
+        extension = path.suffix.lower()
+        if path.name.lower() == "dockerfile":
             extension = ".dockerfile"
-        elif file_path.name.lower() == "makefile":
+        elif path.name.lower() == "makefile":
             extension = ".make"
         module_name = EXTENSION_TO_LANGUAGE.get(extension)
         if not module_name:
@@ -249,12 +249,12 @@ def collect_supported_files(inputs: list[str]) -> list[Path]:
             else:
                 print(f"Warning: {path} has unsupported file type, skipping")
         elif path.is_dir():
-            for file_path in path.rglob("*"):
-                if file_path.is_file():
-                    if file_path.suffix.lower() in supported_extensions:
-                        supported_files.append(file_path)
-                    elif file_path.name.lower() in ("dockerfile", "makefile"):
-                        supported_files.append(file_path)
+            for path in path.rglob("*"):
+                if path.is_file():
+                    if path.suffix.lower() in supported_extensions:
+                        supported_files.append(path)
+                    elif path.name.lower() in ("dockerfile", "makefile"):
+                        supported_files.append(path)
         else:
             print(f"Warning: {path} does not exist, skipping")
     seen = set()
@@ -267,56 +267,56 @@ def collect_supported_files(inputs: list[str]) -> list[Path]:
     return unique_files
 
 
-def process_file(file_path: Path) -> ProcessResult:
+def process_file(path: Path) -> ProcessResult:
     start_time = time.perf_counter()
     try:
         remover = UniversalCommentRemover()
-        with open(file_path, "rb") as f:
+        with open(path, "rb") as f:
             content = f.read()
         file_size = len(content)
         if file_size == 0:
             return ProcessResult(
-                path=file_path,
+                path=path,
                 success=True,
                 comments_removed=0,
                 processing_time=time.perf_counter() - start_time,
                 file_size=0,
-                file_type=file_path.suffix,
+                file_type=path.suffix,
             )
         processed_content, comments_removed = remover.remove_comments(
-            content, file_path.suffix.lower()
+            content, path.suffix.lower()
         )
         if comments_removed > 0 and processed_content != content:
-            temp_path = file_path.with_suffix(file_path.suffix + ".tmp")
+            temp_path = path.with_suffix(path.suffix + ".tmp")
             try:
                 with open(temp_path, "wb") as f:
                     f.write(processed_content)
                     f.flush()
                     os.fsync(f.fileno())
-                original_mode = os.stat(file_path).st_mode
+                original_mode = os.stat(path).st_mode
                 os.chmod(temp_path, original_mode)
-                temp_path.replace(file_path)
+                temp_path.replace(path)
             except Exception:
                 if temp_path.exists():
                     temp_path.unlink()
                 raise
         processing_time = time.perf_counter() - start_time
         return ProcessResult(
-            path=file_path,
+            path=path,
             success=True,
             comments_removed=comments_removed,
             processing_time=processing_time,
             file_size=file_size,
-            file_type=file_path.suffix,
+            file_type=path.suffix,
         )
     except Exception as e:
         processing_time = time.perf_counter() - start_time
         return ProcessResult(
-            path=file_path,
+            path=path,
             success=False,
             error_message=str(e),
             processing_time=processing_time,
-            file_type=file_path.suffix if file_path.suffix else "unknown",
+            file_type=path.suffix if path.suffix else "unknown",
         )
 
 
@@ -328,8 +328,8 @@ def process_files_parallel(
     completed = 0
     with mp.Pool(processes=num_workers) as pool:
         async_results = []
-        for file_path in files:
-            async_result = pool.apply_async(process_file, (file_path,))
+        for path in files:
+            async_result = pool.apply_async(process_file, (path,))
             async_results.append(async_result)
         for async_result in async_results:
             try:

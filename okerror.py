@@ -28,8 +28,8 @@ def unique_destination(dest: Path) -> Path:
         counter += 1
 
 
-def black_check(file_path: Path) -> bool:
-    result = subprocess.run(["black", "--check", str(file_path)], capture_output=True)
+def black_check(path: Path) -> bool:
+    result = subprocess.run(["black", "--check", str(path)], capture_output=True)
     return result.returncode == 0
 
 

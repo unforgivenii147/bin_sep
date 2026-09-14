@@ -24,11 +24,11 @@ def create_folder_table(cursor: sqlite3.Cursor, folder_name: str) -> None:
     )
 
 
-def read_file_contents(filepath: Path) -> str:
+def read_file_contents(path: Path) -> str:
     encodings = ["utf-8", "latin-1", "cp1252", "iso-8859-1"]
     for encoding in encodings:
         try:
-            return filepath.read_text(encoding=encoding)[: 1024 * 1024]
+            return path.read_text(encoding=encoding)[: 1024 * 1024]
         except (UnicodeDecodeError, UnicodeError, PermissionError):
             continue
         except Exception as e:

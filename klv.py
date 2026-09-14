@@ -105,31 +105,31 @@ def compare_versions(ver1: str, ver2: str) -> int:
             return 0
 
 
-def process_file(file_path: Path, file_type: str) -> Optional[tuple[str, str, Path]]:
+def process_file(path: Path, file_type: str) -> Optional[tuple[str, str, Path]]:
     """
     Process a single package file and extract its name and version.
 
     Args:
-        file_path: Path to the package file.
+        path: Path to the package file.
         file_type: Either "wheel" or "deb".
 
     Returns:
-        A tuple of (package_name, version, file_path) or None if processing fails.
+        A tuple of (package_name, version, path) or None if processing fails.
     """
     try:
-        filename: str = file_path.name
+        filename: str = path.name
         if file_type == "wheel" and filename.endswith(WHEEL_EXTENSION):
             parsed: Optional[tuple[str, str]] = parse_wheel_version(filename)
             if parsed:
                 pkg_name, version = parsed
-                return pkg_name, version, file_path
+                return pkg_name, version, path
         elif file_type == "deb" and filename.endswith(DEB_EXTENSION):
             parsed = parse_deb_version(filename)
             if parsed:
                 pkg_name, version = parsed
-                return pkg_name, version, file_path
+                return pkg_name, version, path
     except Exception as e:
-        logger.error(f"Error processing {file_path}: {e}")
+        logger.error(f"Error processing {path}: {e}")
     return None
 
 
@@ -138,13 +138,13 @@ def _process_file_wrapper(args: tuple[Path, str]) -> Optional[tuple[str, str, Pa
     Wrapper for process_file to be used with multiprocessing.Pool.apply_async.
 
     Args:
-        args: A tuple of (file_path, file_type).
+        args: A tuple of (path, file_type).
 
     Returns:
-        A tuple of (package_name, version, file_path) or None if processing fails.
+        A tuple of (package_name, version, path) or None if processing fails.
     """
-    file_path, file_type = args
-    return process_file(file_path, file_type)
+    path, file_type = args
+    return process_file(path, file_type)
 
 
 def scan_directory(
@@ -159,7 +159,7 @@ def scan_directory(
         check_all: If True, scan for both wheel and deb files.
 
     Returns:
-        A dictionary mapping package names to lists of (version, file_path) tuples.
+        A dictionary mapping package names to lists of (version, path) tuples.
     """
     packages: dict[str, list[tuple[str, Path]]] = defaultdict(list)
     extensions: list[str] = []
@@ -177,11 +177,11 @@ def scan_directory(
     logger.info(f"Found {len(files_to_process)} files to process...")
 
     tasks: list[tuple[Path, str]] = []
-    for file_path in files_to_process:
-        if file_path.suffix == WHEEL_EXTENSION:
-            tasks.append((file_path, "wheel"))
-        elif file_path.suffix == DEB_EXTENSION:
-            tasks.append((file_path, "deb"))
+    for path in files_to_process:
+        if path.suffix == WHEEL_EXTENSION:
+            tasks.append((path, "wheel"))
+        elif path.suffix == DEB_EXTENSION:
+            tasks.append((path, "deb"))
 
     with Pool(processes=MAX_WORKERS) as pool:
         async_results = [
@@ -190,8 +190,8 @@ def scan_directory(
         for async_result in async_results:
             result: Optional[tuple[str, str, Path]] = async_result.get()
             if result:
-                pkg_name, version, file_path = result
-                packages[pkg_name].append((version, file_path))
+                pkg_name, version, path = result
+                packages[pkg_name].append((version, path))
 
     return packages
 
@@ -241,18 +241,18 @@ def keep_latest_versions(
         logger.info(f"\nPackage: {pkg_name}")
         logger.info(f"  Latest version: {latest_version} - {latest_path.name}")
         logger.info(f"  Total versions found: {len(versions)}")
-        for version, file_path in versions:
-            if file_path == latest_path:
+        for version, path in versions:
+            if path == latest_path:
                 continue
             if dry_run:
-                logger.info(f"  Would delete: {version} - {file_path.name}")
+                logger.info(f"  Would delete: {version} - {path.name}")
             else:
                 try:
-                    file_path.unlink()
-                    logger.info(f"  Deleted: {version} - {file_path.name}")
+                    path.unlink()
+                    logger.info(f"  Deleted: {version} - {path.name}")
                     total_deleted += 1
                 except Exception as e:
-                    logger.error(f"  Error deleting {file_path.name}: {e}")
+                    logger.error(f"  Error deleting {path.name}: {e}")
     return total_deleted
 
 

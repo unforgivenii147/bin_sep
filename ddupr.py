@@ -371,16 +371,16 @@ def remove_and_patch(
             )
             continue
         by_file[obj.origin_file].append(obj)
-    for filepath, objs in by_file.items():
-        path = Path(filepath)
+    for path, objs in by_file.items():
+        path = Path(path)
         if not path.exists():
-            logger.warning("Origin file gone: {}", filepath)
+            logger.warning("Origin file gone: {}", path)
             continue
         try:
             original = path.read_text(encoding="utf-8")
             lines = original.splitlines(keepends=True)
         except Exception as exc:
-            logger.error("Cannot read {} for patching: {}", filepath, exc)
+            logger.error("Cannot read {} for patching: {}", path, exc)
             continue
         objs_sorted = sorted(objs, key=lambda o: o.node_lineno, reverse=True)
         patched_lines = list(lines)
@@ -407,17 +407,17 @@ def remove_and_patch(
             patched_lines.insert(insert_at + i, imp)
         new_source = "".join(patched_lines)
         if not _validate_source(new_source, path):
-            logger.error("Patched {} has syntax errors — original preserved", filepath)
+            logger.error("Patched {} has syntax errors — original preserved", path)
             continue
         try:
             path.write_text(new_source, encoding="utf-8")
             logger.success(
                 "Patched {}: removed {} definition(s), added imports",
-                filepath,
+                path,
                 len(objs),
             )
         except Exception as exc:
-            logger.error("Cannot write patched {}: {}", filepath, exc)
+            logger.error("Cannot write patched {}: {}", path, exc)
 
 
 def collect_all_paths(root: Path) -> list[Path]:

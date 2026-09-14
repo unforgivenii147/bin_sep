@@ -21,8 +21,8 @@ def find_license_files() -> None:
                 print(fn, ext)
                 lf.append(file)
     print(f"Found {len(lf)} license files")
-    for file_path in lf:
-        Path(file_path).write_text("", encoding="utf-8")
+    for path in lf:
+        Path(path).write_text("", encoding="utf-8")
 
 
 if __name__ == "__main__":

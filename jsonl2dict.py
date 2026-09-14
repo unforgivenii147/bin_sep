@@ -5,9 +5,9 @@ import json
 import sys
 
 
-def jsonl_to_dict_list(filepath):
+def jsonl_to_dict_list(path):
     data = []
-    with open(filepath, encoding="utf-8") as f:
+    with open(path, encoding="utf-8") as f:
         for line in f:
             try:
                 data.append(json.loads(line))
@@ -16,9 +16,9 @@ def jsonl_to_dict_list(filepath):
     return data
 
 
-def with_key(filepath, key_field):
+def with_key(path, key_field):
     data = {}
-    with open(filepath, encoding="utf-8") as f:
+    with open(path, encoding="utf-8") as f:
         for line in f:
             try:
                 record = json.loads(line)

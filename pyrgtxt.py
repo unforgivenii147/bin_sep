@@ -7,23 +7,23 @@ from pathlib import Path
 from joblib import Parallel, delayed
 
 
-def is_text_file(file_path):
+def is_text_file(path):
     try:
-        with open(file_path, "rb") as f:
+        with open(path, "rb") as f:
             chunk = f.read(1024)
             return b"\x00" not in chunk
     except (OSError, PermissionError):
         return False
 
 
-def search_in_file(file_path, search_string):
+def search_in_file(path, search_string):
     try:
-        if not is_text_file(file_path):
+        if not is_text_file(path):
             return []
-        with open(file_path, encoding="utf-8", errors="ignore") as f:
+        with open(path, encoding="utf-8", errors="ignore") as f:
             content = f.read()
             if search_string in content:
-                return [str(file_path.relative_to(Path.cwd()))]
+                return [str(path.relative_to(Path.cwd()))]
     except (OSError, PermissionError, UnicodeDecodeError):
         pass
     return []

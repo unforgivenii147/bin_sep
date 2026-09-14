@@ -40,24 +40,24 @@ def fix_content(content):
 def process_files(autofix=False):
     count_found = 0
     python_files = list(Path(".").rglob("*.py"))
-    for file_path in python_files:
-        if file_path.name == os.path.basename(__file__):
+    for path in python_files:
+        if path.name == os.path.basename(__file__):
             continue
         try:
-            content = file_path.read_text(encoding="utf-8")
+            content = path.read_text(encoding="utf-8")
         except Exception as e:
-            print(f"Could not read {file_path}: {e}")
+            print(f"Could not read {path}: {e}")
             continue
         matches = [name for name, regex in PATTERNS.items() if regex.search(content)]
         if matches:
             count_found += 1
-            print(f"[{'FIXING' if autofix else 'FOUND'}] {file_path}")
+            print(f"[{'FIXING' if autofix else 'FOUND'}] {path}")
             for m in matches:
                 print(f"  - Detected: {m}")
             if autofix:
                 fixed_code = fix_content(content)
-                file_path.write_text(fixed_code, encoding="utf-8")
-                print(f"  - Applied basic fixes to {file_path}")
+                path.write_text(fixed_code, encoding="utf-8")
+                print(f"  - Applied basic fixes to {path}")
     print(f"\nSummary: Found {count_found} files containing pkg_resources usage.")
     if not autofix and count_found > 0:
         print("Run with -a to attempt automatic replacement.")

@@ -8,9 +8,9 @@ from pathlib import Path
 from dh import get_files
 
 
-def detect_version(file_path: Path) -> None:
+def detect_version(path: Path) -> None:
     try:
-        source = file_path.read_text(encoding="utf-8")
+        source = path.read_text(encoding="utf-8")
     except Exception as e:
         print(f"Error reading file: {e}")
         return
@@ -23,7 +23,7 @@ def detect_version(file_path: Path) -> None:
         reasons.append("Parsed successfully with Python 3 syntax.")
     except SyntaxError:
         print(
-            f"{file_path.name}\nConfidence: High\nReason: Syntax error when parsed with Python 3."
+            f"{path.name}\nConfidence: High\nReason: Syntax error when parsed with Python 3."
         )
         return
     if "print " in source and "print(" not in source:
@@ -59,12 +59,12 @@ def detect_version(file_path: Path) -> None:
         confidence = "Low"
         reasons.append("No strong indicators found; defaulting to Python 3.")
     if version == "2":
-        print(f"{file_path.name} : {version}\nConfidence: {confidence}\nReason(s):")
+        print(f"{path.name} : {version}\nConfidence: {confidence}\nReason(s):")
 
 
 if __name__ == "__main__":
     args = sys.argv[1:]
     cwd = Path.cwd()
     files = [Path(f) for f in args] if args else get_files(cwd, ext=[".py"])
-    for file_path in files:
-        detect_version(file_path)
+    for path in files:
+        detect_version(path)

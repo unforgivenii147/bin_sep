@@ -18,68 +18,68 @@ COMPRESSED_EXT: str = ".snappy"
 POOL_SIZE: int = 8
 
 
-def compress_file(file_path: Path, remove_original: bool = True) -> tuple[bool, str]:
+def compress_file(path: Path, remove_original: bool = True) -> tuple[bool, str]:
     """Compress a single file using Snappy and optionally remove the original.
 
     Args:
-        file_path: Path to the file to compress.
+        path: Path to the file to compress.
         remove_original: If True, delete the original file after compression.
 
     Returns:
         A tuple of (success, message).
     """
     try:
-        compressed_path: Path = file_path.with_suffix(file_path.suffix + COMPRESSED_EXT)
-        with open(file_path, "rb") as f:
+        compressed_path: Path = path.with_suffix(path.suffix + COMPRESSED_EXT)
+        with open(path, "rb") as f:
             data: bytes = f.read()
         compressed_data: bytes = bytes(cramjam.snappy.compress(data))
         with open(compressed_path, "wb") as f:
             f.write(compressed_data)
         if remove_original:
-            file_path.unlink()
+            path.unlink()
         original_size: int = len(data)
         compressed_size: int = len(compressed_data)
         ratio: float = (
             (compressed_size / original_size * 100) if original_size > 0 else 0.0
         )
         logger.info(
-            f"Compressed: {file_path} -> {compressed_path} "
+            f"Compressed: {path} -> {compressed_path} "
             f"({original_size} -> {compressed_size} bytes, {ratio:.1f}%)"
         )
-        return True, f"Compressed {file_path.name}"
+        return True, f"Compressed {path.name}"
     except Exception as e:
-        logger.error(f"Error compressing {file_path}: {e!s}")
+        logger.error(f"Error compressing {path}: {e!s}")
         return False, str(e)
 
 
-def decompress_file(file_path: Path, remove_original: bool = True) -> tuple[bool, str]:
+def decompress_file(path: Path, remove_original: bool = True) -> tuple[bool, str]:
     """Decompress a single Snappy-compressed file and optionally remove the original.
 
     Args:
-        file_path: Path to the compressed file.
+        path: Path to the compressed file.
         remove_original: If True, delete the compressed file after decompression.
 
     Returns:
         A tuple of (success, message).
     """
     try:
-        if file_path.suffix != COMPRESSED_EXT:
-            return False, f"File {file_path} doesn't have {COMPRESSED_EXT} extension"
-        output_path: Path = file_path.with_suffix("")
-        with open(file_path, "rb") as f:
+        if path.suffix != COMPRESSED_EXT:
+            return False, f"File {path} doesn't have {COMPRESSED_EXT} extension"
+        output_path: Path = path.with_suffix("")
+        with open(path, "rb") as f:
             compressed_data: bytes = f.read()
         decompressed_data: bytes = bytes(cramjam.snappy.decompress(compressed_data))
         with open(output_path, "wb") as f:
             f.write(decompressed_data)
         if remove_original:
-            file_path.unlink()
+            path.unlink()
         logger.info(
-            f"Decompressed: {file_path} -> {output_path} "
+            f"Decompressed: {path} -> {output_path} "
             f"({len(compressed_data)} -> {len(decompressed_data)} bytes)"
         )
-        return True, f"Decompressed {file_path.name}"
+        return True, f"Decompressed {path.name}"
     except Exception as e:
-        logger.error(f"Error decompressing {file_path}: {e!s}")
+        logger.error(f"Error decompressing {path}: {e!s}")
         return False, str(e)
 
 
@@ -87,16 +87,16 @@ def process_file_worker(args: tuple[Path, str, bool]) -> tuple[bool, str]:
     """Worker entry point for processing a single file.
 
     Args:
-        args: Tuple of (file_path, operation, remove_original).
+        args: Tuple of (path, operation, remove_original).
 
     Returns:
         A tuple of (success, message).
     """
-    file_path, operation, remove_original = args
+    path, operation, remove_original = args
     if operation == "compress":
-        return compress_file(file_path, remove_original)
+        return compress_file(path, remove_original)
     if operation == "decompress":
-        return decompress_file(file_path, remove_original)
+        return decompress_file(path, remove_original)
     return False, f"Unknown operation: {operation}"
 
 
@@ -114,14 +114,14 @@ def find_files(directory: Path, operation: str, recursive: bool = True) -> list[
     files: list[Path] = []
     if operation == "compress":
         pattern: str = "**/*" if recursive else "*"
-        for file_path in directory.glob(pattern):
-            if file_path.is_file() and file_path.suffix != COMPRESSED_EXT:
-                files.append(file_path)
+        for path in directory.glob(pattern):
+            if path.is_file() and path.suffix != COMPRESSED_EXT:
+                files.append(path)
     else:
         pattern = f"**/*{COMPRESSED_EXT}" if recursive else f"*{COMPRESSED_EXT}"
-        for file_path in directory.glob(pattern):
-            if file_path.is_file():
-                files.append(file_path)
+        for path in directory.glob(pattern):
+            if path.is_file():
+                files.append(path)
     return files
 
 
@@ -170,30 +170,30 @@ def tar_subdirectories(base_dir: Path, remove_original: bool = True) -> list[Pat
 
 
 def process_files(
-    file_paths: list[Path],
+    paths: list[Path],
     operation: str,
     remove_original: bool = True,
 ) -> tuple[int, int]:
     """Process a list of files concurrently using a fixed-size multiprocessing pool.
 
     Args:
-        file_paths: List of file paths to process.
+        paths: List of file paths to process.
         operation: Either "compress" or "decompress".
         remove_original: If True, delete original files after processing.
 
     Returns:
         A tuple of (success_count, failure_count).
     """
-    if not file_paths:
+    if not paths:
         logger.warning(f"No files found to {operation}")
         return 0, 0
 
-    logger.info(f"Processing {len(file_paths)} files with {POOL_SIZE} workers")
+    logger.info(f"Processing {len(paths)} files with {POOL_SIZE} workers")
     success_count: int = 0
     failure_count: int = 0
 
     args_list: list[tuple[Path, str, bool]] = [
-        (fp, operation, remove_original) for fp in file_paths
+        (fp, operation, remove_original) for fp in paths
     ]
 
     pool: multiprocessing.pool.Pool = multiprocessing.Pool(processes=POOL_SIZE)
@@ -202,17 +202,17 @@ def process_files(
             (args[0], pool.apply_async(process_file_worker, (args,)))
             for args in args_list
         ]
-        for file_path, async_result in async_results:
+        for path, async_result in async_results:
             try:
                 success, message = async_result.get()
                 if success:
                     success_count += 1
                 else:
                     failure_count += 1
-                    logger.error(f"Failed to process {file_path}: {message}")
+                    logger.error(f"Failed to process {path}: {message}")
             except Exception as e:
                 failure_count += 1
-                logger.error(f"Error processing {file_path}: {e!s}")
+                logger.error(f"Error processing {path}: {e!s}")
     finally:
         pool.close()
         pool.join()

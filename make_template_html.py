@@ -9,12 +9,10 @@ from bs4 import BeautifulSoup
 def find_html_files(cwd: str = ".") -> list[Path]:
     root_path = Path(cwd).resolve()
     html_files = [
-        file_path
-        for file_path in root_path.rglob("*.html")
-        if file_path.name != "template.html"
+        path for path in root_path.rglob("*.html") if path.name != "template.html"
     ]
-    for file_path in root_path.rglob("*.htm"):
-        html_files.append(file_path)
+    for path in root_path.rglob("*.htm"):
+        html_files.append(path)
     return sorted(html_files)
 
 
@@ -23,9 +21,9 @@ def extract_common_structure(html_files: list[Path]) -> dict:
     meta_tags = []
     link_tags = []
     script_tags = []
-    for file_path in html_files:
+    for path in html_files:
         try:
-            with Path(file_path).open(encoding="utf-8") as f:
+            with Path(path).open(encoding="utf-8") as f:
                 soup = BeautifulSoup(f.read(), "html.parser")
                 if soup.head:
                     meta_tags.extend(str(meta) for meta in soup.head.find_all("meta"))
@@ -38,7 +36,7 @@ def extract_common_structure(html_files: list[Path]) -> dict:
                 if soup.body and soup.body.get("class"):
                     body_classes.extend(soup.body.get("class"))
         except Exception as e:
-            print(f"Error processing {file_path}: {e}")
+            print(f"Error processing {path}: {e}")
     common_meta = list(set(meta_tags))
     common_links = list(set(link_tags))
     common_scripts = list(set(script_tags))
@@ -53,20 +51,20 @@ def extract_common_structure(html_files: list[Path]) -> dict:
 
 def merge_html_content(html_files: list[Path]) -> str:
     merged_sections = []
-    for file_path in html_files:
+    for path in html_files:
         try:
-            with Path(file_path).open(encoding="utf-8") as f:
+            with Path(path).open(encoding="utf-8") as f:
                 soup = BeautifulSoup(f.read(), "html.parser")
                 content = soup.body.decode_contents() if soup.body else str(soup)
                 section_html = f"""
-    <!-- Content from: {file_path.relative_to(Path.cwd())} -->
-    <section class="merged-content" data-source="{file_path.name}">
+    <!-- Content from: {path.relative_to(Path.cwd())} -->
+    <section class="merged-content" data-source="{path.name}">
         {content}
     </section>
 """
                 merged_sections.append(section_html)
         except Exception as e:
-            print(f"Error merging {file_path}: {e}")
+            print(f"Error merging {path}: {e}")
     return "".join(merged_sections)
 
 

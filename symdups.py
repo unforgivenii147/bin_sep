@@ -13,17 +13,17 @@ BACKUP_FILE = ".symlink_backup.json"
 MIN_FILE_SIZE = 1
 
 
-def calculate_file_hash(filepath, chunk_size=32768) -> str | None:
-    if not filepath.is_file():
+def calculate_file_hash(path, chunk_size=32768) -> str | None:
+    if not path.is_file():
         return None
     hasher = xxh64()
     try:
-        with Path(filepath).open("rb") as f:
+        with Path(path).open("rb") as f:
             while chunk := f.read(chunk_size):
                 hasher.update(chunk)
         return hasher.hexdigest()
     except OSError as e:
-        print(f"[ERROR] Reading {filepath}: {e}")
+        print(f"[ERROR] Reading {path}: {e}")
         return None
 
 

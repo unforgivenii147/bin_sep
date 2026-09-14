@@ -8,26 +8,26 @@ from pathlib import Path
 
 
 def compile_file(args):
-    file_path, compiler, output_path = args
+    path, compiler, output_path = args
     try:
-        cmd = [compiler, str(file_path), "-o", str(output_path)]
+        cmd = [compiler, str(path), "-o", str(output_path)]
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
         if result.returncode == 0:
             return (
-                str(file_path),
+                str(path),
                 True,
-                f"✓ Compiled: {file_path.name} -> {output_path.name}",
+                f"✓ Compiled: {path.name} -> {output_path.name}",
             )
         else:
             return (
-                str(file_path),
+                str(path),
                 False,
-                f"✗ Failed: {file_path.name}\n{result.stderr}",
+                f"✗ Failed: {path.name}\n{result.stderr}",
             )
     except subprocess.TimeoutExpired:
-        return (str(file_path), False, f"✗ Timeout: {file_path.name}")
+        return (str(path), False, f"✗ Timeout: {path.name}")
     except Exception as e:
-        return (str(file_path), False, f"✗ Error: {file_path.name} - {e!s}")
+        return (str(path), False, f"✗ Error: {path.name} - {e!s}")
 
 
 def main():
@@ -54,7 +54,7 @@ def main():
     print("=" * 40 + "\n")
     successful = 0
     failed = 0
-    for _file_path, success, message in results:
+    for _path, success, message in results:
         print(message)
         if success:
             successful += 1

@@ -40,18 +40,18 @@ def main():
         return
     cwd = Path.cwd().resolve()
     print(f"Found {len(found_files)} file(s):\n")
-    for file_path in found_files:
-        print(f"  {file_path.relative_to(cwd)}")
+    for path in found_files:
+        print(f"  {path.relative_to(cwd)}")
     if args.auto_remove:
         print("\n" + "=" * 35)
         deleted_count = 0
-        for file_path in found_files:
+        for path in found_files:
             try:
-                os.remove(file_path)
-                print(f"Deleted: {file_path}")
+                os.remove(path)
+                print(f"Deleted: {path}")
                 deleted_count += 1
             except Exception as e:
-                print(f"Error deleting {file_path}: {e}")
+                print(f"Error deleting {path}: {e}")
         print(f"\nDeleted {deleted_count} of {len(found_files)} files.")
 
 

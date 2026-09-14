@@ -69,21 +69,19 @@ class TypeInjector(cst.CSTTransformer):
         return updated_node
 
 
-def run_stubgen(filepath: str) -> str:
+def run_stubgen(path: str) -> str:
     out_dir = "stubgen_out"
     if os.path.exists(out_dir):
         shutil.rmtree(out_dir)
-    subprocess.run(
-        ["stubgen", "-o", out_dir, filepath], check=True, capture_output=True
-    )
-    base_name = os.path.basename(filepath).replace(".py", ".pyi")
+    subprocess.run(["stubgen", "-o", out_dir, path], check=True, capture_output=True)
+    base_name = os.path.basename(path).replace(".py", ".pyi")
     pyi_path = os.path.join(out_dir, base_name)
     return pyi_path
 
 
-def process_file(filepath: str):
+def process_file(path: str):
     try:
-        pyi_path = run_stubgen(filepath)
+        pyi_path = run_stubgen(path)
     except subprocess.CalledProcessError as e:
         print(f"Stubgen failed: {e}")
         return
@@ -93,15 +91,15 @@ def process_file(filepath: str):
     stub_parser = StubParser()
     pyi_module.visit(stub_parser)
     type_map = stub_parser.type_map
-    with open(filepath, "r") as f:
+    with open(path, "r") as f:
         source_code = f.read()
     module = cst.parse_module(source_code)
     transformer = TypeInjector(type_map)
     modified_module = module.visit(transformer)
-    with open(filepath, "w") as f:
+    with open(path, "w") as f:
         f.write(modified_module.code)
     shutil.rmtree("stubgen_out")
-    print(f"Successfully annotated {filepath} using mypy stubs.")
+    print(f"Successfully annotated {path} using mypy stubs.")
 
 
 if __name__ == "__main__":

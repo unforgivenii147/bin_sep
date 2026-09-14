@@ -30,8 +30,8 @@ def is_empty_wheel(wheel_path: str) -> bool:
                 for row in reader:
                     if not row:
                         continue
-                    file_path = row[0]
-                    if not file_path.startswith(f"{dist_info}/"):
+                    path = row[0]
+                    if not path.startswith(f"{dist_info}/"):
                         return False
             return True
     except (zipfile.BadZipFile, KeyError, UnicodeDecodeError):

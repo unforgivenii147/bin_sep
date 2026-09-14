@@ -93,9 +93,9 @@ def extract_imports_regex(content: str):
     return imports
 
 
-def get_imports_from_file(file_path: Path):
+def get_imports_from_file(path: Path):
     try:
-        content = Path(file_path).read_text(encoding="utf-8", errors="ignore")
+        content = Path(path).read_text(encoding="utf-8", errors="ignore")
         imports = extract_imports_from_ast(content)
         if not imports:
             imports = extract_imports_regex(content)

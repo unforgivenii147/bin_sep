@@ -7,9 +7,9 @@ import subprocess
 import sys
 
 
-def shrink_pdf_mobile(file_path):
-    if not os.path.exists(file_path):
-        print(f"Error: File '{file_path}' not found.")
+def shrink_pdf_mobile(path):
+    if not os.path.exists(path):
+        print(f"Error: File '{path}' not found.")
         sys.exit(1)
     gs_executable = "gs"
     if not shutil.which(gs_executable):
@@ -20,10 +20,10 @@ def shrink_pdf_mobile(file_path):
                 "Error: Ghostscript ('gs' or 'gswin64c') is not installed or not in your PATH."
             )
             sys.exit(1)
-    orig_size = os.path.getsize(file_path)
+    orig_size = os.path.getsize(path)
     print(f"Original size: {orig_size / 1024 / 1024:.2f} MB")
     print("Compressing for mobile viewing... (72 DPI + Linearization)")
-    temp_path = file_path + ".tmp"
+    temp_path = path + ".tmp"
     gs_args = [
         gs_executable,
         "-sDEVICE=pdfwrite",
@@ -34,7 +34,7 @@ def shrink_pdf_mobile(file_path):
         "-dQUIET",
         "-dBATCH",
         f"-sOutputFile={temp_path}",
-        file_path,
+        path,
     ]
     try:
         result = subprocess.run(gs_args, capture_output=True, text=True)
@@ -45,7 +45,7 @@ def shrink_pdf_mobile(file_path):
             sys.exit(1)
         new_size = os.path.getsize(temp_path)
         if new_size < orig_size:
-            os.replace(temp_path, file_path)
+            os.replace(temp_path, path)
             print("Success! Inplace update complete.")
             print(f"New mobile-optimized size: {new_size / 1024 / 1024:.2f} MB")
             print(f"Saved: {((orig_size - new_size) / orig_size) * 40:.1f}% space")

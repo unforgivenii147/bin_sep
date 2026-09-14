@@ -250,18 +250,18 @@ def _log_result(result: tuple[Path, int, int, bool, str | None]) -> None:
     Args:
         result: The tuple returned by process_file.
     """
-    file_path, comments_removed, docstrings_removed, written, error = result
+    path, comments_removed, docstrings_removed, written, error = result
     if written:
         logger.info(
             "{}: removed {} comments, {} docstrings",
-            file_path,
+            path,
             comments_removed,
             docstrings_removed,
         )
     else:
         logger.warning(
             "{}: INVALID after transform, skipped write (removed {} comments, {} docstrings). Error: {}",
-            file_path,
+            path,
             comments_removed,
             docstrings_removed,
             error,

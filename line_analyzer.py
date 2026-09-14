@@ -9,12 +9,12 @@ def get_python_files(directory: Path) -> list[Path]:
     return sorted(directory.rglob("*.py"))
 
 
-def read_lines(file_path: Path) -> list[str]:
+def read_lines(path: Path) -> list[str]:
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(path, "r", encoding="utf-8") as f:
             return [line.rstrip("\n") for line in f]
     except Exception as e:
-        print(f"Warning: Could not read {file_path}: {e}", file=sys.stderr)
+        print(f"Warning: Could not read {path}: {e}", file=sys.stderr)
         return []
 
 

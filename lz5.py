@@ -59,8 +59,8 @@ def compress_folder(folder_path):
         return {"folder": folder.name, "error": str(e), "status": "error"}
 
 
-def decompress_file(file_path):
-    file = Path(file_path)
+def decompress_file(path):
+    file = Path(path)
     if not file.suffix == ".lz4" or not file.stem.endswith(".tar"):
         return f"Skipped {file}: Not a tar.lz4 file"
     folder_name = file.stem[:-4]

@@ -197,10 +197,10 @@ class PathlibRefactorer:
         return "".join(lines)
 
     def refactor_file(
-        self, file_path: Path, dry_run: bool = False, create_backup: bool = True
+        self, path: Path, dry_run: bool = False, create_backup: bool = True
     ) -> dict:
         result = {
-            "path": file_path,
+            "path": path,
             "success": False,
             "changed": False,
             "transformations_applied": set(),
@@ -208,21 +208,21 @@ class PathlibRefactorer:
             "backup_path": None,
         }
         try:
-            original = file_path.read_text(encoding="utf-8")
+            original = path.read_text(encoding="utf-8")
             refactored, applied = self.apply_transformations(original)
             if applied:
                 refactored = self.add_pathlib_import(refactored)
                 try:
-                    compile(refactored, file_path.name, "exec")
+                    compile(refactored, path.name, "exec")
                     result["success"] = True
                     result["changed"] = True
                     result["transformations_applied"] = applied
                     if not dry_run:
                         if create_backup:
-                            backup = file_path.with_suffix(file_path.suffix + ".bak")
+                            backup = path.with_suffix(path.suffix + ".bak")
                             backup.write_text(original, encoding="utf-8")
                             result["backup_path"] = backup
-                        file_path.write_text(refactored, encoding="utf-8")
+                        path.write_text(refactored, encoding="utf-8")
                 except SyntaxError as e:
                     result["error"] = f"Syntax error after refactoring: {e}"
                     result["success"] = False
@@ -268,17 +268,17 @@ def main() -> int:
         cprint("🔍 DRY RUN MODE - No files will be modified\n", "yellow")
     refactorer = PathlibRefactorer()
     results = []
-    for file_path in files:
+    for path in files:
         if args.verbose:
-            cprint(f"\nProcessing: {file_path.name}", "white")
+            cprint(f"\nProcessing: {path.name}", "white")
         result = refactorer.refactor_file(
-            file_path, dry_run=args.dry_run, create_backup=not args.no_backup
+            path, dry_run=args.dry_run, create_backup=not args.no_backup
         )
         results.append(result)
         if result["error"]:
             cprint(f"  ❌ Error: {result['error']}", "red")
         elif result["changed"]:
-            cprint(f"  ✅ Refactored: {file_path.name}", "green")
+            cprint(f"  ✅ Refactored: {path.name}", "green")
             if args.verbose:
                 for trans in result["transformations_applied"]:
                     cprint(f"     • {trans}", "cyan", attrs=["dark"])

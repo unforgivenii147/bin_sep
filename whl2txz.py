@@ -317,14 +317,14 @@ def process_single_file(args: tuple[Path, bool]) -> FileResult:
     """Worker entry point for converting a single file in a pool.
 
     Args:
-        args: A tuple of (file_path, remove_original).
+        args: A tuple of (path, remove_original).
 
     Returns:
-        A tuple of (file_path, success, message, output_path).
+        A tuple of (path, success, message, output_path).
     """
-    file_path, remove_original = args
-    success, message, output_path = process_file(file_path, remove_original)
-    return file_path, success, message, output_path
+    path, remove_original = args
+    success, message, output_path = process_file(path, remove_original)
+    return path, success, message, output_path
 
 
 def build_arg_parser() -> argparse.ArgumentParser:
@@ -452,12 +452,12 @@ def run_conversions(
             (file_arg[0], pool.apply_async(process_single_file, (file_arg,)))
             for file_arg in file_args
         ]
-        for file_path, async_result in async_results:
+        for path, async_result in async_results:
             try:
                 results.append(async_result.get())
             except Exception as e:
-                results.append((file_path, False, f"Execution failed: {e}", None))
-                logger.error(f"Failed to process {file_path.name}: {e}")
+                results.append((path, False, f"Execution failed: {e}", None))
+                logger.error(f"Failed to process {path.name}: {e}")
     return results
 
 
@@ -482,11 +482,11 @@ def print_results(
     output_lines.append("CONVERSION RESULTS")
     output_lines.append("-" * 40)
 
-    for file_path, success, message, output_path in results:
+    for path, success, message, output_path in results:
         if success:
             success_count += 1
             status = "✓ OK"
-            input_type = "whl" if file_path.suffix == ".whl" else "tar.xz"
+            input_type = "whl" if path.suffix == ".whl" else "tar.xz"
             output_type = (
                 "tar.xz" if output_path and output_path.suffix == ".xz" else "whl"
             )
@@ -495,7 +495,7 @@ def print_results(
                 size_kb = output_path.stat().st_size / 1024
                 size_info = f" ({size_kb:.1f} KB)"
             output_lines.append(
-                f"{status} {file_path.name} [{input_type}] → "
+                f"{status} {path.name} [{input_type}] → "
                 f"{output_path.name if output_path else 'unknown'} "
                 f"[{output_type}]{size_info}"
             )
@@ -504,7 +504,7 @@ def print_results(
         else:
             failure_count += 1
             status = "✗ FAIL"
-            output_lines.append(f"{status} {file_path.name}: {message}")
+            output_lines.append(f"{status} {path.name}: {message}")
 
     output_lines.append("-" * 40)
     output_lines.append(f"Summary: {success_count} successful, {failure_count} failed")

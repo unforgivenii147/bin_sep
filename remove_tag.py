@@ -8,16 +8,16 @@ from pathlib import Path
 from bs4 import BeautifulSoup
 
 
-def remove_tag_from_html_file(file_path, tag_name) -> None:
+def remove_tag_from_html_file(path, tag_name) -> None:
     try:
-        html = Path(file_path).read_text(encoding="utf-8")
+        html = Path(path).read_text(encoding="utf-8")
         soup = BeautifulSoup(html, "html.parser")
         for tag in soup.find_all(tag_name):
             tag.decompose()
-        Path(file_path).write_text(str(soup), encoding="utf-8")
-        print(f"✅ Removed <{tag_name}> from {file_path}")
+        Path(path).write_text(str(soup), encoding="utf-8")
+        print(f"✅ Removed <{tag_name}> from {path}")
     except Exception as e:
-        print(f"❌ Error processing {file_path}: {e}")
+        print(f"❌ Error processing {path}: {e}")
 
 
 def process_directory(cwd: Path, tag_name: str) -> None:

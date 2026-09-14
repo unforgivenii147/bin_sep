@@ -41,9 +41,9 @@ def get_extension_from_mime(mime_type: str) -> str:
     return mime_map.get(mime_type, "")
 
 
-def detect_true_extension(file_path: Path) -> str:
+def detect_true_extension(path: Path) -> str:
     try:
-        magic_data = puremagic.magic_string(file_path.read_bytes())
+        magic_data = puremagic.magic_string(path.read_bytes())
         if magic_data:
             best_match = magic_data[0]
             ext = best_match.extension
@@ -55,15 +55,15 @@ def detect_true_extension(file_path: Path) -> str:
     except puremagic.main.PureError:
         pass
     except Exception as e:
-        print(f"Error reading {file_path}: {e}")
+        print(f"Error reading {path}: {e}")
     return ""
 
 
-def check_file(file_path: Path) -> tuple[Path, str, str] | None:
-    current_ext = file_path.suffix.lower()
+def check_file(path: Path) -> tuple[Path, str, str] | None:
+    current_ext = path.suffix.lower()
     if not current_ext:
         return None
-    true_ext = detect_true_extension(file_path)
+    true_ext = detect_true_extension(path)
     if not true_ext:
         return None
     true_ext = true_ext.lower()
@@ -72,24 +72,24 @@ def check_file(file_path: Path) -> tuple[Path, str, str] | None:
         norm_current = normalize_pairs.get(current_ext, current_ext)
         norm_true = normalize_pairs.get(true_ext, true_ext)
         if norm_current != norm_true:
-            return (file_path, current_ext, true_ext)
+            return (path, current_ext, true_ext)
     return None
 
 
-def autofix_filename(file_path: Path, current_ext: str, true_ext: str) -> Path:
-    new_name = file_path.stem + true_ext
-    new_path = file_path.with_name(new_name)
+def autofix_filename(path: Path, current_ext: str, true_ext: str) -> Path:
+    new_name = path.stem + true_ext
+    new_path = path.with_name(new_name)
     counter = 1
     original_new_path = new_path
-    while new_path.exists() and new_path != file_path:
+    while new_path.exists() and new_path != path:
         new_path = original_new_path.with_name(
             f"{original_new_path.stem}_{counter}{true_ext}"
         )
         counter += 1
-    if new_path != file_path:
-        file_path.rename(new_path)
+    if new_path != path:
+        path.rename(new_path)
         return new_path
-    return file_path
+    return path
 
 
 def main():
@@ -133,14 +133,14 @@ def main():
         print("No extension mismatches found!")
         return
     print(f"\nFound {len(mismatches)} mismatches:")
-    for file_path, current_ext, true_ext in sorted(mismatches):
+    for path, current_ext, true_ext in sorted(mismatches):
         print(
-            f"[MISMATCH] '{file_path}' | Current: '{current_ext}' | Detected: '{true_ext}'"
+            f"[MISMATCH] '{path}' | Current: '{current_ext}' | Detected: '{true_ext}'"
         )
         if args.autofix:
             try:
-                new_path = autofix_filename(file_path, current_ext, true_ext)
-                if new_path != file_path:
+                new_path = autofix_filename(path, current_ext, true_ext)
+                if new_path != path:
                     print(f"  -> Fixed: Renamed to '{new_path.name}'")
                 else:
                     print("  -> Skipped fix: Filename collision or identical.")

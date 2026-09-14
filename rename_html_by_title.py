@@ -313,7 +313,7 @@ class HtmlFile:
 class ProcessingResult:
     """Data class representing the result of processing an HTML file."""
 
-    file_path: Path
+    path: Path
     original_name: str
     new_name: Optional[str]
     title: Optional[str]
@@ -425,20 +425,20 @@ class HtmlTitleExtractor:
             TreeSitterParser() if TREE_SITTER_AVAILABLE else None
         )
 
-    def extract_title(self, file_path: Path) -> Optional[str]:
+    def extract_title(self, path: Path) -> Optional[str]:
         """Extract the title from an HTML file.
 
         Args:
-            file_path: Path to the HTML file.
+            path: Path to the HTML file.
 
         Returns:
             The extracted title, or None if no title was found.
         """
         try:
-            with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+            with open(path, "r", encoding="utf-8", errors="ignore") as f:
                 content: str = f.read()
         except Exception as e:
-            logger.error(f"Failed to read {file_path}: {e}")
+            logger.error(f"Failed to read {path}: {e}")
             return None
 
         # Try tree-sitter first, then fall back to regex
@@ -690,56 +690,56 @@ class HtmlFileProcessor:
         self.title_extractor: HtmlTitleExtractor = HtmlTitleExtractor()
         self.existing_names: set[str] = set()
 
-    def process_file(self, file_path: Path) -> ProcessingResult:
+    def process_file(self, path: Path) -> ProcessingResult:
         """Process a single HTML file for renaming.
 
         Args:
-            file_path: Path to the HTML file.
+            path: Path to the HTML file.
 
         Returns:
             ProcessingResult containing the outcome.
         """
         start_time: datetime = datetime.now()
-        original_name: str = file_path.name
+        original_name: str = path.name
 
         try:
-            if not file_path.exists():
+            if not path.exists():
                 return ProcessingResult(
-                    file_path=file_path,
+                    path=path,
                     original_name=original_name,
                     new_name=None,
                     title=None,
                     success=False,
-                    error=f"File not found: {file_path}",
+                    error=f"File not found: {path}",
                     duration=(datetime.now() - start_time).total_seconds(),
                 )
 
-            if not file_path.is_file():
+            if not path.is_file():
                 return ProcessingResult(
-                    file_path=file_path,
+                    path=path,
                     original_name=original_name,
                     new_name=None,
                     title=None,
                     success=False,
-                    error=f"Not a file: {file_path}",
+                    error=f"Not a file: {path}",
                     duration=(datetime.now() - start_time).total_seconds(),
                 )
 
-            if file_path.stat().st_size > MAX_FILE_SIZE:
+            if path.stat().st_size > MAX_FILE_SIZE:
                 return ProcessingResult(
-                    file_path=file_path,
+                    path=path,
                     original_name=original_name,
                     new_name=None,
                     title=None,
                     success=False,
-                    error=f"File too large: {file_path.stat().st_size} bytes",
+                    error=f"File too large: {path.stat().st_size} bytes",
                     duration=(datetime.now() - start_time).total_seconds(),
                 )
 
-            title: Optional[str] = self.title_extractor.extract_title(file_path)
+            title: Optional[str] = self.title_extractor.extract_title(path)
             if not title:
                 return ProcessingResult(
-                    file_path=file_path,
+                    path=path,
                     original_name=original_name,
                     new_name=None,
                     title=None,
@@ -748,10 +748,10 @@ class HtmlFileProcessor:
                     duration=(datetime.now() - start_time).total_seconds(),
                 )
 
-            new_name: str = FilenameNormalizer.normalize(title, file_path.suffix)
+            new_name: str = FilenameNormalizer.normalize(title, path.suffix)
             if new_name == original_name:
                 return ProcessingResult(
-                    file_path=file_path,
+                    path=path,
                     original_name=original_name,
                     new_name=new_name,
                     title=title,
@@ -760,16 +760,16 @@ class HtmlFileProcessor:
                     duration=(datetime.now() - start_time).total_seconds(),
                 )
 
-            new_path: Path = file_path.parent / new_name
+            new_path: Path = path.parent / new_name
             new_path = FilenameNormalizer.ensure_unique(new_path, self.existing_names)
 
             try:
-                file_path.rename(new_path)
+                path.rename(new_path)
                 self.existing_names.add(str(new_path))
                 logger.debug(f"Renamed: {original_name} -> {new_path.name}")
 
                 return ProcessingResult(
-                    file_path=new_path,
+                    path=new_path,
                     original_name=original_name,
                     new_name=new_path.name,
                     title=title,
@@ -778,7 +778,7 @@ class HtmlFileProcessor:
                 )
             except Exception as e:
                 return ProcessingResult(
-                    file_path=file_path,
+                    path=path,
                     original_name=original_name,
                     new_name=new_name,
                     title=title,
@@ -788,9 +788,9 @@ class HtmlFileProcessor:
                 )
 
         except Exception as e:
-            logger.error(f"Unexpected error processing {file_path}: {e}")
+            logger.error(f"Unexpected error processing {path}: {e}")
             return ProcessingResult(
-                file_path=file_path,
+                path=path,
                 original_name=original_name,
                 new_name=None,
                 title=None,
@@ -896,17 +896,17 @@ class FileDiscovery:
         return files
 
 
-def process_file_task(file_path: Path) -> ProcessingResult:
+def process_file_task(path: Path) -> ProcessingResult:
     """Process a single file for multiprocessing pool.
 
     Args:
-        file_path: Path to the HTML file.
+        path: Path to the HTML file.
 
     Returns:
         ProcessingResult for the file.
     """
     processor: HtmlFileProcessor = HtmlFileProcessor()
-    return processor.process_file(file_path)
+    return processor.process_file(path)
 
 
 class HtmlRenamerApp:
@@ -933,8 +933,8 @@ class HtmlRenamerApp:
 
         with Pool(WORKERS) as pool:
             async_results = []
-            for file_path in files:
-                result = pool.apply_async(process_file_task, (file_path,))
+            for path in files:
+                result = pool.apply_async(process_file_task, (path,))
                 async_results.append(result)
 
             for i, async_result in enumerate(async_results, 1):

@@ -5,8 +5,8 @@ import os
 import re
 
 
-def add_path_statement(file_path: str) -> bool:
-    with open(file_path, encoding="utf-8") as file:
+def add_path_statement(path: str) -> bool:
+    with open(path, encoding="utf-8") as file:
         lines = file.readlines()
     modified_lines = []
     in_function = False
@@ -37,26 +37,26 @@ def add_path_statement(file_path: str) -> bool:
             current_indent = re.match(r"^(\s*)", line).group(1)
             if current_indent.startswith(function_indent.rstrip()) and stripped:
                 modified_lines.append(f"{function_indent}path = Path(path)\n")
-                print(f"Added 'path = Path(path)' to {file_path}")
+                print(f"Added 'path = Path(path)' to {path}")
                 added = True
                 in_function = False
         modified_lines.append(line)
     if added:
-        with open(file_path, "w", encoding="utf-8") as file:
+        with open(path, "w", encoding="utf-8") as file:
             file.writelines(modified_lines)
         return True
     else:
         print(
-            f"Skipping {file_path}: No process_file function found or already has the line"
+            f"Skipping {path}: No process_file function found or already has the line"
         )
         return False
 
 
-def add_path_statement_simple(file_path: str) -> bool:
-    with open(file_path, encoding="utf-8") as file:
+def add_path_statement_simple(path: str) -> bool:
+    with open(path, encoding="utf-8") as file:
         content = file.read()
     if "path=Path(path)" in content or "path = Path(path)" in content:
-        print(f"Skipping {file_path}: path=Path(path) already exists")
+        print(f"Skipping {path}: path=Path(path) already exists")
         return False
     pattern = "(def process_file\\([^:]*:)\\s*\\n\\s*(?:\"\"\"[\\s\\S]*?\"\"\"|\\'\\'\\'[\\s\\S]*?\\'\\'\\')\\s*\\n?\\s*"
 
@@ -78,9 +78,9 @@ def add_path_statement_simple(file_path: str) -> bool:
 
         new_content = re.sub(pattern, replacement2, content, count=1)
     if new_content != content:
-        with open(file_path, "w", encoding="utf-8") as file:
+        with open(path, "w", encoding="utf-8") as file:
             file.write(new_content)
-        print(f"Added 'path = Path(path)' to {file_path}")
+        print(f"Added 'path = Path(path)' to {path}")
         return True
     return False
 
@@ -97,8 +97,8 @@ def process_directory() -> None:
     print("-" * 40)
     modified_count = 0
     for file_name in python_files:
-        file_path = os.path.join(cwd, file_name)
-        if add_path_statement_simple(file_path) or add_path_statement(file_path):
+        path = os.path.join(cwd, file_name)
+        if add_path_statement_simple(path) or add_path_statement(path):
             modified_count += 1
     print("-" * 40)
     print(f"Modified {modified_count} file(s)")

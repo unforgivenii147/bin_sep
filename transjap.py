@@ -107,13 +107,13 @@ def translate_comments_in_content(content: str) -> tuple[str, bool]:
     return ("".join(new_lines), modified)
 
 
-def translate_file(file_path: Path) -> bool:
+def translate_file(path: Path) -> bool:
     """Translate Japanese comments and docstrings in a Python file.
 
     Returns True if the file was modified and rewritten.
     """
     try:
-        content: str = file_path.read_text(encoding="utf-8")
+        content: str = path.read_text(encoding="utf-8")
         content_after_comments, comments_modified = translate_comments_in_content(
             content
         )
@@ -130,18 +130,16 @@ def translate_file(file_path: Path) -> bool:
                     new_content = JAPANESE_PATTERN.sub(
                         lambda m: translate_text(m.group(0)), new_content
                     )
-                file_path.write_text(new_content, encoding="utf-8")
+                path.write_text(new_content, encoding="utf-8")
                 return True
         except SyntaxError as e:
-            logger.error(
-                "Syntax error in {}: {}. Skipping AST translation.", file_path, e
-            )
+            logger.error("Syntax error in {}: {}. Skipping AST translation.", path, e)
             if comments_modified:
-                file_path.write_text(content_after_comments, encoding="utf-8")
+                path.write_text(content_after_comments, encoding="utf-8")
                 return True
             return False
     except Exception as e:
-        logger.error("Error processing {}: {}", file_path, e)
+        logger.error("Error processing {}: {}", path, e)
         return False
 
     return False
@@ -175,13 +173,13 @@ def main() -> None:
     with Pool(processes=POOL_WORKERS) as pool:
         async_results = [pool.apply_async(translate_file, (f,)) for f in py_files]
 
-        for async_result, file_path in zip(async_results, py_files):
+        for async_result, path in zip(async_results, py_files):
             try:
                 if async_result.get():
                     modified_count += 1
-                    logger.info("✓ Updated: {}", file_path)
+                    logger.info("✓ Updated: {}", path)
             except Exception as e:
-                logger.error("Task failed for {}: {}", file_path, e)
+                logger.error("Task failed for {}: {}", path, e)
 
     logger.info("=" * 40)
     logger.info("Completed! Modified {} out of {} files", modified_count, len(py_files))

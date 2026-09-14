@@ -27,33 +27,33 @@ POOL_WORKERS: int = 8
 MoveResult = tuple[str, bool, str]
 
 
-def is_test_file(file_path: Path) -> bool:
+def is_test_file(path: Path) -> bool:
     """Return True if the file stem looks like a test file.
 
     Args:
-        file_path: Path to inspect.
+        path: Path to inspect.
 
     Returns:
         True when the stem contains "_test" or "test_".
     """
-    stem: str = file_path.stem
+    stem: str = path.stem
     return "_test" in stem or "test_" in stem
 
 
-def get_relative_path(file_path: Path, base_dir: Path) -> Path:
-    """Return file_path relative to base_dir, falling back to file_path itself.
+def get_relative_path(path: Path, base_dir: Path) -> Path:
+    """Return path relative to base_dir, falling back to path itself.
 
     Args:
-        file_path: Path to make relative.
+        path: Path to make relative.
         base_dir: Base directory used for relativity.
 
     Returns:
         The relative path, or the original path when not under base_dir.
     """
     try:
-        return file_path.relative_to(base_dir)
+        return path.relative_to(base_dir)
     except ValueError:
-        return file_path
+        return path
 
 
 def move_file(source: Path, dest: Path) -> MoveResult:

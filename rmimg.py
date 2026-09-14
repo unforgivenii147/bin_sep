@@ -10,11 +10,11 @@ from bs4 import BeautifulSoup
 from dh import cprint, fsz, get_files, gsz
 
 
-def process_file(file_path: Path) -> None:
-    before = gsz(file_path)
+def process_file(path: Path) -> None:
+    before = gsz(path)
     Path(path)
     try:
-        html = file_path.read_text(encoding="utf-8")
+        html = path.read_text(encoding="utf-8")
         soup = BeautifulSoup(html, "html.parser")
         for img in soup.find_all("img"):
             img.decompose()
@@ -28,9 +28,9 @@ def process_file(file_path: Path) -> None:
             else:
                 del tag["style"]
         clean_html = str(soup)
-        file_path.write_text(clean_html, encoding="utf-8")
-        after = gsz(file_path)
-        print(f"{file_path.name}", end=" ")
+        path.write_text(clean_html, encoding="utf-8")
+        after = gsz(path)
+        print(f"{path.name}", end=" ")
         diffsize = before - after
         if diffsize == 0:
             cprint("NO CHANGE", "yellow")

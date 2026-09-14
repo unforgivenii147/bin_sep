@@ -20,7 +20,7 @@ except ImportError:
 
 @dataclass
 class ExtractionResult:
-    file_path: Path
+    path: Path
     success: bool
     text: str = ""
     error: str = ""
@@ -36,7 +36,7 @@ class TextExtractor:
         try:
             if not image_path.exists():
                 return ExtractionResult(
-                    file_path=image_path, success=False, error="File not found"
+                    path=image_path, success=False, error="File not found"
                 )
             image = Image.open(image_path)
             text = pytesseract.image_to_string(image, lang="rus+eng")
@@ -45,7 +45,7 @@ class TextExtractor:
             txt_path.write_text(text, encoding="utf-8")
             if not text.strip():
                 return ExtractionResult(
-                    file_path=image_path,
+                    path=image_path,
                     success=True,
                     text="",
                     char_count=0,
@@ -54,14 +54,14 @@ class TextExtractor:
             char_count = len(text)
             line_count = len(text.strip().split("\n"))
             return ExtractionResult(
-                file_path=image_path,
+                path=image_path,
                 success=True,
                 text=text,
                 char_count=char_count,
                 line_count=line_count,
             )
         except Exception as e:
-            return ExtractionResult(file_path=image_path, success=False, error=str(e))
+            return ExtractionResult(path=image_path, success=False, error=str(e))
 
     @staticmethod
     def find_images(directories: list[Path]) -> list[Path]:
@@ -123,7 +123,7 @@ class TextExtractionReport:
             "failed": sum(1 for r in results if not r.success),
             "results": [
                 {
-                    "file": str(r.file_path),
+                    "file": str(r.path),
                     "success": r.success,
                     "char_count": r.char_count,
                     "line_count": r.line_count,

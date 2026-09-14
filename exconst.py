@@ -16,8 +16,8 @@ class Constant(NamedTuple):
 
 
 class ConstantExtractor(cst.CSTVisitor):
-    def __init__(self, file_path: Path):
-        self.file_path = file_path
+    def __init__(self, path: Path):
+        self.path = path
         self.constants: list[Constant] = []
 
     def visit_Assign(self, node: cst.Assign) -> None:
@@ -26,7 +26,7 @@ class ConstantExtractor(cst.CSTVisitor):
                 name = target.target.value
                 if name.isupper() and not name.startswith("_"):
                     value = self._extract_value(node.value)
-                    self.constants.append(Constant(name, value, self.file_path))
+                    self.constants.append(Constant(name, value, self.path))
 
     def _extract_value(self, node: cst.BaseExpression) -> str:
         return (
@@ -35,11 +35,11 @@ class ConstantExtractor(cst.CSTVisitor):
         ) or cst.Module([cst.SimpleStatementLine([cst.Expr(node)])]).code.strip()
 
 
-def extract_from_file(file_path: Path) -> list[Constant]:
+def extract_from_file(path: Path) -> list[Constant]:
     try:
-        source = file_path.read_text(encoding="utf-8")
+        source = path.read_text(encoding="utf-8")
         tree = cst.parse_module(source)
-        extractor = ConstantExtractor(file_path)
+        extractor = ConstantExtractor(path)
         tree.walk(extractor)
         return extractor.constants
     except (SyntaxError, UnicodeDecodeError):
@@ -70,9 +70,9 @@ def main():
             result = future.result()
             if result:
                 constants[futures[future]] = result
-    for file_path in sorted(constants.keys()):
-        print(f"\n{file_path}:")
-        for const in sorted(constants[file_path], key=lambda c: c.name):
+    for path in sorted(constants.keys()):
+        print(f"\n{path}:")
+        for const in sorted(constants[path], key=lambda c: c.name):
             print(f"  {const.name} = {const.value}")
     total = sum(len(consts) for consts in constants.values())
     print(f"\nTotal constants found: {total}")

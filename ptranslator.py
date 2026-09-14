@@ -50,15 +50,15 @@ def get_chunks(text: str, max_len: int = MAX_CHUNK_LEN) -> Generator[str, None, 
 
 
 def translate_file_task(task: tuple[Path, str, float, Path | None]) -> None:
-    file_path, target_lang, delay, output_dir = task
-    logger.info("[%d] Processing: %s", os.getpid(), file_path)
+    path, target_lang, delay, output_dir = task
+    logger.info("[%d] Processing: %s", os.getpid(), path)
     try:
-        content = file_path.read_text(encoding="utf-8", errors="ignore")
+        content = path.read_text(encoding="utf-8", errors="ignore")
     except Exception as e:
-        logger.error("  ✗ Cannot read: %s (%s)", file_path, e)
+        logger.error("  ✗ Cannot read: %s (%s)", path, e)
         return
     if not content.strip():
-        logger.info("  ⊘ Empty file, skipping: %s", file_path)
+        logger.info("  ⊘ Empty file, skipping: %s", path)
         return
     translator = GoogleTranslator(source="auto", target=target_lang)
     translated_chunks: list[str] = []
@@ -78,7 +78,7 @@ def translate_file_task(task: tuple[Path, str, float, Path | None]) -> None:
         if i < len(chunks):
             time.sleep(delay)
     translated_text = "".join(translated_chunks)
-    if file_path.suffix.lower() == ".py":
+    if path.suffix.lower() == ".py":
         try:
             ast.parse(translated_text)
             logger.info("  ✓ Python syntax valid")
@@ -87,14 +87,12 @@ def translate_file_task(task: tuple[Path, str, float, Path | None]) -> None:
             return
     if output_dir:
         try:
-            rel_path = file_path.relative_to(Path.cwd())
+            rel_path = path.relative_to(Path.cwd())
         except ValueError:
-            rel_path = file_path.name
-        out_path = (output_dir / rel_path).with_suffix(
-            f"{file_path.suffix}.{target_lang}"
-        )
+            rel_path = path.name
+        out_path = (output_dir / rel_path).with_suffix(f"{path.suffix}.{target_lang}")
     else:
-        out_path = file_path.with_suffix(f"{file_path.suffix}.{target_lang}")
+        out_path = path.with_suffix(f"{path.suffix}.{target_lang}")
     try:
         out_path.parent.mkdir(parents=True, exist_ok=True)
         out_path.write_text(translated_text, encoding="utf-8")

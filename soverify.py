@@ -22,28 +22,28 @@ class CtypesVerifier:
         if self.verbose:
             getattr(logger, level.lower())(f"[CTYPES] {message}")
 
-    def verify_so_file(self, file_path: Path) -> tuple[bool, str]:
-        if not file_path.exists():
+    def verify_so_file(self, path: Path) -> tuple[bool, str]:
+        if not path.exists():
             return (False, "File does not exist")
-        if not file_path.is_file():
+        if not path.is_file():
             return (False, "Not a regular file")
         try:
-            ctypes.CDLL(str(file_path), use_errno=True)
+            ctypes.CDLL(str(path), use_errno=True)
             err = ctypes.get_errno()
             if err:
-                self.log(f"Warning: errno set to {err} for {file_path.name}")
+                self.log(f"Warning: errno set to {err} for {path.name}")
             return (True, "ok")
         except OSError as e:
             error_msg = f"OSError: {e}"
-            self.log(f"Failed to load {file_path.name}: {error_msg}", "ERROR")
+            self.log(f"Failed to load {path.name}: {error_msg}", "ERROR")
             return (False, error_msg)
         except Exception as e:
             error_msg = f"{type(e).__name__}: {e}"
-            self.log(f"Failed to load {file_path.name}: {error_msg}", "ERROR")
+            self.log(f"Failed to load {path.name}: {error_msg}", "ERROR")
             return (False, error_msg)
 
-    def verify_with_symbols(self, file_path: Path) -> tuple[bool, dict]:
-        can_load, msg = self.verify_so_file(file_path)
+    def verify_with_symbols(self, path: Path) -> tuple[bool, dict]:
+        can_load, msg = self.verify_so_file(path)
         symbol_info = {
             "can_load": can_load,
             "message": msg,
@@ -54,39 +54,39 @@ class CtypesVerifier:
             return (False, symbol_info)
         try:
             result = subprocess.run(
-                ["nm", str(file_path)], capture_output=True, timeout=10, text=True
+                ["nm", str(path)], capture_output=True, timeout=10, text=True
             )
             if result.returncode == 0:
                 lines = [line for line in result.stdout.split("\n") if line.strip()]
                 symbol_info["symbol_count"] = len(lines)
                 symbol_info["has_symbols"] = len(lines) > 0
-                self.log(f"Found {len(lines)} symbols in {file_path.name}")
+                self.log(f"Found {len(lines)} symbols in {path.name}")
         except FileNotFoundError:
             self.log(
                 "'nm' command not found. Install binutils for symbol analysis",
                 "WARNING",
             )
         except subprocess.TimeoutExpired:
-            self.log(f"Symbol extraction timed out for {file_path.name}", "WARNING")
+            self.log(f"Symbol extraction timed out for {path.name}", "WARNING")
         except Exception as e:
-            self.log(f"Could not extract symbols from {file_path.name}: {e}", "ERROR")
+            self.log(f"Could not extract symbols from {path.name}: {e}", "ERROR")
         return (can_load, symbol_info)
 
 
-def verify_single_file(file_path: Path) -> bool | None:
+def verify_single_file(path: Path) -> bool | None:
     try:
         verifier = CtypesVerifier()
-        success, message = verifier.verify_so_file(file_path)
+        success, message = verifier.verify_so_file(path)
         if success:
-            logger.debug(f"✓ {file_path.name}: Valid")
+            logger.debug(f"✓ {path.name}: Valid")
             return True
         else:
-            logger.error(f"✗ {file_path.name}: {message}")
-            cprint(f"  ✗ {file_path}: {message}", "red")
+            logger.error(f"✗ {path.name}: {message}")
+            cprint(f"  ✗ {path}: {message}", "red")
             return False
     except Exception as e:
-        logger.error(f"✗ {file_path.name}: Unexpected error - {e}")
-        cprint(f"  ✗ {file_path}: Unexpected error - {e}", "red")
+        logger.error(f"✗ {path.name}: Unexpected error - {e}")
+        cprint(f"  ✗ {path}: Unexpected error - {e}", "red")
         return False
 
 
@@ -114,13 +114,13 @@ def main() -> None:
     valid_count = 0
     error_count = 0
     error_files = []
-    for file_path in files:
-        result = verify_single_file(file_path)
+    for path in files:
+        result = verify_single_file(path)
         if result is True:
             valid_count += 1
         elif result is False:
             error_count += 1
-            error_files.append(file_path)
+            error_files.append(path)
     print(f"\n{'=' * 40}")
     print("VERIFICATION SUMMARY")
     print(f"{'=' * 40}")
@@ -131,8 +131,8 @@ def main() -> None:
         print(f"\n{'=' * 40}")
         print("FILES WITH ERRORS:")
         print(f"{'=' * 40}")
-        for file_path in error_files:
-            print(f"  ✗ {file_path}")
+        for path in error_files:
+            print(f"  ✗ {path}")
     logger.info(
         f"Verification complete: {valid_count} valid, {error_count} errors out of {len(files)} files"
     )

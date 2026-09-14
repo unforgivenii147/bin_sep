@@ -33,15 +33,15 @@ def etree_to_dict(element: Element | None):
     return d
 
 
-def xml_to_json(xml_file_path: str) -> None:
-    json_file_path = Path(xml_file_path).with_suffix(".json")
+def xml_to_json(xml_path: str) -> None:
+    json_path = Path(xml_path).with_suffix(".json")
     try:
-        tree = _parse(xml_file_path)
+        tree = _parse(xml_path)
         root = tree.getroot()
         json_data = etree_to_dict(root)
-        with json_file_path.open("w", encoding="utf-8") as json_file:
+        with json_path.open("w", encoding="utf-8") as json_file:
             json.dump(json_data, json_file, indent=2, ensure_ascii=False)
-        print(f"Successfully converted '{xml_file_path}' to '{json_file_path}'")
+        print(f"Successfully converted '{xml_path}' to '{json_path}'")
     except:
         print("Error parsing XML file")
 

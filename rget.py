@@ -99,11 +99,11 @@ def download_one(
     Returns a tuple of (url, success, message_or_path).
     """
     filename = extract_filename(url)
-    filepath = Path(output_dir) / filename
+    path = Path(output_dir) / filename
     offset = 0
 
-    if resume_from and filepath.exists():
-        offset = filepath.stat().st_size
+    if resume_from and path.exists():
+        offset = path.stat().st_size
         remote_size = get_filesize(url, session)
         if remote_size is not None and offset >= remote_size:
             return url, True, f"Already complete ({offset} bytes)"
@@ -116,11 +116,11 @@ def download_one(
         with session.get(url, timeout=TIMEOUT, headers=headers, stream=True) as r:
             r.raise_for_status()
             mode = "ab" if offset else "wb"
-            with filepath.open(mode) as f:
+            with path.open(mode) as f:
                 for chunk in r.iter_content(chunk_size=65536):
                     if chunk:
                         f.write(chunk)
-        return url, True, str(filepath)
+        return url, True, str(path)
     except requests.exceptions.RequestException as e:
         if MAX_RETRIES > 0:
             return url, False, f"Retry needed: {e}"

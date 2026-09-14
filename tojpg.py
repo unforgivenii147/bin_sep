@@ -16,8 +16,8 @@ except ImportError:
 SUPPORTED_FORMATS = {".png", ".bmp", ".tiff", ".webp", ".ico", ".jpg", ".jpeg"}
 
 
-def convert_to_jpg(file_path: str) -> bool:
-    path = Path(file_path)
+def convert_to_jpg(path: str) -> bool:
+    path = Path(path)
     if not path.is_file() or path.suffix.lower() not in SUPPORTED_FORMATS:
         print(f"Skipping: {path.name} (Unsupported format or not a file)")
         return False

@@ -78,15 +78,15 @@ def main():
     if len(sys.argv) != 2:
         print("Usage: python mdview.py <file.md>")
         sys.exit(1)
-    file_path = Path(sys.argv[1])
-    if not file_path.exists():
-        print(f"Error: File '{file_path}' does not exist.")
+    path = Path(sys.argv[1])
+    if not path.exists():
+        print(f"Error: File '{path}' does not exist.")
         sys.exit(1)
-    if not file_path.is_file():
-        print(f"Error: '{file_path}' is not a file.")
+    if not path.is_file():
+        print(f"Error: '{path}' is not a file.")
         sys.exit(1)
     try:
-        markdown_text = file_path.read_text(encoding="utf-8")
+        markdown_text = path.read_text(encoding="utf-8")
     except Exception as e:
         print(f"Error reading file: {e}")
         sys.exit(1)

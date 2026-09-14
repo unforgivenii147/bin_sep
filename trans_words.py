@@ -22,13 +22,13 @@ logging.basicConfig(level=logging.INFO, format="%(message)s")
 logger = logging.getLogger(__name__)
 
 
-def chunk_file(file_path: Path, size: int = 32768) -> list[tuple[int, int, str]]:
+def chunk_file(path: Path, size: int = 32768) -> list[tuple[int, int, str]]:
     chunks: list[tuple[int, int, str]] = []
     current_chunk: list[str] = []
     current_size = 0
     start_line = 0
     try:
-        lines = file_path.read_text(encoding="utf-8").splitlines(keepends=True)
+        lines = path.read_text(encoding="utf-8").splitlines(keepends=True)
         for i, line in enumerate(lines):
             line_len = len(line)
             if current_size + line_len > size and current_chunk:
@@ -42,7 +42,7 @@ def chunk_file(file_path: Path, size: int = 32768) -> list[tuple[int, int, str]]
         if current_chunk:
             chunks.append((start_line, len(lines) - 1, "".join(current_chunk)))
     except Exception as e:
-        logger.error("Error chunking %s: %s", file_path, e)
+        logger.error("Error chunking %s: %s", path, e)
     return chunks
 
 
@@ -83,9 +83,9 @@ def translate_chunk(
         return None
 
 
-def process_file(file_path: Path) -> None:
-    logger.info("Processing: %s", file_path.name)
-    chunks = chunk_file(file_path)
+def process_file(path: Path) -> None:
+    logger.info("Processing: %s", path.name)
+    chunks = chunk_file(path)
     logger.info("Total chunks: %d", len(chunks))
     translations: list[dict[str, Any]] = []
     with ProcessPoolExecutor(max_workers=MAX_WORKERS) as executor:
@@ -98,8 +98,8 @@ def process_file(file_path: Path) -> None:
             if result := future.result():
                 translations.append(result)
             completed += 1
-            logger.info("Progress (%s): %d/%d", file_path.name, completed, len(chunks))
-    output_file = file_path.with_suffix(".json")
+            logger.info("Progress (%s): %d/%d", path.name, completed, len(chunks))
+    output_file = path.with_suffix(".json")
     try:
         output_data = {"lines": sorted(translations, key=lambda x: x["start_line"])}
         output_file.write_text(
@@ -107,7 +107,7 @@ def process_file(file_path: Path) -> None:
         )
         logger.info("✓ JSON output saved to: %s", output_file.name)
     except Exception as e:
-        logger.error("Error saving JSON output for %s: %s", file_path, e)
+        logger.error("Error saving JSON output for %s: %s", path, e)
 
 
 def get_input_files(paths: list[str]) -> list[Path]:
@@ -127,11 +127,11 @@ def main() -> None:
     if not files:
         logger.info("No text files found to process.")
         return
-    for file_path in files:
+    for path in files:
         try:
-            process_file(file_path)
+            process_file(path)
         except Exception as e:
-            logger.error("Unexpected error processing %s: %s", file_path, e)
+            logger.error("Unexpected error processing %s: %s", path, e)
 
 
 if __name__ == "__main__":

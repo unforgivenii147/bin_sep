@@ -443,12 +443,12 @@ def get_stdlib_modules() -> set[str]:
     return stdlib
 
 
-def analyze_file(filepath: Path) -> tuple[Path, list[tuple[str, int]]]:
+def analyze_file(path: Path) -> tuple[Path, list[tuple[str, int]]]:
     """Analyze one Python file and return missing stdlib imports with line numbers."""
     try:
-        with open(filepath, encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             content = f.read()
-        tree = ast.parse(content, str(filepath))
+        tree = ast.parse(content, str(path))
         analyzer = ImportAnalyzer()
         analyzer.visit(tree)
         stdlib = get_stdlib_modules()
@@ -468,17 +468,17 @@ def analyze_file(filepath: Path) -> tuple[Path, list[tuple[str, int]]]:
                         line_num = node.lineno
                         break
                 missing_imports.append((name, line_num or 1))
-        return (filepath, missing_imports)
+        return (path, missing_imports)
     except (SyntaxError, UnicodeDecodeError):
-        return (filepath, [])
+        return (path, [])
 
 
-def autofix_imports(filepath: Path, missing_imports: list[tuple[str, int]]) -> bool:
+def autofix_imports(path: Path, missing_imports: list[tuple[str, int]]) -> bool:
     """Insert missing ``import`` statements into a file and return whether it changed."""
     if not missing_imports:
         return False
     try:
-        with open(filepath, encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             lines = f.readlines()
         unique_imports = sorted({imp[0] for imp in missing_imports})
         insert_idx = 0
@@ -493,7 +493,7 @@ def autofix_imports(filepath: Path, missing_imports: list[tuple[str, int]]) -> b
                 in_imports = False
         new_imports = [f"import {imp}\n" for imp in unique_imports]
         lines[insert_idx:insert_idx] = new_imports
-        with open(filepath, "w", encoding="utf-8") as f:
+        with open(path, "w", encoding="utf-8") as f:
             f.writelines(lines)
         return True
     except Exception:
@@ -538,16 +538,16 @@ def main() -> None:
     with multiprocessing.Pool(processes=8) as pool:
         results = [pool.apply_async(analyze_file, (py_file,)) for py_file in py_files]
         for result in results:
-            filepath, missing_imports = result.get()
+            path, missing_imports = result.get()
             if not missing_imports:
                 continue
             total_missing += len(missing_imports)
-            rel_path = filepath.relative_to(root_dir)
+            rel_path = path.relative_to(root_dir)
             logger.warning(f"{rel_path}:")
             for module, lineno in sorted(set(missing_imports)):
                 logger.warning(f"  Line {lineno}: missing `import {module}`")
             if args.autofix:
-                if autofix_imports(filepath, missing_imports):
+                if autofix_imports(path, missing_imports):
                     logger.success("  ✓ Fixed")
                     fixed_files += 1
                 else:

@@ -92,14 +92,14 @@ EXCLUDED_EXTENSIONS = {
 }
 
 
-def is_text_file(filepath: Path) -> bool:
-    if filepath.suffix in EXCLUDED_EXTENSIONS:
+def is_text_file(path: Path) -> bool:
+    if path.suffix in EXCLUDED_EXTENSIONS:
         return False
-    if filepath.suffix in TEXT_EXTENSIONS:
+    if path.suffix in TEXT_EXTENSIONS:
         return True
-    if "." not in filepath.name:
+    if "." not in path.name:
         try:
-            with open(filepath, "rb") as f:
+            with open(path, "rb") as f:
                 sample = f.read(1024)
                 if not sample:
                     return True
@@ -112,22 +112,22 @@ def is_text_file(filepath: Path) -> bool:
     return False
 
 
-def read_file_content(filepath: Path) -> tuple[Path, list[str], str]:
+def read_file_content(path: Path) -> tuple[Path, list[str], str]:
     try:
-        with open(filepath, encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             lines = f.readlines()
-        return filepath, lines, "".join(lines)
+        return path, lines, "".join(lines)
     except UnicodeDecodeError:
         try:
-            with open(filepath, encoding="latin-1") as f:
+            with open(path, encoding="latin-1") as f:
                 lines = f.readlines()
-            return filepath, lines, "".join(lines)
+            return path, lines, "".join(lines)
         except (OSError, UnicodeDecodeError) as e:
-            print(f"Warning: cannot read {filepath}: {e}", file=sys.stderr)
-            return filepath, [], ""
+            print(f"Warning: cannot read {path}: {e}", file=sys.stderr)
+            return path, [], ""
     except OSError as e:
-        print(f"Warning: cannot read {filepath}: {e}", file=sys.stderr)
-        return filepath, [], ""
+        print(f"Warning: cannot read {path}: {e}", file=sys.stderr)
+        return path, [], ""
 
 
 def find_multiline_blocks(
@@ -169,20 +169,16 @@ def find_multiline_blocks(
     return dict(blocks)
 
 
-def scan_file(
-    filepath: Path, min_lines: int = 3
-) -> dict[str, list[tuple[Path, int, str]]]:
-    if not is_text_file(filepath):
+def scan_file(path: Path, min_lines: int = 3) -> dict[str, list[tuple[Path, int, str]]]:
+    if not is_text_file(path):
         return {}
-    filepath, _lines, text = read_file_content(filepath)
+    path, _lines, text = read_file_content(path)
     if not text:
         return {}
     blocks = find_multiline_blocks(text, min_lines)
     result = {}
     for block, occurrences in blocks.items():
-        result[block] = [
-            (filepath, line_no, context) for line_no, context in occurrences
-        ]
+        result[block] = [(path, line_no, context) for line_no, context in occurrences]
     return result
 
 
@@ -192,14 +188,14 @@ def collect_multiline_repeats(
     if num_workers is None:
         num_workers = mp.cpu_count()
     text_files = []
-    for filepath in root.rglob("*"):
+    for path in root.rglob("*"):
         if (
-            filepath.is_file()
-            and is_text_file(filepath)
-            and not filepath.is_symlink()
-            and ".git" not in filepath.parts
+            path.is_file()
+            and is_text_file(path)
+            and not path.is_symlink()
+            and ".git" not in path.parts
         ):
-            text_files.append(filepath)
+            text_files.append(path)
     if not text_files:
         return {}
     print(f"Scanning {len(text_files)} text files using {num_workers} workers...")
@@ -213,8 +209,8 @@ def collect_multiline_repeats(
     filtered = {}
     for block, occurrences in combined.items():
         file_occurrences = defaultdict(list)
-        for filepath, line_no, context in occurrences:
-            file_occurrences[filepath].append((line_no, context))
+        for path, line_no, context in occurrences:
+            file_occurrences[path].append((line_no, context))
         if len(file_occurrences) >= 2 or any(
             len(occ) >= 2 for occ in file_occurrences.values()
         ):
@@ -231,8 +227,8 @@ def report(repeated: dict[str, list[tuple[Path, int, str]]]) -> None:
         print(f"\n--- Block {i} ---")
         print(block[:200] + ("..." if len(block) > 200 else ""))
         print(f"Found in {len(occurrences)} locations:")
-        for filepath, lineno, context in occurrences:
-            print(f"  {filepath}:{lineno} -> {context[:100]}...")
+        for path, lineno, context in occurrences:
+            print(f"  {path}:{lineno} -> {context[:100]}...")
         print("-" * 40)
 
 
@@ -250,8 +246,8 @@ def save_to_file(
                 f.write(f"{'-' * 40}\n")
                 f.write(block)
                 f.write("\n\nLOCATIONS:\n")
-                for filepath, lineno, context in occurrences:
-                    f.write(f"  {filepath}:{lineno}\n")
+                for path, lineno, context in occurrences:
+                    f.write(f"  {path}:{lineno}\n")
                     f.write(f"    -> {context}\n")
                 f.write(f"\n{'=' * 40}\n\n")
         print(f"Results saved to {output_file}")

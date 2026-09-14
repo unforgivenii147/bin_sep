@@ -56,20 +56,20 @@ def main() -> None:
     print("--- Directory Compression Complete ---")
     tar_files_to_process = get_files(cwd)
     print("\n--- Starting .tar File Compression ---")
-    for tar_file_path in tar_files_to_process:
-        if should_compress(tar_file_path) and tar_file_path.suffix.lower() == ".tar":
-            print(f"\nProcessing .tar file: {tar_file_path.name}")
-            xz_success = compress_file(tar_file_path)
+    for tar_path in tar_files_to_process:
+        if should_compress(tar_path) and tar_path.suffix.lower() == ".tar":
+            print(f"\nProcessing .tar file: {tar_path.name}")
+            xz_success = compress_file(tar_path)
             if xz_success:
-                print(f"Successfully created XZ archive for '{tar_file_path.name}'.")
-                delete_success = safe_delete(tar_file_path)
+                print(f"Successfully created XZ archive for '{tar_path.name}'.")
+                delete_success = safe_delete(tar_path)
                 if not delete_success:
                     print(
-                        f"Warning: Failed to delete original tar file '{tar_file_path.name}' after XZ compression."
+                        f"Warning: Failed to delete original tar file '{tar_path.name}' after XZ compression."
                     )
             else:
                 print(
-                    f"Error: Failed to compress '{tar_file_path.name}' with XZ. Original tar file will NOT be deleted."
+                    f"Error: Failed to compress '{tar_path.name}' with XZ. Original tar file will NOT be deleted."
                 )
     print("--- .tar File Compression Complete ---")
 

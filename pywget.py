@@ -42,12 +42,12 @@ def extract_filename(url: str, headers: dict[str, str] | None = None) -> str:
     return sanitize_filename(filename) or "downloaded_file"
 
 
-def filename_fix_existing(filepath: Path) -> Path:
-    if not filepath.exists():
-        return filepath
-    stem = filepath.stem
-    suffix = filepath.suffix
-    parent = filepath.parent or Path()
+def filename_fix_existing(path: Path) -> Path:
+    if not path.exists():
+        return path
+    stem = path.stem
+    suffix = path.suffix
+    parent = path.parent or Path()
     counter = 1
     while True:
         new_name = f"{stem} ({counter}){suffix}"

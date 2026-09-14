@@ -60,11 +60,11 @@ def is_image(url: str) -> bool:
     return ext in IMAGE_EXTENSIONS
 
 
-def get_mime_type(file_path: str) -> str:
+def get_mime_type(path: str) -> str:
     """Guess the MIME type for a file path, with manual fallbacks for fonts."""
-    mime, _ = mimetypes.guess_type(file_path)
+    mime, _ = mimetypes.guess_type(path)
     if not mime:
-        ext = Path(file_path).suffix.lower()
+        ext = Path(path).suffix.lower()
         if ext == ".woff2":
             return "font/woff2"
         if ext == ".woff":
@@ -143,10 +143,10 @@ def process_css_content(
     return new_css, loc, rem
 
 
-def process_html_file(file_path: Path) -> Stats:
+def process_html_file(path: Path) -> Stats:
     """Embed local/remote images, stylesheets, scripts, and inline CSS in an HTML file."""
     stats: Stats = {
-        "path": str(file_path),
+        "path": str(path),
         "local": 0,
         "remote": 0,
         "time": 0.0,
@@ -154,7 +154,7 @@ def process_html_file(file_path: Path) -> Stats:
     }
     start = time.perf_counter()
     try:
-        html_text = file_path.read_text(encoding="utf-8")
+        html_text = path.read_text(encoding="utf-8")
         soup = BeautifulSoup(html_text, "html.parser")
 
         for img in soup.find_all("img"):
@@ -164,7 +164,7 @@ def process_html_file(file_path: Path) -> Stats:
             if is_remote(src):
                 continue
             clean_src = src.split("?")[0].split("#")[0]
-            local_img_path = (file_path.parent / clean_src).resolve()
+            local_img_path = (path.parent / clean_src).resolve()
             if local_img_path.exists():
                 if content := read_local(local_img_path):
                     b64 = base64.b64encode(content).decode("ascii")
@@ -172,7 +172,7 @@ def process_html_file(file_path: Path) -> Stats:
                     img["src"] = f"data:{mime};base64,{b64}"
                     stats["local"] += 1
             else:
-                logger.warning(f"Missing local image: {local_img_path} in {file_path}")
+                logger.warning(f"Missing local image: {local_img_path} in {path}")
 
         for link in soup.find_all("link", rel="stylesheet"):
             href = link.get("href")
@@ -180,7 +180,7 @@ def process_html_file(file_path: Path) -> Stats:
                 continue
             css_text = ""
             base_url: Optional[str] = None
-            css_base_path: Path = file_path
+            css_base_path: Path = path
             if is_remote(href):
                 if raw := fetch_remote(href):
                     css_text = raw.decode("utf-8", errors="ignore")
@@ -188,7 +188,7 @@ def process_html_file(file_path: Path) -> Stats:
                     stats["remote"] += 1
             else:
                 clean_href = href.split("?")[0].split("#")[0]
-                local_css_path = (file_path.parent / clean_href).resolve()
+                local_css_path = (path.parent / clean_href).resolve()
                 if local_css_path.exists():
                     css_text = local_css_path.read_text(
                         encoding="utf-8", errors="ignore"
@@ -196,9 +196,7 @@ def process_html_file(file_path: Path) -> Stats:
                     css_base_path = local_css_path
                     stats["local"] += 1
                 else:
-                    logger.warning(
-                        f"Missing local CSS: {local_css_path} in {file_path}"
-                    )
+                    logger.warning(f"Missing local CSS: {local_css_path} in {path}")
             if css_text:
                 processed_css, c_loc, c_rem = process_css_content(
                     css_text, css_base_path, base_url
@@ -220,46 +218,44 @@ def process_html_file(file_path: Path) -> Stats:
                     stats["remote"] += 1
             else:
                 clean_src = src.split("?")[0].split("#")[0]
-                local_script = (file_path.parent / clean_src).resolve()
+                local_script = (path.parent / clean_src).resolve()
                 if local_script.exists():
                     script_text = local_script.read_text(
                         encoding="utf-8", errors="ignore"
                     )
                     stats["local"] += 1
                 else:
-                    logger.warning(
-                        f"Missing local script: {local_script} in {file_path}"
-                    )
+                    logger.warning(f"Missing local script: {local_script} in {path}")
             if script_text:
                 new_script = soup.new_tag("script")
                 new_script.string = script_text
                 script.replace_with(new_script)
 
         for tag in soup.find_all(style=True):
-            processed, l, r = process_css_content(tag["style"], file_path)
+            processed, l, r = process_css_content(tag["style"], path)
             tag["style"] = processed
             stats["local"] += l
             stats["remote"] += r
 
         for style in soup.find_all("style"):
             if style.string:
-                processed, l, r = process_css_content(style.string, file_path)
+                processed, l, r = process_css_content(style.string, path)
                 style.string = processed
                 stats["local"] += l
                 stats["remote"] += r
 
-        file_path.write_text(str(soup), encoding="utf-8")
+        path.write_text(str(soup), encoding="utf-8")
     except Exception as e:
         stats["status"] = f"error: {e}"
-        logger.error(f"Failed to process HTML file {file_path}: {e}")
+        logger.error(f"Failed to process HTML file {path}: {e}")
     stats["time"] = time.perf_counter() - start
     return stats
 
 
-def process_css_file(file_path: Path) -> Stats:
+def process_css_file(path: Path) -> Stats:
     """Embed all url(...) references in a standalone CSS file."""
     stats: Stats = {
-        "path": str(file_path),
+        "path": str(path),
         "local": 0,
         "remote": 0,
         "time": 0.0,
@@ -267,14 +263,14 @@ def process_css_file(file_path: Path) -> Stats:
     }
     start = time.perf_counter()
     try:
-        content = file_path.read_text(encoding="utf-8")
-        processed_css, l, r = process_css_content(content, file_path)
+        content = path.read_text(encoding="utf-8")
+        processed_css, l, r = process_css_content(content, path)
         stats["local"] += l
         stats["remote"] += r
-        file_path.write_text(processed_css, encoding="utf-8")
+        path.write_text(processed_css, encoding="utf-8")
     except Exception as e:
         stats["status"] = f"error: {e}"
-        logger.error(f"Failed to process CSS file {file_path}: {e}")
+        logger.error(f"Failed to process CSS file {path}: {e}")
     stats["time"] = time.perf_counter() - start
     return stats
 

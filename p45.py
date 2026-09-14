@@ -9,23 +9,21 @@ from pathlib import Path
 from dh import DOC_TH1, DOC_TH2
 
 
-def format_python_file(filepath: Path) -> None:
-    if not filepath.exists():
-        print(f"Error: File not found at {filepath}", file=sys.stderr)
+def format_python_file(path: Path) -> None:
+    if not path.exists():
+        print(f"Error: File not found at {path}", file=sys.stderr)
         return
     content = ""
-    backup_filepath = filepath.with_name(filepath.name + ".bak")
+    backup_path = path.with_name(path.name + ".bak")
     try:
         with (
-            filepath.open("r", encoding="utf-8") as f_in,
-            backup_filepath.open("w", encoding="utf-8") as f_bak,
+            path.open("r", encoding="utf-8") as f_in,
+            backup_path.open("w", encoding="utf-8") as f_bak,
         ):
             content = f_in.read()
             f_bak.write(content)
     except OSError as e:
-        print(
-            f"Error creating backup file {backup_filepath.name}: {e}", file=sys.stderr
-        )
+        print(f"Error creating backup file {backup_path.name}: {e}", file=sys.stderr)
         return
     formatted_lines = []
     lines = content.splitlines()
@@ -117,29 +115,25 @@ def format_python_file(filepath: Path) -> None:
     try:
         ast.parse(final_formatted_content)
         try:
-            Path(filepath).write_text(final_formatted_content, encoding="utf-8")
-            print(
-                f"Successfully formatted {filepath}. Backup created at {backup_filepath}"
-            )
+            Path(path).write_text(final_formatted_content, encoding="utf-8")
+            print(f"Successfully formatted {path}. Backup created at {backup_path}")
         except OSError as e:
-            print(
-                f"Error writing formatted content to {filepath}: {e}", file=sys.stderr
-            )
+            print(f"Error writing formatted content to {path}: {e}", file=sys.stderr)
     except SyntaxError as e:
         temp_file = Path("temporary.py")
         temp_file.write_text(final_formatted_content, encoding="utf-8")
         print(
-            f"Error: Formatted code is not parsable by AST. Aborting write operation for {filepath}.",
+            f"Error: Formatted code is not parsable by AST. Aborting write operation for {path}.",
             file=sys.stderr,
         )
         print(f"AST Syntax Error: {e}", file=sys.stderr)
-        Path(backup_filepath).replace(filepath)
-        print(f"Restored {filepath} from backup.")
+        Path(backup_path).replace(path)
+        print(f"Restored {path} from backup.")
 
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        print("Usage: python format_python.py <file_path>")
+        print("Usage: python format_python.py <path>")
         sys.exit(1)
     file_to_format = Path(sys.argv[1])
     format_python_file(file_to_format)

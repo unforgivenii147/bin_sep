@@ -37,10 +37,10 @@ def get_package_files(pkgname: str) -> list[str]:
 def copy_pkg_files(pkgname: str) -> None:
     dest_root = Path.home() / "tmp" / "deb" / pkgname
     dest_root.mkdir(parents=True, exist_ok=True)
-    file_paths = get_package_files(pkgname)
+    paths = get_package_files(pkgname)
     copied_count = 0
     skipped_count = 0
-    for raw_path in file_paths:
+    for raw_path in paths:
         src = Path(raw_path)
         if not src.exists() or not src.is_file():
             skipped_count += 1

@@ -21,22 +21,22 @@ def walk_python_files(root: Path) -> Iterator[Path]:
                 yield path
 
 
-def process_file(file_path: Path, auto_fix: bool = False) -> dict:
+def process_file(path: Path, auto_fix: bool = False) -> dict:
     result = {
-        "path": file_path,
+        "path": path,
         "has_issues": False,
         "fixed": False,
         "messages": [],
     }
     try:
-        source_bytes = file_path.read_bytes()
+        source_bytes = path.read_bytes()
     except Exception as exc:
         result["messages"].append(f"Error reading file: {exc}")
         return result
     with warnings.catch_warnings(record=True) as caught_warnings:
         warnings.simplefilter("always", SyntaxWarning)
         try:
-            compile(source_bytes, str(file_path), "exec")
+            compile(source_bytes, str(path), "exec")
         except SyntaxError as exc:
             if "invalid escape sequence" in str(exc):
                 result["has_issues"] = True
@@ -57,7 +57,7 @@ def process_file(file_path: Path, auto_fix: bool = False) -> dict:
     try:
         modified_tokens = []
         source_modified = False
-        with file_path.open("rb") as source_file:
+        with path.open("rb") as source_file:
             tokens = tokenize.tokenize(source_file.readline)
             tokens = list(tokens)
         for token in tokens:
@@ -98,7 +98,7 @@ def process_file(file_path: Path, auto_fix: bool = False) -> dict:
             modified_tokens.append(token)
         if source_modified:
             fixed_source = tokenize.untokenize(modified_tokens)
-            file_path.write_bytes(fixed_source)
+            path.write_bytes(fixed_source)
             result["fixed"] = True
     except Exception as exc:
         result["messages"].append(f"Error while fixing: {exc}")
@@ -123,14 +123,14 @@ def main() -> None:
     root = Path.cwd()
     issues_count = 0
     fixed_count = 0
-    for file_path in walk_python_files(root):
-        print(f"Processing {file_path}")
-        result = process_file(file_path, auto_fix=args.auto_fix)
+    for path in walk_python_files(root):
+        print(f"Processing {path}")
+        result = process_file(path, auto_fix=args.auto_fix)
         if not result["has_issues"]:
             continue
         issues_count += 1
         status = "[FIXED]" if result["fixed"] else "[ISSUE]"
-        print(f"{status} {file_path}")
+        print(f"{status} {path}")
         for message in result["messages"]:
             print(f"  -> {message}")
         if result["fixed"]:

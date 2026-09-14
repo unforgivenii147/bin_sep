@@ -23,20 +23,20 @@ def collect_fixers():
     return fixer_names
 
 
-def refactor_file(filepath: Path) -> None:
+def refactor_file(path: Path) -> None:
     options = {"print_function": True}
     tool = refactor.RefactoringTool(fixers, options)
     try:
-        original = filepath.read_text()
-        tree = tool.refactor_string(original, str(filepath))
+        original = path.read_text()
+        tree = tool.refactor_string(original, str(path))
         new_content = str(tree)
         if original == new_content:
-            print(f"  nothing changed: {filepath}")
+            print(f"  nothing changed: {path}")
         else:
-            filepath.write_text(new_content)
-            print(f"  refactored:      {filepath}")
+            path.write_text(new_content)
+            print(f"  refactored:      {path}")
     except Exception as exc:
-        print(f"  ERROR {filepath}: {exc}", file=sys.stderr)
+        print(f"  ERROR {path}: {exc}", file=sys.stderr)
 
 
 def main() -> None:

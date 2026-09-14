@@ -27,13 +27,13 @@ class TranslationResult(TypedDict):
     translated: str
 
 
-def chunk_file(file_path: Path, chunk_size: int = 32768) -> list[tuple[int, int, str]]:
+def chunk_file(path: Path, chunk_size: int = 32768) -> list[tuple[int, int, str]]:
     chunks = []
     current_chunk = []
     current_size = 0
     start_line = 0
     try:
-        with file_path.open("r", encoding="utf-8") as f:
+        with path.open("r", encoding="utf-8") as f:
             for line_num, line in enumerate(f):
                 if current_size + len(line) > chunk_size and current_chunk:
                     chunks.append((start_line, line_num - 1, "".join(current_chunk)))
@@ -46,7 +46,7 @@ def chunk_file(file_path: Path, chunk_size: int = 32768) -> list[tuple[int, int,
             if current_chunk:
                 chunks.append((start_line, line_num, "".join(current_chunk)))
     except Exception as e:
-        logger.error(f"Error reading file {file_path}: {e}")
+        logger.error(f"Error reading file {path}: {e}")
     return chunks
 
 

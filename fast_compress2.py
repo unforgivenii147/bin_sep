@@ -295,17 +295,17 @@ def get_files_generator(directory: Path, compress: bool) -> Generator[Path, None
         total_dirs += 1
 
         for file_name in file_names:
-            file_path = root_path / file_name
-            if file_path.is_symlink():
+            path = root_path / file_name
+            if path.is_symlink():
                 skipped_symlinks += 1
                 continue
 
-            path_str = str(file_path)
+            path_str = str(path)
             if ".egg-info" in path_str or ".dist-info" in path_str:
                 skipped_extensions += 1
                 continue
 
-            suffix = file_path.suffix.lower()
+            suffix = path.suffix.lower()
 
             if compress:
                 if suffix in SKIP_EXTENSIONS_COMPRESS:
@@ -314,17 +314,17 @@ def get_files_generator(directory: Path, compress: bool) -> Generator[Path, None
                         skipped_media += 1
                     continue
             else:
-                if file_path.suffix not in VALID_DECOMPRESS_EXTENSIONS:
+                if path.suffix not in VALID_DECOMPRESS_EXTENSIONS:
                     skipped_extensions += 1
                     continue
 
             try:
-                file_size = file_path.stat().st_size
+                file_size = path.stat().st_size
             except (OSError, PermissionError):
                 skipped_extensions += 1
                 continue
 
-            heapq.heappush(file_heap, (-file_size, file_path))
+            heapq.heappush(file_heap, (-file_size, path))
             total_files += 1
 
             if len(file_heap) >= HEAP_SIZE_LIMIT:
@@ -449,36 +449,36 @@ def process_files(
     pending: list[tuple[AsyncResult, Path, Path]] = []
 
     with Pool(processes=WORKER_COUNT) as pool:
-        for file_path in files_list:
+        for path in files_list:
             if compress:
-                output_path = file_path.with_suffix(file_path.suffix + ".zst")
+                output_path = path.with_suffix(path.suffix + ".zst")
                 if output_path.exists():
-                    logger.warning(f"Skipping {file_path.name} - output already exists")
+                    logger.warning(f"Skipping {path.name} - output already exists")
                     skipped += 1
                     completed += 1
                     continue
                 async_result = pool.apply_async(
                     compress_file,
-                    (file_path, output_path, level, threads, remove_original),
+                    (path, output_path, level, threads, remove_original),
                 )
             else:
-                output_path = file_path.with_suffix("")
+                output_path = path.with_suffix("")
                 if output_path.exists():
-                    logger.warning(f"Skipping {file_path.name} - output already exists")
+                    logger.warning(f"Skipping {path.name} - output already exists")
                     skipped += 1
                     completed += 1
                     continue
                 async_result = pool.apply_async(
                     decompress_file,
-                    (file_path, output_path, threads, remove_original),
+                    (path, output_path, threads, remove_original),
                 )
-            pending.append((async_result, file_path, output_path))
+            pending.append((async_result, path, output_path))
 
-        for async_result, file_path, _output_path in pending:
+        for async_result, path, _output_path in pending:
             try:
                 result = async_result.get()
             except Exception as e:  # noqa: BLE001
-                failed.append((file_path, str(e)))
+                failed.append((path, str(e)))
                 completed += 1
                 continue
 

@@ -87,13 +87,13 @@ def process_files_with_retry(files: list[Path]) -> None:
             logger.error(f"  - {f}")
 
 
-def safe_overwrite(filepath: Path, content: str) -> None:
+def safe_overwrite(path: Path, content: str) -> None:
     with tempfile.NamedTemporaryFile(
-        mode="w", encoding="utf-8", delete=False, dir=filepath.parent
+        mode="w", encoding="utf-8", delete=False, dir=path.parent
     ) as tmp:
         tmp.write(content)
         tmp_path = Path(tmp.name)
-    shutil.move(tmp_path, filepath)
+    shutil.move(tmp_path, path)
 
 
 def translate_file_content(path: Path, retries: int = MAX_RETRIES) -> str:

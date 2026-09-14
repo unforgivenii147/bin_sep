@@ -14,17 +14,17 @@ HTML_BADGE_BLOCK_PATTERN = re.compile(
 )
 
 
-def clean_file(file_path: Path):
+def clean_file(path: Path):
     try:
-        content = file_path.read_text(encoding="utf-8", errors="ignore")
+        content = path.read_text(encoding="utf-8", errors="ignore")
         cleaned_content = MD_IMAGE_PATTERN.sub("", content)
         cleaned_content = HTML_BADGE_BLOCK_PATTERN.sub("", cleaned_content)
         if content != cleaned_content:
-            file_path.write_text(cleaned_content, encoding="utf-8")
-            return f"Updated: {file_path}"
-        return f"Skipped (No changes): {file_path}"
+            path.write_text(cleaned_content, encoding="utf-8")
+            return f"Updated: {path}"
+        return f"Skipped (No changes): {path}"
     except Exception as e:
-        return f"Error processing {file_path}: {e}"
+        return f"Error processing {path}: {e}"
 
 
 def main():
@@ -36,8 +36,8 @@ def main():
     print(f"Discovered {len(md_files)} files. Spawning 8 worker processes...")
     with mp.Pool(processes=8) as pool:
         results = []
-        for file_path in md_files:
-            async_res = pool.apply_async(clean_file, args=(file_path,))
+        for path in md_files:
+            async_res = pool.apply_async(clean_file, args=(path,))
             results.append(async_res)
         for res in results:
             print(res.get())

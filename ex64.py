@@ -11,9 +11,9 @@ BASE64_IMG_REGEX = re.compile(
 )
 
 
-def extract_images_from_file(file_path: Path, output_dir: Path) -> int:
+def extract_images_from_file(path: Path, output_dir: Path) -> int:
     try:
-        text = file_path.read_text(encoding="utf-8", errors="ignore")
+        text = path.read_text(encoding="utf-8", errors="ignore")
     except Exception:
         return 0
     matches = BASE64_IMG_REGEX.finditer(text)
@@ -26,7 +26,7 @@ def extract_images_from_file(file_path: Path, output_dir: Path) -> int:
         except Exception:
             continue
         digest = hashlib.sha1(img_bytes).hexdigest()[:12]
-        filename = f"{file_path.stem}_{digest}.{ext}"
+        filename = f"{path.stem}_{digest}.{ext}"
         output_path = output_dir / filename
         output_path.write_bytes(img_bytes)
         count += 1

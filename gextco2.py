@@ -190,7 +190,7 @@ class Entity:
 class ExtractionResult:
     """Contains extraction results for a single file."""
 
-    filepath: str
+    path: str
     entities: list[Entity] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
     imports: set[str] = field(default_factory=set)
@@ -507,15 +507,15 @@ class ImportAnalyzer:
 class EntityVisitor(ast.NodeVisitor):
     """Visits AST nodes to extract code entities."""
 
-    def __init__(self, source_lines: list[str], filepath: str):
+    def __init__(self, source_lines: list[str], path: str):
         """Initialize the entity visitor.
 
         Args:
             source_lines: Source code split into lines
-            filepath: Path to the source file
+            path: Path to the source file
         """
         self.source_lines = source_lines
-        self.filepath = filepath
+        self.path = path
         self.entities: list[Entity] = []
         self.current_class: Optional[str] = None
 
@@ -538,7 +538,7 @@ class EntityVisitor(ast.NodeVisitor):
                 type="class",
                 source=source,
                 full_name=node.name,
-                source_file=self.filepath,
+                source_file=self.path,
                 line_number=node.lineno,
                 decorators=[self._get_decorator_name(d) for d in node.decorator_list],
             )
@@ -565,7 +565,7 @@ class EntityVisitor(ast.NodeVisitor):
                             type="constant",
                             source=source,
                             full_name=target.id,
-                            source_file=self.filepath,
+                            source_file=self.path,
                             line_number=node.lineno,
                         )
                     )
@@ -603,7 +603,7 @@ class EntityVisitor(ast.NodeVisitor):
                 type=entity_type,
                 source=source,
                 full_name=full_name,
-                source_file=self.filepath,
+                source_file=self.path,
                 line_number=node.lineno,
                 decorators=[self._get_decorator_name(d) for d in node.decorator_list],
             )
@@ -663,18 +663,18 @@ def is_python_file(path: Path) -> bool:
     return False
 
 
-def extract_from_file(filepath: Path) -> ExtractionResult:
+def extract_from_file(path: Path) -> ExtractionResult:
     """Extract entities from a single Python file.
 
     Args:
-        filepath: Path to the Python file
+        path: Path to the Python file
 
     Returns:
         ExtractionResult containing extracted entities
     """
-    result = ExtractionResult(str(filepath))
+    result = ExtractionResult(str(path))
     try:
-        with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
+        with open(path, "r", encoding="utf-8", errors="ignore") as f:
             source = f.read()
         try:
             tree = ast.parse(source)
@@ -683,7 +683,7 @@ def extract_from_file(filepath: Path) -> ExtractionResult:
             return result
         result.imports = ImportAnalyzer.extract_imports_from_source(source)
         source_lines = source.split("\n")
-        visitor = EntityVisitor(source_lines, str(filepath))
+        visitor = EntityVisitor(source_lines, str(path))
         visitor.visit(tree)
         result.entities = visitor.entities
     except Exception as e:
@@ -786,9 +786,9 @@ def extract_from_archive_member(virtual_path: str, source: str) -> ExtractionRes
     return result
 
 
-def process_file_worker(filepath: Path) -> ExtractionResult:
+def process_file_worker(path: Path) -> ExtractionResult:
     """Worker function for processing files in parallel."""
-    return extract_from_file(filepath)
+    return extract_from_file(path)
 
 
 def process_archive_member_worker(args: tuple[str, str]) -> ExtractionResult:
@@ -814,16 +814,16 @@ def scan_directory(directory: str) -> tuple[list[Path], list[tuple[str, str]]]:
         dirs[:] = [d for d in dirs if d not in SKIP_DIRS]
         root_path = Path(root)
         for filename in files:
-            filepath = root_path / filename
-            if filepath.is_symlink():
+            path = root_path / filename
+            if path.is_symlink():
                 continue
-            if is_python_file(filepath):
-                python_files.append(filepath)
-            elif filepath.suffix in {".zip", ".whl"}:
-                members = extract_from_archive(filepath, filepath.suffix)
+            if is_python_file(path):
+                python_files.append(path)
+            elif path.suffix in {".zip", ".whl"}:
+                members = extract_from_archive(path, path.suffix)
                 archive_members.extend(members)
-            elif filepath.suffix in {".gz", ".bz2", ".xz", ".zst"}:
-                name = filepath.name
+            elif path.suffix in {".gz", ".bz2", ".xz", ".zst"}:
+                name = path.name
                 if name.endswith((".tar.gz", ".tgz")):
                     archive_type = ".tar.gz"
                 elif name.endswith(".tar.bz2"):
@@ -834,10 +834,10 @@ def scan_directory(directory: str) -> tuple[list[Path], list[tuple[str, str]]]:
                     archive_type = ".tar.zst"
                 else:
                     continue
-                members = extract_from_archive(filepath, archive_type)
+                members = extract_from_archive(path, archive_type)
                 archive_members.extend(members)
-            elif filepath.suffix == ".tar":
-                members = extract_from_archive(filepath, ".tar")
+            elif path.suffix == ".tar":
+                members = extract_from_archive(path, ".tar")
                 archive_members.extend(members)
     return (python_files, archive_members)
 
@@ -856,11 +856,11 @@ def write_entity(output_dir: Path, entity: Entity) -> Optional[Path]:
     entity_dir.mkdir(parents=True, exist_ok=True)
     base_filename = entity.full_name.replace("::", "_").replace("/", "_")
     filename = f"{base_filename}.py"
-    filepath = entity_dir / filename
+    path = entity_dir / filename
     counter = 1
-    while filepath.exists():
+    while path.exists():
         counter += 1
-        filepath = entity_dir / f"{base_filename}_{counter}.py"
+        path = entity_dir / f"{base_filename}_{counter}.py"
 
     existing_imports = ImportAnalyzer.extract_imports_from_source(entity.source)
     needed_imports = ImportAnalyzer.detect_needed_imports(entity.source)
@@ -884,9 +884,9 @@ def write_entity(output_dir: Path, entity: Entity) -> Optional[Path]:
         return None
 
     try:
-        with open(filepath, "w", encoding="utf-8") as f:
+        with open(path, "w", encoding="utf-8") as f:
             f.write(complete_code)
-        return filepath
+        return path
     except Exception as e:
         logger.error(f"Error writing entity: {e}")
         return None
@@ -900,7 +900,7 @@ def write_imports_file(output_dir: Path, all_imports: set[str]) -> None:
         all_imports: Set of all imports
     """
     organized = ImportAnalyzer.consolidate_imports(all_imports, set())
-    filepath = output_dir / "imports.py"
+    path = output_dir / "imports.py"
     content = "# Aggregated imports from extracted entities\n\n" + "".join(
         imp + "\n" for imp in organized
     )
@@ -908,7 +908,7 @@ def write_imports_file(output_dir: Path, all_imports: set[str]) -> None:
     # Validate imports file
     is_valid, error_msg = CodeValidator.validate_python_code(content)
     if is_valid:
-        with open(filepath, "w", encoding="utf-8") as f:
+        with open(path, "w", encoding="utf-8") as f:
             f.write(content)
     else:
         logger.warning(f"Failed to write imports file: {error_msg}")

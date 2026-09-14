@@ -8,12 +8,12 @@ from collections import defaultdict
 from pathlib import Path
 
 
-def extract_imports(file_path: Path):
+def extract_imports(path: Path):
     try:
-        with open(file_path, encoding="utf-8") as f:
-            tree = ast.parse(f.read(), filename=str(file_path))
+        with open(path, encoding="utf-8") as f:
+            tree = ast.parse(f.read(), filename=str(path))
     except Exception as e:
-        print(f"  ✗ Error parsing {file_path}: {e}")
+        print(f"  ✗ Error parsing {path}: {e}")
         return set()
     imports = set()
     for node in ast.walk(tree):

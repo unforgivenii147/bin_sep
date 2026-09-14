@@ -6,12 +6,12 @@ import os
 import re
 
 
-def fix_pattern_and_save(file_path: str) -> bool:
+def fix_pattern_and_save(path: str) -> bool:
     try:
-        with open(file_path, encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             original_content = f.read()
     except Exception as e:
-        print(f"✗ Error reading {file_path}: {e}")
+        print(f"✗ Error reading {path}: {e}")
         return False
     pattern = "(def process_file\\([^)]*\\):)\\n(\\s+)([^\\n]+)\\n(\\s+)(path = Path\\(path\\))"
 
@@ -25,12 +25,12 @@ def fix_pattern_and_save(file_path: str) -> bool:
     fixed_content = re.sub(pattern, replace_func, original_content)
     if fixed_content != original_content:
         try:
-            with open(file_path, "w", encoding="utf-8") as f:
+            with open(path, "w", encoding="utf-8") as f:
                 f.write(fixed_content)
-            print(f"✓ Fixed: {file_path}")
+            print(f"✓ Fixed: {path}")
             return True
         except Exception as e:
-            print(f"✗ Error writing {file_path}: {e}")
+            print(f"✗ Error writing {path}: {e}")
             return False
     return False
 
@@ -39,8 +39,8 @@ def fix_all_python_files(directory_path: str = ".") -> None:
     python_files = glob.glob(os.path.join(directory_path, "**/*.py"), recursive=True)
     print(f"Scanning {len(python_files)} Python files...\n")
     fixed_count = 0
-    for file_path in python_files:
-        if fix_pattern_and_save(file_path):
+    for path in python_files:
+        if fix_pattern_and_save(path):
             fixed_count += 1
     print(f"\n✓ Total files fixed: {fixed_count}")
 

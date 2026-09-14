@@ -140,16 +140,16 @@ class SpinnerProgressReporter:
             print(msg, end="", flush=True)
 
 
-def check_file(file_path: Path) -> tuple[Path, str, bool | None, str]:
+def check_file(path: Path) -> tuple[Path, str, bool | None, str]:
     try:
-        extension = file_path.suffix.lower()
-        is_bin = is_binary(file_path)
-        mime_type, _ = mimetypes.guess_type(str(file_path))
+        extension = path.suffix.lower()
+        is_bin = is_binary(path)
+        mime_type, _ = mimetypes.guess_type(str(path))
         mime_type = mime_type or "unknown"
-        return (file_path, extension, is_bin, mime_type)
+        return (path, extension, is_bin, mime_type)
     except Exception as e:
-        logger.error(f"Error processing {file_path}: {e}")
-        return (file_path, file_path.suffix.lower(), None, "error")
+        logger.error(f"Error processing {path}: {e}")
+        return (path, path.suffix.lower(), None, "error")
 
 
 def validate_extensions(
@@ -193,11 +193,11 @@ def validate_extensions(
     error_count = 0
     mismatches = []
     by_extension = {}
-    for file_path, ext, is_bin, mime_type in results:
+    for path, ext, is_bin, mime_type in results:
         if ext not in by_extension:
             by_extension[ext] = {"binary": 0, "text": 0, "error": 0, "files": []}
         by_extension[ext]["files"].append(
-            {"path": str(file_path), "is_binary": is_bin, "mime_type": mime_type}
+            {"path": str(path), "is_binary": is_bin, "mime_type": mime_type}
         )
         if is_bin is True:
             binary_count += 1
@@ -206,7 +206,7 @@ def validate_extensions(
             text_count += 1
             by_extension[ext]["text"] += 1
             mismatches.append(
-                {"path": str(file_path), "extension": ext, "mime_type": mime_type}
+                {"path": str(path), "extension": ext, "mime_type": mime_type}
             )
         else:
             error_count += 1

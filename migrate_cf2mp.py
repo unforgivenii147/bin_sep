@@ -358,10 +358,10 @@ def _find_import_insert_index(module_node):
     return index
 
 
-def migrate_file(file_path: Path) -> bool:
+def migrate_file(path: Path) -> bool:
     """Migrate a single Python file, return True if changes were made."""
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(path, "r", encoding="utf-8") as f:
             source = f.read()
 
         tree = ast.parse(source)
@@ -394,18 +394,18 @@ def migrate_file(file_path: Path) -> bool:
 
         # Validate syntax
         try:
-            compile(new_source, str(file_path), "exec")
+            compile(new_source, str(path), "exec")
         except SyntaxError as e:
-            print(f"ERROR: Invalid syntax after migration in {file_path}: {e}")
+            print(f"ERROR: Invalid syntax after migration in {path}: {e}")
             return False
 
         # Write in-place
-        with open(file_path, "w", encoding="utf-8") as f:
+        with open(path, "w", encoding="utf-8") as f:
             f.write(new_source)
         return True
 
     except Exception as e:
-        print(f"ERROR processing {file_path}: {e}")
+        print(f"ERROR processing {path}: {e}")
         return False
 
 
@@ -421,16 +421,16 @@ def main():
 
     print(f"Found {len(python_files)} Python files")
     migrated = 0
-    for file_path in python_files:
-        print(f"Processing {file_path}...", end=" ")
+    for path in python_files:
+        print(f"Processing {path}...", end=" ")
         try:
-            with open(file_path, "r", encoding="utf-8") as f:
-                compile(f.read(), str(file_path), "exec")
+            with open(path, "r", encoding="utf-8") as f:
+                compile(f.read(), str(path), "exec")
         except SyntaxError as e:
             print(f"SKIP (syntax error in original): {e}")
             continue
 
-        if migrate_file(file_path):
+        if migrate_file(path):
             migrated += 1
             print("MIGRATED")
         else:

@@ -119,14 +119,14 @@ def process_importable_task(name: str) -> None:
 
 
 def process_file_task(py_file) -> None:
-    filepath = Path(py_file)
-    root = str(filepath.parent)
-    print(f"processing file {filepath.name} from {filepath.parent.name}")
+    path = Path(py_file)
+    root = str(path.parent)
+    print(f"processing file {path.name} from {path.parent.name}")
     result = extract_from_file(str(py_file))
     if not result:
         return
     module_doc, functions, classes = result
-    rel = filepath.resolve().relative_to(Path.cwd().resolve())
+    rel = path.resolve().relative_to(Path.cwd().resolve())
     module_name = ".".join(rel.with_suffix("").parts)
     folder, out_path = file_to_md_paths(py_file, root)
     md = format_markdown(module_name, module_doc, functions, classes)

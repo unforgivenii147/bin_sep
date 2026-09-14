@@ -43,28 +43,28 @@ def remove_functions_from_source(source: str, unused_functions) -> str:
     return ast.unparse(tree)
 
 
-def process_file(filepath, dry_run: bool = False):
+def process_file(path, dry_run: bool = False):
     Path(path)
     errors = []
-    filepath = Path(filepath)
+    path = Path(path)
     try:
-        source = filepath.read_text(encoding="utf-8")
+        source = path.read_text(encoding="utf-8")
     except Exception as e:
-        return filepath, [], [f"Error reading file: {e}"]
+        return path, [], [f"Error reading file: {e}"]
     unused, parse_errors = find_unused_functions(source)
     errors.extend(parse_errors)
     if not unused:
-        return filepath, [], errors
+        return path, [], errors
     try:
         new_source = remove_functions_from_source(source, unused)
     except Exception:
         errors.append("Error rewriting file:\n" + traceback.format_exc())
-        return filepath, unused, errors
+        return path, unused, errors
     if not dry_run:
-        backup_path = filepath.with_suffix(filepath.suffix + ".bak")
-        shutil.copy2(filepath, backup_path)
-        filepath.write_text(new_source, encoding="utf-8")
-    return filepath, unused, errors
+        backup_path = path.with_suffix(path.suffix + ".bak")
+        shutil.copy2(path, backup_path)
+        path.write_text(new_source, encoding="utf-8")
+    return path, unused, errors
 
 
 def gather_python_files(root: Path) -> list[Path]:
@@ -92,14 +92,14 @@ def main() -> None:
     with mp.Pool(args.workers) as pool:
         results = pool.map(worker, [(f, args.dry_run) for f in py_files])
     print("\n=== RESULTS ===")
-    for filepath, unused, errors in results:
+    for path, unused, errors in results:
         if unused:
             if args.dry_run:
-                print(f"[DRY-RUN] Would remove {unused} from {filepath}")
+                print(f"[DRY-RUN] Would remove {unused} from {path}")
             else:
-                print(f"Removed {unused} from {filepath} (backup created)")
+                print(f"Removed {unused} from {path} (backup created)")
         for err in errors:
-            print(f"[ERROR] {filepath}: {err}")
+            print(f"[ERROR] {path}: {err}")
 
 
 if __name__ == "__main__":

@@ -51,7 +51,7 @@ class Author:
 @dataclass
 class License:
     text: str = ""
-    file_path: str | None = None
+    path: str | None = None
 
     @classmethod
     def from_value(cls, value: str | dict[str, Any] | None) -> License:
@@ -63,12 +63,12 @@ class License:
             if "text" in value:
                 return cls(text=value["text"])
             if "file" in value:
-                file_path = value["file"]
+                path = value["file"]
                 try:
-                    text = Path(file_path).read_text(encoding="utf-8")
-                    return cls(text=text, file_path=file_path)
+                    text = Path(path).read_text(encoding="utf-8")
+                    return cls(text=text, path=path)
                 except OSError:
-                    return cls(file_path=file_path)
+                    return cls(path=path)
         return cls()
 
 
@@ -82,7 +82,7 @@ class Readme:
         if not value:
             return cls()
         if isinstance(value, str):
-            return cls._from_file_path(value)
+            return cls._from_path(value)
         if isinstance(value, dict):
             if "file" in value:
                 content = cls._read_file(value["file"])
@@ -96,20 +96,20 @@ class Readme:
         return cls()
 
     @staticmethod
-    def _from_file_path(file_path: str) -> Readme:
-        content = Readme._read_file(file_path)
-        if file_path.lower().endswith(".md"):
+    def _from_path(path: str) -> Readme:
+        content = Readme._read_file(path)
+        if path.lower().endswith(".md"):
             content_type = "text/markdown"
-        elif file_path.lower().endswith(".rst"):
+        elif path.lower().endswith(".rst"):
             content_type = "text/x-rst"
         else:
             content_type = "text/plain"
         return Readme(content=content, content_type=content_type)
 
     @staticmethod
-    def _read_file(file_path: str) -> str:
+    def _read_file(path: str) -> str:
         try:
-            return Path(file_path).read_text(encoding="utf-8")
+            return Path(path).read_text(encoding="utf-8")
         except OSError:
             return ""
 
@@ -348,9 +348,9 @@ if __name__ == "__main__":
             kwargs_parts.append(
                 f"        license={cls.quote_string(metadata.license.text)},"
             )
-        elif metadata.license.file_path:
+        elif metadata.license.path:
             kwargs_parts.append(
-                f"        license_files={cls.format_list([metadata.license.file_path], 8)},"
+                f"        license_files={cls.format_list([metadata.license.path], 8)},"
             )
         if metadata.requires_python:
             kwargs_parts.append(

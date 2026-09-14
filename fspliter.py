@@ -270,8 +270,7 @@ Examples:
     logger.info(f"Character limits: {args.min_chars}-{args.max_chars} per part")
 
     process_args: list[tuple[Path, Path, int, int]] = [
-        (file_path, args.output, args.min_chars, args.max_chars)
-        for file_path in text_files
+        (path, args.output, args.min_chars, args.max_chars) for path in text_files
     ]
 
     total_parts: int = 0

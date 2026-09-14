@@ -24,19 +24,15 @@ def normalize_separators(content: str) -> tuple[str, int]:
 
 
 def process_file(args: tuple[Path, bool]) -> ProcessResult:
-    file_path, autofix = args
+    path, autofix = args
     try:
-        content = file_path.read_text(encoding="utf-8")
+        content = path.read_text(encoding="utf-8")
         new_content, replacements = normalize_separators(content)
         if replacements > 0 and autofix:
-            file_path.write_text(new_content, encoding="utf-8")
-        return ProcessResult(
-            file=file_path, replacements=replacements, status="success"
-        )
+            path.write_text(new_content, encoding="utf-8")
+        return ProcessResult(file=path, replacements=replacements, status="success")
     except Exception as e:
-        return ProcessResult(
-            file=file_path, replacements=0, status="error", error=str(e)
-        )
+        return ProcessResult(file=path, replacements=0, status="error", error=str(e))
 
 
 def find_python_files(paths: list[str]) -> list[Path]:

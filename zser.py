@@ -232,13 +232,13 @@ def process_files_async(files: list[Path], operation: str, level: int = 21) -> N
         async_results: list[AsyncResult] = []
 
         # Submit all tasks
-        for file_path in files:
+        for path in files:
             if operation == "compress":
                 async_result: AsyncResult = pool.apply_async(
-                    compress_file, (file_path, level)
+                    compress_file, (path, level)
                 )
             else:  # decompress
-                async_result = pool.apply_async(decompress_file, (file_path,))
+                async_result = pool.apply_async(decompress_file, (path,))
             async_results.append(async_result)
 
         # Collect and process results

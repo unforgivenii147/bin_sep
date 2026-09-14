@@ -39,31 +39,31 @@ SHEBANG_LANGUAGES = {
 }
 
 
-def get_language_from_shebang(file_path: str) -> str | None:
-    if is_binary(file_path):
-        print(f"{file_path} is binary")
+def get_language_from_shebang(path: str) -> str | None:
+    if is_binary(path):
+        print(f"{path} is binary")
         return None
-    if ".git" in str(file_path):
+    if ".git" in str(path):
         return None
     try:
-        with Path(file_path).open(encoding="utf-8") as file:
+        with Path(path).open(encoding="utf-8") as file:
             first_line = file.readline().strip()
             for lang, shebangs in SHEBANG_LANGUAGES.items():
                 for shebang in shebangs:
                     if first_line.startswith(shebang):
                         return lang
     except Exception as e:
-        print(f"Error reading file {file_path}: {e}")
+        print(f"Error reading file {path}: {e}")
     return None
 
 
-def count_lines_of_code(file_path: str, lang: str) -> tuple[int, int, int]:
-    if ".git" in str(file_path):
+def count_lines_of_code(path: str, lang: str) -> tuple[int, int, int]:
+    if ".git" in str(path):
         return 0, 0, 0
-    if is_binary(file_path):
-        print(f"{file_path} is binary")
+    if is_binary(path):
+        print(f"{path} is binary")
         return 0, 0, 0
-    with Path(file_path).open(encoding="utf-8") as file:
+    with Path(path).open(encoding="utf-8") as file:
         code_lines = 0
         comment_lines = 0
         blank_lines = 0
@@ -87,14 +87,14 @@ def scan_directory(
         },
     }
     base_path = Path(directory)
-    for file_path in base_path.rglob("*"):
-        if not file_path.is_file():
+    for path in base_path.rglob("*"):
+        if not path.is_file():
             continue
-        file_extension = file_path.suffix.lower()
+        file_extension = path.suffix.lower()
         if not file_extension:
-            lang = get_language_from_shebang(str(file_path))
+            lang = get_language_from_shebang(str(path))
             if lang:
-                code, comments, blanks = count_lines_of_code(str(file_path), lang)
+                code, comments, blanks = count_lines_of_code(str(path), lang)
                 stats["languages"][lang]["code"] += code
                 stats["languages"][lang]["comments"] += comments
                 stats["languages"][lang]["blank"] += blanks
@@ -104,7 +104,7 @@ def scan_directory(
                 continue
         for lang, extensions in LANG_EXTENSIONS.items():
             if file_extension in extensions:
-                code, comments, blanks = count_lines_of_code(str(file_path), lang)
+                code, comments, blanks = count_lines_of_code(str(path), lang)
                 stats["languages"][lang]["code"] += code
                 stats["languages"][lang]["comments"] += comments
                 stats["languages"][lang]["blank"] += blanks

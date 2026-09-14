@@ -36,10 +36,10 @@ def find_target_files(paths):
     return files
 
 
-def _is_target(file_path):
-    if file_path.name in TARGET_NAMES:
+def _is_target(path):
+    if path.name in TARGET_NAMES:
         return True
-    return file_path.suffix.lower() in TARGET_EXTENSIONS
+    return path.suffix.lower() in TARGET_EXTENSIONS
 
 
 def parse_repl_block(block):
@@ -59,9 +59,9 @@ def parse_repl_block(block):
     return "\n".join(result_lines)
 
 
-def extract_python_blocks(file_path):
+def extract_python_blocks(path):
     try:
-        content = file_path.read_text(encoding="utf-8", errors="ignore")
+        content = path.read_text(encoding="utf-8", errors="ignore")
     except (OSError, UnicodeDecodeError):
         return []
     blocks = []
@@ -75,7 +75,7 @@ def extract_python_blocks(file_path):
         code = parse_repl_block(match.group(1))
         if code.strip():
             blocks.append(code)
-    if not blocks and file_path.name in TARGET_NAMES:
+    if not blocks and path.name in TARGET_NAMES:
         for match in INLINE_PY.finditer(content):
             code = match.group(1).strip()
             if code and ("import" in code or "def " in code or "class " in code):
@@ -83,19 +83,17 @@ def extract_python_blocks(file_path):
     return blocks
 
 
-def process_file(file_path, output_dir):
-    blocks = extract_python_blocks(file_path)
+def process_file(path, output_dir):
+    blocks = extract_python_blocks(path)
     saved = []
     for idx, code in enumerate(blocks, 1):
-        stem = file_path.stem.replace(" ", "_")
+        stem = path.stem.replace(" ", "_")
         out_name = f"{stem}_{idx:03d}.py"
         out_path = output_dir / out_name
-        header = (
-            f"# Source: {file_path}\n# Block: {idx}\n# Extracted: {file_path.name}\n\n"
-        )
+        header = f"# Source: {path}\n# Block: {idx}\n# Extracted: {path.name}\n\n"
         out_path.write_text(header + code + "\n", encoding="utf-8")
         saved.append(out_path)
-    return file_path, saved
+    return path, saved
 
 
 def main():
@@ -116,9 +114,9 @@ def main():
             executor.submit(process_file, f, output_dir): f for f in target_files
         }
         for future in as_completed(futures):
-            file_path, saved = future.result()
-            results.append((file_path, saved))
-            print(f"  ✓ {file_path}: {len(saved)} block(s) extracted")
+            path, saved = future.result()
+            results.append((path, saved))
+            print(f"  ✓ {path}: {len(saved)} block(s) extracted")
     total_blocks = sum(len(saved) for _, saved in results)
     print(f"\nDone! Extracted {total_blocks} Python block(s) to '{output_dir}/'")
     print("Reference headers in each file indicate the source.")

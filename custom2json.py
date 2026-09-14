@@ -29,10 +29,10 @@ def parse_magic_line(line: str):
     }
 
 
-def parse_magic_file(filepath: str, encoding="latin-1"):
+def parse_magic_file(path: str, encoding="latin-1"):
     result = {}
     current_mimetype = None
-    with open(filepath, "rb") as f:
+    with open(path, "rb") as f:
         raw_lines = f.readlines()
     lines = [line.decode("latin-1", errors="replace") for line in raw_lines]
     for line in lines:

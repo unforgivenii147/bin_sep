@@ -48,14 +48,12 @@ def process_line(line: str, autofix: bool = False) -> tuple:
     return updated_line, misspelled_count, fixed_count
 
 
-def process_file(
-    filepath: str, autofix: bool = False, num_processes: int | None = None
-):
+def process_file(path: str, autofix: bool = False, num_processes: int | None = None):
     try:
-        with open(filepath, "r", encoding="utf-8") as f:
+        with open(path, "r", encoding="utf-8") as f:
             lines = f.readlines()
     except FileNotFoundError:
-        print(f"Error: The file '{filepath}' was not found.")
+        print(f"Error: The file '{path}' was not found.")
         return
     except Exception as e:
         print(f"Error reading file: {e}")
@@ -80,9 +78,9 @@ def process_file(
     if autofix:
         if total_fixed > 0:
             try:
-                with open(filepath, "w", encoding="utf-8") as f:
+                with open(path, "w", encoding="utf-8") as f:
                     f.writelines(updated_lines)
-                print(f"\nAutofixed {total_fixed} misspelled word(s) in '{filepath}'.")
+                print(f"\nAutofixed {total_fixed} misspelled word(s) in '{path}'.")
                 if total_misspelled > total_fixed:
                     skipped = total_misspelled - total_fixed
                     print(

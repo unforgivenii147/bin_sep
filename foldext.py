@@ -11,34 +11,32 @@ from dh import gsz
 def folderize_by_extension(cwd: Path):
     root_path = Path(cwd)
     extension_stats = {}
-    for file_path in root_path.rglob("*"):
-        if ".git" in file_path.parts:
+    for path in root_path.rglob("*"):
+        if ".git" in path.parts:
             continue
-        if file_path.is_file():
-            ext = file_path.suffix.lower()[1:] if file_path.suffix else "no_extension"
-            size = file_path.stat().st_size
+        if path.is_file():
+            ext = path.suffix.lower()[1:] if path.suffix else "no_extension"
+            size = path.stat().st_size
             if ext not in extension_stats:
                 extension_stats[ext] = {"count": 0, "total_size": 0, "files": []}
             extension_stats[ext]["count"] += 1
             extension_stats[ext]["total_size"] += size
-            extension_stats[ext]["files"].append(file_path)
+            extension_stats[ext]["files"].append(path)
     created_dirs = set()
     for ext, stats in extension_stats.items():
         target_dir = root_path / ext
         target_dir.mkdir(exist_ok=True)
         created_dirs.add(ext)
-        for file_path in stats["files"]:
-            if file_path.parent == target_dir:
+        for path in stats["files"]:
+            if path.parent == target_dir:
                 continue
-            target_path = target_dir / file_path.name
+            target_path = target_dir / path.name
             counter = 1
             while target_path.exists():
-                target_path = (
-                    target_dir / f"{file_path.stem}_{counter}{file_path.suffix}"
-                )
+                target_path = target_dir / f"{path.stem}_{counter}{path.suffix}"
                 counter += 1
             with contextlib.suppress(BaseException):
-                shutil.move(str(file_path), str(target_path))
+                shutil.move(str(path), str(target_path))
     for dir_path in sorted(
         root_path.glob("**/*"), key=lambda p: len(p.parts), reverse=True
     ):

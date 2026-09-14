@@ -37,25 +37,25 @@ URLS_FILE: Path = Path("urls.txt")
 DOWNLOADS_DIR: Path = Path("downloads")
 
 
-def download_file(url: str, filepath: Path, timeout: int = DEFAULT_TIMEOUT) -> bool:
+def download_file(url: str, path: Path, timeout: int = DEFAULT_TIMEOUT) -> bool:
     """
-    Download a single URL to filepath.
+    Download a single URL to path.
 
     Tries pycurl first (if available), then falls back to requests.
 
     Args:
         url: The URL to download.
-        filepath: Destination path for the downloaded file.
+        path: Destination path for the downloaded file.
         timeout: Request timeout in seconds.
 
     Returns:
         True if the download succeeded, False otherwise.
     """
-    filepath.parent.mkdir(parents=True, exist_ok=True)
+    path.parent.mkdir(parents=True, exist_ok=True)
 
     if HAS_PYCURL:
         try:
-            with open(filepath, "wb") as f:
+            with open(path, "wb") as f:
                 c = pycurl.Curl()
                 c.setopt(c.URL, url)
                 c.setopt(c.WRITEDATA, f)
@@ -65,12 +65,10 @@ def download_file(url: str, filepath: Path, timeout: int = DEFAULT_TIMEOUT) -> b
                 c.setopt(c.USERAGENT, "Mozilla/5.0")
                 c.perform()
                 c.close()
-            logger.success(f"Downloaded (pycurl): {filepath.name}")
+            logger.success(f"Downloaded (pycurl): {path.name}")
             return True
         except Exception as e:
-            logger.warning(
-                f"pycurl failed for {filepath.name}: {e}. Trying requests..."
-            )
+            logger.warning(f"pycurl failed for {path.name}: {e}. Trying requests...")
 
     try:
         with requests.Session() as session:
@@ -82,13 +80,13 @@ def download_file(url: str, filepath: Path, timeout: int = DEFAULT_TIMEOUT) -> b
                 allow_redirects=True,
             )
             response.raise_for_status()
-            with open(filepath, "wb") as f:
+            with open(path, "wb") as f:
                 for chunk in response.iter_content(chunk_size=8192):
                     f.write(chunk)
-        logger.success(f"Downloaded (requests): {filepath.name}")
+        logger.success(f"Downloaded (requests): {path.name}")
         return True
     except Exception as e:
-        logger.error(f"Failed {filepath.name}: {e}")
+        logger.error(f"Failed {path.name}: {e}")
         return False
 
 
@@ -101,7 +99,7 @@ def parse_urls_file(urls_file: Path) -> tuple[list[str], list[tuple[str, Path]]]
 
     Returns:
         A tuple of (original_lines, download_tasks), where download_tasks is a list
-        of (url, filepath) tuples for each valid URL.
+        of (url, path) tuples for each valid URL.
     """
     original_lines: list[str] = urls_file.read_text(encoding="utf-8").splitlines()
     download_tasks: list[tuple[str, Path]] = []
@@ -114,8 +112,8 @@ def parse_urls_file(urls_file: Path) -> tuple[list[str], list[tuple[str, Path]]]
                 url.split("/")[-1].split("?")[0]
                 or f"download_{len(download_tasks) + 1}"
             )
-            filepath: Path = DOWNLOADS_DIR / filename
-            download_tasks.append((url, filepath))
+            path: Path = DOWNLOADS_DIR / filename
+            download_tasks.append((url, path))
 
     return original_lines, download_tasks
 

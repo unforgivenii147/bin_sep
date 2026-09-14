@@ -103,18 +103,18 @@ def is_english(text: str) -> tuple[bool, float]:
         return (True, 0.0)
 
 
-def _read_file_content(filepath: Path) -> Optional[str]:
+def _read_file_content(path: Path) -> Optional[str]:
     """Read a file trying several encodings.
 
     Args:
-        filepath: Path to the file.
+        path: Path to the file.
 
     Returns:
         The file content as a string, or None if reading failed.
     """
     for encoding in ("utf-8", "latin-1", "cp1252"):
         try:
-            return filepath.read_text(encoding=encoding, errors="ignore")
+            return path.read_text(encoding=encoding, errors="ignore")
         except UnicodeDecodeError:
             continue
         except OSError:
@@ -149,20 +149,20 @@ def _collect_non_english_lines(lines: list[str]) -> list[dict[str, Any]]:
 
 
 def analyze_file(
-    filepath: Path,
+    path: Path,
     detailed: bool = False,
 ) -> Optional[dict[str, Any]]:
     """Analyze a single file for non-English content.
 
     Args:
-        filepath: Path to the file to analyze.
+        path: Path to the file to analyze.
         detailed: If True, include per-line non-English details.
 
     Returns:
         A result dictionary if non-English content is found, otherwise None.
     """
     try:
-        content = _read_file_content(filepath)
+        content = _read_file_content(path)
         if content is None:
             return None
 
@@ -177,10 +177,10 @@ def analyze_file(
             )
             confidence = float(confidence_values[0].value) if confidence_values else 0.0
             result: dict[str, Any] = {
-                "file": str(filepath),
+                "file": str(path),
                 "language": file_result.name.lower(),
                 "confidence": confidence,
-                "size_bytes": filepath.stat().st_size,
+                "size_bytes": path.stat().st_size,
                 "line_count": len(lines),
                 "non_english_lines": [],
             }
@@ -195,10 +195,10 @@ def analyze_file(
             non_eng_lines = _collect_non_english_lines(lines)
             if non_eng_lines:
                 return {
-                    "file": str(filepath),
+                    "file": str(path),
                     "language": "en",
                     "confidence": 1.0,
-                    "size_bytes": filepath.stat().st_size,
+                    "size_bytes": path.stat().st_size,
                     "line_count": len(lines),
                     "non_english_lines": non_eng_lines,
                     "non_eng_line_count": len(non_eng_lines),
@@ -207,7 +207,7 @@ def analyze_file(
 
         return None
     except Exception as e:
-        return {"file": str(filepath), "error": str(e), "non_english_lines": []}
+        return {"file": str(path), "error": str(e), "non_english_lines": []}
 
 
 def _analyze_file_wrapper(
@@ -216,7 +216,7 @@ def _analyze_file_wrapper(
     """Wrapper for analyze_file to unpack arguments for Pool.apply_async.
 
     Args:
-        args: A tuple of (filepath, detailed).
+        args: A tuple of (path, detailed).
 
     Returns:
         The result of analyze_file.

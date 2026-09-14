@@ -8,15 +8,15 @@ from pathlib import Path
 
 def main() -> None:
     fn = sys.argv[1]
-    filepath = Path(fn)
-    with filepath.open(encoding="utf-8") as f:
+    path = Path(fn)
+    with path.open(encoding="utf-8") as f:
         lines = [line.strip() for line in f]
     items = []
     for line in lines:
         quote_char = "'" if '"' in line else '"'
         items.append(f"{quote_char}{line}{quote_char}")
     formatted_content = "{" + ", ".join(items) + "}"
-    filepath.write_text(formatted_content, encoding="utf-8")
+    path.write_text(formatted_content, encoding="utf-8")
     try:
         subprocess.run(
             ["termux-clipboard-set"],
@@ -24,9 +24,9 @@ def main() -> None:
             text=True,
             capture_output=True,
         )
-        print(f"✓ Updated and copied: {filepath}")
+        print(f"✓ Updated and copied: {path}")
     except FileNotFoundError:
-        print(f"✓ File updated: {filepath}")
+        print(f"✓ File updated: {path}")
         print("⚠ Install termux-api for clipboard support")
 
 

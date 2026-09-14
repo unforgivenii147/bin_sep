@@ -8,16 +8,16 @@ import tokenize
 from pathlib import Path
 
 
-def process_file(file_path: Path, auto_fix: bool = False) -> dict:
+def process_file(path: Path, auto_fix: bool = False) -> dict:
     result = {
-        "path": file_path,
+        "path": path,
         "found_count": 0,
         "fixed": False,
         "lines": [],
         "error": None,
     }
     try:
-        with file_path.open("rb") as f:
+        with path.open("rb") as f:
             tokens = list(tokenize.tokenize(f.readline))
     except Exception as e:
         result["error"] = f"Failed to read/tokenize: {e}"
@@ -48,7 +48,7 @@ def process_file(file_path: Path, auto_fix: bool = False) -> dict:
     if is_modified and auto_fix:
         try:
             fixed_bytes = tokenize.untokenize(modified_tokens)
-            file_path.write_bytes(fixed_bytes)
+            path.write_bytes(fixed_bytes)
             result["fixed"] = True
         except Exception as e:
             result["error"] = f"Failed to write auto-fix: {e}"

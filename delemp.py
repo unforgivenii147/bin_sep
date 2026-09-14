@@ -94,10 +94,10 @@ def preserve_single_blank_lines(text: str) -> str:
 
 
 def process_small_file(
-    file_path: Path, preserve_single: bool, remove_spaces: bool
+    path: Path, preserve_single: bool, remove_spaces: bool
 ) -> tuple[str, int, int, str]:
     """Read, transform, and (if needed) rewrite a small text file."""
-    content = file_path.read_text(encoding="utf-8")
+    content = path.read_text(encoding="utf-8")
     total_lines = len(content.splitlines())
     if preserve_single:
         result = preserve_single_blank_lines(content)
@@ -106,16 +106,16 @@ def process_small_file(
     result_lines = len(result.splitlines()) if result else 0
     removed_lines = total_lines - result_lines
     if removed_lines > 0:
-        file_path.write_text(result, encoding="utf-8")
-    return (str(file_path), total_lines, removed_lines, "processed")
+        path.write_text(result, encoding="utf-8")
+    return (str(path), total_lines, removed_lines, "processed")
 
 
 def process_large_file_mmap(
-    file_path: Path, preserve_single: bool, remove_spaces: bool
+    path: Path, preserve_single: bool, remove_spaces: bool
 ) -> tuple[str, int, int, str]:
     """Same as ``process_small_file`` but uses mmap for large files."""
     try:
-        with open(file_path, "r+b") as f:
+        with open(path, "r+b") as f:
             with mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ) as mm:
                 content = mm.read().decode("utf-8", errors="ignore")
             total_lines = len(content.splitlines())
@@ -129,22 +129,22 @@ def process_large_file_mmap(
                 f.seek(0)
                 f.write(result.encode("utf-8"))
                 f.truncate()
-        return (str(file_path), total_lines, removed_lines, "processed")
+        return (str(path), total_lines, removed_lines, "processed")
     except Exception as e:  # noqa: BLE001
-        return (str(file_path), 0, 0, f"Error with mmap: {e!s}")
+        return (str(path), 0, 0, f"Error with mmap: {e!s}")
 
 
 def remove_blank_lines(
-    file_path: Path, preserve_single: bool = False, remove_spaces: bool = False
+    path: Path, preserve_single: bool = False, remove_spaces: bool = False
 ) -> tuple[str, int, int, str]:
     """Dispatch to mmap or in-memory processing based on file size."""
     try:
-        file_size = file_path.stat().st_size
+        file_size = path.stat().st_size
         if file_size > MMAP_THRESHOLD:
-            return process_large_file_mmap(file_path, preserve_single, remove_spaces)
-        return process_small_file(file_path, preserve_single, remove_spaces)
+            return process_large_file_mmap(path, preserve_single, remove_spaces)
+        return process_small_file(path, preserve_single, remove_spaces)
     except Exception as e:  # noqa: BLE001
-        return (str(file_path), 0, 0, f"Error: {e!s}")
+        return (str(path), 0, 0, f"Error: {e!s}")
 
 
 ProcessArgs = tuple[Path, Path, bool, bool]
@@ -153,17 +153,17 @@ ProcessResult = tuple[str, int, int, str]
 
 def process_file(args: ProcessArgs) -> ProcessResult:
     """Worker entry point: skip binaries, otherwise remove blank lines."""
-    base_dir, file_path, preserve_single, remove_spaces = args
-    if is_binary(str(file_path)):
+    base_dir, path, preserve_single, remove_spaces = args
+    if is_binary(str(path)):
         try:
-            rel_path = file_path.relative_to(base_dir)
+            rel_path = path.relative_to(base_dir)
             return (str(rel_path), 0, 0, "binary")
         except ValueError:
-            return (str(file_path), 0, 0, "binary")
-    result = remove_blank_lines(file_path, preserve_single, remove_spaces)
+            return (str(path), 0, 0, "binary")
+    result = remove_blank_lines(path, preserve_single, remove_spaces)
     try:
         rel_path = Path(result[0]).relative_to(base_dir)
-        file_size = file_path.stat().st_size
+        file_size = path.stat().st_size
         method = " [mmap]" if file_size > MMAP_THRESHOLD else ""
         status = result[3] + method if result[3] == "processed" else result[3]
         return (str(rel_path), result[1], result[2], status)
@@ -172,7 +172,7 @@ def process_file(args: ProcessArgs) -> ProcessResult:
 
 
 def collect_files(paths: Sequence[Path]) -> list[tuple[Path, Path]]:
-    """Expand the given paths into ``(base_dir, file_path)`` pairs."""
+    """Expand the given paths into ``(base_dir, path)`` pairs."""
     files: list[tuple[Path, Path]] = []
     for path in paths:
         if not path.exists():
@@ -182,13 +182,13 @@ def collect_files(paths: Sequence[Path]) -> list[tuple[Path, Path]]:
             if not path.is_symlink():
                 files.append((path.parent, path))
         elif path.is_dir():
-            for file_path in path.rglob("*"):
+            for path in path.rglob("*"):
                 if (
-                    file_path.is_file()
-                    and not file_path.is_symlink()
-                    and ".git" not in file_path.parts
+                    path.is_file()
+                    and not path.is_symlink()
+                    and ".git" not in path.parts
                 ):
-                    files.append((path, file_path))
+                    files.append((path, path))
         else:
             logger.warning(f"'{path}' is not a file or directory, skipping.")
     return files
@@ -343,8 +343,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 0
 
     process_args: list[ProcessArgs] = [
-        (base_dir, file_path, args.preserve_single, args.space)
-        for base_dir, file_path in file_list
+        (base_dir, path, args.preserve_single, args.space)
+        for base_dir, path in file_list
     ]
 
     results: list[ProcessResult] = []

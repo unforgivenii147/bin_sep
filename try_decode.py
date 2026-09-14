@@ -73,18 +73,18 @@ def get_first_chunk(text: str, chunk_size: int = 500) -> str:
     return text[:chunk_size] + "...\n[truncated...]"
 
 
-def decode_file(file_path: str, output_path: str | None = None, show_chunk: int = 500):
-    file_path = Path(file_path)
-    if not file_path.exists():
-        print(f"Error: File '{file_path}' not found.")
+def decode_file(path: str, output_path: str | None = None, show_chunk: int = 500):
+    path = Path(path)
+    if not path.exists():
+        print(f"Error: File '{path}' not found.")
         return False
     try:
-        with open(file_path, "rb") as f:
+        with open(path, "rb") as f:
             file_content = f.read()
     except Exception as e:
         print(f"Error reading file: {e}")
         return False
-    print(f"Processing: {file_path.name}")
+    print(f"Processing: {path.name}")
     print(f"File size: {len(file_content)} bytes")
     print("-" * 40)
     encodings_to_try = COMMON_ENCODINGS + EXTRA_ENCODINGS
@@ -139,11 +139,11 @@ def decode_file(file_path: str, output_path: str | None = None, show_chunk: int 
         print(f"Error decoding with {chosen_encoding}: {e}")
         return False
     if output_path is None:
-        output_path = file_path.stem + "_utf8" + file_path.suffix
-        if file_path.suffix.lower() == ".txt":
-            output_path = file_path.stem + "_utf8.txt"
+        output_path = path.stem + "_utf8" + path.suffix
+        if path.suffix.lower() == ".txt":
+            output_path = path.stem + "_utf8.txt"
         else:
-            output_path = file_path.parent / f"{file_path.stem}_utf8{file_path.suffix}"
+            output_path = path.parent / f"{path.stem}_utf8{path.suffix}"
     try:
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(decoded_text)
@@ -158,13 +158,13 @@ def decode_file(file_path: str, output_path: str | None = None, show_chunk: int 
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: python decode_file.py <file_path> [output_path]")
+        print("Usage: python decode_file.py <path> [output_path]")
         print("Example: python decode_file.py mystery.txt")
         print("Example: python decode_file.py mystery.txt decoded.txt")
         sys.exit(1)
-    file_path = sys.argv[1]
+    path = sys.argv[1]
     output_path = sys.argv[2] if len(sys.argv) > 2 else None
-    decode_file(file_path, output_path)
+    decode_file(path, output_path)
 
 
 if __name__ == "__main__":

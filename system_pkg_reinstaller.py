@@ -27,16 +27,16 @@ def install_package(pkg_name):
         return False
 
 
-def read_package_list(filepath):
+def read_package_list(path):
     packages = []
     try:
-        with open(filepath, "r") as f:
+        with open(path, "r") as f:
             for line in f:
                 pkg = line.strip()
                 if pkg and not pkg.startswith("#"):
                     packages.append(pkg)
     except FileNotFoundError:
-        print(f"Error: File '{filepath}' not found.")
+        print(f"Error: File '{path}' not found.")
         sys.exit(1)
     except Exception as e:
         print(f"Error reading file: {e}")

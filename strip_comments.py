@@ -452,12 +452,12 @@ _STRIPPER_MAP: Final[dict[str, Callable[[str], str]]] = {
 
 def process_file(args: tuple[Path, Path, set[str]]) -> FileResult:
     """Read, strip comments from, and rewrite a single file."""
-    file_path, cwd, _active_exts = args
-    rel = str(file_path.relative_to(cwd))
-    ext = file_path.suffix.lower()
+    path, cwd, _active_exts = args
+    rel = str(path.relative_to(cwd))
+    ext = path.suffix.lower()
     try:
-        original_bytes = file_path.stat().st_size
-        source = file_path.read_text(encoding="utf-8", errors="replace")
+        original_bytes = path.stat().st_size
+        source = path.read_text(encoding="utf-8", errors="replace")
         original_lines = source.count("\n")
         stripper = _STRIPPER_MAP[ext]
         stripped = stripper(source)
@@ -465,9 +465,9 @@ def process_file(args: tuple[Path, Path, set[str]]) -> FileResult:
         stripped_bytes = len(stripped.encode("utf-8"))
         changed = stripped != source
         if changed:
-            file_path.write_text(stripped, encoding="utf-8")
+            path.write_text(stripped, encoding="utf-8")
         return FileResult(
-            path=file_path,
+            path=path,
             rel=rel,
             original_lines=original_lines,
             stripped_lines=stripped_lines,
@@ -477,7 +477,7 @@ def process_file(args: tuple[Path, Path, set[str]]) -> FileResult:
         )
     except Exception as exc:
         return FileResult(
-            path=file_path,
+            path=path,
             rel=rel,
             original_lines=0,
             stripped_lines=0,

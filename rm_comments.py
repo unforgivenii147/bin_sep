@@ -168,21 +168,21 @@ def remove_comments_from_content(content: str) -> tuple[str, int]:
     return "\n".join(modified_lines), removed_count
 
 
-def is_ignored_extension(file_path: Path) -> bool:
+def is_ignored_extension(path: Path) -> bool:
     """Return ``True`` if the file has an extension in ``EXCLUDE_EXTENSIONS``.
 
     Also checks the last two suffixes combined (e.g. ``.min.js``).
 
     Args:
-        file_path: Path to the file to test.
+        path: Path to the file to test.
 
     Returns:
         ``True`` if the file should be skipped based on its extension.
     """
-    suffix: str = file_path.suffix.lower()
+    suffix: str = path.suffix.lower()
     if suffix in EXCLUDE_EXTENSIONS:
         return True
-    suffixes: list[str] = file_path.suffixes
+    suffixes: list[str] = path.suffixes
     if len(suffixes) > 1:
         double_suffix: str = "".join(suffixes[-2:]).lower()
         if double_suffix in EXCLUDE_EXTENSIONS:
@@ -190,23 +190,23 @@ def is_ignored_extension(file_path: Path) -> bool:
     return False
 
 
-def is_hidden(file_path: Path) -> bool:
+def is_hidden(path: Path) -> bool:
     """Return ``True`` if any part of the path starts with a dot.
 
     Args:
-        file_path: Path to inspect.
+        path: Path to inspect.
 
     Returns:
         ``True`` if the path contains a hidden component.
     """
-    return any(part.startswith(".") for part in file_path.parts)
+    return any(part.startswith(".") for part in path.parts)
 
 
-def process_file(file_path: Path) -> ProcessResult:
+def process_file(path: Path) -> ProcessResult:
     """Process a single file: detect binary, strip comments, write back.
 
     Args:
-        file_path: Path to the file to process.
+        path: Path to the file to process.
 
     Returns:
         A tuple ``(path, removed_count, error_message, was_binary)``. When
@@ -214,22 +214,22 @@ def process_file(file_path: Path) -> ProcessResult:
         ``error_message`` is not ``None`` an error occurred while processing.
     """
     try:
-        if is_binary(str(file_path)):
-            return file_path, 0, None, True
+        if is_binary(str(path)):
+            return path, 0, None, True
 
-        original_content: str = file_path.read_text(encoding="utf-8")
+        original_content: str = path.read_text(encoding="utf-8")
         modified_content: str
         removed_count: int
         modified_content, removed_count = remove_comments_from_content(original_content)
 
         if removed_count > 0:
-            file_path.write_text(modified_content, encoding="utf-8")
+            path.write_text(modified_content, encoding="utf-8")
 
-        return file_path, removed_count, None, False
+        return path, removed_count, None, False
     except UnicodeDecodeError:
-        return file_path, 0, "Unable to read as text file (encoding issue)", True
+        return path, 0, "Unable to read as text file (encoding issue)", True
     except Exception as exc:  # noqa: BLE001
-        return file_path, 0, str(exc), False
+        return path, 0, str(exc), False
 
 
 def find_target_files(
@@ -253,21 +253,21 @@ def find_target_files(
         exclude_dirs = set(DEFAULT_EXCLUDE_DIRS)
 
     target_files: list[Path] = []
-    for file_path in root_dir.rglob("*"):
-        if not file_path.is_file():
+    for path in root_dir.rglob("*"):
+        if not path.is_file():
             continue
-        if any(excluded in file_path.parts for excluded in exclude_dirs):
+        if any(excluded in path.parts for excluded in exclude_dirs):
             continue
-        if not include_hidden and is_hidden(file_path):
+        if not include_hidden and is_hidden(path):
             continue
-        if ignore_extensions and is_ignored_extension(file_path):
+        if ignore_extensions and is_ignored_extension(path):
             continue
         try:
-            if file_path.stat().st_size > MAX_FILE_SIZE_BYTES:
+            if path.stat().st_size > MAX_FILE_SIZE_BYTES:
                 continue
         except OSError:
             continue
-        target_files.append(file_path)
+        target_files.append(path)
 
     return target_files
 
@@ -419,8 +419,7 @@ def main() -> int:
     try:
         with Pool(processes=POOL_SIZE) as pool:
             async_results = [
-                pool.apply_async(process_file, (file_path,))
-                for file_path in target_files
+                pool.apply_async(process_file, (path,)) for path in target_files
             ]
             for async_result in async_results:
                 try:

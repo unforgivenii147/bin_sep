@@ -22,15 +22,15 @@ def deep_merge(dict1, dict2):
 
 def merge_json_files(input_files, output_file):
     merged_data = None
-    for file_path in input_files:
+    for path in input_files:
         try:
-            with open(file_path, "r", encoding="utf-8") as f:
+            with open(path, "r", encoding="utf-8") as f:
                 data = json.load(f)
         except FileNotFoundError:
-            print(f"Error: File '{file_path}' not found.")
+            print(f"Error: File '{path}' not found.")
             sys.exit(1)
         except json.JSONDecodeError:
-            print(f"Error: File '{file_path}' contains invalid JSON.")
+            print(f"Error: File '{path}' contains invalid JSON.")
             sys.exit(1)
         if merged_data is None:
             merged_data = data
@@ -38,7 +38,7 @@ def merge_json_files(input_files, output_file):
         if type(merged_data) != type(data):
             print(
                 f"Error: Type mismatch. '{input_files[0]}' is a {type(merged_data).__name__}, "
-                f"but '{file_path}' is a {type(data).__name__}. Cannot merge."
+                f"but '{path}' is a {type(data).__name__}. Cannot merge."
             )
             sys.exit(1)
         if isinstance(merged_data, list):

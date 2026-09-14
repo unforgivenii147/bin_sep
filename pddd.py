@@ -9,10 +9,10 @@ from dh import fsz
 
 def get_dir_size(path: Path) -> int:
     total = 0
-    for file_path in path.rglob("*"):
-        if file_path.is_file() and (not file_path.is_symlink()):
+    for path in path.rglob("*"):
+        if path.is_file() and (not path.is_symlink()):
             try:
-                total += file_path.stat().st_size
+                total += path.stat().st_size
             except OSError:
                 continue
     return total

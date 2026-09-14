@@ -197,28 +197,28 @@ def validate_python_code(code: str) -> bool:
         return False
 
 
-def process_file(file_path: Path) -> tuple[Path, bool, Optional[str]]:
+def process_file(path: Path) -> tuple[Path, bool, Optional[str]]:
     """Process a single Python file, removing docstrings in place.
 
     Args:
-        file_path: Path to the Python file to process.
+        path: Path to the Python file to process.
 
     Returns:
         A tuple of (path, success, error_message). `error_message` is None on success.
     """
     try:
-        original_code = file_path.read_text(encoding="utf-8")
+        original_code = path.read_text(encoding="utf-8")
         if not validate_python_code(original_code):
-            return (file_path, False, "Original code validation failed")
+            return (path, False, "Original code validation failed")
         modified_code = remove_docstrings_from_code(original_code)
         if modified_code is None:
-            return (file_path, False, "Docstring removal failed")
+            return (path, False, "Docstring removal failed")
         if not validate_python_code(modified_code):
-            return (file_path, False, "Modified code validation failed")
-        file_path.write_text(modified_code, encoding="utf-8")
-        return (file_path, True, None)
+            return (path, False, "Modified code validation failed")
+        path.write_text(modified_code, encoding="utf-8")
+        return (path, True, None)
     except Exception as exc:  # noqa: BLE001
-        return (file_path, False, str(exc))
+        return (path, False, str(exc))
 
 
 def find_python_files(paths: Iterable[Path]) -> list[Path]:
@@ -267,15 +267,15 @@ def main() -> int:
 
     with Pool(processes=MAX_WORKERS) as pool:
         async_results = [
-            pool.apply_async(process_file, (file_path,)) for file_path in python_files
+            pool.apply_async(process_file, (path,)) for path in python_files
         ]
         for async_result in async_results:
-            file_path, success, error = async_result.get()
+            path, success, error = async_result.get()
             if success:
-                logger.info(f"✓ Processed: {file_path}")
+                logger.info(f"✓ Processed: {path}")
                 successful += 1
             else:
-                logger.error(f"✗ Failed: {file_path} - {error}")
+                logger.error(f"✗ Failed: {path} - {error}")
                 failed += 1
 
     logger.info(f"\n{'=' * 40}")

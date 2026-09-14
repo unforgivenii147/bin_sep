@@ -11,7 +11,7 @@ from typing import Dict, List, Set
 from loguru import logger
 
 
-def extract_definitions(file_path: Path) -> dict[str, list[str]]:
+def extract_definitions(path: Path) -> dict[str, list[str]]:
     """
     Extract top-level definitions from a Python file.
 
@@ -21,13 +21,13 @@ def extract_definitions(file_path: Path) -> dict[str, list[str]]:
     definitions = {"functions": [], "classes": [], "constants": []}
 
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
-            tree = ast.parse(f.read(), filename=str(file_path))
+        with open(path, "r", encoding="utf-8") as f:
+            tree = ast.parse(f.read(), filename=str(path))
     except (SyntaxError, UnicodeDecodeError) as e:
-        logger.error(f"Failed to parse {file_path}: {e}")
+        logger.error(f"Failed to parse {path}: {e}")
         return definitions
     except Exception as e:
-        logger.error(f"Unexpected error reading {file_path}: {e}")
+        logger.error(f"Unexpected error reading {path}: {e}")
         return definitions
 
     for node in tree.body:

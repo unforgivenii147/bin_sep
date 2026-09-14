@@ -34,20 +34,20 @@ VersionedPath = tuple[Version, Path]
 PackageMap = dict[str, list[VersionedPath]]
 
 
-def parse_filename(filepath: Path) -> tuple[str, Version, Path]:
+def parse_filename(path: Path) -> tuple[str, Version, Path]:
     """Parse package name and version from a metadata filename.
 
     Args:
-        filepath: Path to the metadata file.
+        path: Path to the metadata file.
 
     Returns:
         A tuple of (normalized-lowercase package name, parsed version, path).
     """
-    name: str = filepath.stem
+    name: str = path.stem
     match: re.Match[str] | None = FILENAME_PATTERN.match(name)
     if not match:
-        logger.warning(f"Could not parse version from {filepath.name}")
-        return (name.lower(), DEFAULT_VERSION, filepath)
+        logger.warning(f"Could not parse version from {path.name}")
+        return (name.lower(), DEFAULT_VERSION, path)
 
     pkg_name: str = match.group(1)
     version_str: str = match.group(2)
@@ -56,10 +56,10 @@ def parse_filename(filepath: Path) -> tuple[str, Version, Path]:
     try:
         version: Version = Version(normalized_version)
     except InvalidVersion:
-        logger.warning(f"Invalid version '{version_str}' in {filepath.name}")
+        logger.warning(f"Invalid version '{version_str}' in {path.name}")
         version = DEFAULT_VERSION
 
-    return (pkg_name.lower(), version, filepath)
+    return (pkg_name.lower(), version, path)
 
 
 def normalize_package_name(name: str) -> str:
@@ -101,8 +101,8 @@ def process_file_batch(files: list[Path]) -> PackageMap:
         Mapping from normalized package name to list of (version, path).
     """
     packages: PackageMap = defaultdict(list)
-    for filepath in files:
-        pkg_name, version, path = parse_filename(filepath)
+    for path in files:
+        pkg_name, version, path = parse_filename(path)
         normalized_name = normalize_package_name(pkg_name)
         packages[normalized_name].append((version, path))
     return dict(packages)

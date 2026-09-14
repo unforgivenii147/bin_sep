@@ -56,13 +56,13 @@ class CommentAndDocstringRemover(cst.CSTTransformer):
         return updated_node
 
 
-def process_file(file_path: Path) -> tuple[Path, int, int, str | None]:
+def process_file(path: Path) -> tuple[Path, int, int, str | None]:
     try:
-        source_text = file_path.read_text(encoding="utf-8")
+        source_text = path.read_text(encoding="utf-8")
         try:
             cst_tree = cst.parse_module(source_text)
         except Exception as e:
-            return file_path, 0, 0, f"CST Parse Error: {e}"
+            return path, 0, 0, f"CST Parse Error: {e}"
         lines = source_text.splitlines(keepends=True)
         has_shebang = len(lines) > 0 and lines[0].startswith("#!")
         shebang_line = lines[0] if has_shebang else ""
@@ -78,12 +78,12 @@ def process_file(file_path: Path) -> tuple[Path, int, int, str | None]:
         try:
             ast.parse(modified_code)
         except SyntaxError as e:
-            return file_path, 0, 0, f"Resulting code failed AST validation: {e}"
+            return path, 0, 0, f"Resulting code failed AST validation: {e}"
         if c_count > 0 or d_count > 0:
-            file_path.write_text(modified_code, encoding="utf-8")
-        return file_path, c_count, d_count, None
+            path.write_text(modified_code, encoding="utf-8")
+        return path, c_count, d_count, None
     except Exception as e:
-        return file_path, 0, 0, f"Unexpected error: {e}"
+        return path, 0, 0, f"Unexpected error: {e}"
 
 
 def collect_files(inputs: list[str]) -> list[Path]:
@@ -116,16 +116,16 @@ def main():
     with mp.Pool(processes=8) as pool:
         async_results = [pool.apply_async(process_file, args=(f,)) for f in files]
         for res in async_results:
-            file_path, c_count, d_count, error = res.get()
+            path, c_count, d_count, error = res.get()
             if error:
                 error_count += 1
-                print(f"[ERROR] {file_path}: {error}")
+                print(f"[ERROR] {path}: {error}")
             elif c_count > 0 or d_count > 0:
                 modified_files_count += 1
                 total_comments += c_count
                 total_docstrings += d_count
                 print(
-                    f"[UPDATED] {file_path} -> Removed {c_count} comment(s), {d_count} docstring(s)"
+                    f"[UPDATED] {path} -> Removed {c_count} comment(s), {d_count} docstring(s)"
                 )
     print("\n" + "=" * 60)
     print("Summary:")

@@ -29,22 +29,22 @@ def has_syntax_error(parser: Parser, source: bytes) -> bool:
     return False
 
 
-def move_to_error_dir(file_path: Path) -> None:
+def move_to_error_dir(path: Path) -> None:
     """Move file to an 'error' subdir in its parent folder."""
-    error_dir = file_path.parent / "error"
+    error_dir = path.parent / "error"
     error_dir.mkdir(exist_ok=True)
-    target = error_dir / file_path.name
+    target = error_dir / path.name
     # Avoid overwriting: append a numeric suffix if needed
     if target.exists():
         i = 1
         while True:
-            candidate = error_dir / f"{file_path.stem}_{i}{file_path.suffix}"
+            candidate = error_dir / f"{path.stem}_{i}{path.suffix}"
             if not candidate.exists():
                 target = candidate
                 break
             i += 1
-    file_path.rename(target)
-    print(f"Moved: {file_path} -> {target}")
+    path.rename(target)
+    print(f"Moved: {path} -> {target}")
 
 
 def main() -> None:

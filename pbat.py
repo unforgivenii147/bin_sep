@@ -103,8 +103,8 @@ class GitDiffCalculator:
     """Determine per-line git status (added / modified / removed) for a file
     by shelling out to `git diff`."""
 
-    def __init__(self, filepath: Path):
-        self.filepath = filepath
+    def __init__(self, path: Path):
+        self.path = path
         self.added: set = set()
         self.modified: set = set()
         self.removed_before: dict = {}
@@ -118,7 +118,7 @@ class GitDiffCalculator:
                 [
                     "git",
                     "-C",
-                    str(self.filepath.parent),
+                    str(self.path.parent),
                     "rev-parse",
                     "--show-toplevel",
                 ],
@@ -132,12 +132,12 @@ class GitDiffCalculator:
                 [
                     "git",
                     "-C",
-                    str(self.filepath.parent),
+                    str(self.path.parent),
                     "diff",
                     "--no-color",
                     "-U0",
                     "--",
-                    self.filepath.name,
+                    self.path.name,
                 ],
                 capture_output=True,
                 text=True,
@@ -193,18 +193,14 @@ class Printer:
     def __init__(self, config: BatConfig):
         self.config = config
 
-    def print_file(self, filepath: Optional[Path], content: str) -> str:
+    def print_file(self, path: Optional[Path], content: str) -> str:
         lines = content.splitlines()
         total = len(lines)
 
-        lexer = self._get_lexer(filepath, content)
+        lexer = self._get_lexer(path, content)
         formatter = self._get_formatter()
 
-        git = (
-            GitDiffCalculator(filepath)
-            if (filepath and self.config.show_changes)
-            else None
-        )
+        git = GitDiffCalculator(path) if (path and self.config.show_changes) else None
 
         start, end = self._resolve_range(total)
         width = shutil.get_terminal_size((100, 24)).columns
@@ -212,7 +208,7 @@ class Printer:
         out = io.StringIO()
 
         if self.config.show_header:
-            self._print_header(out, filepath, width)
+            self._print_header(out, path, width)
         elif self.config.show_grid:
             out.write(f"{GRID_COLOR}{BOX_H * width}{RESET}\n")
 
@@ -230,7 +226,7 @@ class Printer:
 
     # -- highlighting -----------------------------------------------------
 
-    def _get_lexer(self, filepath, content):
+    def _get_lexer(self, path, content):
         if self.config.language:
             try:
                 return get_lexer_by_name(
@@ -238,10 +234,10 @@ class Printer:
                 )
             except ClassNotFound:
                 pass
-        if filepath:
+        if path:
             try:
                 return get_lexer_for_filename(
-                    str(filepath), content, stripnl=False, tabsize=self.config.tab_width
+                    str(path), content, stripnl=False, tabsize=self.config.tab_width
                 )
             except ClassNotFound:
                 pass
@@ -281,8 +277,8 @@ class Printer:
 
     # -- rendering ----------------------------------------------------------
 
-    def _print_header(self, out, filepath, width):
-        name = str(filepath) if filepath else "STDIN"
+    def _print_header(self, out, path, width):
+        name = str(path) if path else "STDIN"
         title = f" {name} "
         left = BOX_H * 2
         right = BOX_H * max(width - len(left) - len(title) - 2, 0)
@@ -478,8 +474,8 @@ def main(argv=None) -> int:
 
     chunks = []
     for f in cfg.files:
-        filepath, content = read_input(f)
-        chunks.append(printer.print_file(filepath, content))
+        path, content = read_input(f)
+        chunks.append(printer.print_file(path, content))
 
     final_text = "".join(chunks)
 

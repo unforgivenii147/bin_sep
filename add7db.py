@@ -58,17 +58,17 @@ def compress_data(data_bytes) -> str | None:
         return None
 
 
-def read_file_contents(filepath: str):
+def read_file_contents(path: str):
     try:
         encodings = ["utf-8", "latin-1", "cp1252", "iso-8859-1"]
-        get_size = Path(filepath).stat().st_size
+        get_size = Path(path).stat().st_size
         if get_size > 10 * 1024 * 1024:
             print(
                 f"    Warning: Large file ({get_size / 1024 / 1024:.1f}MB), may take time to compress"
             )
         for encoding in encodings:
             try:
-                with Path(filepath).open(encoding=encoding) as f:
+                with Path(path).open(encoding=encoding) as f:
                     content = f.read()
                     return {
                         "content": content,
@@ -77,7 +77,7 @@ def read_file_contents(filepath: str):
                     }
             except (UnicodeDecodeError, UnicodeError):
                 continue
-        with Path(filepath).open("rb") as f:
+        with Path(path).open("rb") as f:
             content = f.read()
             return {
                 "content": content,

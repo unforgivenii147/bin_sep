@@ -43,17 +43,17 @@ SIZE_THRESHOLD = 1 * 1024 * 1024
 OLD_PRINT_RE = re.compile(r"(?m)^[ \t]*print[ \t]+[^(\n]")
 
 
-def _open_source(filepath: str):
-    size = Path(filepath).stat().st_size
-    f = Path(filepath).open("rb")
+def _open_source(path: str):
+    size = Path(path).stat().st_size
+    f = Path(path).open("rb")
     if size > SIZE_THRESHOLD:
         return mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
     return f
 
 
-def _read_text(filepath: str) -> str | None:
+def _read_text(path: str) -> str | None:
     try:
-        with Path(filepath).open(encoding="utf-8", errors="ignore") as f:
+        with Path(path).open(encoding="utf-8", errors="ignore") as f:
             return f.read()
     except Exception:
         return None
@@ -88,8 +88,8 @@ def _is_in_commented_code(text: str, line_start: int) -> bool:
     return in_multiline
 
 
-def regex_flag(filepath: str) -> bool:
-    text = _read_text(filepath)
+def regex_flag(path: str) -> bool:
+    text = _read_text(path)
     if not text:
         return False
     if _has_rich_print_import(text):
@@ -97,13 +97,13 @@ def regex_flag(filepath: str) -> bool:
     return bool(OLD_PRINT_RE.search(text))
 
 
-def tokenizer_confirm(filepath: str) -> tuple[str, int] | None:
+def tokenizer_confirm(path: str) -> tuple[str, int] | None:
     try:
-        src = _open_source(filepath)
+        src = _open_source(path)
         tokens = list(tokenize.tokenize(src.readline))
     except Exception:
         return None
-    text = _read_text(filepath)
+    text = _read_text(path)
     if not text:
         return None
     for i, tok in enumerate(tokens):
@@ -129,9 +129,9 @@ def tokenizer_confirm(filepath: str) -> tuple[str, int] | None:
     return None
 
 
-def autofix_file(filepath: str) -> bool:
+def autofix_file(path: str) -> bool:
     try:
-        with Path(filepath).open(encoding="utf-8") as f:
+        with Path(path).open(encoding="utf-8") as f:
             lines = f.readlines()
         if any(l.strip() == "from rich import print" for l in lines):
             return False
@@ -150,27 +150,27 @@ def autofix_file(filepath: str) -> bool:
                 lines[i] = f"{indent}print({content})\n"
                 changed = True
         if changed:
-            with Path(filepath).open("w", encoding="utf-8") as f:
+            with Path(path).open("w", encoding="utf-8") as f:
                 f.writelines(lines)
         return changed
     except Exception:
         return False
 
 
-def process_file(filepath: str, autofix: bool = False) -> str | None:
-    if not regex_flag(filepath):
+def process_file(path: str, autofix: bool = False) -> str | None:
+    if not regex_flag(path):
         return None
-    confirmed = tokenizer_confirm(filepath)
+    confirmed = tokenizer_confirm(path)
     if not confirmed:
         return None
     line, line_num = confirmed
     if autofix:
-        if autofix_file(filepath):
-            return f"{filepath} (fixed)\n  Line {line_num}: {line}"
+        if autofix_file(path):
+            return f"{path} (fixed)\n  Line {line_num}: {line}"
         else:
-            return f"{filepath} (could not fix)\n  Line {line_num}: {line}"
+            return f"{path} (could not fix)\n  Line {line_num}: {line}"
     else:
-        return f"{filepath}\n  Line {line_num}: {line}"
+        return f"{path}\n  Line {line_num}: {line}"
 
 
 def main() -> None:

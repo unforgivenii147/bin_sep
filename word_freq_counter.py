@@ -16,24 +16,24 @@ WORD_PATTERN: re.Pattern[str] = re.compile(r"\b[a-z]+\b")
 OUTPUT_FILE: Path = Path("counter.json")
 
 
-def process_file(file_path: Path) -> Counter[str]:
+def process_file(path: Path) -> Counter[str]:
     """Count lowercase word occurrences in a single file.
 
     Args:
-        file_path: Path to the file to process.
+        path: Path to the file to process.
 
     Returns:
         A Counter mapping words to their frequencies in the file.
     """
     word_counter: Counter[str] = Counter()
     try:
-        with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+        with open(path, "r", encoding="utf-8", errors="ignore") as f:
             content: str = f.read()
         words: list[str] = WORD_PATTERN.findall(content.lower())
         word_counter.update(words)
-        logger.debug(f"Processed {file_path.name}: {len(words)} words found")
+        logger.debug(f"Processed {path.name}: {len(words)} words found")
     except Exception as e:
-        logger.warning(f"Failed to process {file_path}: {e}")
+        logger.warning(f"Failed to process {path}: {e}")
     return word_counter
 
 
@@ -53,11 +53,11 @@ def collect_text_files(directory: Path | None = None) -> list[Path]:
     return text_files
 
 
-def process_files_parallel(file_paths: list[Path]) -> Counter[str]:
+def process_files_parallel(paths: list[Path]) -> Counter[str]:
     """Process files in parallel using a fixed-size multiprocessing pool.
 
     Args:
-        file_paths: List of file paths to process.
+        paths: List of file paths to process.
 
     Returns:
         An aggregated Counter of word frequencies across all files.
@@ -65,15 +65,15 @@ def process_files_parallel(file_paths: list[Path]) -> Counter[str]:
     total_counter: Counter[str] = Counter()
     with Pool(processes=MAX_WORKERS) as pool:
         async_results: list[Any] = [
-            pool.apply_async(process_file, (file_path,)) for file_path in file_paths
+            pool.apply_async(process_file, (path,)) for path in paths
         ]
-        for file_path, async_result in zip(file_paths, async_results):
+        for path, async_result in zip(paths, async_results):
             try:
                 file_counter: Counter[str] = async_result.get()
                 total_counter.update(file_counter)
-                logger.debug(f"Completed processing {file_path.name}")
+                logger.debug(f"Completed processing {path.name}")
             except Exception as e:
-                logger.error(f"Error processing {file_path}: {e}")
+                logger.error(f"Error processing {path}: {e}")
     return total_counter
 
 

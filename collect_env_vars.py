@@ -6,16 +6,16 @@ from pathlib import Path
 
 env_vars = set()
 env_var_pattern = re.compile("^([A-Z_0-9]+)=")
-for filepath in Path().rglob("*"):
-    if filepath.is_file():
+for path in Path().rglob("*"):
+    if path.is_file():
         try:
-            with open(filepath, encoding="utf-8") as f:
+            with open(path, encoding="utf-8") as f:
                 for line in f:
                     match = env_var_pattern.match(line)
                     if match:
                         env_vars.add(match.group(1))
         except Exception as e:
-            print(f"Could not process file {filepath}: {e}")
+            print(f"Could not process file {path}: {e}")
 output_filename = "env_vars.txt"
 with open(output_filename, "w", encoding="utf-8") as f:
     f.writelines(var + "\n" for var in sorted(env_vars))

@@ -103,31 +103,31 @@ class CleanTransformer(cst.CSTTransformer):
         return cst.RemoveFromParent()
 
 
-def process_file(file_path: Path) -> tuple[Path, int, int, bool]:
+def process_file(path: Path) -> tuple[Path, int, int, bool]:
     """Parse, transform, and rewrite a single Python file.
 
     Returns a tuple of (path, comments_removed, docstrings_removed, success).
     """
     try:
-        original_source = file_path.read_text(encoding="utf-8")
+        original_source = path.read_text(encoding="utf-8")
         module = cst.parse_module(original_source)
         transformer = CleanTransformer()
         modified_module = module.visit(transformer)
         new_source = modified_module.code
 
         if new_source == original_source:
-            return file_path, 0, 0, True
+            return path, 0, 0, True
 
-        file_path.write_text(new_source, encoding="utf-8", newline="\n")
+        path.write_text(new_source, encoding="utf-8", newline="\n")
         return (
-            file_path,
+            path,
             transformer.comments_removed,
             transformer.docstrings_removed,
             True,
         )
     except Exception as exc:  # noqa: BLE001
-        logger.error(f"Error processing {file_path}: {exc}")
-        return file_path, 0, 0, False
+        logger.error(f"Error processing {path}: {exc}")
+        return path, 0, 0, False
 
 
 def collect_python_files(paths: list[str]) -> list[Path]:
@@ -182,7 +182,7 @@ def main() -> int:
             pool.apply_async(process_file, (f,)) for f in py_files
         ]
         for result in async_results:
-            file_path, comments, docstrings, success = result.get()
+            path, comments, docstrings, success = result.get()
             processed += 1
             if not success:
                 continue
@@ -191,11 +191,11 @@ def main() -> int:
             total_docstrings += docstrings
             if comments or docstrings:
                 logger.success(
-                    f"{file_path.name:<30} removed "
+                    f"{path.name:<30} removed "
                     f"{comments:>2} comments, {docstrings:>2} docstrings"
                 )
             else:
-                logger.info(f"{file_path.name:<30} (no changes)")
+                logger.info(f"{path.name:<30} (no changes)")
 
     logger.info("=" * 40)
     logger.success("Finished!")

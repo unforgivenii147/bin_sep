@@ -82,13 +82,13 @@ class PathlibTransformer(ast.NodeTransformer):
         "putenv": (None, "None"),
     }
 
-    def __init__(self, file_path: Path) -> None:
+    def __init__(self, path: Path) -> None:
         """Initialize the transformer with a file path.
 
         Args:
-            file_path: Path to the file being transformed
+            path: Path to the file being transformed
         """
-        self.file_path = file_path
+        self.path = path
         self.needs_path_import = False
         self.needs_shutil_import = False
         self.warnings: list[str] = []
@@ -832,12 +832,12 @@ def _is_docstring(node: ast.AST) -> bool:
 
 
 def process_file(
-    file_path: Path, dry_run: bool = False, verbose: bool = False
+    path: Path, dry_run: bool = False, verbose: bool = False
 ) -> tuple[Optional[str], bool, list[str], list[str]]:
     """Process a single Python file for pathlib refactoring.
 
     Args:
-        file_path: Path to the Python file
+        path: Path to the Python file
         dry_run: Whether to simulate the refactoring without writing
         verbose: Whether to show detailed output
 
@@ -845,9 +845,9 @@ def process_file(
         Tuple of (new_content, success, warnings, infos)
     """
     try:
-        original_content = file_path.read_text(encoding="utf-8")
+        original_content = path.read_text(encoding="utf-8")
         tree = ast.parse(original_content)
-        transformer = PathlibTransformer(file_path)
+        transformer = PathlibTransformer(path)
         new_tree = transformer.visit(tree)
         ast.fix_missing_locations(new_tree)
         new_tree = add_required_imports(
@@ -861,17 +861,17 @@ def process_file(
             cprint(f"  ⚠️ {warning}", "yellow")
         if transformer.infos or transformer.warnings:
             cprint(
-                f"{('📝' if dry_run else '✓')} Refactored: {file_path.name}",
+                f"{('📝' if dry_run else '✓')} Refactored: {path.name}",
                 "green" if not dry_run else "yellow",
             )
         return (new_content, True, transformer.warnings, transformer.infos)
     except SyntaxError as e:
-        cprint(f"✗ Syntax error in {file_path.name}: {e}", "red")
+        cprint(f"✗ Syntax error in {path.name}: {e}", "red")
         if verbose:
             traceback.print_exc()
         return (None, False, [], [])
     except Exception as e:
-        cprint(f"✗ Error processing {file_path.name}: {e}", "red")
+        cprint(f"✗ Error processing {path.name}: {e}", "red")
         if verbose:
             traceback.print_exc()
         return (None, False, [], [])
@@ -940,35 +940,35 @@ def main() -> int:
             pool.apply_async(process_file, (f, args.dry_run, args.verbose))
             for f in python_files
         ]
-        for async_result, file_path in zip(async_results, python_files):
+        for async_result, path in zip(async_results, python_files):
             try:
                 new_content, success, warnings, infos = async_result.get()
-                results[file_path] = (new_content, success, warnings, infos)
+                results[path] = (new_content, success, warnings, infos)
                 total_warnings += len(warnings)
                 total_changes += len(infos)
             except Exception as e:
-                cprint(f"✗ Failed to process {file_path.name}: {e}", "red")
+                cprint(f"✗ Failed to process {path.name}: {e}", "red")
                 if args.verbose:
                     traceback.print_exc()
-                results[file_path] = (None, False, [], [])
+                results[path] = (None, False, [], [])
     modified_count = 0
-    for file_path, (new_content, success, warnings, infos) in results.items():
+    for path, (new_content, success, warnings, infos) in results.items():
         if success and new_content and (infos or warnings):
             if not args.dry_run:
                 if not args.no_backup:
-                    backup_path = file_path.with_suffix(file_path.suffix + ".bak")
+                    backup_path = path.with_suffix(path.suffix + ".bak")
                     backup_path.write_text(
-                        file_path.read_text(encoding="utf-8"), encoding="utf-8"
+                        path.read_text(encoding="utf-8"), encoding="utf-8"
                     )
                     cprint(
                         f"  📦 Backup created: {backup_path.name}",
                         "white",
                         attrs=["dark"],
                     )
-                file_path.write_text(new_content, encoding="utf-8")
+                path.write_text(new_content, encoding="utf-8")
                 modified_count += 1
             else:
-                cprint(f"  🔍 Would modify: {file_path.name}", "yellow")
+                cprint(f"  🔍 Would modify: {path.name}", "yellow")
     after_size = gsz(cwd)
     size_diff = before_size - after_size
     cprint("\n" + "=" * 40, "cyan")

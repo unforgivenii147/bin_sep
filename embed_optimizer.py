@@ -142,9 +142,9 @@ def optimize_resource(mime: str, data: bytes) -> tuple[bytes | None, str | None]
                 f.unlink(missing_ok=True)
 
 
-def process_file(filepath: Path) -> dict:
+def process_file(path: Path) -> dict:
     stats: dict = {
-        "file": str(filepath),
+        "file": str(path),
         "original_size": 0,
         "new_size": 0,
         "resources_found": 0,
@@ -153,7 +153,7 @@ def process_file(filepath: Path) -> dict:
         "error": None,
     }
     try:
-        original_bytes = filepath.read_bytes()
+        original_bytes = path.read_bytes()
         original_size = len(original_bytes)
         stats["original_size"] = original_size
         text = original_bytes.decode("utf-8", errors="replace")
@@ -171,7 +171,7 @@ def process_file(filepath: Path) -> dict:
             try:
                 raw = base64.b64decode(b64_data)
             except Exception as e:
-                logger.warning(f"Base64 decode failed in {filepath.name}: {e}")
+                logger.warning(f"Base64 decode failed in {path.name}: {e}")
                 parts.append(match.group(0))
                 offset = match.end()
                 continue
@@ -185,7 +185,7 @@ def process_file(filepath: Path) -> dict:
                 parts.append(match.group(0))
                 if optimized is not None and not is_webp:
                     logger.debug(
-                        f"No size improvement for {mime} in {filepath.name} ({len(optimized)} >= {len(raw)})"
+                        f"No size improvement for {mime} in {path.name} ({len(optimized)} >= {len(raw)})"
                     )
             offset = match.end()
         parts.append(text[offset:])
@@ -193,14 +193,14 @@ def process_file(filepath: Path) -> dict:
             new_text = "".join(parts)
             new_bytes = new_text.encode("utf-8")
             new_size = len(new_bytes)
-            filepath.write_bytes(new_bytes)
+            path.write_bytes(new_bytes)
             stats["new_size"] = new_size
             stats["resources_optimized"] = optimized_count
             stats["space_freed"] = original_size - new_size
         else:
             stats["new_size"] = original_size
     except Exception as e:
-        logger.error(f"Error processing {filepath}: {e}")
+        logger.error(f"Error processing {path}: {e}")
         stats["error"] = str(e)
     return stats
 

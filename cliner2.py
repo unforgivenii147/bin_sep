@@ -28,16 +28,16 @@ def clean_line(line: str) -> str:
     return re.sub(r" {2,}", " ", cleaned)
 
 
-def clean_file(file_path: Path) -> None:
+def clean_file(path: Path) -> None:
     try:
-        with Path(file_path).open(encoding="utf-8", errors="ignore") as f:
+        with Path(path).open(encoding="utf-8", errors="ignore") as f:
             lines = f.readlines()
         cleaned_lines = [clean_line(line) for line in lines]
-        with Path(file_path).open("w", encoding="utf-8") as f:
+        with Path(path).open("w", encoding="utf-8") as f:
             f.writelines(cleaned_lines)
-        print(f"✓ Cleaned: {file_path}")
+        print(f"✓ Cleaned: {path}")
     except Exception as e:
-        print(f"✗ Error processing {file_path}: {e}")
+        print(f"✗ Error processing {path}: {e}")
 
 
 def main() -> None:

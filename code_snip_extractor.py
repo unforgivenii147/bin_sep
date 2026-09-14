@@ -8,9 +8,9 @@ from multiprocessing import Pool
 from pathlib import Path
 
 
-def extract_snippets(file_path: Path) -> Generator[tuple[int, str], None, None]:
+def extract_snippets(path: Path) -> Generator[tuple[int, str], None, None]:
     try:
-        content = file_path.read_text(encoding="utf-8", errors="replace")
+        content = path.read_text(encoding="utf-8", errors="replace")
     except Exception:
         return
     lines = content.split("\n")
@@ -61,23 +61,23 @@ def extract_snippets(file_path: Path) -> Generator[tuple[int, str], None, None]:
         i += 1
 
 
-def process_file(file_path: Path, output_dir: Path) -> dict:
-    rel_path = file_path.relative_to(file_path.anchor)
+def process_file(path: Path, output_dir: Path) -> dict:
+    rel_path = path.relative_to(path.anchor)
     safe_name = str(rel_path).replace("/", "_").replace(".", "_")
     count = 0
     errors = 0
     try:
-        for line_num, code_text in extract_snippets(file_path):
+        for line_num, code_text in extract_snippets(path):
             try:
                 output_file = output_dir / f"{safe_name}_line{line_num}.py"
-                header = f"# Source: {file_path}\n# Line: {line_num}\n\n"
+                header = f"# Source: {path}\n# Line: {line_num}\n\n"
                 output_file.write_text(header + code_text, encoding="utf-8")
                 count += 1
             except Exception:
                 errors += 1
     except Exception:
         errors += 1
-    return {"file": str(file_path), "count": count, "errors": errors}
+    return {"file": str(path), "count": count, "errors": errors}
 
 
 def scan_files(paths: list[str] | None = None, workers: int = 4) -> None:

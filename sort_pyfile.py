@@ -6,11 +6,11 @@ import sys
 from pathlib import Path
 
 
-def sort_python_script(file_path: Path) -> None:
+def sort_python_script(path: Path) -> None:
     try:
-        source_code = file_path.read_text(encoding="utf-8")
+        source_code = path.read_text(encoding="utf-8")
     except Exception as e:
-        print(f"Error reading {file_path}: {e}")
+        print(f"Error reading {path}: {e}")
         return
     lines = source_code.split("\n")
     shebang = ""
@@ -23,7 +23,7 @@ def sort_python_script(file_path: Path) -> None:
     try:
         tree = ast.parse(remaining_code)
     except SyntaxError as e:
-        print(f"Error parsing Python code in {file_path}: {e}")
+        print(f"Error parsing Python code in {path}: {e}")
         return
     if (
         tree.body
@@ -96,12 +96,12 @@ def sort_python_script(file_path: Path) -> None:
             sorted_lines.append(segment)
     sorted_code = "\n".join(sorted_lines)
     try:
-        tmp_path = file_path.with_name(file_path.stem + "_sorted" + file_path.suffix)
+        tmp_path = path.with_name(path.stem + "_sorted" + path.suffix)
         with tmp_path.open("w", encoding="utf-8") as f:
             f.write(sorted_code)
         print(f"Successfully sorted and saved: {tmp_path}")
     except Exception as e:
-        print(f"Error writing to {file_path}: {e}")
+        print(f"Error writing to {path}: {e}")
 
 
 if __name__ == "__main__":

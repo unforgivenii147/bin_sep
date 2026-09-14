@@ -119,19 +119,19 @@ class DiffViewerApp(App):
         self.search_term = ""
         self.search_results = []
 
-    def read_file(self, filepath: Path) -> list[str]:
+    def read_file(self, path: Path) -> list[str]:
         try:
-            with Path(filepath).open(encoding="utf-8") as f:
+            with Path(path).open(encoding="utf-8") as f:
                 return f.readlines()
         except UnicodeDecodeError:
             try:
-                with Path(filepath).open(encoding="latin-1") as f:
+                with Path(path).open(encoding="latin-1") as f:
                     return f.readlines()
             except Exception as e:
-                self.notify(f"Error reading {filepath}: {e}", severity="error")
+                self.notify(f"Error reading {path}: {e}", severity="error")
                 return []
         except Exception as e:
-            self.notify(f"Error reading {filepath}: {e}", severity="error")
+            self.notify(f"Error reading {path}: {e}", severity="error")
             return []
 
     def compute_diff(self) -> None:

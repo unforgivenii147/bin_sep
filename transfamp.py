@@ -9,13 +9,13 @@ from pathlib import Path
 from deep_translator import GoogleTranslator
 
 
-def translate_file(file_path: Path) -> tuple[Path, dict]:
+def translate_file(path: Path) -> tuple[Path, dict]:
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(path, "r", encoding="utf-8") as f:
             content = f.read().strip()
         if not content:
-            print(f"⚠️  Empty file: {file_path.name}")
-            return file_path, {}
+            print(f"⚠️  Empty file: {path.name}")
+            return path, {}
         translator = GoogleTranslator(source="fa", target="en")
         translated_text = translator.translate(content)
         original_lines = [line.strip() for line in content.split("\n") if line.strip()]
@@ -34,15 +34,15 @@ def translate_file(file_path: Path) -> tuple[Path, dict]:
                     except Exception as e:
                         translations[line] = f"TRANSLATION_ERROR: {e!s}"
                         print(
-                            f"  ⚠️  Error translating line {i + 1} in {file_path.name}: {e}"
+                            f"  ⚠️  Error translating line {i + 1} in {path.name}: {e}"
                         )
         else:
             translations = dict(zip(original_lines, translated_lines, strict=False))
-        print(f"✅ Translated: {file_path.name} ({len(translations)} words)")
-        return file_path, translations
+        print(f"✅ Translated: {path.name} ({len(translations)} words)")
+        return path, translations
     except Exception as e:
-        print(f"❌ Error processing {file_path.name}: {e}")
-        return file_path, {}
+        print(f"❌ Error processing {path.name}: {e}")
+        return path, {}
 
 
 def save_translation(
@@ -76,11 +76,10 @@ def main():
     failed = 0
     with ProcessPoolExecutor(max_workers=max_workers) as executor:
         future_to_file = {
-            executor.submit(translate_file, file_path): file_path
-            for file_path in text_files
+            executor.submit(translate_file, path): path for path in text_files
         }
         for future in as_completed(future_to_file):
-            file_path = future_to_file[future]
+            path = future_to_file[future]
             try:
                 input_path, translations = future.result()
                 if translations:
@@ -89,7 +88,7 @@ def main():
                 else:
                     failed += 1
             except Exception as e:
-                print(f"❌ Failed to process {file_path.name}: {e}")
+                print(f"❌ Failed to process {path.name}: {e}")
                 failed += 1
     elapsed_time = time.time() - start_time
     print("\n" + "=" * 40)

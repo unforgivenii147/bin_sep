@@ -37,10 +37,10 @@ def check_dist_info_safely(dist_info_path):
                 reader = csv.reader(f)
                 for row in reader:
                     if row:
-                        filepath = row[0].lower()
-                        if filepath.endswith(".so"):
+                        path = row[0].lower()
+                        if path.endswith(".so"):
                             return (True, "Contains compiled C-extensions (.so binary)")
-                        if filepath.endswith(".pth"):
+                        if path.endswith(".pth"):
                             return (True, "Contains path configuration file (.pth)")
         except Exception as e:
             print(f"  Warning: Could not read RECORD for {dist_info_path.name}: {e}")
@@ -115,9 +115,9 @@ def process_package(pkg_name, site_packages):
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zipf:
         for root, _dirs, files in os.walk(pkg_dir):
             for file in files:
-                file_path = Path(root) / file
-                arcname = str(file_path.relative_to(pkg_dir))
-                zipf.write(file_path, arcname)
+                path = Path(root) / file
+                arcname = str(path.relative_to(pkg_dir))
+                zipf.write(path, arcname)
     create_loader_stub(pkg_name, site_packages)
     try:
         shutil.rmtree(pkg_dir)

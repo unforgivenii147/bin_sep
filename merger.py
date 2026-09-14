@@ -14,8 +14,8 @@ def read_file(path: Path) -> str | None:
         return None
 
 
-def get_file_extension(file_path: Path) -> str:
-    return file_path.suffix.lstrip(".").lower()
+def get_file_extension(path: Path) -> str:
+    return path.suffix.lstrip(".").lower()
 
 
 def merge_files_by_type(
@@ -28,12 +28,12 @@ def merge_files_by_type(
         ext_filter = [e.lower() for e in ext_filter]
         files = [f for f in files if get_file_extension(f).lower() in ext_filter]
     valid_files = []
-    for file_path in files:
-        if should_skip(file_path):
+    for path in files:
+        if should_skip(path):
             continue
-        content = read_file(file_path)
+        content = read_file(path)
         if content is not None and content.strip():
-            valid_files.append((file_path, content))
+            valid_files.append((path, content))
     if not valid_files:
         print("ℹ️  No files to merge.")
         return []
@@ -50,11 +50,11 @@ def merge_files_by_type(
         output_dir = cwd / "merged"
         output_dir.mkdir(exist_ok=True)
         ext_groups: dict[str, list[tuple[Path, str]]] = {}
-        for file_path, content in valid_files:
-            ext = get_file_extension(file_path)
+        for path, content in valid_files:
+            ext = get_file_extension(path)
             if ext not in ext_groups:
                 ext_groups[ext] = []
-            ext_groups[ext].append((file_path, content))
+            ext_groups[ext].append((path, content))
         output_files = []
         for ext, group_files in ext_groups.items():
             output_file = (
@@ -74,8 +74,8 @@ def write_merged_file(
         total_size = 0
         file_count = 0
         with output_file.open("w", encoding="utf-8") as fo:
-            for file_path, content in files_content:
-                relative_path = file_path.relative_to(cwd)
+            for path, content in files_content:
+                relative_path = path.relative_to(cwd)
                 fo.write(f"# File: {relative_path}\n")
                 fo.write(content)
                 if not content.endswith("\n"):

@@ -8,8 +8,8 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 
 
-def should_ignore(file_path):
-    parts = Path(file_path).parts
+def should_ignore(path):
+    parts = Path(path).parts
     return any(
         len(parts) > i + 1 and parts[i : i + 2][1] in {"man", "info", "doc", "LICENSES"}
         for i in range(len(parts) - 1)
@@ -29,14 +29,14 @@ def check_package_files(pkg_name):
         if result.returncode != 0:
             return pkg_name, None
         missing = []
-        for file_path in result.stdout.strip().split("\n"):
-            if not file_path or should_ignore(file_path):
+        for path in result.stdout.strip().split("\n"):
+            if not path or should_ignore(path):
                 continue
-            p = Path(file_path)
+            p = Path(path)
             if p.is_dir():
                 continue
             if not p.exists():
-                missing.append(file_path)
+                missing.append(path)
         return pkg_name, missing if missing else None
     except (subprocess.TimeoutExpired, Exception):
         return pkg_name, None

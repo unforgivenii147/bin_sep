@@ -27,7 +27,7 @@ class Entity:
 
     name: str
     type: str
-    file_path: str
+    path: str
     source_code: str
     line_start: int
     line_end: int
@@ -40,9 +40,9 @@ class Entity:
 class EntityExtractor(cst.CSTTransformer):
     """CST transformer that collects functions, classes, and module-level constants."""
 
-    def __init__(self, file_path: str, source_lines: list[str]) -> None:
+    def __init__(self, path: str, source_lines: list[str]) -> None:
         """Initialize the extractor with the source file path and its lines."""
-        self.file_path: str = file_path
+        self.path: str = path
         self.source_lines: list[str] = source_lines
         self.entities: list[Entity] = []
         self.current_class: str = ""
@@ -109,7 +109,7 @@ class EntityExtractor(cst.CSTTransformer):
             Entity(
                 name=class_name,
                 type="class",
-                file_path=str(self.file_path),
+                path=str(self.path),
                 source_code=source_code,
                 line_start=start_line,
                 line_end=end_line,
@@ -142,7 +142,7 @@ class EntityExtractor(cst.CSTTransformer):
             Entity(
                 name=func_name,
                 type="function",
-                file_path=str(self.file_path),
+                path=str(self.path),
                 source_code=source_code,
                 line_start=start_line,
                 line_end=end_line,
@@ -171,7 +171,7 @@ class EntityExtractor(cst.CSTTransformer):
                         Entity(
                             name=var_name,
                             type="constant",
-                            file_path=str(self.file_path),
+                            path=str(self.path),
                             source_code=source_code,
                             line_start=start_line,
                             line_end=end_line,
@@ -222,14 +222,14 @@ def sanitize_filename(name: str) -> str:
 
 def process_file(args: tuple[Path, Path]) -> dict[str, int]:
     """Extract entities from a single Python file and write them to disk."""
-    file_path, output_dir = args
+    path, output_dir = args
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(path, "r", encoding="utf-8") as f:
             content: str = f.read()
         source_lines: list[str] = content.splitlines(keepends=True)
         module = cst.parse_module(content)
         wrapper = MetadataWrapper(module)
-        extractor = EntityExtractor(str(file_path), source_lines)
+        extractor = EntityExtractor(str(path), source_lines)
         extractor.set_wrapper(wrapper)
         wrapper.visit(extractor)
 
@@ -252,11 +252,11 @@ def process_file(args: tuple[Path, Path]) -> dict[str, int]:
                 safe_name = sanitize_filename(entity.name)
                 base_filename = f"{safe_name}"
                 counter = 1
-                py_file_path = type_dir / f"{base_filename}.py"
-                while py_file_path.exists():
-                    py_file_path = type_dir / f"{base_filename}_{counter}.py"
+                py_path = type_dir / f"{base_filename}.py"
+                while py_path.exists():
+                    py_path = type_dir / f"{base_filename}_{counter}.py"
                     counter += 1
-                with open(py_file_path, "w", encoding="utf-8") as f:
+                with open(py_path, "w", encoding="utf-8") as f:
                     if entity.imports and not entity.parent:
                         for imp in entity.imports:
                             f.write(imp)
@@ -284,7 +284,7 @@ def process_file(args: tuple[Path, Path]) -> dict[str, int]:
                             "entity": {
                                 "name": entity.name,
                                 "type": entity.type,
-                                "file_path": entity.file_path,
+                                "path": entity.path,
                                 "line_start": entity.line_start,
                                 "line_end": entity.line_end,
                                 "docstring": entity.docstring,
@@ -301,7 +301,7 @@ def process_file(args: tuple[Path, Path]) -> dict[str, int]:
                 stats[entity_type] = stats.get(entity_type, 0) + 1
         return stats
     except Exception as e:
-        logger.error(f"Error processing {file_path}: {e}")
+        logger.error(f"Error processing {path}: {e}")
         import traceback
 
         traceback.print_exc()
@@ -335,7 +335,7 @@ def process_entity_extraction(input_paths: list[Path], output_base: Path) -> Non
         async_results = [
             (pool.apply_async(process_file, (task,)), task[0]) for task in tasks
         ]
-        for async_result, file_path in async_results:
+        for async_result, path in async_results:
             try:
                 stats = async_result.get()
                 if stats:
@@ -343,11 +343,11 @@ def process_entity_extraction(input_paths: list[Path], output_base: Path) -> Non
                         total_stats[entity_type] = (
                             total_stats.get(entity_type, 0) + count
                         )
-                    logger.info(f"✓ Processed {file_path.name}: {stats}")
+                    logger.info(f"✓ Processed {path.name}: {stats}")
                 else:
-                    logger.info(f"✗ No entities found in {file_path.name}")
+                    logger.info(f"✗ No entities found in {path.name}")
             except Exception as e:
-                logger.error(f"✗ Failed to process {file_path.name}: {e}")
+                logger.error(f"✗ Failed to process {path.name}: {e}")
 
     logger.info("=" * 40)
     logger.info("Extraction Summary:")

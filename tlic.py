@@ -11,9 +11,9 @@ from pathlib import Path
 from joblib import Parallel, delayed
 
 
-def is_text_file(filepath: Path) -> bool:
+def is_text_file(path: Path) -> bool:
     try:
-        with open(filepath, "rb") as f:
+        with open(path, "rb") as f:
             chunk = f.read(1024)
             return b"\x00" not in chunk
     except OSError:
@@ -21,13 +21,13 @@ def is_text_file(filepath: Path) -> bool:
 
 
 def extract_blocks_from_file(
-    filepath: Path, min_lines: int = 2
+    path: Path, min_lines: int = 2
 ) -> list[tuple[str, int, list[str]]]:
     try:
-        with open(filepath, encoding="utf-8", errors="replace") as f:
+        with open(path, encoding="utf-8", errors="replace") as f:
             lines = f.readlines()
     except OSError as e:
-        print(f"Warning: cannot read {filepath}: {e}", file=sys.stderr)
+        print(f"Warning: cannot read {path}: {e}", file=sys.stderr)
         return []
     blocks = []
     i = 0
@@ -70,9 +70,9 @@ def collect_blocks_parallel(
         results = Parallel(n_jobs=n_jobs, prefer="threads", verbose=0)(
             delayed(extract_blocks_from_file)(path, min_lines) for path in batch_files
         )
-        for filepath, blocks in zip(batch_files, results, strict=False):
+        for path, blocks in zip(batch_files, results, strict=False):
             for block_text, start_lineno, original_lines in blocks:
-                blocks_dict[block_text].append((filepath, start_lineno, original_lines))
+                blocks_dict[block_text].append((path, start_lineno, original_lines))
     return blocks_dict
 
 
@@ -95,56 +95,56 @@ def report(repeated: dict[str, list[tuple[Path, int, list[str]]]], root: Path) -
         for line in block_text.split("\n"):
             print(f"  {line}")
         print("  Found in:")
-        for filepath, lineno, _ in occurrences:
+        for path, lineno, _ in occurrences:
             try:
-                rel_path = filepath.relative_to(root)
+                rel_path = path.relative_to(root)
             except ValueError:
-                rel_path = filepath
+                rel_path = path
             print(f"    {rel_path}:{lineno}")
 
 
 def process_file_removal(
-    filepath: Path, removals: list[tuple[int, list[str]]], root: Path
+    path: Path, removals: list[tuple[int, list[str]]], root: Path
 ) -> tuple[Path, int, bool]:
     try:
-        with open(filepath, encoding="utf-8", errors="replace") as f:
+        with open(path, encoding="utf-8", errors="replace") as f:
             original_lines = f.readlines()
     except OSError as e:
-        print(f"Warning: cannot read {filepath}: {e}", file=sys.stderr)
-        return filepath, 0, False
+        print(f"Warning: cannot read {path}: {e}", file=sys.stderr)
+        return path, 0, False
     lines_to_remove: set[int] = set()
     for start_lineno, block_lines in removals:
         for offset in range(len(block_lines)):
             lines_to_remove.add(start_lineno + offset - 1)
     if any(idx >= len(original_lines) for idx in lines_to_remove):
-        print(f"Warning: Invalid line numbers in {filepath}", file=sys.stderr)
-        return filepath, 0, False
+        print(f"Warning: Invalid line numbers in {path}", file=sys.stderr)
+        return path, 0, False
     new_lines = [
         line for idx, line in enumerate(original_lines) if idx not in lines_to_remove
     ]
     removed_count = len(original_lines) - len(new_lines)
     if removed_count == 0:
-        return filepath, 0, False
-    if filepath.suffix == ".py":
+        return path, 0, False
+    if path.suffix == ".py":
         try:
             ast.parse("".join(new_lines))
         except SyntaxError as e:
             try:
-                rel_path = filepath.relative_to(root)
+                rel_path = path.relative_to(root)
             except ValueError:
-                rel_path = filepath
+                rel_path = path
             print(
                 f"Warning: Removing blocks from {rel_path} would create invalid Python: {e}",
                 file=sys.stderr,
             )
-            return filepath, 0, False
+            return path, 0, False
     try:
-        with open(filepath, "w", encoding="utf-8") as f:
+        with open(path, "w", encoding="utf-8") as f:
             f.writelines(new_lines)
-        return filepath, removed_count, True
+        return path, removed_count, True
     except OSError as e:
-        print(f"Error: cannot write {filepath}: {e}", file=sys.stderr)
-        return filepath, 0, False
+        print(f"Error: cannot write {path}: {e}", file=sys.stderr)
+        return path, 0, False
 
 
 def remove_repeated_blocks(
@@ -152,8 +152,8 @@ def remove_repeated_blocks(
 ) -> None:
     file_removals: dict[Path, list[tuple[int, list[str]]]] = defaultdict(list)
     for occurrences in repeated.values():
-        for filepath, start_lineno, original_lines in occurrences:
-            file_removals[filepath].append((start_lineno, original_lines))
+        for path, start_lineno, original_lines in occurrences:
+            file_removals[path].append((start_lineno, original_lines))
     if not file_removals:
         print("No files to modify.")
         return
@@ -164,14 +164,14 @@ def remove_repeated_blocks(
     )
     removed_total = 0
     files_changed = 0
-    for filepath, file_removed, success in results:
+    for path, file_removed, success in results:
         if success and file_removed > 0:
             removed_total += file_removed
             files_changed += 1
             try:
-                rel_path = filepath.relative_to(root)
+                rel_path = path.relative_to(root)
             except ValueError:
-                rel_path = filepath
+                rel_path = path
             print(f"Removed {file_removed} line(s) from {rel_path}")
     if files_changed > 0:
         print(

@@ -7,12 +7,12 @@ from pathlib import Path
 from dh import get_files, mpf3, unique_path
 
 
-def process_file(file_path):
+def process_file(path):
     Path(path)
     imports = set()
     try:
-        with Path(file_path).open(encoding="utf-8") as f:
-            tree = ast.parse(f.read(), filename=str(file_path))
+        with Path(path).open(encoding="utf-8") as f:
+            tree = ast.parse(f.read(), filename=str(path))
         for node in ast.walk(tree):
             if isinstance(node, ast.Import):
                 imports.update(n.name.split(".")[0] for n in node.names)

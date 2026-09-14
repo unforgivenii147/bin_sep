@@ -71,13 +71,13 @@ def is_in_restricted_scope(node: ast.AST, parent_map: dict[ast.AST, ast.AST]) ->
     return any(isinstance(ancestor, RESTRICTED_SCOPE_TYPES) for ancestor in ancestors)
 
 
-def find_imports_not_at_head(file_path: Path) -> list[MisplacedImport]:
-    """Find imports in ``file_path`` that are not at the head of the module."""
+def find_imports_not_at_head(path: Path) -> list[MisplacedImport]:
+    """Find imports in ``path`` that are not at the head of the module."""
     try:
-        source = file_path.read_text(encoding="utf-8")
+        source = path.read_text(encoding="utf-8")
         tree = ast.parse(source)
     except (SyntaxError, UnicodeDecodeError) as exc:
-        logger.warning(f"[SKIP] {file_path}: Could not parse ({exc})")
+        logger.warning(f"[SKIP] {path}: Could not parse ({exc})")
         return []
 
     mapper = ParentMapper()
@@ -112,12 +112,12 @@ def find_imports_not_at_head(file_path: Path) -> list[MisplacedImport]:
     return misplaced
 
 
-def autofix_imports(file_path: Path, misplaced_imports: list[MisplacedImport]) -> bool:
-    """Move the given misplaced imports to the head of ``file_path``."""
+def autofix_imports(path: Path, misplaced_imports: list[MisplacedImport]) -> bool:
+    """Move the given misplaced imports to the head of ``path``."""
     if not misplaced_imports:
         return False
 
-    source = file_path.read_text(encoding="utf-8")
+    source = path.read_text(encoding="utf-8")
     lines = source.split("\n")
 
     imports_to_move = [text for _start, _end, text in misplaced_imports]
@@ -146,13 +146,13 @@ def autofix_imports(file_path: Path, misplaced_imports: list[MisplacedImport]) -
             break
 
     new_lines = lines[:insert_index] + imports_to_move + [""] + lines[insert_index:]
-    file_path.write_text("\n".join(new_lines), encoding="utf-8")
+    path.write_text("\n".join(new_lines), encoding="utf-8")
     return True
 
 
-def process_file(file_path: Path, autofix: bool) -> ProcessResult:
+def process_file(path: Path, autofix: bool) -> ProcessResult:
     """Process a single file, returning (has_issues, was_fixed, details)."""
-    misplaced = find_imports_not_at_head(file_path)
+    misplaced = find_imports_not_at_head(path)
     if not misplaced:
         return False, False, []
 
@@ -165,7 +165,7 @@ def process_file(file_path: Path, autofix: bool) -> ProcessResult:
     if not autofix:
         return True, False, details
 
-    if autofix_imports(file_path, misplaced):
+    if autofix_imports(path, misplaced):
         msg = f"  [FIXED] Moved {len(misplaced)} import(s) to top"
         logger.info(msg)
         details.append(msg)
@@ -186,8 +186,8 @@ def save_report(
         if not report_data:
             handle.write("No misplaced imports found! All files are clean.\n")
             return
-        for file_path, details in report_data:
-            handle.write(f"File: {file_path}\n")
+        for path, details in report_data:
+            handle.write(f"File: {path}\n")
             handle.write(f"{SEPARATOR}\n")
             handle.writelines(f"{detail}\n" for detail in details)
             handle.write("\n")
@@ -262,11 +262,11 @@ def main() -> int:
         async_results: list[tuple[Path, ApplyResult[ProcessResult]]] = [
             (fp, pool.apply_async(process_file, (fp, args.autofix))) for fp in files
         ]
-        for file_path, result in async_results:
+        for path, result in async_results:
             has_issues, was_fixed, details = result.get()
             if has_issues:
                 files_with_issues += 1
-                report_data.append((file_path, details))
+                report_data.append((path, details))
             if was_fixed:
                 files_fixed += 1
 

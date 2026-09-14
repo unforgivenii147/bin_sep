@@ -64,7 +64,7 @@ def _validate_source(source: str) -> bool:
 # --------------------------------------------------------------------------- #
 
 
-def clean_single_file(file_path: Path) -> None:
+def clean_single_file(path: Path) -> None:
     """Remove an automated module docstring from a single Python file.
 
     Reads the file, searches the first :data:`SCAN_LIMIT` lines for a matching
@@ -73,21 +73,19 @@ def clean_single_file(file_path: Path) -> None:
     valid.
 
     Args:
-        file_path: Path to the Python file to process.
+        path: Path to the Python file to process.
     """
     try:
-        lines: list[str] = file_path.read_text(encoding="utf-8").splitlines(
-            keepends=True
-        )
+        lines: list[str] = path.read_text(encoding="utf-8").splitlines(keepends=True)
     except OSError as exc:
-        logger.error("Error reading {}: {}", file_path.name, exc)
+        logger.error("Error reading {}: {}", path.name, exc)
         return
 
     if not lines:
-        logger.info("Skipped empty file: {}", file_path.name)
+        logger.info("Skipped empty file: {}", path.name)
         return
 
-    pattern: re.Pattern[str] = _build_pattern(file_path.name)
+    pattern: re.Pattern[str] = _build_pattern(path.name)
     scan_limit: int = min(SCAN_LIMIT, len(lines))
     removed_index: int | None = None
 
@@ -101,7 +99,7 @@ def clean_single_file(file_path: Path) -> None:
         logger.info(
             "No automated docstring in top {} lines of: {}",
             SCAN_LIMIT,
-            file_path.name,
+            path.name,
         )
         return
 
@@ -109,18 +107,18 @@ def clean_single_file(file_path: Path) -> None:
     if not _validate_source(new_source):
         logger.error(
             "Refusing to write {}: modified source failed AST validation",
-            file_path.name,
+            path.name,
         )
         return
 
     try:
-        file_path.write_text(new_source, encoding="utf-8")
+        path.write_text(new_source, encoding="utf-8")
     except OSError as exc:
-        logger.error("Error writing {}: {}", file_path.name, exc)
+        logger.error("Error writing {}: {}", path.name, exc)
         return
 
     logger.success(
-        "Cleaned docstring from line {} of: {}", removed_index + 1, file_path.name
+        "Cleaned docstring from line {} of: {}", removed_index + 1, path.name
     )
 
 

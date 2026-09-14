@@ -469,16 +469,16 @@ def safe_rename(old_path: Path, new_path: Path) -> bool:
         return False
 
 
-def detect_mismatch(base_dir: Path, file_path: Path) -> MismatchResult | None:
-    """Return a MismatchResult if *file_path*'s extension looks wrong, else None."""
-    if file_path.suffix.lower() in SKIP_EXTENSIONS:
+def detect_mismatch(base_dir: Path, path: Path) -> MismatchResult | None:
+    """Return a MismatchResult if *path*'s extension looks wrong, else None."""
+    if path.suffix.lower() in SKIP_EXTENSIONS:
         return None
-    current_ext: str = file_path.suffix.lower()
-    shebang_ext: str | None = fix_by_shebang(file_path)
+    current_ext: str = path.suffix.lower()
+    shebang_ext: str | None = fix_by_shebang(path)
     if shebang_ext and current_ext != shebang_ext:
-        new_path: Path = file_path.with_suffix(shebang_ext)
+        new_path: Path = path.with_suffix(shebang_ext)
         return MismatchResult(
-            path=file_path,
+            path=path,
             current_ext=current_ext,
             detected_mime="text/x-shellscript"
             if shebang_ext == ".sh"
@@ -486,7 +486,7 @@ def detect_mismatch(base_dir: Path, file_path: Path) -> MismatchResult | None:
             expected_exts=[shebang_ext],
             new_path=unique_path(new_path),
         )
-    mime_result: MimeResult = get_file_mime(file_path)
+    mime_result: MimeResult = get_file_mime(path)
     if mime_result.error:
         return None
     mime_type: str | None = mime_result.mime_type
@@ -498,9 +498,9 @@ def detect_mismatch(base_dir: Path, file_path: Path) -> MismatchResult | None:
     expected_ext: str = expected_exts[0].lower()
     if current_ext == expected_ext or current_ext in [e.lower() for e in expected_exts]:
         return None
-    new_path = file_path.with_suffix(expected_ext)
+    new_path = path.with_suffix(expected_ext)
     return MismatchResult(
-        path=file_path,
+        path=path,
         current_ext=current_ext,
         detected_mime=mime_type,
         expected_exts=expected_exts,
@@ -510,13 +510,13 @@ def detect_mismatch(base_dir: Path, file_path: Path) -> MismatchResult | None:
 
 def process_file_worker(args: tuple[Path, Path]) -> MismatchResult | None:
     """Multiprocessing entry point: skip empty files, then detect mismatches."""
-    base_dir, file_path = args
+    base_dir, path = args
     try:
-        if file_path.stat().st_size == 0:
+        if path.stat().st_size == 0:
             return None
     except OSError:
         return None
-    return detect_mismatch(base_dir, file_path)
+    return detect_mismatch(base_dir, path)
 
 
 def scan_directory(directory: str) -> list[MismatchResult]:
@@ -531,9 +531,9 @@ def scan_directory(directory: str) -> list[MismatchResult]:
         dirs[:] = [d for d in dirs if d not in SKIP_DIRECTORIES]
         root_path: Path = Path(root)
         for filename in filenames:
-            file_path: Path = root_path / filename
-            if not file_path.is_symlink():
-                files.append(file_path)
+            path: Path = root_path / filename
+            if not path.is_symlink():
+                files.append(path)
 
     if not files:
         logger.warning("No files found")

@@ -22,7 +22,7 @@ PY_LANGUAGE = Language(tspython.language())
 
 
 class ProcessResult(NamedTuple):
-    file_path: Path
+    path: Path
     removed_count: int
     unremoved_count: int
     modified: bool
@@ -84,27 +84,27 @@ def check_remaining_comments(source_bytes: bytes) -> int:
     return remaining
 
 
-def process_single_file(file_path: Path) -> ProcessResult:
+def process_single_file(path: Path) -> ProcessResult:
     try:
-        source_bytes = file_path.read_bytes()
+        source_bytes = path.read_bytes()
         cleaned_bytes, removed_count = remove_comments_from_code(source_bytes)
         if removed_count == 0:
-            return ProcessResult(file_path, 0, 0, False)
+            return ProcessResult(path, 0, 0, False)
         try:
-            ast.parse(cleaned_bytes, filename=str(file_path))
+            ast.parse(cleaned_bytes, filename=str(path))
         except SyntaxError as e:
             return ProcessResult(
-                file_path,
+                path,
                 0,
                 0,
                 False,
                 error=f"AST validation failed after stripping comments: {e}",
             )
         unremoved_count = check_remaining_comments(cleaned_bytes)
-        file_path.write_bytes(cleaned_bytes)
-        return ProcessResult(file_path, removed_count, unremoved_count, True)
+        path.write_bytes(cleaned_bytes)
+        return ProcessResult(path, removed_count, unremoved_count, True)
     except Exception as exc:
-        return ProcessResult(file_path, 0, 0, False, error=str(exc))
+        return ProcessResult(path, 0, 0, False, error=str(exc))
 
 
 def collect_python_files(inputs: list[str]) -> list[Path]:
@@ -141,8 +141,8 @@ def main() -> None:
     )
     async_results = []
     with mp.Pool(processes=8) as pool:
-        for file_path in targets:
-            res = pool.apply_async(process_single_file, args=(file_path,))
+        for path in targets:
+            res = pool.apply_async(process_single_file, args=(path,))
             async_results.append(res)
         pool.close()
         pool.join()
@@ -151,17 +151,15 @@ def main() -> None:
     for async_res in async_results:
         res: ProcessResult = async_res.get()
         if res.error:
-            logger.error(f"Error processing {res.file_path}: {res.error}")
+            logger.error(f"Error processing {res.path}: {res.error}")
             continue
         if res.modified:
             total_modified += 1
             total_removed += res.removed_count
-            logger.info(
-                f"Modified: {res.file_path} | Removed comments: {res.removed_count}"
-            )
+            logger.info(f"Modified: {res.path} | Removed comments: {res.removed_count}")
             if res.unremoved_count > 0:
                 logger.warning(
-                    f"Lingering comments detected in {res.file_path}: {res.unremoved_count} remain."
+                    f"Lingering comments detected in {res.path}: {res.unremoved_count} remain."
                 )
     logger.info("--- Execution Summary ---")
     logger.info(f"Total files scanned:  {len(targets)}")

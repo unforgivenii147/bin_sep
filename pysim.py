@@ -23,16 +23,16 @@ def hash_node(node: ast.AST) -> str:
     return hashlib.sha256(source.encode("utf-8")).hexdigest()
 
 
-def extract_definitions(file_path: Path) -> dict[str, Any] | None:
+def extract_definitions(path: Path) -> dict[str, Any] | None:
     """
     Parse a .py file and extract hashes of its top-level definitions:
     functions, classes, and module-level constant assignments.
     """
     try:
-        source = file_path.read_text(encoding="utf-8")
-        tree = ast.parse(source, filename=str(file_path))
+        source = path.read_text(encoding="utf-8")
+        tree = ast.parse(source, filename=str(path))
     except (SyntaxError, UnicodeDecodeError, OSError) as e:
-        return {"file": str(file_path), "error": str(e)}
+        return {"file": str(path), "error": str(e)}
 
     functions: dict[str, str] = {}
     classes: dict[str, str] = {}
@@ -56,7 +56,7 @@ def extract_definitions(file_path: Path) -> dict[str, Any] | None:
                 constants[node.target.id] = hash_node(node)
 
     return {
-        "file": str(file_path),
+        "file": str(path),
         "functions": functions,
         "classes": classes,
         "constants": constants,

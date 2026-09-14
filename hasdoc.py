@@ -21,10 +21,10 @@ def find_docstring_lines(source_bytes: bytes) -> set[int]:
     return docstring_lines
 
 
-def check_file(file_path: Path) -> tuple[Path, list[str]]:
+def check_file(path: Path) -> tuple[Path, list[str]]:
     issues = []
     try:
-        source_bytes = file_path.read_bytes()
+        source_bytes = path.read_bytes()
         docstring_lines = find_docstring_lines(source_bytes)
         import io
         import tokenize
@@ -43,7 +43,7 @@ def check_file(file_path: Path) -> tuple[Path, list[str]]:
                     issues.append(f"  Line {start_line}: Docstring -> {first_line}...")
     except Exception as e:
         issues.append(f"  [ERROR] Failed to parse file: {e}")
-    return file_path, issues
+    return path, issues
 
 
 def collect_files(inputs: list[str]) -> list[Path]:
@@ -79,10 +79,10 @@ def main():
     with mp.Pool(processes=8) as pool:
         async_results = [pool.apply_async(check_file, args=(f,)) for f in files]
         for res in async_results:
-            file_path, issues = res.get()
+            path, issues = res.get()
             if issues:
                 dirty_files += 1
-                print(f"[FAIL] {file_path}")
+                print(f"[FAIL] {path}")
                 for issue in issues:
                     print(issue)
                 print()

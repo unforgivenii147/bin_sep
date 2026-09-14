@@ -90,19 +90,19 @@ def translate_text(text: str) -> str:
     return "".join(translated_lines)
 
 
-def safe_overwrite(filepath: Path, content: str) -> None:
-    """Atomically overwrite ``filepath`` with ``content`` using a temp file."""
+def safe_overwrite(path: Path, content: str) -> None:
+    """Atomically overwrite ``path`` with ``content`` using a temp file."""
     tmp_path: Path
     with tempfile.NamedTemporaryFile(
-        mode="w", encoding="utf-8", delete=False, dir=filepath.parent
+        mode="w", encoding="utf-8", delete=False, dir=path.parent
     ) as tmp:
         tmp.write(content)
         tmp_path = Path(tmp.name)
     try:
-        shutil.move(str(tmp_path), str(filepath))
+        shutil.move(str(tmp_path), str(path))
     except Exception as e:
         tmp_path.unlink(missing_ok=True)
-        raise RuntimeError(f"Failed to overwrite {filepath}: {e}") from e
+        raise RuntimeError(f"Failed to overwrite {path}: {e}") from e
 
 
 def process_file(path: Path) -> str:

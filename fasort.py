@@ -87,17 +87,17 @@ def persian_sort_key(word):
     return tuple(sort_key)
 
 
-def sort_persian_dict(file_path):
+def sort_persian_dict(path):
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(path, "r", encoding="utf-8") as f:
             lines = f.readlines()
         words = [line.rstrip("\n\r") for line in lines]
         sorted_words = sorted(words, key=lambda w: (persian_sort_key(w), w))
-        with open(file_path, "w", encoding="utf-8") as f:
+        with open(path, "w", encoding="utf-8") as f:
             f.writelines(word + "\n" for word in sorted_words)
-        print(f"Successfully sorted {len(sorted_words)} words in '{file_path}'")
+        print(f"Successfully sorted {len(sorted_words)} words in '{path}'")
     except FileNotFoundError:
-        print(f"Error: File '{file_path}' not found.")
+        print(f"Error: File '{path}' not found.")
         sys.exit(1)
     except Exception as e:
         print(f"Error: {e}")
@@ -108,5 +108,5 @@ if __name__ == "__main__":
     if len(sys.argv) != 2:
         print("Usage: python persian_sort.py <filename>")
         sys.exit(1)
-    file_path = sys.argv[1]
-    sort_persian_dict(file_path)
+    path = sys.argv[1]
+    sort_persian_dict(path)

@@ -143,49 +143,47 @@ def compare_versions(ver1: str, ver2: str) -> int:
 # ---------------------------------------------------------------------------
 
 
-def process_file(file_path: Path, file_type: str) -> ParsedEntry | None:
+def process_file(path: Path, file_type: str) -> ParsedEntry | None:
     """Parse a single file and return (pkg_name, version, path) or None."""
     try:
-        filename = file_path.name
+        filename = path.name
         if file_type == "wheel" and filename.endswith(WHEEL_EXTENSIONS):
             parsed = parse_wheel_version(filename)
             if parsed:
                 pkg_name, version = parsed
-                return (pkg_name, version, file_path)
+                return (pkg_name, version, path)
         elif file_type == "targz" and filename.endswith(TARGZ_EXTENSIONS):
             parsed = parse_targz_version(filename)
             if parsed:
                 pkg_name, version = parsed
-                return (pkg_name, version, file_path)
+                return (pkg_name, version, path)
         elif file_type == "deb" and filename.endswith(DEB_EXTENSIONS):
             parsed = parse_deb_version(filename)
             if parsed:
                 pkg_name, version = parsed
-                return (pkg_name, version, file_path)
+                return (pkg_name, version, path)
     except Exception as e:  # noqa: BLE001
-        logger.error(f"Error processing {file_path}: {e}")
+        logger.error(f"Error processing {path}: {e}")
     return None
 
 
-def _resolve_file_type(file_path: Path) -> str | None:
+def _resolve_file_type(path: Path) -> str | None:
     """Determine the parser key for a file path, or None if unsupported."""
-    if file_path.suffix in {".whl", ".metadata"}:
+    if path.suffix in {".whl", ".metadata"}:
         return "wheel"
-    if file_path.suffix == ".deb":
+    if path.suffix == ".deb":
         return "deb"
-    if (file_path.suffix == ".gz" and file_path.stem.endswith(".tar")) or (
-        file_path.suffix == ".tgz"
-    ):
+    if (path.suffix == ".gz" and path.stem.endswith(".tar")) or (path.suffix == ".tgz"):
         return "targz"
     return None
 
 
-def _process_entry(file_path: Path) -> ParsedEntry | None:
+def _process_entry(path: Path) -> ParsedEntry | None:
     """Top-level helper for multiprocessing: dispatch and parse a file."""
-    file_type = _resolve_file_type(file_path)
+    file_type = _resolve_file_type(path)
     if file_type is None:
         return None
-    return process_file(file_path, file_type)
+    return process_file(path, file_type)
 
 
 # ---------------------------------------------------------------------------
@@ -222,14 +220,13 @@ def scan_directory(
 
     with multiprocessing.Pool(processes=POOL_WORKERS) as pool:
         async_results = [
-            (pool.apply_async(_process_entry, (file_path,)), file_path)
-            for file_path in files_list
+            (pool.apply_async(_process_entry, (path,)), path) for path in files_list
         ]
-        for async_result, file_path in async_results:
+        for async_result, path in async_results:
             try:
                 result: ParsedEntry | None = async_result.get()
             except Exception as e:  # noqa: BLE001
-                logger.error(f"Error processing {file_path}: {e}")
+                logger.error(f"Error processing {path}: {e}")
                 continue
             if result:
                 pkg_name, version, parsed_path = result
@@ -275,18 +272,18 @@ def keep_latest_versions(
         logger.info(f"  Latest version: {latest_version} - {latest_path.name}")
         logger.info(f"  Total versions found: {len(versions)}")
 
-        for version, file_path in versions:
-            if file_path == latest_path:
+        for version, path in versions:
+            if path == latest_path:
                 continue
             if dry_run:
-                logger.info(f"  Would delete: {version} - {file_path.name}")
+                logger.info(f"  Would delete: {version} - {path.name}")
             else:
                 try:
-                    file_path.unlink()
-                    logger.info(f"  Deleted: {version} - {file_path.name}")
+                    path.unlink()
+                    logger.info(f"  Deleted: {version} - {path.name}")
                     total_deleted += 1
                 except Exception as e:  # noqa: BLE001
-                    logger.error(f"  Error deleting {file_path.name}: {e}")
+                    logger.error(f"  Error deleting {path.name}: {e}")
         total_files_kept += 1
 
     return (total_deleted, total_files_kept)

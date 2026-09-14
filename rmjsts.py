@@ -50,14 +50,14 @@ def remove_js_comments(content: str) -> str:
     return "".join(result)
 
 
-def process_file(file_path: Path) -> str | None:
+def process_file(path: Path) -> str | None:
     try:
-        content = file_path.read_text(encoding="utf-8")
+        content = path.read_text(encoding="utf-8")
         cleaned = remove_js_comments(content)
-        file_path.write_text(cleaned, encoding="utf-8")
+        path.write_text(cleaned, encoding="utf-8")
         return None
     except Exception as e:
-        return f"Error processing {file_path}: {e}"
+        return f"Error processing {path}: {e}"
 
 
 def main():

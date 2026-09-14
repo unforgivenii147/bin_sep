@@ -28,8 +28,8 @@ def remove_comments_and_strings(content: str, filetype: str, keep_strings=False)
     return content
 
 
-def process_file(filepath, inplace=False, keep_strings=False) -> None:
-    p = Path(filepath)
+def process_file(path, inplace=False, keep_strings=False) -> None:
+    p = Path(path)
     ext = p.suffix[1:].lower()
     if ext not in {"hpp", "h", "c", "cpp", "py", "sh"}:
         print(f"Unsupported file type: {ext}")
@@ -38,9 +38,9 @@ def process_file(filepath, inplace=False, keep_strings=False) -> None:
     cleaned = remove_comments_and_strings(content, ext, keep_strings)
     if inplace:
         p.write_text(cleaned, encoding="utf-8")
-        print(f"File {filepath} cleaned and saved in-place.")
+        print(f"File {path} cleaned and saved in-place.")
     else:
-        print(f"--- Cleaned {filepath} ---\n{cleaned}\n")
+        print(f"--- Cleaned {path} ---\n{cleaned}\n")
 
 
 if __name__ == "__main__":
@@ -57,5 +57,5 @@ if __name__ == "__main__":
         "-s", "--strings", action="store_true", help="Keep strings in the output"
     )
     args = parser.parse_args()
-    for filepath in args.files:
-        process_file(filepath, inplace=args.inplace, keep_strings=args.strings)
+    for path in args.files:
+        process_file(path, inplace=args.inplace, keep_strings=args.strings)

@@ -66,20 +66,20 @@ def custom_persian_to_finglish(text: str) -> str:
 
 def convert_filenames_with_pathlib(directory: str = ".") -> None:
     start_path = Path(directory)
-    for filepath in start_path.rglob("*"):
-        original_filename_stem = filepath.stem
-        original_extension = filepath.suffix
+    for path in start_path.rglob("*"):
+        original_filename_stem = path.stem
+        original_extension = path.suffix
         normalized_stem = unicodedata.normalize("NFKD", original_filename_stem)
         finglish_stem = custom_persian_to_finglish(normalized_stem)
         finglish_stem_cleaned = "_".join(filter(None, finglish_stem.split("_")))
         new_filename = finglish_stem_cleaned + original_extension
-        if new_filename != filepath.name:
-            new_filepath = filepath.with_name(new_filename)
+        if new_filename != path.name:
+            new_path = path.with_name(new_filename)
             try:
-                filepath.rename(new_filepath)
-                print(f"Renamed: {filepath} -> {new_filepath}")
+                path.rename(new_path)
+                print(f"Renamed: {path} -> {new_path}")
             except OSError as e:
-                print(f"Error renaming {filepath}: {e}")
+                print(f"Error renaming {path}: {e}")
 
 
 if __name__ == "__main__":

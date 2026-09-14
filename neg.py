@@ -26,8 +26,8 @@ SUPPORTED_EXTENSIONS = {
 }
 
 
-def is_image_file(file_path: Path) -> bool:
-    return file_path.suffix.lower() in SUPPORTED_EXTENSIONS
+def is_image_file(path: Path) -> bool:
+    return path.suffix.lower() in SUPPORTED_EXTENSIONS
 
 
 def invert_image(image_path: Path, dry_run: bool = False) -> tuple[Path, bool]:

@@ -87,10 +87,10 @@ EXTENSION_TO_TYPE_HINT = {
 }
 
 
-def run_file_command(filepath: Path) -> str | None:
+def run_file_command(path: Path) -> str | None:
     try:
         result = subprocess.run(
-            ["file", "-b", str(filepath)],
+            ["file", "-b", str(path)],
             capture_output=True,
             text=True,
             check=True,
@@ -104,11 +104,11 @@ def run_file_command(filepath: Path) -> str | None:
         )
         return None
     except subprocess.CalledProcessError as e:
-        print(f"Error running 'file' command on {filepath}: {e}")
+        print(f"Error running 'file' command on {path}: {e}")
         return None
     except Exception as e:
         print(
-            f"An unexpected error occurred while running 'file' command on {filepath}: {e}"
+            f"An unexpected error occurred while running 'file' command on {path}: {e}"
         )
         return None
 
@@ -122,8 +122,8 @@ def get_file_extension_from_type(file_type_description: str) -> str | None:
     return FILE_TYPE_MAP.get(normalized_description)
 
 
-def get_current_extension(filepath: Path) -> str | None:
-    return filepath.suffix.lower()
+def get_current_extension(path: Path) -> str | None:
+    return path.suffix.lower()
 
 
 def find_files_recursively(
@@ -159,11 +159,11 @@ def detect_and_fix_mismatches(
     rename_operations = []
     files_to_process = list(find_files_recursively(start_directory))
     print(f"Found {len(files_to_process)} files to analyze.")
-    for filepath in files_to_process:
-        current_ext = get_current_extension(filepath)
+    for path in files_to_process:
+        current_ext = get_current_extension(path)
         if not current_ext or current_ext in {".log", ".tmp", ".bak"}:
             continue
-        file_type_desc = run_file_command(filepath)
+        file_type_desc = run_file_command(path)
         if not file_type_desc:
             continue
         detected_ext = get_file_extension_from_type(file_type_desc)
@@ -192,27 +192,27 @@ def detect_and_fix_mismatches(
         if detected_ext.lower() != current_ext.lower():
             mismatched_files_found.append(
                 {
-                    "filepath": filepath,
+                    "path": path,
                     "current_extension": current_ext,
                     "detected_type": file_type_desc,
                     "detected_extension": detected_ext,
                 }
             )
-            new_filepath = filepath.with_suffix(detected_ext)
-            if new_filepath.exists():
+            new_path = path.with_suffix(detected_ext)
+            if new_path.exists():
                 print(
-                    f"  SKIP RENAME: Target file '{new_filepath}' already exists. Cannot rename '{filepath}'."
+                    f"  SKIP RENAME: Target file '{new_path}' already exists. Cannot rename '{path}'."
                 )
             else:
                 rename_operations.append(
                     {
-                        "source": filepath,
-                        "destination": new_filepath,
+                        "source": path,
+                        "destination": new_path,
                         "type_description": file_type_desc,
                     }
                 )
                 print(
-                    f"  MISMATCH FOUND: '{filepath}' detected as '{
+                    f"  MISMATCH FOUND: '{path}' detected as '{
                         file_type_desc
                     }' (suggested extension: {detected_ext})."
                 )

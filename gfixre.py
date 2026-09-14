@@ -72,14 +72,14 @@ def convert_to_raw_string(source_text: str) -> str:
     return "\n".join(lines)
 
 
-def process_file(file_path: Path, autofix: bool = False) -> dict:
+def process_file(path: Path, autofix: bool = False) -> dict:
     try:
-        original = file_path.read_text(encoding="utf-8")
+        original = path.read_text(encoding="utf-8")
         converted = convert_to_raw_string(original)
         if original != converted:
             if autofix:
-                file_path.write_text(converted, encoding="utf-8")
-                return {"status": "fixed", "path": file_path}
+                path.write_text(converted, encoding="utf-8")
+                return {"status": "fixed", "path": path}
             else:
                 orig_lines = original.splitlines(keepends=True)
                 conv_lines = converted.splitlines(keepends=True)
@@ -87,14 +87,14 @@ def process_file(file_path: Path, autofix: bool = False) -> dict:
                     unified_diff(
                         orig_lines,
                         conv_lines,
-                        fromfile=str(file_path),
-                        tofile=str(file_path),
+                        fromfile=str(path),
+                        tofile=str(path),
                     )
                 )
-                return {"status": "diff", "path": file_path, "diff": diff}
-        return {"status": "unchanged", "path": file_path}
+                return {"status": "diff", "path": path, "diff": diff}
+        return {"status": "unchanged", "path": path}
     except (SyntaxError, UnicodeDecodeError) as e:
-        return {"status": "error", "path": file_path, "error": str(e)}
+        return {"status": "error", "path": path, "error": str(e)}
 
 
 def process_file_wrapper(args):

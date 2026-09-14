@@ -10,14 +10,14 @@ from git import GitCommandError, Repo
 from git.exc import InvalidGitRepositoryError
 
 
-def read_repos(file_path: Path) -> list[str]:
-    if not file_path.exists():
-        print(f"Error: {file_path} does not exist")
+def read_repos(path: Path) -> list[str]:
+    if not path.exists():
+        print(f"Error: {path} does not exist")
         sys.exit(1)
-    with open(file_path) as f:
+    with open(path) as f:
         repos = [line.strip() for line in f if line.strip()]
     if not repos:
-        print(f"Error: No repositories found in {file_path}")
+        print(f"Error: No repositories found in {path}")
         sys.exit(1)
     return repos
 

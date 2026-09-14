@@ -58,12 +58,12 @@ def hamming_distance(hash1: str, hash2: str) -> int:
     return sum(c1 != c2 for c1, c2 in zip(hash1, hash2, strict=False))
 
 
-def compute_hash(file_path: Path) -> tuple[str, str | None]:
-    img = load_image_cv2(str(file_path))
+def compute_hash(path: Path) -> tuple[str, str | None]:
+    img = load_image_cv2(str(path))
     if img is None:
-        return file_path.name, None
+        return path.name, None
     hash_str = phash_cv2(img)
-    return file_path.name, hash_str
+    return path.name, hash_str
 
 
 def find_duplicates(hashes: list[tuple[str, str]], threshold: int) -> list[list[str]]:
@@ -87,17 +87,17 @@ def find_duplicates(hashes: list[tuple[str, str]], threshold: int) -> list[list[
     return groups
 
 
-def get_file_info(file_path: Path) -> str:
+def get_file_info(path: Path) -> str:
     try:
-        size_mb = file_path.stat().st_size / (1024 * 1024)
-        img = load_image_cv2(str(file_path))
+        size_mb = path.stat().st_size / (1024 * 1024)
+        img = load_image_cv2(str(path))
         if img is not None:
             height, width = img.shape[:2]
-            return f"{file_path.name:<50} ({width}x{height}, {size_mb:.2f} MB)"
+            return f"{path.name:<50} ({width}x{height}, {size_mb:.2f} MB)"
         else:
-            return f"{file_path.name:<50} ({size_mb:.2f} MB)"
+            return f"{path.name:<50} ({size_mb:.2f} MB)"
     except Exception:
-        return file_path.name
+        return path.name
 
 
 def move_duplicates_to_folders(
@@ -184,8 +184,8 @@ def main():
         log_action(f"Group #{group_idx} ({len(group)} file(s)):")
         log_action("-" * 40)
         for filename in sorted(group):
-            file_path = current_dir / filename
-            log_action(f"  • {get_file_info(file_path)}")
+            path = current_dir / filename
+            log_action(f"  • {get_file_info(path)}")
         log_action()
     if dry_run:
         log_action(f"\n{'=' * 40}")

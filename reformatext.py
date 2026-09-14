@@ -6,26 +6,26 @@ import sys
 from pathlib import Path
 
 
-def restructure_text_file(filepath: Path) -> None:
-    if not filepath.is_file():
-        print(f"Error: File not found at {filepath}")
+def restructure_text_file(path: Path) -> None:
+    if not path.is_file():
+        print(f"Error: File not found at {path}")
         return
     try:
-        with filepath.open("r", encoding="utf-8") as f:
+        with path.open("r", encoding="utf-8") as f:
             content = f.read()
     except Exception as e:
-        print(f"Error reading file {filepath}: {e}")
+        print(f"Error reading file {path}: {e}")
         return
-    bak_filepath = filepath.with_suffix(filepath.suffix + ".bak")
+    bak_path = path.with_suffix(path.suffix + ".bak")
     try:
         with (
-            filepath.open("r", encoding="utf-8") as src,
-            bak_filepath.open("w", encoding="utf-8") as dst,
+            path.open("r", encoding="utf-8") as src,
+            bak_path.open("w", encoding="utf-8") as dst,
         ):
             dst.write(src.read())
-        print(f"Backup created at: {bak_filepath}")
+        print(f"Backup created at: {bak_path}")
     except Exception as e:
-        print(f"Error creating backup file {bak_filepath}: {e}")
+        print(f"Error creating backup file {bak_path}: {e}")
         return
     restructured_lines = []
     paragraphs = content.split("\n\n")
@@ -67,11 +67,11 @@ def restructure_text_file(filepath: Path) -> None:
                 processed_sentence_parts.append(" ".join(current_line_words))
             restructured_lines.extend(processed_sentence_parts)
     try:
-        with filepath.open("w", encoding="utf-8") as f:
+        with path.open("w", encoding="utf-8") as f:
             f.write("\n".join(restructured_lines))
-        print(f"File successfully restructured: {filepath}")
+        print(f"File successfully restructured: {path}")
     except Exception as e:
-        print(f"Error writing to file {filepath}: {e}")
+        print(f"Error writing to file {path}: {e}")
 
 
 if __name__ == "__main__":
@@ -79,5 +79,5 @@ if __name__ == "__main__":
         print("Usage: python script_name.py <filename>")
         sys.exit(1)
     filename = sys.argv[1]
-    file_path = Path(filename)
-    restructure_text_file(file_path)
+    path = Path(filename)
+    restructure_text_file(path)

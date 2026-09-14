@@ -135,12 +135,12 @@ def translate_worker(
         return line_idx, start, end, text, False
 
 
-def _progress_path(file_path: Path) -> Path:
-    """Return the sidecar progress file path for ``file_path``."""
-    return file_path.with_suffix(file_path.suffix + ".xlprogress")
+def _progress_path(path: Path) -> Path:
+    """Return the sidecar progress file path for ``path``."""
+    return path.with_suffix(path.suffix + ".xlprogress")
 
 
-def save_progress(file_path: Path, done: ProgressMap, total: int) -> None:
+def save_progress(path: Path, done: ProgressMap, total: int) -> None:
     """Persist the current translation state to the sidecar progress file."""
     try:
         serializable_done: dict[str, dict[str, str]] = {
@@ -149,21 +149,21 @@ def save_progress(file_path: Path, done: ProgressMap, total: int) -> None:
             if v
         }
         state: dict[str, Any] = {
-            "file": str(file_path),
+            "file": str(path),
             "saved_at": datetime.now().isoformat(),
             "total_lines": total,
             "translations": serializable_done,
         }
-        _progress_path(file_path).write_text(
+        _progress_path(path).write_text(
             json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8"
         )
     except Exception as e:
-        logger.error("Could not save progress for {}: {}", file_path, e)
+        logger.error("Could not save progress for {}: {}", path, e)
 
 
-def load_progress(file_path: Path) -> ProgressMap:
-    """Load previously saved progress for ``file_path`` or return an empty map."""
-    p = _progress_path(file_path)
+def load_progress(path: Path) -> ProgressMap:
+    """Load previously saved progress for ``path`` or return an empty map."""
+    p = _progress_path(path)
     if not p.exists():
         return {}
     try:
@@ -179,9 +179,9 @@ def load_progress(file_path: Path) -> ProgressMap:
         return {}
 
 
-def drop_progress(file_path: Path) -> None:
-    """Delete the sidecar progress file for ``file_path`` if it exists."""
-    _progress_path(file_path).unlink(missing_ok=True)
+def drop_progress(path: Path) -> None:
+    """Delete the sidecar progress file for ``path`` if it exists."""
+    _progress_path(path).unlink(missing_ok=True)
 
 
 def process_file(path: Path) -> bool:

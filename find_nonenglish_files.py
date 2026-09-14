@@ -36,13 +36,13 @@ def is_likely_english(text: str, threshold: float = 70.0) -> bool:
     return lang in ENGLISH_LANGUAGES and confidence >= threshold
 
 
-def read_file_safely(filepath: Path) -> str | None:
+def read_file_safely(path: Path) -> str | None:
     try:
-        return filepath.read_text(encoding="utf-8")
+        return path.read_text(encoding="utf-8")
     except UnicodeDecodeError:
         for encoding in ["latin-1", "cp1252", "iso-8859-1"]:
             try:
-                return filepath.read_text(encoding=encoding)
+                return path.read_text(encoding=encoding)
             except UnicodeDecodeError:
                 continue
     except Exception:
@@ -83,15 +83,15 @@ def analyze_directory(directory: str = ".", show_all: bool = False) -> dict:
         cwd = Path(root)
         rel_dir = cwd.relative_to(directory)
         for file in files:
-            filepath = cwd / file
-            if filepath.suffix.lower() not in SUPPORTED_EXTENSIONS:
+            path = cwd / file
+            if path.suffix.lower() not in SUPPORTED_EXTENSIONS:
                 continue
-            if filepath.stat().st_size > MAX_FILE_SIZE:
+            if path.stat().st_size > MAX_FILE_SIZE:
                 results["skipped_binary"] += 1
                 continue
             results["total_files"] += 1
             results["directory_stats"][str(rel_dir)]["total"] += 1
-            content = read_file_safely(filepath)
+            content = read_file_safely(path)
             if content is None:
                 results["skipped_encoding"] += 1
                 continue
@@ -101,14 +101,14 @@ def analyze_directory(directory: str = ".", show_all: bool = False) -> dict:
                 continue
             lang, confidence = detect_language(sample)
             if lang is None:
-                results["undetermined"].append(filepath)
+                results["undetermined"].append(path)
                 continue
             results["checked_files"] += 1
             results["language_stats"][lang] += 1
             if lang in ENGLISH_LANGUAGES and confidence >= 70:
-                results["english"].append(filepath)
+                results["english"].append(path)
             else:
-                results["non_english"][lang].append(filepath)
+                results["non_english"][lang].append(path)
                 results["directory_stats"][str(rel_dir)]["non_english"] += 1
     return results
 
@@ -155,11 +155,9 @@ def print_results(results: dict, show_files: bool = False) -> None:
         for lang, files in sorted(results["non_english"].items()):
             if files:
                 print(f"\n   🌐 {lang.upper()} ({len(files)} files):")
-                for filepath in files[:20]:
+                for path in files[:20]:
                     rel_path = (
-                        filepath.relative_to(Path.cwd())
-                        if filepath.is_absolute()
-                        else filepath
+                        path.relative_to(Path.cwd()) if path.is_absolute() else path
                     )
                     print(f"      └─ {rel_path}")
                 if len(files) > 20:

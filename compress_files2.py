@@ -104,58 +104,58 @@ def get_files_to_process(root_dir: Path, compress: bool) -> Generator[Path, None
 
 
 def compress_file(
-    filepath: Path, preset: int = 9, threads: int = 4, remove_orig: bool = True
+    path: Path, preset: int = 9, threads: int = 4, remove_orig: bool = True
 ) -> tuple[Path, bool, str, int, int]:
     try:
-        with open(filepath, "rb") as f:
+        with open(path, "rb") as f:
             data = f.read()
         original_size = len(data)
         compressed = lzma_mt.compress(data, preset=preset, threads=threads)
         len(compressed)
-        output_path = filepath.parent / (filepath.name + ".xz")
+        output_path = path.parent / (path.name + ".xz")
         with open(output_path, "wb") as f:
             f.write(compressed)
         space_freed = 0
         if remove_orig:
-            filepath.unlink()
+            path.unlink()
             space_freed = original_size
         return (
-            filepath,
+            path,
             True,
             f"Compressed to {output_path.name}",
             original_size,
             space_freed,
         )
     except Exception as e:
-        return filepath, False, f"Error: {e!s}", 0, 0
+        return path, False, f"Error: {e!s}", 0, 0
 
 
 def decompress_file(
-    filepath: Path, remove_orig: bool = True
+    path: Path, remove_orig: bool = True
 ) -> tuple[Path, bool, str, int, int]:
     try:
-        if filepath.suffix.lower() != ".xz":
-            return filepath, False, "Error: Not an .xz file", 0, 0
-        with open(filepath, "rb") as f:
+        if path.suffix.lower() != ".xz":
+            return path, False, "Error: Not an .xz file", 0, 0
+        with open(path, "rb") as f:
             data = f.read()
         compressed_size = len(data)
         decompressed = lzma_mt.decompress(data)
-        output_path = filepath.parent / filepath.stem
+        output_path = path.parent / path.stem
         with open(output_path, "wb") as f:
             f.write(decompressed)
         space_freed = 0
         if remove_orig:
-            filepath.unlink()
+            path.unlink()
             space_freed = compressed_size
         return (
-            filepath,
+            path,
             True,
             f"Decompressed to {output_path.name}",
             compressed_size,
             space_freed,
         )
     except Exception as e:
-        return filepath, False, f"Error: {e!s}", 0, 0
+        return path, False, f"Error: {e!s}", 0, 0
 
 
 def format_bytes(bytes_val: int) -> str:
@@ -184,19 +184,19 @@ def process_files(
         action = "compress" if compress else "decompress"
         print(f"No files found to {action}")
         return
-    for filepath in get_files_to_process(root_dir, compress):
+    for path in get_files_to_process(root_dir, compress):
         processed += 1
         pct = processed / total_files * 40
         if compress:
-            filepath, success, message, orig_size, space_freed = compress_file(
-                filepath, preset, threads, remove_orig
+            path, success, message, orig_size, space_freed = compress_file(
+                path, preset, threads, remove_orig
             )
         else:
-            filepath, success, message, orig_size, space_freed = decompress_file(
-                filepath, remove_orig
+            path, success, message, orig_size, space_freed = decompress_file(
+                path, remove_orig
             )
         status = "✓" if success else "✗"
-        rel_path = filepath.relative_to(root_dir)
+        rel_path = path.relative_to(root_dir)
         print(f"[{pct:5.1f}%] {processed}/{total_files} {status} {rel_path}: {message}")
         if success:
             total_success += 1

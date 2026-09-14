@@ -10,9 +10,9 @@ from pathlib import Path
 
 
 class Module:
-    def __init__(self, name: str, filepath: Path):
+    def __init__(self, name: str, path: Path):
         self.name = name
-        self.filepath = filepath
+        self.path = path
         self.imports = []
         self.functions = []
         self.classes = []
@@ -22,8 +22,8 @@ class Module:
 
 
 def parse_module(module: Module):
-    source = module.filepath.read_text(encoding="utf-8")
-    tree = ast.parse(source, filename=str(module.filepath))
+    source = module.path.read_text(encoding="utf-8")
+    tree = ast.parse(source, filename=str(module.path))
     for node in tree.body:
         if isinstance(node, ast.Assign) and any(
             isinstance(t, ast.Name) and t.id == "__all__" for t in node.targets

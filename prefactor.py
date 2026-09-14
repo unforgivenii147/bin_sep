@@ -37,9 +37,9 @@ def find_py_files(root: Path, exclude: Path | None = None) -> list[Path]:
 
 
 def module_fullname_for_path(
-    root: Path, file_path: Path, package_mode: bool, package_name: str | None
+    root: Path, path: Path, package_mode: bool, package_name: str | None
 ) -> str:
-    rel = file_path.relative_to(root)
+    rel = path.relative_to(root)
     parts = list(rel.with_suffix("").parts)
     if parts and parts[-1] == "__init__":
         parts = parts[:-1]
@@ -72,13 +72,13 @@ def resolve_relative_import(
 
 
 def analyze_file(args) -> ModuleInfo:
-    file_path, root, package_mode, package_name, full_map = args
-    src = file_path.read_text(encoding="utf8")
+    path, root, package_mode, package_name, full_map = args
+    src = path.read_text(encoding="utf8")
     try:
         tree = ast.parse(src)
     except SyntaxError:
-        return ModuleInfo(path=file_path, fullname="", source=src, deps=set())
-    fullname = module_fullname_for_path(root, file_path, package_mode, package_name)
+        return ModuleInfo(path=path, fullname="", source=src, deps=set())
+    fullname = module_fullname_for_path(root, path, package_mode, package_name)
     deps: set[str] = set()
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
@@ -114,7 +114,7 @@ def analyze_file(args) -> ModuleInfo:
                     or d.startswith(candidate + ".")
                 ):
                     normalized.add(candidate)
-    return ModuleInfo(path=file_path, fullname=fullname, source=src, deps=normalized)
+    return ModuleInfo(path=path, fullname=fullname, source=src, deps=normalized)
 
 
 def topological_sort(

@@ -59,28 +59,28 @@ def transform_code(code: str) -> tuple[str, bool]:
 
 
 def process_file(args: tuple[Path, bool]) -> dict[str, Any]:
-    file_path, apply_changes = args
-    result = {"path": str(file_path), "changed": False, "diff": "", "error": None}
+    path, apply_changes = args
+    result = {"path": str(path), "changed": False, "diff": "", "error": None}
     try:
         try:
-            content = file_path.read_text(encoding="utf-8")
+            content = path.read_text(encoding="utf-8")
         except UnicodeDecodeError:
-            content = file_path.read_text(encoding="latin-1")
+            content = path.read_text(encoding="latin-1")
         new_content, changed = transform_code(content)
         if changed:
             result["changed"] = True
             diff = difflib.unified_diff(
                 content.splitlines(keepends=True),
                 new_content.splitlines(keepends=True),
-                fromfile=f"a/{file_path}",
-                tofile=f"b/{file_path}",
+                fromfile=f"a/{path}",
+                tofile=f"b/{path}",
             )
             result["diff"] = "".join(diff)
             if apply_changes:
                 try:
-                    file_path.write_text(new_content, encoding="utf-8")
+                    path.write_text(new_content, encoding="utf-8")
                 except UnicodeEncodeError:
-                    file_path.write_text(new_content, encoding="latin-1")
+                    path.write_text(new_content, encoding="latin-1")
     except Exception as e:
         result["error"] = str(e)
     return result

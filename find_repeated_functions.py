@@ -29,16 +29,16 @@ def analyze_files():
                 dirs.remove(".git")
             for file in files:
                 if file.endswith(".py"):
-                    file_path = Path(root) / file
+                    path = Path(root) / file
                     try:
-                        content = file_path.read_text(encoding="utf-8")
+                        content = path.read_text(encoding="utf-8")
                         tree = ast.parse(content)
                         for node in tree.body:
                             if isinstance(node, (ast.FunctionDef, ast.ClassDef)):
                                 source = get_source(node, content)
                                 norm = normalize_source(source)
                                 key = (type(node).__name__, node.name, norm)
-                                definitions[key].append(str(file_path))
+                                definitions[key].append(str(path))
                                 if key not in source_map:
                                     source_map[key] = source
                             elif isinstance(node, ast.Assign):
@@ -47,7 +47,7 @@ def analyze_files():
                                         source = get_source(node, content)
                                         norm = normalize_source(source)
                                         key = ("Constant", target.id, norm)
-                                        definitions[key].append(str(file_path))
+                                        definitions[key].append(str(path))
                                         if key not in source_map:
                                             source_map[key] = source
                     except Exception:

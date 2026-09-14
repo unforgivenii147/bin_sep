@@ -358,11 +358,11 @@ def _remove_docstrings_from_source(
 
 
 def process_single_file(
-    filepath: Path, remove_module_docstring: bool = False, dry_run: bool = False
+    path: Path, remove_module_docstring: bool = False, dry_run: bool = False
 ) -> FileResult:
     """Process a single Python file, removing comments and docstrings."""
     try:
-        with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
+        with open(path, "r", encoding="utf-8", errors="ignore") as f:
             original_source = f.read()
         comment_remover = CommentRemover(original_source)
         no_comments = comment_remover.remove_comments()
@@ -373,34 +373,34 @@ def process_single_file(
             ast.parse(processed_source)
         except SyntaxError as e:
             return FileResult(
-                path=str(filepath),
+                path=str(path),
                 is_error=True,
                 error_message=f"Validation error: {e}",
             )
         if processed_source != original_source and (not dry_run):
             try:
                 temp_fd, temp_path = tempfile.mkstemp(
-                    dir=filepath.parent, prefix=".tmp.", suffix=".py"
+                    dir=path.parent, prefix=".tmp.", suffix=".py"
                 )
                 try:
                     with open(temp_fd, "w", encoding="utf-8") as f:
                         f.write(processed_source)
-                    shutil.move(temp_path, filepath)
+                    shutil.move(temp_path, path)
                 except Exception:
                     if Path(temp_path).exists():
                         Path(temp_path).unlink()
                     raise
             except Exception as e:
                 return FileResult(
-                    path=str(filepath), is_error=True, error_message=f"Write error: {e}"
+                    path=str(path), is_error=True, error_message=f"Write error: {e}"
                 )
         return FileResult(
-            path=str(filepath),
+            path=str(path),
             comments_removed=comment_remover.comments_removed,
             docstrings_removed=docstrings_removed,
         )
     except Exception as e:
-        return FileResult(path=str(filepath), is_error=True, error_message=str(e))
+        return FileResult(path=str(path), is_error=True, error_message=str(e))
 
 
 def process_wheel_file(
@@ -431,10 +431,10 @@ def process_wheel_file(
             if any_changed and (not dry_run):
                 temp_wheel = temp_path / f"{wheel_name}.tmp"
                 with zipfile.ZipFile(temp_wheel, "w", zipfile.ZIP_DEFLATED) as whl:
-                    for file_path in temp_path.rglob("*"):
-                        if file_path.is_file():
-                            relative = file_path.relative_to(temp_path)
-                            whl.write(file_path, arcname=str(relative))
+                    for path in temp_path.rglob("*"):
+                        if path.is_file():
+                            relative = path.relative_to(temp_path)
+                            whl.write(path, arcname=str(relative))
                 shutil.move(str(temp_wheel), str(wheel_path))
         except Exception as e:
             results.append(
@@ -449,8 +449,8 @@ def process_wheel_file(
 
 def _worker_process_file(args: tuple[Path, bool, bool]) -> FileResult:
     """Worker entry point for processing a single file in a subprocess."""
-    filepath, remove_module_docstring, dry_run = args
-    return process_single_file(filepath, remove_module_docstring, dry_run)
+    path, remove_module_docstring, dry_run = args
+    return process_single_file(path, remove_module_docstring, dry_run)
 
 
 def discover_files(start_path: str) -> tuple[list[Path], list[Path]]:
@@ -471,11 +471,11 @@ def discover_files(start_path: str) -> tuple[list[Path], list[Path]]:
         dirs[:] = [d for d in dirs if d not in SKIP_DIRS]
         root_path = Path(root)
         for filename in files:
-            filepath = root_path / filename
-            if filepath.suffix == ".py":
-                python_files.append(filepath)
-            elif filepath.suffix == ".whl":
-                wheel_files.append(filepath)
+            path = root_path / filename
+            if path.suffix == ".py":
+                python_files.append(path)
+            elif path.suffix == ".whl":
+                wheel_files.append(path)
     return (python_files, wheel_files)
 
 
@@ -574,8 +574,7 @@ def main() -> int:
 
     if python_files:
         tasks: list[tuple[Path, bool, bool]] = [
-            (filepath, args.remove_module_docstring, args.dry_run)
-            for filepath in python_files
+            (path, args.remove_module_docstring, args.dry_run) for path in python_files
         ]
         with Pool(processes=POOL_SIZE) as pool:
             async_results = [

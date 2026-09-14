@@ -39,28 +39,28 @@ def folderize_files(root: Path = Path.cwd()) -> None:
         return
     print(f"Found {len(files_to_move)} files to organize.")
     renamed_count = 0
-    for file_path in files_to_move:
-        original_name = file_path.name
+    for path in files_to_move:
+        original_name = path.name
         folder_name = get_target_folder_name(original_name)
         target_dir = root / folder_name
         target_dir.mkdir(exist_ok=True)
         target_path = target_dir / original_name
         counter = 1
         while target_path.exists():
-            stem = file_path.stem
-            suffix = file_path.suffix
+            stem = path.stem
+            suffix = path.suffix
             new_name = f"{stem}_{counter}{suffix}"
             target_path = target_dir / new_name
             counter += 1
-        if target_path != file_path:
-            shutil.move(str(file_path), str(target_path))
+        if target_path != path:
+            shutil.move(str(path), str(target_path))
             if counter > 1:
                 renamed_count += 1
                 print(
                     f"Moved and renamed: {original_name} -> {target_path.name} (duplicate avoided)"
                 )
             else:
-                print(f"Moved: {file_path} -> {target_path}")
+                print(f"Moved: {path} -> {target_path}")
     print("\nCleaning up empty directories...")
     cleanup_empty_dirs(root)
     print("\n✓ Organization complete!")

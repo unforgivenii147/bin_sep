@@ -40,22 +40,22 @@ class FileStats:
 class FileAnalyzer:
     """Analyze a Python file to determine whether its filename is meaningful."""
 
-    filepath: Path
+    path: Path
     tree: ast.Module | None
     content: str
 
-    def __init__(self, filepath: Path) -> None:
-        """Parse *filepath* and read its contents for later inspection."""
-        self.filepath = filepath
+    def __init__(self, path: Path) -> None:
+        """Parse *path* and read its contents for later inspection."""
+        self.path = path
         self.tree = None
         self.content = ""
         try:
-            self.content = filepath.read_text(encoding="utf-8", errors="ignore")
+            self.content = path.read_text(encoding="utf-8", errors="ignore")
             self.tree = ast.parse(self.content)
         except SyntaxError:
             pass
         except Exception as e:
-            raise RuntimeError(f"Failed to read {filepath}: {e}") from e
+            raise RuntimeError(f"Failed to read {path}: {e}") from e
 
     def get_module_docstring(self) -> str | None:
         """Return the module-level docstring, if any."""
@@ -88,7 +88,7 @@ class FileAnalyzer:
 
     def is_meaningful_name(self) -> bool:
         """Return True when the filename stem looks descriptive enough."""
-        name = self.filepath.stem
+        name = self.path.stem
         if len(name) < 3 or name in {"main", "run", "test", "script", "app"}:
             return False
         return not re.match(r"^[a-z0-9]{1,2}$", name)
@@ -128,16 +128,16 @@ def collect_py_files(paths: list[Path]) -> Generator[Path, None, None]:
             yield from path.rglob("*.py")
 
 
-def analyze_file(filepath: Path) -> FileStats:
+def analyze_file(path: Path) -> FileStats:
     """Analyze a single file and return its :class:`FileStats` record."""
     stats = FileStats(
-        path=filepath,
-        current_name=filepath.stem,
+        path=path,
+        current_name=path.stem,
         suggestion=None,
         has_meaning=False,
     )
     try:
-        analyzer = FileAnalyzer(filepath)
+        analyzer = FileAnalyzer(path)
         stats.has_meaning = analyzer.is_meaningful_name()
         if not stats.has_meaning:
             stats.suggestion = analyzer.suggest_name()
@@ -146,15 +146,15 @@ def analyze_file(filepath: Path) -> FileStats:
     return stats
 
 
-def rename_file(filepath: Path, new_name: str) -> tuple[bool, str | None]:
-    """Rename *filepath* to ``new_name.py`` in the same directory."""
+def rename_file(path: Path, new_name: str) -> tuple[bool, str | None]:
+    """Rename *path* to ``new_name.py`` in the same directory."""
     try:
-        new_path = filepath.parent / f"{new_name}.py"
-        if new_path == filepath:
+        new_path = path.parent / f"{new_name}.py"
+        if new_path == path:
             return False, "New name is identical to current"
         if new_path.exists():
             return False, f"Target already exists: {new_path.name}"
-        filepath.rename(new_path)
+        path.rename(new_path)
         return True, None
     except Exception as e:
         return False, str(e)
@@ -169,16 +169,15 @@ def process_files(paths: list[Path], apply: bool = False) -> list[FileStats]:
 
     with Pool(processes=MAX_WORKERS) as pool:
         async_results = [
-            (pool.apply_async(analyze_file, (filepath,)), filepath)
-            for filepath in file_list
+            (pool.apply_async(analyze_file, (path,)), path) for path in file_list
         ]
-        for async_result, filepath in async_results:
+        for async_result, path in async_results:
             try:
                 stats = async_result.get()
             except Exception as e:
                 stats = FileStats(
-                    path=filepath,
-                    current_name=filepath.stem,
+                    path=path,
+                    current_name=path.stem,
                     suggestion=None,
                     has_meaning=False,
                     error=str(e),

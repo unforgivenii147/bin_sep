@@ -37,54 +37,54 @@ TAR_EXTENSIONS = [
 ]
 
 
-def extract_file(file_path):
-    print(f"Extracting: {file_path}")
+def extract_file(path):
+    print(f"Extracting: {path}")
     try:
-        if file_path.suffix in SUPPORTED_EXTENSIONS:
-            if file_path.suffix == ".gz":
+        if path.suffix in SUPPORTED_EXTENSIONS:
+            if path.suffix == ".gz":
                 with (
-                    gzip.open(file_path, "rb") as f_in,
-                    open(file_path.with_suffix(""), "wb") as f_out,
+                    gzip.open(path, "rb") as f_in,
+                    open(path.with_suffix(""), "wb") as f_out,
                 ):
                     f_out.write(f_in.read())
-            elif file_path.suffix == ".xz":
+            elif path.suffix == ".xz":
                 with (
-                    lzma.open(file_path, "rb") as f_in,
-                    open(file_path.with_suffix(""), "wb") as f_out,
+                    lzma.open(path, "rb") as f_in,
+                    open(path.with_suffix(""), "wb") as f_out,
                 ):
                     f_out.write(f_in.read())
-            elif file_path.suffix == ".bz2":
+            elif path.suffix == ".bz2":
                 with (
-                    bz2.open(file_path, "rb") as f_in,
-                    open(file_path.with_suffix(""), "wb") as f_out,
+                    bz2.open(path, "rb") as f_in,
+                    open(path.with_suffix(""), "wb") as f_out,
                 ):
                     f_out.write(f_in.read())
-            elif file_path.suffix == ".7z":
-                with py7zr.SevenZipFile(file_path, mode="r") as archive:
-                    archive.extractall(path=file_path.parent)
-            elif file_path.suffix == ".lz4":
-                with lz4.frame.open(file_path, mode="rb") as f_in:
-                    with open(file_path.with_suffix(""), "wb") as f_out:
+            elif path.suffix == ".7z":
+                with py7zr.SevenZipFile(path, mode="r") as archive:
+                    archive.extractall(path=path.parent)
+            elif path.suffix == ".lz4":
+                with lz4.frame.open(path, mode="rb") as f_in:
+                    with open(path.with_suffix(""), "wb") as f_out:
                         f_out.write(f_in.read())
-            elif file_path.suffix == ".br":
-                with open(file_path, "rb") as f_in:
+            elif path.suffix == ".br":
+                with open(path, "rb") as f_in:
                     data = f_in.read()
                     decompressed_data = brotli.decompress(data)
-                    with open(file_path.with_suffix(""), "wb") as f_out:
+                    with open(path.with_suffix(""), "wb") as f_out:
                         f_out.write(decompressed_data)
-            elif file_path.suffix == ".zst":
-                with open(file_path, "rb") as f_in:
+            elif path.suffix == ".zst":
+                with open(path, "rb") as f_in:
                     dctx = zstd.ZstdDecompressor()
-                    with open(file_path.with_suffix(""), "wb") as f_out:
+                    with open(path.with_suffix(""), "wb") as f_out:
                         dctx.copy_stream(f_in, f_out)
-            elif file_path.suffix == ".zip" or file_path.suffix == ".whl":
-                with zipfile.ZipFile(file_path, "r") as zip_ref:
-                    zip_ref.extractall(file_path.parent)
-        elif file_path.suffix in TAR_EXTENSIONS:
-            with tarfile.open(file_path, "r:*") as tar_ref:
-                tar_ref.extractall(path=file_path.parent)
+            elif path.suffix == ".zip" or path.suffix == ".whl":
+                with zipfile.ZipFile(path, "r") as zip_ref:
+                    zip_ref.extractall(path.parent)
+        elif path.suffix in TAR_EXTENSIONS:
+            with tarfile.open(path, "r:*") as tar_ref:
+                tar_ref.extractall(path=path.parent)
     except Exception as e:
-        print(f"Failed to extract {file_path}: {e}")
+        print(f"Failed to extract {path}: {e}")
 
 
 def main():

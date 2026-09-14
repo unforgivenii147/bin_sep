@@ -735,11 +735,11 @@ class DirbScanner:
         safe_name = re.sub(r"[^a-zA-Z0-9._-]", "_", parsed.path.strip("/"))
         if not safe_name:
             safe_name = "root"
-        filepath = self.config.response_dir / f"{result.status_code}_{safe_name}.html"
+        path = self.config.response_dir / f"{result.status_code}_{safe_name}.html"
         try:
             async with session.get(result.url) as resp:
                 body = await resp.read()
-                filepath.write_bytes(body)
+                path.write_bytes(body)
         except Exception as e:
             logger.warning(f"Could not save response for {result.url}: {e}")
 

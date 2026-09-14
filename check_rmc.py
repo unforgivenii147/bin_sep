@@ -57,10 +57,10 @@ def is_module_docstring(tree: ast.AST, node: ast.Expr) -> bool:
     return bool(tree.body and tree.body[0] is node)
 
 
-def parse_file_for_docstrings(file_path: Path) -> list[tuple[int, str, bool]]:
+def parse_file_for_docstrings(path: Path) -> list[tuple[int, str, bool]]:
     docstring_lines = []
     try:
-        with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+        with open(path, "r", encoding="utf-8", errors="ignore") as f:
             content = f.read()
         try:
             tree = ast.parse(content)
@@ -81,13 +81,13 @@ def parse_file_for_docstrings(file_path: Path) -> list[tuple[int, str, bool]]:
         return docstring_lines
 
 
-def find_comments_and_docstrings(file_path: Path) -> list[tuple[int, str, bool]]:
+def find_comments_and_docstrings(path: Path) -> list[tuple[int, str, bool]]:
     findings = []
     try:
-        with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+        with open(path, "r", encoding="utf-8", errors="ignore") as f:
             lines = f.readlines()
         docstring_line_nums = set()
-        docstring_nodes = parse_file_for_docstrings(file_path)
+        docstring_nodes = parse_file_for_docstrings(path)
         for line_num, _, _ in docstring_nodes:
             docstring_line_nums.add(line_num)
         for idx, line in enumerate(lines):
@@ -109,21 +109,21 @@ def find_comments_and_docstrings(file_path: Path) -> list[tuple[int, str, bool]]
     return findings
 
 
-def process_file(file_path: Path) -> tuple[Path, list[tuple[int, str, bool]]]:
-    findings = find_comments_and_docstrings(file_path)
-    return (file_path, findings)
+def process_file(path: Path) -> tuple[Path, list[tuple[int, str, bool]]]:
+    findings = find_comments_and_docstrings(path)
+    return (path, findings)
 
 
 def print_finding(
-    file_path: Path,
+    path: Path,
     line_num: int,
     line_content: str,
     all_lines: list[str],
     is_comment: bool = True,
 ):
-    file_path = Path(file_path).resolve()
+    path = Path(path).resolve()
     finding_type = "Comment" if is_comment else "Docstring"
-    print(f"\n{file_path.relative_to(Path.cwd().resolve())}:{line_num + 1}")
+    print(f"\n{path.relative_to(Path.cwd().resolve())}:{line_num + 1}")
     start = max(0, line_num - 2)
     end = min(len(all_lines), line_num + 3)
     for i in range(start, end):
@@ -133,7 +133,7 @@ def print_finding(
             print(f"{Colors.WHITE}{i + 1:4d} | {all_lines[i].rstrip()}{Colors.RESET}")
 
 
-def remove_finding(file_path: Path, line_num: int, all_lines: list[str]) -> list[str]:
+def remove_finding(path: Path, line_num: int, all_lines: list[str]) -> list[str]:
     if line_num < len(all_lines):
         all_lines.pop(line_num)
     return all_lines
@@ -176,33 +176,33 @@ def main():
         results = pool.map(process_file, py_files)
     all_findings = {}
     total_findings = 0
-    for file_path, findings in results:
+    for path, findings in results:
         if findings:
-            all_findings[file_path] = findings
+            all_findings[path] = findings
             total_findings += len(findings)
     if not all_findings:
         print("No comments or docstrings found.")
         return
     print(f"Found {total_findings} comments/docstrings:\n")
     print("=" * 40)
-    for file_path in sorted(all_findings.keys()):
-        findings = all_findings[file_path]
+    for path in sorted(all_findings.keys()):
+        findings = all_findings[path]
         try:
-            with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+            with open(path, "r", encoding="utf-8", errors="ignore") as f:
                 file_lines = f.readlines()
             sorted_findings = sorted(findings, key=lambda x: x[0], reverse=True)
             for line_num, line_content, is_docstring in sorted_findings:
                 print_finding(
-                    file_path, line_num, line_content, file_lines, not is_docstring
+                    path, line_num, line_content, file_lines, not is_docstring
                 )
                 if args.auto_remove:
-                    file_lines = remove_finding(file_path, line_num, file_lines)
+                    file_lines = remove_finding(path, line_num, file_lines)
             if args.auto_remove:
-                with open(file_path, "w", encoding="utf-8") as f:
+                with open(path, "w", encoding="utf-8") as f:
                     f.writelines(file_lines)
                 print(f"{Colors.YELLOW}[REMOVED]{Colors.RESET}", end=" ")
         except Exception as e:
-            print(f"Error processing {file_path}: {e}", file=sys.stderr)
+            print(f"Error processing {path}: {e}", file=sys.stderr)
     print("\n" + "=" * 40)
     if args.auto_remove:
         print(

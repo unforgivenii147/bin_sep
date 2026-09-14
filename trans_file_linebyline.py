@@ -34,16 +34,16 @@ def translate_line(line: str) -> str:
         return line
 
 
-def process_file(filepath: Path, replace_original: bool = False) -> None:
-    if not filepath.exists():
-        logger.error("File not found: %s", filepath)
+def process_file(path: Path, replace_original: bool = False) -> None:
+    if not path.exists():
+        logger.error("File not found: %s", path)
         return
-    backup_path = filepath.with_suffix(filepath.suffix + ".backup")
-    shutil.copyfile(filepath, backup_path)
+    backup_path = path.with_suffix(path.suffix + ".backup")
+    shutil.copyfile(path, backup_path)
     try:
-        lines = filepath.read_text(encoding="utf-8").splitlines(keepends=True)
+        lines = path.read_text(encoding="utf-8").splitlines(keepends=True)
         with tempfile.NamedTemporaryFile(
-            mode="w", encoding="utf-8", delete=False, dir=filepath.parent
+            mode="w", encoding="utf-8", delete=False, dir=path.parent
         ) as tmp_file:
             for i, line in enumerate(lines, 1):
                 stripped = line.rstrip("\n")
@@ -56,11 +56,11 @@ def process_file(filepath: Path, replace_original: bool = False) -> None:
                     logger.info("Line %d translated.", i)
                 else:
                     tmp_file.write(line)
-        shutil.move(tmp_file.name, filepath)
-        logger.info("✓ File updated successfully: %s", filepath.name)
+        shutil.move(tmp_file.name, path)
+        logger.info("✓ File updated successfully: %s", path.name)
         logger.info("✓ Backup saved as: %s", backup_path.name)
     except Exception as e:
-        logger.error("Error processing file %s: %s", filepath, e)
+        logger.error("Error processing file %s: %s", path, e)
         if "tmp_file" in locals() and Path(tmp_file.name).exists():
             Path(tmp_file.name).unlink()
 
@@ -70,10 +70,10 @@ def main() -> None:
         print("Usage: python trans_file_linebyline_optimized.py <filename> [--replace]")
         print("  --replace: Replace original lines with translations")
         sys.exit(1)
-    filepath = Path(sys.argv[1])
+    path = Path(sys.argv[1])
     replace_original = "--replace" in sys.argv
-    logger.info("Processing file: %s", filepath)
-    process_file(filepath, replace_original)
+    logger.info("Processing file: %s", path)
+    process_file(path, replace_original)
 
 
 if __name__ == "__main__":

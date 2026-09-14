@@ -115,17 +115,17 @@ def strip_comments_html(content: bytes) -> tuple[bytes, int]:
     return bytes(result), total_comments
 
 
-def process_file(filepath: Path) -> dict[str, Any]:
+def process_file(path: Path) -> dict[str, Any]:
     try:
-        content = filepath.read_bytes()
+        content = path.read_bytes()
     except Exception as e:
         return {
-            "file": str(filepath),
+            "file": str(path),
             "error": str(e),
             "comments_removed": 0,
             "changed": False,
         }
-    ext = filepath.suffix.lower()
+    ext = path.suffix.lower()
     try:
         if ext == ".html":
             new_content, count = strip_comments_html(content)
@@ -137,14 +137,14 @@ def process_file(filepath: Path) -> dict[str, Any]:
             new_content, count = strip_comments_standard(content, TS_PARSER)
         else:
             return {
-                "file": str(filepath),
+                "file": str(path),
                 "error": "Unsupported extension",
                 "comments_removed": 0,
                 "changed": False,
             }
     except Exception as e:
         return {
-            "file": str(filepath),
+            "file": str(path),
             "error": f"Parsing error: {e}",
             "comments_removed": 0,
             "changed": False,
@@ -152,16 +152,16 @@ def process_file(filepath: Path) -> dict[str, Any]:
     changed = new_content != content
     if changed:
         try:
-            filepath.write_bytes(new_content)
+            path.write_bytes(new_content)
         except Exception as e:
             return {
-                "file": str(filepath),
+                "file": str(path),
                 "error": f"Write error: {e}",
                 "comments_removed": count,
                 "changed": False,
             }
     return {
-        "file": str(filepath),
+        "file": str(path),
         "comments_removed": count,
         "changed": changed,
         "error": None,

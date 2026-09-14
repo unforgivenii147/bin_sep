@@ -12,13 +12,13 @@ def main() -> None:
     if len(sys.argv) < 2:
         print("Usage: python mdview.py <file.md>")
         sys.exit(1)
-    file_path = Path(sys.argv[1])
-    if not file_path.exists():
-        print(f"Error: {file_path} does not exist.")
+    path = Path(sys.argv[1])
+    if not path.exists():
+        print(f"Error: {path} does not exist.")
         sys.exit(1)
     console = Console()
     try:
-        content = file_path.read_text(encoding="utf-8")
+        content = path.read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError) as e:
         print(f"Error reading file: {e}")
         sys.exit(1)

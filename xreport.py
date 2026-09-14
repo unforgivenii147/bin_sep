@@ -74,43 +74,43 @@ ARCHIVE_TYPES = {
 SUPPORTED_EXTENSIONS = tuple(ARCHIVE_TYPES.keys())
 
 
-def get_archive_type_info(filepath):
-    name = filepath.name.lower()
+def get_archive_type_info(path):
+    name = path.name.lower()
     for ext in sorted(SUPPORTED_EXTENSIONS, key=len, reverse=True):
         if name.endswith(ext):
             return ext, ARCHIVE_TYPES.get(ext)
     return None, None
 
 
-def analyze_gz_uncompressed_size(filepath):
+def analyze_gz_uncompressed_size(path):
     try:
-        with open(filepath, "rb") as f:
+        with open(path, "rb") as f:
             f.seek(-4, os.SEEK_END)
             return struct.unpack("<I", f.read(4))[0]
     except Exception:
-        return int(filepath.stat().st_size * 2.8)
+        return int(path.stat().st_size * 2.8)
 
 
-def analyze_zstd_size(filepath):
+def analyze_zstd_size(path):
     if HAS_ZSTD:
         try:
-            with open(filepath, "rb") as f:
+            with open(path, "rb") as f:
                 params = zstd.get_frame_parameters(f.read(1024))
                 if params.content_size > 0:
                     return params.content_size
         except Exception:
             pass
-    return int(filepath.stat().st_size * 3.2)
+    return int(path.stat().st_size * 3.2)
 
 
-def analyze_archive(filepath):
-    filepath = Path(filepath)
-    ext, archive_type = get_archive_type_info(filepath)
-    comp_size = filepath.stat().st_size
+def analyze_archive(path):
+    path = Path(path)
+    ext, archive_type = get_archive_type_info(path)
+    comp_size = path.stat().st_size
     ext_size, file_count, integrity_ok, error_msg = 0, 0, None, ""
     try:
         if ext in (".zip", ".whl"):
-            with zipfile.ZipFile(filepath, "r") as zf:
+            with zipfile.ZipFile(path, "r") as zf:
                 infos = zf.infolist()
                 ext_size = sum(i.file_size for i in infos)
                 file_count = len(infos)
@@ -126,7 +126,7 @@ def analyze_archive(filepath):
             elif ext in (".tar.xz", ".txz"):
                 mode = "r:xz"
             try:
-                with tarfile.open(filepath, mode) as tf:
+                with tarfile.open(path, mode) as tf:
                     members = tf.getmembers()
                     ext_size = sum(m.size for m in members)
                     file_count = len(members)
@@ -135,7 +135,7 @@ def analyze_archive(filepath):
                 if HAS_ZSTD and ext in (".tar.zst", ".tzst"):
                     dctx = zstd.ZstdDecompressor()
                     with (
-                        open(filepath, "rb") as f,
+                        open(path, "rb") as f,
                         dctx.stream_reader(f) as sr,
                         tarfile.open(fileobj=sr, mode="r|*") as tf,
                     ):
@@ -150,7 +150,7 @@ def analyze_archive(filepath):
                     )
         elif ext == ".7z":
             if HAS_PY7ZR:
-                with py7zr.SevenZipFile(filepath, mode="r") as sz:
+                with py7zr.SevenZipFile(path, mode="r") as sz:
                     ext_size = sz.archive_info().uncompressed
                     file_count = len(sz.getnames())
                     integrity_ok = True
@@ -158,12 +158,12 @@ def analyze_archive(filepath):
                 ext_size, integrity_ok = int(comp_size * 4.1), True
         elif ext == ".gz":
             ext_size, file_count, integrity_ok = (
-                analyze_gz_uncompressed_size(filepath),
+                analyze_gz_uncompressed_size(path),
                 1,
                 True,
             )
         elif ext == ".zst":
-            ext_size, file_count, integrity_ok = analyze_zstd_size(filepath), 1, True
+            ext_size, file_count, integrity_ok = analyze_zstd_size(path), 1, True
         elif ext in (
             ".bz2",
             ".xz",
@@ -182,8 +182,8 @@ def analyze_archive(filepath):
     except Exception as e:
         integrity_ok, error_msg, ext_size = False, str(e), comp_size
     return {
-        "path": str(filepath),
-        "filename": filepath.name,
+        "path": str(path),
+        "filename": path.name,
         "ext": ext or "unknown",
         "archive_type": archive_type or "Unknown Archive",
         "compressed_size": comp_size,
@@ -195,33 +195,33 @@ def analyze_archive(filepath):
     }
 
 
-def extract_archive(filepath, out_dir):
-    filepath = Path(filepath)
-    ext, _ = get_archive_type_info(filepath)
-    dest = Path(out_dir) / f"{filepath.name}_extracted"
+def extract_archive(path, out_dir):
+    path = Path(path)
+    ext, _ = get_archive_type_info(path)
+    dest = Path(out_dir) / f"{path.name}_extracted"
     dest.mkdir(parents=True, exist_ok=True)
     try:
         if ext in (".zip", ".whl"):
-            with zipfile.ZipFile(filepath, "r") as zf:
+            with zipfile.ZipFile(path, "r") as zf:
                 zf.extractall(dest)
             return True, str(dest)
         elif ext and (ext.startswith(".tar") or ext in (".tgz", ".txz", ".tbz2")):
-            with tarfile.open(filepath, "r:*") as tf:
+            with tarfile.open(path, "r:*") as tf:
                 tf.extractall(dest)
             return True, str(dest)
         elif ext == ".7z" and HAS_PY7ZR:
-            with py7zr.SevenZipFile(filepath, mode="r") as sz:
+            with py7zr.SevenZipFile(path, mode="r") as sz:
                 sz.extractall(path=dest)
             return True, str(dest)
         elif ext == ".gz":
-            out_file = dest / filepath.stem
-            with gzip.open(filepath, "rb") as f_in, open(out_file, "wb") as f_out:
+            out_file = dest / path.stem
+            with gzip.open(path, "rb") as f_in, open(out_file, "wb") as f_out:
                 while chunk := f_in.read(65536):
                     f_out.write(chunk)
             return True, str(dest)
         else:
-            dummy = dest / f"{filepath.name}.decompressed"
-            dummy.write_bytes(filepath.read_bytes())
+            dummy = dest / f"{path.name}.decompressed"
+            dummy.write_bytes(path.read_bytes())
             return True, str(dest)
     except Exception as e:
         return False, str(e)

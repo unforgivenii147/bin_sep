@@ -68,9 +68,9 @@ def process_path(path: Path) -> tuple[str, int]:
             return (str(path), size)
         elif path.is_dir():
             total_size = 0
-            for file_path in walk_directory(path):
-                if file_path.is_file():
-                    total_size += file_path.stat().st_size
+            for path in walk_directory(path):
+                if path.is_file():
+                    total_size += path.stat().st_size
             import shutil
 
             shutil.rmtree(path)

@@ -61,10 +61,10 @@ def collect_package_files(pkg_path, verbose=False):
     files = []
     site_packages = pkg_path.parent
     if pkg_path.is_dir():
-        for file_path in pkg_path.rglob("*"):
-            if file_path.is_file() and not file_path.suffix == ".pyc":
-                rel_path = file_path.relative_to(site_packages)
-                files.append((rel_path, file_path))
+        for path in pkg_path.rglob("*"):
+            if path.is_file() and not path.suffix == ".pyc":
+                rel_path = path.relative_to(site_packages)
+                files.append((rel_path, path))
     elif pkg_path.is_file() and pkg_path.suffix == ".py":
         rel_path = pkg_path.relative_to(site_packages)
         files.append((rel_path, pkg_path))
@@ -72,10 +72,10 @@ def collect_package_files(pkg_path, verbose=False):
     for data_dir in data_dirs:
         data_path = site_packages.parent / data_dir / pkg_path.name
         if data_path.exists():
-            for file_path in data_path.rglob("*"):
-                if file_path.is_file():
-                    rel_path = file_path.relative_to(site_packages.parent)
-                    files.append((rel_path, file_path))
+            for path in data_path.rglob("*"):
+                if path.is_file():
+                    rel_path = path.relative_to(site_packages.parent)
+                    files.append((rel_path, path))
     bin_path = site_packages.parent / "bin"
     if bin_path.exists():
         for script_path in bin_path.glob("*"):

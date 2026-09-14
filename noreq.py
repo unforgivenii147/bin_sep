@@ -239,9 +239,9 @@ def process_tar(path: Path) -> None:
         with tarfile.open(path, "r:*") as tar:
             tar.extractall(temp_dir, filter="data")
         for target_file in TARGET_FILES:
-            for file_path in temp_dir.rglob(target_file):
-                if file_path.is_file():
-                    clean_file(file_path)
+            for path in temp_dir.rglob(target_file):
+                if path.is_file():
+                    clean_file(path)
         with tarfile.open(tmp_tar, "w:gz") as tar:
             tar.add(temp_dir, arcname="")
         shutil.move(str(tmp_tar), str(path))
@@ -262,29 +262,29 @@ def dispatch_archive(path: Path) -> None:
 def find_files_to_process() -> list[Path]:
     files_to_process = []
     current_dir = Path.cwd()
-    for file_path in current_dir.rglob("*"):
-        if not file_path.is_file():
+    for path in current_dir.rglob("*"):
+        if not path.is_file():
             continue
-        file_name = file_path.name
+        file_name = path.name
         file_name_lower = file_name.lower()
         if (
             file_name in TARGET_FILES
             or file_name.endswith(".metadata")
             or file_name_lower.endswith((".zip", ".whl", ".tar.gz", ".tgz", ".tar"))
         ):
-            files_to_process.append(file_path)
+            files_to_process.append(path)
     return files_to_process
 
 
 def main() -> None:
     files_to_process = find_files_to_process()
-    for file_path in files_to_process:
-        file_name = file_path.name
+    for path in files_to_process:
+        file_name = path.name
         file_name_lower = file_name.lower()
         if file_name in TARGET_FILES or file_name.endswith(".metadata"):
-            clean_file(file_path)
+            clean_file(path)
         elif file_name_lower.endswith((".zip", ".whl", ".tar.gz", ".tgz", ".tar")):
-            dispatch_archive(file_path)
+            dispatch_archive(path)
     if removed_lines_accumulator:
         try:
             with LOG_FILE.open("a", encoding="utf-8") as f:

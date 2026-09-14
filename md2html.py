@@ -40,8 +40,8 @@ def convert_latex_format(text: str) -> str:
     )
 
 
-def read_markdown_file(file_path: str) -> str:
-    with Path(file_path).open(encoding="utf-8", errors="ignore") as f:
+def read_markdown_file(path: str) -> str:
+    with Path(path).open(encoding="utf-8", errors="ignore") as f:
         return f.read()
 
 

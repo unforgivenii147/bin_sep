@@ -17,25 +17,25 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def calculate_file_hash(filepath: Path) -> str:
+def calculate_file_hash(path: Path) -> str:
     sha256_hash = hashlib.sha256()
     try:
-        with filepath.open("rb") as f:
+        with path.open("rb") as f:
             for chunk in iter(lambda: f.read(65536), b""):
                 sha256_hash.update(chunk)
         raw_hash = sha256_hash.digest()
         b64_hash = base64.urlsafe_b64encode(raw_hash).decode("ascii").rstrip("=")
         return f"sha256={b64_hash}"
     except Exception:
-        logger.exception("Error hashing %s", filepath)
+        logger.exception("Error hashing %s", path)
         return ""
 
 
-def get_file_size(filepath: Path) -> int:
+def get_file_size(path: Path) -> int:
     try:
-        return filepath.stat().st_size
+        return path.stat().st_size
     except Exception:
-        logger.exception("Error getting size for %s", filepath)
+        logger.exception("Error getting size for %s", path)
         return 0
 
 
@@ -48,10 +48,10 @@ def parse_record_line(line: str) -> tuple[str, str, str]:
     return parts[0], "", ""
 
 
-def should_include_file(filepath: Path) -> bool:
-    name = filepath.name
+def should_include_file(path: Path) -> bool:
+    name = path.name
     return not (
-        filepath.suffix == ".pyc"
+        path.suffix == ".pyc"
         or name.endswith(".pyc")
         or name in ("direct_url.json", "INSTALLER", "RECORD")
     )

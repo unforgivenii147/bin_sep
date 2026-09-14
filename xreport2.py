@@ -104,8 +104,8 @@ ARCHIVE_TYPES = {
 }
 
 
-def get_archive_type_info(filepath):
-    fname = str(filepath).lower()
+def get_archive_type_info(path):
+    fname = str(path).lower()
     for ext in sorted(SUPPORTED_EXTENSIONS, key=len, reverse=True):
         if fname.endswith(ext):
             type_label = ARCHIVE_TYPES.get(ext, f"Archive ({ext})")
@@ -113,51 +113,51 @@ def get_archive_type_info(filepath):
     return None, None
 
 
-def analyze_gz_uncompressed_size(filepath):
+def analyze_gz_uncompressed_size(path):
     try:
-        with open(filepath, "rb") as f:
+        with open(path, "rb") as f:
             f.seek(-4, os.SEEK_END)
             isize = struct.unpack("<I", f.read(4))[0]
             return isize
     except Exception:
-        return int(filepath.stat().st_size * 2.8)
+        return int(path.stat().st_size * 2.8)
 
 
-def analyze_snappy_size(filepath):
+def analyze_snappy_size(path):
     try:
-        with open(filepath, "rb") as f:
+        with open(path, "rb") as f:
             header = f.read(16)
             if len(header) >= 4:
-                return filepath.stat().st_size * 3
+                return path.stat().st_size * 3
     except Exception:
         pass
-    return int(filepath.stat().st_size * 2.5)
+    return int(path.stat().st_size * 2.5)
 
 
-def analyze_zstd_size(filepath):
+def analyze_zstd_size(path):
     if HAS_ZSTD:
         try:
-            with open(filepath, "rb") as f:
+            with open(path, "rb") as f:
                 dctx = zstd.ZstdDecompressor()
                 size = zstd.get_frame_parameters(f.read(1024)).content_size
                 if size and size > 0:
                     return size
         except Exception:
             pass
-    return int(filepath.stat().st_size * 3.2)
+    return int(path.stat().st_size * 3.2)
 
 
-def analyze_archive(filepath):
-    filepath = Path(filepath)
-    ext, archive_type = get_archive_type_info(filepath)
-    comp_size = filepath.stat().st_size
+def analyze_archive(path):
+    path = Path(path)
+    ext, archive_type = get_archive_type_info(path)
+    comp_size = path.stat().st_size
     ext_size = 0
     file_count = 0
     integrity_ok = None
     error_msg = ""
     try:
         if ext in (".zip", ".whl"):
-            with zipfile.ZipFile(filepath, "r") as zf:
+            with zipfile.ZipFile(path, "r") as zf:
                 ext_size = sum(info.file_size for info in zf.infolist())
                 file_count = len(zf.infolist())
                 integrity_ok = zf.testzip() is None
@@ -172,7 +172,7 @@ def analyze_archive(filepath):
             elif ext in (".tar.xz", ".txz"):
                 mode = "r:xz"
             try:
-                with tarfile.open(filepath, mode) as tf:
+                with tarfile.open(path, mode) as tf:
                     members = tf.getmembers()
                     ext_size = sum(m.size for m in members)
                     file_count = len(members)
@@ -181,7 +181,7 @@ def analyze_archive(filepath):
                 if HAS_ZSTD and ext in (".tar.zst", ".tzst"):
                     dctx = zstd.ZstdDecompressor()
                     with (
-                        open(filepath, "rb") as f,
+                        open(path, "rb") as f,
                         dctx.stream_reader(f) as sr,
                         tarfile.open(fileobj=sr, mode="r|*") as tf,
                     ):
@@ -194,7 +194,7 @@ def analyze_archive(filepath):
                     error_msg = str(te)
         elif ext == ".7z":
             if HAS_PY7ZR:
-                with py7zr.SevenZipFile(filepath, mode="r") as sz:
+                with py7zr.SevenZipFile(path, mode="r") as sz:
                     ext_size = sz.archive_info().uncompressed
                     file_count = len(sz.getnames())
                     integrity_ok = True
@@ -202,7 +202,7 @@ def analyze_archive(filepath):
                 ext_size = int(comp_size * 4.1)
                 integrity_ok = True
         elif ext == ".gz":
-            ext_size = analyze_gz_uncompressed_size(filepath)
+            ext_size = analyze_gz_uncompressed_size(path)
             file_count = 1
             integrity_ok = True
         elif ext == ".bz2":
@@ -214,7 +214,7 @@ def analyze_archive(filepath):
             file_count = 1
             integrity_ok = True
         elif ext == ".zst":
-            ext_size = analyze_zstd_size(filepath)
+            ext_size = analyze_zstd_size(path)
             file_count = 1
             integrity_ok = True
         elif ext == ".lz4":
@@ -226,7 +226,7 @@ def analyze_archive(filepath):
             file_count = 1
             integrity_ok = True
         elif ext in (".snappy", ".bz3", ".tar.bz3", ".tar.snappy"):
-            ext_size = analyze_snappy_size(filepath)
+            ext_size = analyze_snappy_size(path)
             file_count = 1
             integrity_ok = True
         else:
@@ -238,8 +238,8 @@ def analyze_archive(filepath):
         error_msg = str(e)
         ext_size = comp_size
     return {
-        "path": str(filepath),
-        "filename": filepath.name,
+        "path": str(path),
+        "filename": path.name,
         "ext": ext or "unknown",
         "archive_type": archive_type or "Unknown Archive",
         "compressed_size": comp_size,
@@ -260,33 +260,33 @@ def _copy_file_buffered(src_path, dst_path, buffer_size=65536):
             dst.write(chunk)
 
 
-def extract_archive(filepath, out_dir):
-    filepath = Path(filepath)
+def extract_archive(path, out_dir):
+    path = Path(path)
     out_dir = Path(out_dir)
-    ext, _ = get_archive_type_info(filepath)
-    dest = out_dir / (filepath.name + "_extracted")
+    ext, _ = get_archive_type_info(path)
+    dest = out_dir / (path.name + "_extracted")
     dest.mkdir(parents=True, exist_ok=True)
     try:
         if ext in (".zip", ".whl"):
-            with zipfile.ZipFile(filepath, "r") as zf:
+            with zipfile.ZipFile(path, "r") as zf:
                 zf.extractall(dest)
             return True, str(dest)
         elif ext and (ext.startswith(".tar") or ext in (".tgz", ".txz", ".tbz2")):
-            with tarfile.open(filepath, "r:*") as tf:
+            with tarfile.open(path, "r:*") as tf:
                 tf.extractall(dest, filter="data")
             return True, str(dest)
         elif ext == ".7z" and HAS_PY7ZR:
-            with py7zr.SevenZipFile(filepath, mode="r") as sz:
+            with py7zr.SevenZipFile(path, mode="r") as sz:
                 sz.extractall(path=str(dest))
             return True, str(dest)
         elif ext == ".gz":
-            out_file = dest / filepath.name[:-3]
-            with gzip.open(filepath, "rb") as f_in, open(out_file, "wb") as f_out:
+            out_file = dest / path.name[:-3]
+            with gzip.open(path, "rb") as f_in, open(out_file, "wb") as f_out:
                 _copy_file_buffered(str(f_in), str(f_out))
             return True, str(dest)
         else:
-            dummy = dest / (filepath.name + ".decompressed")
-            _copy_file_buffered(filepath, dummy)
+            dummy = dest / (path.name + ".decompressed")
+            _copy_file_buffered(path, dummy)
             return True, str(dest)
     except Exception as e:
         return False, str(e)
@@ -298,11 +298,11 @@ def scan_directory(target_dir, auto_extract=False, test_integrity=False, verbose
     if test_integrity:
         print("\033[38;5;82m" + CLI_ART_INTEGRITY + "\033[0m")
     found_archives = []
-    for filepath in target.rglob("*"):
-        if filepath.is_file():
-            ext, _ = get_archive_type_info(filepath)
+    for path in target.rglob("*"):
+        if path.is_file():
+            ext, _ = get_archive_type_info(path)
             if ext:
-                res = analyze_archive(filepath)
+                res = analyze_archive(path)
                 found_archives.append(res)
                 if verbose:
                     status_str = (

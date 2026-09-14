@@ -162,26 +162,26 @@ def validate_python_file(content: str) -> bool:
         return False
 
 
-def process_file(filepath: Path, create_backup: bool = True) -> tuple[Path, bool, str]:
+def process_file(path: Path, create_backup: bool = True) -> tuple[Path, bool, str]:
     try:
-        original_content = filepath.read_text(encoding="utf-8")
+        original_content = path.read_text(encoding="utf-8")
     except Exception as e:
-        return (filepath, False, f"Failed to read: {e}")
+        return (path, False, f"Failed to read: {e}")
     if "re." not in original_content:
-        return (filepath, True, "No re calls found")
+        return (path, True, "No re calls found")
     converted_content = extract_and_convert_strings(original_content)
     if converted_content is None:
-        return (filepath, True, "No changes needed")
+        return (path, True, "No changes needed")
     if not validate_python_file(converted_content):
-        return (filepath, False, "Validation failed - syntax error after conversion")
+        return (path, False, "Validation failed - syntax error after conversion")
     try:
         if create_backup:
-            backup_path = filepath.with_suffix(filepath.suffix + ".backup")
-            shutil.copy2(filepath, backup_path)
-        filepath.write_text(converted_content, encoding="utf-8")
-        return (filepath, True, "✓ Converted and saved")
+            backup_path = path.with_suffix(path.suffix + ".backup")
+            shutil.copy2(path, backup_path)
+        path.write_text(converted_content, encoding="utf-8")
+        return (path, True, "✓ Converted and saved")
     except Exception as e:
-        return (filepath, False, f"Failed to write: {e}")
+        return (path, False, f"Failed to write: {e}")
 
 
 def collect_python_files(inputs: list[Path]) -> list[Path]:
@@ -242,19 +242,19 @@ def main():
                 process_file, [(f, create_backup) for f in python_files]
             )
     else:
-        for i, filepath in enumerate(python_files, 1):
+        for i, path in enumerate(python_files, 1):
             if i % 100 == 0:
                 print(f"Progress: {i}/{total}", flush=True)
-            results.append(process_file(filepath, create_backup))
+            results.append(process_file(path, create_backup))
     successful = sum((1 for _, success, _ in results if success))
     changed = sum((1 for _, success, msg in results if success and "Converted" in msg))
     print("\n" + "=" * 40)
-    for filepath, success, message in results:
+    for path, success, message in results:
         status = "✓" if success else "✗"
         try:
-            rel_path = filepath.relative_to(Path.cwd())
+            rel_path = path.relative_to(Path.cwd())
         except ValueError:
-            rel_path = filepath
+            rel_path = path
         print(f"{status} {rel_path}: {message}")
     print("-" * 40)
     print("\nSummary:")

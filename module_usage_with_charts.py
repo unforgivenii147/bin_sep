@@ -107,11 +107,11 @@ def is_third_party(module_name: str, stdlib_set: set[str]) -> bool:
     return not top_level.startswith("__")
 
 
-def extract_imports(filepath: Path) -> dict[str, list[str]]:
+def extract_imports(path: Path) -> dict[str, list[str]]:
     try:
-        tree = ast.parse(filepath.read_text(encoding="utf-8"))
+        tree = ast.parse(path.read_text(encoding="utf-8"))
     except (SyntaxError, UnicodeDecodeError) as e:
-        print(f"   ⚠️  Skipping {filepath.name}: {e}")
+        print(f"   ⚠️  Skipping {path.name}: {e}")
         return {}
     imports: dict[str, list[str]] = defaultdict(list)
     for node in ast.walk(tree):
@@ -152,11 +152,9 @@ def extract_imports(filepath: Path) -> dict[str, list[str]]:
     return dict(imports)
 
 
-def count_calls(
-    filepath: Path, imports: dict[str, list[str]]
-) -> dict[str, dict[str, int]]:
+def count_calls(path: Path, imports: dict[str, list[str]]) -> dict[str, dict[str, int]]:
     try:
-        tree = ast.parse(filepath.read_text(encoding="utf-8"))
+        tree = ast.parse(path.read_text(encoding="utf-8"))
     except (SyntaxError, UnicodeDecodeError):
         return {}
     local_to_import: dict[str, tuple[str, str]] = {}

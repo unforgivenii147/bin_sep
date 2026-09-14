@@ -47,9 +47,9 @@ def main():
     for line in status_output.splitlines():
         if len(line) > 3:
             status = line[:2]
-            file_path = line[3:].strip()
-            if "D" in status and file_path in historically_deleted:
-                locally_removed_files.append(file_path)
+            path = line[3:].strip()
+            if "D" in status and path in historically_deleted:
+                locally_removed_files.append(path)
     if not locally_removed_files:
         print("🎉 No pending file deletions match historical records.")
         return

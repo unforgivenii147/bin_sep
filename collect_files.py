@@ -25,15 +25,15 @@ def collect_files_by_extension(extension: str) -> None:
     target_dir = cwd / extension
     target_dir.mkdir(parents=True, exist_ok=True)
     copied_count = 0
-    for file_path in cwd.rglob(f"*.{extension}"):
-        if file_path.is_file() and target_dir not in file_path.parents:
+    for path in cwd.rglob(f"*.{extension}"):
+        if path.is_file() and target_dir not in path.parents:
             try:
-                destination_path = unique_destination_path(target_dir, file_path.name)
-                shutil.copy2(file_path, destination_path)
-                print(f"Copied: {file_path} -> {destination_path}")
+                destination_path = unique_destination_path(target_dir, path.name)
+                shutil.copy2(path, destination_path)
+                print(f"Copied: {path} -> {destination_path}")
                 copied_count += 1
             except Exception as e:
-                print(f"Error copying {file_path}: {e}")
+                print(f"Error copying {path}: {e}")
     print("\nFinished collecting files.")
     print(f"Total files copied: {copied_count}")
 

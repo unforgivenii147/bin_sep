@@ -174,22 +174,22 @@ def _build_diff(
     return changes, message
 
 
-def apply_2to3_fixes(file_path: str) -> tuple[str, bool, str]:
+def apply_2to3_fixes(path: str) -> tuple[str, bool, str]:
     """Apply all lib2to3 fixes to a single file.
 
     Args:
-        file_path: The path to the Python file to refactor.
+        path: The path to the Python file to refactor.
 
     Returns:
-        A tuple of (file_path, success, message).
+        A tuple of (path, success, message).
     """
     try:
-        path = Path(file_path)
+        path = Path(path)
         original_content = path.read_text(encoding="utf-8")
         all_fixers = get_all_fixers()
         tool = CustomRefactoringTool(fixers=all_fixers, explicit=all_fixers)
         try:
-            refactored = tool.refactor_string(original_content, file_path)
+            refactored = tool.refactor_string(original_content, path)
             if refactored and refactored != original_content:
                 path.write_text(refactored, encoding="utf-8")
                 _, message = _build_diff(
@@ -199,18 +199,18 @@ def apply_2to3_fixes(file_path: str) -> tuple[str, bool, str]:
                     preview_chars=MAX_CHANGE_PREVIEW_CHARS,
                     numbered=True,
                 )
-                return file_path, True, message
-            return file_path, True, "No changes needed"
+                return path, True, message
+            return path, True, "No changes needed"
         except SyntaxError as e:
-            return file_path, False, f"Syntax error in file: {e}"
+            return path, False, f"Syntax error in file: {e}"
         except Exception as e:
-            return file_path, False, f"Refactoring error: {e!s}"
+            return path, False, f"Refactoring error: {e!s}"
     except FileNotFoundError:
-        return file_path, False, "File not found"
+        return path, False, "File not found"
     except PermissionError:
-        return file_path, False, "Permission denied"
+        return path, False, "Permission denied"
     except Exception as e:
-        return file_path, False, f"Unexpected error: {e!s}"
+        return path, False, f"Unexpected error: {e!s}"
 
 
 def find_python_files(
@@ -241,42 +241,41 @@ def find_python_files(
     return python_files
 
 
-def process_files_parallel(file_paths: Sequence[str]) -> tuple[list[str], list[str]]:
+def process_files_parallel(paths: Sequence[str]) -> tuple[list[str], list[str]]:
     """Process all files in parallel using a Pool of workers.
 
     Args:
-        file_paths: The list of file paths to process.
+        paths: The list of file paths to process.
 
     Returns:
         A tuple of (successful_files, failed_files).
     """
     successful: list[str] = []
     failed: list[str] = []
-    total = len(file_paths)
+    total = len(paths)
     logger.info(f"Processing {total} files using {WORKER_COUNT} workers...")
     logger.info("-" * 40)
 
     pool = Pool(processes=WORKER_COUNT)
     try:
         async_results = [
-            (file_path, pool.apply_async(apply_2to3_fixes, (file_path,)))
-            for file_path in file_paths
+            (path, pool.apply_async(apply_2to3_fixes, (path,))) for path in paths
         ]
-        for i, (file_path, result) in enumerate(async_results, 1):
+        for i, (path, result) in enumerate(async_results, 1):
             try:
-                result_file_path, success, message = result.get()
+                result_path, success, message = result.get()
                 if success:
-                    successful.append(result_file_path)
+                    successful.append(result_path)
                     status = "✓"
                 else:
-                    failed.append(result_file_path)
+                    failed.append(result_path)
                     status = "✗"
-                logger.info(f"[{i}/{total}] {status} {Path(result_file_path).name}")
+                logger.info(f"[{i}/{total}] {status} {Path(result_path).name}")
                 if message != "No changes needed":
                     logger.info(f"    {message}")
             except Exception as e:
-                failed.append(file_path)
-                logger.error(f"[{i}/{total}] ✗ {Path(file_path).name}")
+                failed.append(path)
+                logger.error(f"[{i}/{total}] ✗ {Path(path).name}")
                 logger.error(f"    Unexpected error: {e!s}")
     finally:
         pool.close()
@@ -284,21 +283,21 @@ def process_files_parallel(file_paths: Sequence[str]) -> tuple[list[str], list[s
     return successful, failed
 
 
-def dry_run_file(file_path: str) -> tuple[str, str, bool]:
+def dry_run_file(path: str) -> tuple[str, str, bool]:
     """Preview the changes that would be made to a single file.
 
     Args:
-        file_path: The path to the Python file to preview.
+        path: The path to the Python file to preview.
 
     Returns:
-        A tuple of (file_path, diff_output, has_changes).
+        A tuple of (path, diff_output, has_changes).
     """
     try:
-        original_content = Path(file_path).read_text(encoding="utf-8")
+        original_content = Path(path).read_text(encoding="utf-8")
         all_fixers = get_all_fixers()
         tool = CustomRefactoringTool(fixers=all_fixers, explicit=all_fixers)
         try:
-            refactored = tool.refactor_string(original_content, file_path)
+            refactored = tool.refactor_string(original_content, path)
             if refactored and refactored != original_content:
                 original_lines = original_content.splitlines()
                 refactored_lines = refactored.splitlines()
@@ -311,21 +310,21 @@ def dry_run_file(file_path: str) -> tuple[str, str, bool]:
                     diff.append(
                         f"  (Line count changed: {len(original_lines)} -> {len(refactored_lines)})"
                     )
-                return file_path, "\n".join(diff[:MAX_DRY_RUN_DIFF_LINES]), True
-            return file_path, "No changes needed", False
+                return path, "\n".join(diff[:MAX_DRY_RUN_DIFF_LINES]), True
+            return path, "No changes needed", False
         except SyntaxError as e:
-            return file_path, f"Syntax error: {e}", False
+            return path, f"Syntax error: {e}", False
         except Exception as e:
-            return file_path, f"Error: {e!s}", False
+            return path, f"Error: {e!s}", False
     except Exception as e:
-        return file_path, f"Error reading file: {e!s}", False
+        return path, f"Error reading file: {e!s}", False
 
 
-def perform_dry_run(file_paths: Sequence[str]) -> None:
+def perform_dry_run(paths: Sequence[str]) -> None:
     """Preview changes for all files in parallel without applying them.
 
     Args:
-        file_paths: The list of file paths to preview.
+        paths: The list of file paths to preview.
     """
     logger.info(f"\nDRY RUN - Preview of changes using {WORKER_COUNT} workers:")
     logger.info("-" * 40)
@@ -333,27 +332,26 @@ def perform_dry_run(file_paths: Sequence[str]) -> None:
     pool = Pool(processes=WORKER_COUNT)
     try:
         async_results = [
-            (file_path, pool.apply_async(dry_run_file, (file_path,)))
-            for file_path in file_paths
+            (path, pool.apply_async(dry_run_file, (path,))) for path in paths
         ]
-        for file_path, result in async_results:
+        for path, result in async_results:
             try:
-                result_file_path, output, has_changes = result.get()
+                result_path, output, has_changes = result.get()
             except Exception as e:
-                logger.error(f"✗ {Path(file_path).name}: Unexpected error: {e!s}")
+                logger.error(f"✗ {Path(path).name}: Unexpected error: {e!s}")
                 continue
             if has_changes:
                 files_with_changes += 1
-                logger.info(f"\n📝 {Path(result_file_path).name}:")
+                logger.info(f"\n📝 {Path(result_path).name}:")
                 logger.info(output)
             else:
-                logger.info(f"✓ {Path(result_file_path).name}: {output}")
+                logger.info(f"✓ {Path(result_path).name}: {output}")
     finally:
         pool.close()
         pool.join()
     logger.info(f"\n{'=' * 40}")
     logger.info(
-        f"Dry run complete: {files_with_changes} of {len(file_paths)} files would be changed"
+        f"Dry run complete: {files_with_changes} of {len(paths)} files would be changed"
     )
 
 

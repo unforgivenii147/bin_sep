@@ -6,10 +6,10 @@ from pathlib import Path
 
 
 def fix_python_indentation(
-    input_file_path: Path, output_file_path: Path | None = None, indent_size=4
+    input_path: Path, output_path: Path | None = None, indent_size=4
 ) -> bool:
-    if not Path(input_file_path).exists():
-        print(f"خطا: فایل ورودی یافت نشد: {input_file_path}")
+    if not Path(input_path).exists():
+        print(f"خطا: فایل ورودی یافت نشد: {input_path}")
         return False
     fixed_lines = []
     current_indent_level = 0
@@ -27,7 +27,7 @@ def fix_python_indentation(
         "else",
     ]
     block_enders = ["return", "break", "continue", "pass", "raise"]
-    with Path(input_file_path).open(encoding="utf-8") as f:
+    with Path(input_path).open(encoding="utf-8") as f:
         lines = f.readlines()
     for i, line in enumerate(lines):
         stripped_line = line.strip()
@@ -53,7 +53,7 @@ def fix_python_indentation(
             ):
                 current_indent_level += 1
         stripped_line.startswith(("elif", "else"))
-    final_output_path = output_file_path or input_file_path
+    final_output_path = output_path or input_path
     try:
         with Path(final_output_path).open("w", encoding="utf-8") as f:
             f.writelines(fixed_lines)

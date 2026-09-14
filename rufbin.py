@@ -5,9 +5,9 @@ import subprocess
 from pathlib import Path
 
 
-def is_python_file(file_path: Path):
+def is_python_file(path: Path):
     try:
-        with Path(file_path).open("r", encoding="utf-8", errors="ignore") as f:
+        with Path(path).open("r", encoding="utf-8", errors="ignore") as f:
             content = f.read(1024)
         if content.startswith("#!") and "python" in content.lower():
             return True
@@ -28,15 +28,15 @@ def is_python_file(file_path: Path):
         for indicator in python_indicators:
             if indicator in content_lower:
                 return True
-        return file_path.suffix.lower() == ".py"
+        return path.suffix.lower() == ".py"
     except:
         return False
 
 
-def format_with_ruff(file_path: Path):
+def format_with_ruff(path: Path):
     try:
         result = subprocess.run(
-            ["ruff", "format", str(file_path)],
+            ["ruff", "format", str(path)],
             check=False,
             capture_output=True,
             text=True,
@@ -65,13 +65,13 @@ def main() -> None:
     success_count = 0
     error_count = 0
     errors = []
-    for file_path in python_files:
-        success, error_msg = format_with_ruff(file_path)
+    for path in python_files:
+        success, error_msg = format_with_ruff(path)
         if success:
             success_count += 1
         else:
             error_count += 1
-            errors.append(f"{file_path.name}: {error_msg}")
+            errors.append(f"{path.name}: {error_msg}")
     if errors:
         for _error in errors:
             pass

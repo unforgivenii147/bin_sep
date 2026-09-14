@@ -10,9 +10,9 @@ NORMAL_IMPORT = "^import re\\b"
 REGEX_IMPORT = r"^import regex as re\b"
 
 
-def update_file(file_path, reverse: bool = False) -> str | None:
+def update_file(path, reverse: bool = False) -> str | None:
     try:
-        lines = file_path.read_text(encoding="utf-8").splitlines(keepends=True)
+        lines = path.read_text(encoding="utf-8").splitlines(keepends=True)
         new_lines = []
         changed = False
         search_pat = REGEX_IMPORT if reverse else NORMAL_IMPORT
@@ -24,11 +24,11 @@ def update_file(file_path, reverse: bool = False) -> str | None:
             else:
                 new_lines.append(line)
         if changed:
-            file_path.write_text("".join(new_lines), encoding="utf-8")
-            return f"Updated: {file_path}"
+            path.write_text("".join(new_lines), encoding="utf-8")
+            return f"Updated: {path}"
         return None
     except Exception as e:
-        return f"Error processing {file_path}: {e}"
+        return f"Error processing {path}: {e}"
 
 
 def main() -> None:

@@ -55,12 +55,12 @@ def parse_lua_file(content):
 
 def create_plugin_file(plugin_name, plugin_content, output_dir):
     filename = f"{plugin_name}.lua"
-    filepath = os.path.join(output_dir, filename)
+    path = os.path.join(output_dir, filename)
     file_content = f"""return {plugin_content}
 """
-    with open(filepath, "w", encoding="utf-8") as f:
+    with open(path, "w", encoding="utf-8") as f:
         f.write(file_content)
-    return filepath
+    return path
 
 
 def main():
@@ -86,8 +86,8 @@ def main():
     for i, plugin_content in enumerate(plugins, 1):
         plugin_name = extract_plugin_name(plugin_content)
         if plugin_name:
-            filepath = create_plugin_file(plugin_name, plugin_content, output_dir)
-            print(f"[{i}/{len(plugins)}] Created: {filepath}")
+            path = create_plugin_file(plugin_name, plugin_content, output_dir)
+            print(f"[{i}/{len(plugins)}] Created: {path}")
         else:
             print(
                 f"[{i}/{len(plugins)}] Warning: Could not extract plugin name, skipping..."

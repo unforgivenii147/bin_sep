@@ -93,8 +93,8 @@ def compress_dir_to_tar_then_7z(dir_path: str) -> tuple[str, bool, str]:
         return str(src), False, f"{type(e).__name__}: {e}"
 
 
-def compress_file_to_7z(file_path: str) -> tuple[str, bool, str]:
-    src = Path(file_path)
+def compress_file_to_7z(path: str) -> tuple[str, bool, str]:
+    src = Path(path)
     out_path = (
         src.with_suffix(src.suffix + ".7z")
         if src.suffix

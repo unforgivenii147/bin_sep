@@ -7,12 +7,12 @@ from pathlib import Path
 from secrets import randbelow
 
 
-def file_to_json(filepath: Path, delimiter: str):
+def file_to_json(path: Path, delimiter: str):
     result = {}
     seenkeys = set()
     seenvals = set()
     try:
-        with open(filepath, encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             for line_num, line in enumerate(f, start=1):
                 line = line.strip()
                 if not line or line.startswith("#"):
@@ -47,7 +47,7 @@ def file_to_json(filepath: Path, delimiter: str):
                             continue
                 result[key] = int(value)
     except FileNotFoundError:
-        print(f"Error: File '{filepath}' not found.", file=sys.stderr)
+        print(f"Error: File '{path}' not found.", file=sys.stderr)
         sys.exit(1)
     except Exception as e:
         print(f"Error reading file: {e}", file=sys.stderr)

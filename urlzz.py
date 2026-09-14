@@ -57,22 +57,22 @@ def extract_urls_from_text(content: str) -> set[str]:
     return result
 
 
-def extract_urls_from_file(filepath: Path) -> set[str]:
+def extract_urls_from_file(path: Path) -> set[str]:
     """Extract URLs from a plain text file."""
     urls: set[str] = set()
     try:
-        content: str = filepath.read_text(encoding="utf-8", errors="ignore")
+        content: str = path.read_text(encoding="utf-8", errors="ignore")
         urls.update(extract_urls_from_text(content))
     except Exception as exc:  # noqa: BLE001
-        logger.warning(f"Failed to read {filepath}: {exc}")
+        logger.warning(f"Failed to read {path}: {exc}")
     return urls
 
 
-def extract_urls_from_tar(filepath: Path) -> set[str]:
+def extract_urls_from_tar(path: Path) -> set[str]:
     """Extract URLs from a tar archive (any compression)."""
     urls: set[str] = set()
     try:
-        with tarfile.open(filepath, mode="r:*") as tar:
+        with tarfile.open(path, mode="r:*") as tar:
             member: tarfile.TarInfo
             for member in tar.getmembers():
                 if not member.isfile():
@@ -83,15 +83,15 @@ def extract_urls_from_tar(filepath: Path) -> set[str]:
                 content: str = fileobj.read().decode("utf-8", errors="ignore")
                 urls.update(extract_urls_from_text(content))
     except Exception as exc:  # noqa: BLE001
-        logger.warning(f"Failed to read tar {filepath}: {exc}")
+        logger.warning(f"Failed to read tar {path}: {exc}")
     return urls
 
 
-def extract_urls_from_zip(filepath: Path) -> set[str]:
+def extract_urls_from_zip(path: Path) -> set[str]:
     """Extract URLs from a zip archive (including wheels)."""
     urls: set[str] = set()
     try:
-        with zipfile.ZipFile(filepath, "r") as zf:
+        with zipfile.ZipFile(path, "r") as zf:
             name: str
             for name in zf.namelist():
                 try:
@@ -101,15 +101,15 @@ def extract_urls_from_zip(filepath: Path) -> set[str]:
                 except Exception:  # noqa: BLE001
                     continue
     except Exception as exc:  # noqa: BLE001
-        logger.warning(f"Failed to read zip {filepath}: {exc}")
+        logger.warning(f"Failed to read zip {path}: {exc}")
     return urls
 
 
-def extract_urls_from_7z(filepath: Path) -> set[str]:
+def extract_urls_from_7z(path: Path) -> set[str]:
     """Extract URLs from a 7z archive."""
     urls: set[str] = set()
     try:
-        with py7zr.SevenZipFile(filepath, mode="r") as archive:
+        with py7zr.SevenZipFile(path, mode="r") as archive:
             all_files = archive.readall()
             bio: object
             for bio in all_files.values():
@@ -119,23 +119,23 @@ def extract_urls_from_7z(filepath: Path) -> set[str]:
                 except Exception:  # noqa: BLE001
                     continue
     except Exception as exc:  # noqa: BLE001
-        logger.warning(f"Failed to read 7z {filepath}: {exc}")
+        logger.warning(f"Failed to read 7z {path}: {exc}")
     return urls
 
 
-def extract_urls(filepath: Path) -> set[str]:
+def extract_urls(path: Path) -> set[str]:
     """Dispatch URL extraction based on the file suffix."""
-    suffix: str = filepath.suffix.lower()
-    name: str = filepath.name.lower()
+    suffix: str = path.suffix.lower()
+    name: str = path.name.lower()
     if suffix in ARCHIVE_SUFFIXES_ZIP:
-        return extract_urls_from_zip(filepath)
+        return extract_urls_from_zip(path)
     if suffix in ARCHIVE_SUFFIXES_7Z:
-        return extract_urls_from_7z(filepath)
+        return extract_urls_from_7z(path)
     if suffix in ARCHIVE_SUFFIXES_TAR or any(
         name.endswith(s) for s in ARCHIVE_SUFFIXES_TAR
     ):
-        return extract_urls_from_tar(filepath)
-    return extract_urls_from_file(filepath)
+        return extract_urls_from_tar(path)
+    return extract_urls_from_file(path)
 
 
 def _worker(path: Path) -> set[str]:
@@ -147,10 +147,8 @@ def main() -> None:
     """Entry point: scan paths in parallel and write URL outputs."""
     cwd: Path = Path.cwd()
     args: list[str] = sys.argv[1:]
-    file_paths: Iterable[Path] = (
-        [Path(p) for p in args] if args else list(get_nobinary(cwd))
-    )
-    paths: list[Path] = list(file_paths)
+    paths: Iterable[Path] = [Path(p) for p in args] if args else list(get_nobinary(cwd))
+    paths: list[Path] = list(paths)
 
     all_urls: set[str] = set()
     with Pool(processes=POOL_SIZE) as pool:

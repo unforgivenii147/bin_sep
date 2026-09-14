@@ -67,30 +67,30 @@ def find_rust_files(paths: list[str]) -> set[Path]:
             if path.suffix in RUST_EXTENSIONS:
                 rust_files.add(path.resolve())
         elif path.is_dir():
-            for file_path in path.rglob("*"):
-                if file_path.is_file() and file_path.suffix in RUST_EXTENSIONS:
-                    rust_files.add(file_path.resolve())
+            for path in path.rglob("*"):
+                if path.is_file() and path.suffix in RUST_EXTENSIONS:
+                    rust_files.add(path.resolve())
         else:
             print(f"Warning: Path '{path_str}' does not exist", file=sys.stderr)
     return rust_files
 
 
-def process_file(file_path: Path) -> tuple[Path, bool, str]:
+def process_file(path: Path) -> tuple[Path, bool, str]:
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(path, "r", encoding="utf-8") as f:
             original_content = f.read()
         if not original_content.strip():
-            return (file_path, True, "")
+            return (path, True, "")
         stripper = RustCommentStripper()
         stripped_content = stripper.strip_comments(original_content)
         if stripped_content != original_content:
-            temp_path = file_path.with_suffix(file_path.suffix + ".tmp")
+            temp_path = path.with_suffix(path.suffix + ".tmp")
             with open(temp_path, "w", encoding="utf-8") as f:
                 f.write(stripped_content)
-            temp_path.replace(file_path)
-        return (file_path, True, "")
+            temp_path.replace(path)
+        return (path, True, "")
     except Exception as e:
-        return (file_path, False, str(e))
+        return (path, False, str(e))
 
 
 def process_files_parallel(files: set[Path]):
@@ -103,21 +103,21 @@ def process_files_parallel(files: set[Path]):
     start_time = time.time()
     with mp.Pool(processes=NUM_WORKERS) as pool:
         results = []
-        for file_path in files_list:
-            result = pool.apply_async(process_file, (file_path,))
+        for path in files_list:
+            result = pool.apply_async(process_file, (path,))
             results.append(result)
         processed = 0
         success_count = 0
         error_count = 0
         for result in results:
             try:
-                file_path, success, error_msg = result.get(timeout=30)
+                path, success, error_msg = result.get(timeout=30)
                 processed += 1
                 if success:
                     success_count += 1
                 else:
                     error_count += 1
-                    print(f"Error processing {file_path}: {error_msg}", file=sys.stderr)
+                    print(f"Error processing {path}: {error_msg}", file=sys.stderr)
                 if processed % 100 == 0 or processed == total_files:
                     print(f"Progress: {processed}/{total_files} files processed")
             except Exception as e:

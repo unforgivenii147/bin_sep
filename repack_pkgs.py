@@ -48,9 +48,9 @@ class PackageDetector:
             )
         binary_extensions = {".exe", ".bin", ".dylib", ".so", ".pyd", ".dll"}
         has_binary = any(
-            file_path.suffix.lower() in binary_extensions
-            for file_path in package_dir.rglob("*")
-            if file_path.is_file()
+            path.suffix.lower() in binary_extensions
+            for path in package_dir.rglob("*")
+            if path.is_file()
         )
         return (is_pure_python, has_c_extension, has_binary)
 
@@ -146,17 +146,17 @@ class WheelBuilder:
             print(f"[BUILD] {message}")
 
     @staticmethod
-    def calculate_hash(file_path: Path, algorithm: str = "sha256") -> str:
+    def calculate_hash(path: Path, algorithm: str = "sha256") -> str:
         hasher = hashlib.new(algorithm)
-        with file_path.open("rb") as f:
+        with path.open("rb") as f:
             for chunk in iter(lambda: f.read(4096), b""):
                 hasher.update(chunk)
         digest = hasher.digest()
         return base64.urlsafe_b64encode(digest).decode("ascii").rstrip("=")
 
     @staticmethod
-    def get_file_size(file_path: Path) -> int:
-        return file_path.stat().st_size
+    def get_file_size(path: Path) -> int:
+        return path.stat().st_size
 
     def create_record(self, wheel_path: Path, dist_info_dir: str) -> str:
         records = []
@@ -208,10 +208,10 @@ class WheelBuilder:
                 top_level = pkg_name.split("-")[0]
                 (dist_info_dir / "top_level.txt").write_text(top_level + "\n")
                 with zipfile.ZipFile(wheel_path, "w", zipfile.ZIP_DEFLATED) as zf:
-                    for file_path in temp_path.rglob("*"):
-                        if file_path.is_file():
-                            arcname = file_path.relative_to(temp_path)
-                            zf.write(file_path, arcname)
+                    for path in temp_path.rglob("*"):
+                        if path.is_file():
+                            arcname = path.relative_to(temp_path)
+                            zf.write(path, arcname)
                 record_content = self.create_record(wheel_path, dist_info_name)
                 temp_wheel = wheel_path.with_suffix(".whl.tmp")
                 shutil.move(wheel_path, temp_wheel)

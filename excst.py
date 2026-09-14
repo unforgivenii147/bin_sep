@@ -53,15 +53,15 @@ class TopLevelExtractor(cst.CSTVisitor):
             content = source_comment + content
         if validate_python_code(content, node_name):
             base_stem = Path(filename).stem
-            filepath = directory / f"{filename}.py"
+            path = directory / f"{filename}.py"
             counter = 1
-            while filepath.exists():
-                filepath = directory / f"{base_stem}_{counter}.py"
+            while path.exists():
+                path = directory / f"{base_stem}_{counter}.py"
                 counter += 1
             try:
-                filepath.write_text(content.strip() + "\n", encoding="utf-8")
+                path.write_text(content.strip() + "\n", encoding="utf-8")
             except Exception as e:
-                print(f"Error writing to {filepath}: {e}")
+                print(f"Error writing to {path}: {e}")
 
     def visit_Import(self, node: cst.Import) -> None:
         self.imports.add(cst.Module([node]).code.strip())
@@ -123,15 +123,15 @@ class TopLevelExtractor(cst.CSTVisitor):
         return True
 
 
-def process_file(filepath: Path) -> dict:
+def process_file(path: Path) -> dict:
     try:
-        code = filepath.read_text(encoding="utf-8")
+        code = path.read_text(encoding="utf-8")
         module = cst.parse_module(code)
         wrapper = cst.metadata.MetadataWrapper(module)
-        extractor = TopLevelExtractor(filepath, module)
+        extractor = TopLevelExtractor(path, module)
         wrapper.visit(extractor)
         return {
-            "filepath": str(filepath),
+            "path": str(path),
             "functions": extractor.functions,
             "classes": extractor.classes,
             "constants": extractor.constants,
@@ -139,7 +139,7 @@ def process_file(filepath: Path) -> dict:
             "status": "success",
         }
     except Exception as e:
-        return {"filepath": str(filepath), "status": "error", "error": str(e)}
+        return {"path": str(path), "status": "error", "error": str(e)}
 
 
 def collect_python_files(root_dir: Path = Path(".")) -> list[Path]:
@@ -179,12 +179,11 @@ def main() -> None:
     max_workers = min(os.cpu_count() or 1, len(python_files))
     with ProcessPoolExecutor(max_workers=max_workers) as executor:
         future_to_file = {
-            executor.submit(process_file, filepath): filepath
-            for filepath in python_files
+            executor.submit(process_file, path): path for path in python_files
         }
         try:
             for future in as_completed(future_to_file):
-                filepath = future_to_file[future]
+                path = future_to_file[future]
                 try:
                     result = future.result()
                     if result["status"] == "success":
@@ -194,16 +193,16 @@ def main() -> None:
                         total_constants += len(result["constants"])
                         all_imports.update(result["imports"])
                         print(
-                            f"✓ Processed [{processed_files}/{len(python_files)}]: {result['filepath']}"
+                            f"✓ Processed [{processed_files}/{len(python_files)}]: {result['path']}"
                         )
                     else:
-                        error_files.append((result["filepath"], result.get("error")))
+                        error_files.append((result["path"], result.get("error")))
                         print(
-                            f"✗ Error processing {result['filepath']}: {result.get('error')}"
+                            f"✗ Error processing {result['path']}: {result.get('error')}"
                         )
                 except Exception as e:
-                    error_files.append((str(filepath), str(e)))
-                    print(f"✗ Unexpected error processing {filepath}: {e}")
+                    error_files.append((str(path), str(e)))
+                    print(f"✗ Unexpected error processing {path}: {e}")
         except KeyboardInterrupt:
             print("\nInterrupted by user.")
             executor.shutdown(wait=False)

@@ -108,7 +108,7 @@ def combine_votes(g3: str | None, p2: str | None, ld: str | None) -> dict[str, A
 
 
 def detect_line(
-    file_path: Path, lineno: int, line: str, max_len: int
+    path: Path, lineno: int, line: str, max_len: int
 ) -> dict[str, Any] | None:
     if not line.strip():
         return None
@@ -119,7 +119,7 @@ def detect_line(
     combined = combine_votes(g3, p2, ld)
     if combined["non_english"]:
         rec = {
-            "file": str(file_path),
+            "file": str(path),
             "line_no": lineno,
             "text": text,
             "detectors": combined["votes"],
@@ -129,10 +129,10 @@ def detect_line(
     return None
 
 
-def process_file_sequential(file_path: Path, max_len: int) -> list[dict[str, Any]]:
+def process_file_sequential(path: Path, max_len: int) -> list[dict[str, Any]]:
     local: list[dict[str, Any]] = []
-    for lineno, raw in enumerate(read_text_lines(file_path), start=1):
-        rec = detect_line(file_path, lineno, raw, max_len)
+    for lineno, raw in enumerate(read_text_lines(path), start=1):
+        rec = detect_line(path, lineno, raw, max_len)
         if rec:
             with _print_lock:
                 print(f"{rec['file']}:{rec['line_no']}: {rec['text']}")
@@ -142,10 +142,10 @@ def process_file_sequential(file_path: Path, max_len: int) -> list[dict[str, Any
 
 
 def process_file_per_line_parallel(
-    file_path: Path, max_len: int, workers: int
+    path: Path, max_len: int, workers: int
 ) -> list[dict[str, Any]]:
     local: list[dict[str, Any]] = []
-    lines = list(read_text_lines(file_path))
+    lines = list(read_text_lines(path))
     if not lines:
         return local
     with mp.Pool(processes=8) as ex:
@@ -153,7 +153,7 @@ def process_file_per_line_parallel(
             ex.apply_async(
                 detect_line,
                 args=(
-                    file_path,
+                    path,
                     lineno,
                     line,
                     max_len,
@@ -172,9 +172,7 @@ def process_file_per_line_parallel(
                     local.append(rec)
             except Exception as e:
                 with _print_lock:
-                    print(
-                        f"Error in per-line task for {file_path}: {e}", file=sys.stderr
-                    )
+                    print(f"Error in per-line task for {path}: {e}", file=sys.stderr)
     return local
 
 

@@ -64,9 +64,9 @@ def main() -> None:
     if not root.is_dir():
         raise SystemExit(f"Not a directory: {root}")
     groups: defaultdict[str, list[Path]] = defaultdict(list)
-    for file_path in find_lua_files(root, script_path):
-        group_name = normalize_name(file_path)
-        groups[group_name].append(file_path)
+    for path in find_lua_files(root, script_path):
+        group_name = normalize_name(path)
+        groups[group_name].append(path)
     if not groups:
         print("No Lua files found.")
         return

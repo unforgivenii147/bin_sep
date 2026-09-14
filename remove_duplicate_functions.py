@@ -57,21 +57,21 @@ def normalize_function_body(lines: Sequence[str], start_idx: int, end_idx: int) 
     return "\n".join(line[min_indent:] if line.strip() else "" for line in body_lines)
 
 
-def compute_function_hash(filepath: Path, func_node: ast.FunctionDef) -> Optional[str]:
+def compute_function_hash(path: Path, func_node: ast.FunctionDef) -> Optional[str]:
     """Compute an MD5 hash for a top-level function definition.
 
     The hash covers the function's signature (arguments and return
     annotation) plus its normalized body.
 
     Args:
-        filepath: Path to the source file containing the function.
+        path: Path to the source file containing the function.
         func_node: The AST node for the function.
 
     Returns:
         A hexadecimal MD5 digest, or None if the file could not be read.
     """
     try:
-        lines: list[str] = filepath.read_text().splitlines(keepends=True)
+        lines: list[str] = path.read_text().splitlines(keepends=True)
     except Exception:
         return None
 
@@ -97,19 +97,19 @@ def compute_function_hash(filepath: Path, func_node: ast.FunctionDef) -> Optiona
 
 
 def extract_top_level_functions(
-    filepath: Path,
+    path: Path,
 ) -> Optional[dict[str, dict[str, Any]]]:
     """Extract all top-level function definitions from a Python file.
 
     Args:
-        filepath: Path to the Python file.
+        path: Path to the Python file.
 
     Returns:
         A mapping of function name to a dict containing name, hash, lineno,
         and end_lineno, or None if the file could not be parsed.
     """
     try:
-        tree: ast.Module = ast.parse(filepath.read_text(), filename=str(filepath))
+        tree: ast.Module = ast.parse(path.read_text(), filename=str(path))
     except SyntaxError:
         return None
     except Exception:
@@ -118,7 +118,7 @@ def extract_top_level_functions(
     functions: dict[str, dict[str, Any]] = {}
     for node in ast.iter_child_nodes(tree):
         if isinstance(node, ast.FunctionDef):
-            content_hash: Optional[str] = compute_function_hash(filepath, node)
+            content_hash: Optional[str] = compute_function_hash(path, node)
             if content_hash:
                 functions[node.name] = {
                     "name": node.name,

@@ -24,9 +24,9 @@ def is_foreign_line(line: str) -> bool:
     return bool(LANGUAGE_PATTERN.search(line))
 
 
-def process_file(file_path: Path) -> str:
+def process_file(path: Path) -> str:
     try:
-        content = file_path.read_text(encoding="utf-8")
+        content = path.read_text(encoding="utf-8")
         lines = content.splitlines(keepends=True)
         translator = GoogleTranslator(source="auto", target="en")
         modified = False
@@ -44,16 +44,16 @@ def process_file(file_path: Path) -> str:
                     else:
                         new_lines.append(line)
                 except Exception as e:
-                    logger.error("Error translating line in %s: %s", file_path, e)
+                    logger.error("Error translating line in %s: %s", path, e)
                     new_lines.append(line)
             else:
                 new_lines.append(line)
         if modified:
-            file_path.write_text("".join(new_lines), encoding="utf-8")
-            return f"✓ Updated: {file_path}"
-        return f"No changes: {file_path}"
+            path.write_text("".join(new_lines), encoding="utf-8")
+            return f"✓ Updated: {path}"
+        return f"No changes: {path}"
     except Exception as e:
-        return f"Error processing {file_path}: {e}"
+        return f"Error processing {path}: {e}"
 
 
 def main() -> None:

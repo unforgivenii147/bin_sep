@@ -86,11 +86,11 @@ def format_time(seconds: float) -> str:
     return f"{h:02d}:{m:02d}:{int(s):02d},{ms:03d}"
 
 
-def parse_srt(filepath_path: Path) -> list[dict]:
-    if not filepath_path.is_file():
+def parse_srt(path_path: Path) -> list[dict]:
+    if not path_path.is_file():
         return []
     subs = []
-    with filepath_path.open(encoding="utf-8") as f:
+    with path_path.open(encoding="utf-8") as f:
         lines = [line.rstrip() for line in f]
     i = 0
     while i < len(lines):

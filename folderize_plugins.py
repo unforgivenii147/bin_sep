@@ -379,12 +379,12 @@ PLUGIN_PATTERNS = {
 }
 
 
-def detect_plugins(file_path):
+def detect_plugins(path):
     detected = set()
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(path, "r", encoding="utf-8") as f:
             content = f.read()
-        filename = file_path.name.lower()
+        filename = path.name.lower()
         for plugin_name, patterns in PLUGIN_PATTERNS.items():
             for pattern in patterns:
                 if re.search(pattern, content, re.IGNORECASE):
@@ -395,7 +395,7 @@ def detect_plugins(file_path):
                     detected.add(plugin_name)
                     break
     except Exception as e:
-        print(f"Error reading {file_path}: {e}")
+        print(f"Error reading {path}: {e}")
     return detected
 
 

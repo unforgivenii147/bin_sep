@@ -27,13 +27,13 @@ def get_extension(mime: str) -> str:
     return ".bin"
 
 
-def process_file(file_path: Path, assets_dir: Path, processed: dict) -> None:
+def process_file(path: Path, assets_dir: Path, processed: dict) -> None:
     try:
-        content = file_path.read_text(encoding="utf-8")
+        content = path.read_text(encoding="utf-8")
     except Exception as e:
-        print(f"⚠ Skipping {file_path}: {e}")
+        print(f"⚠ Skipping {path}: {e}")
         return
-    rel_to_assets = Path(assets_dir, file_path.parent)
+    rel_to_assets = Path(assets_dir, path.parent)
 
     def replace_match(match: re.Match) -> str:
         full = match.group(0)
@@ -47,7 +47,7 @@ def process_file(file_path: Path, assets_dir: Path, processed: dict) -> None:
             try:
                 binary = base64.b64decode(data_b64)
             except Exception as e:
-                print(f"⚠ Base64 decode error in {file_path}: {e}  – keeping original.")
+                print(f"⚠ Base64 decode error in {path}: {e}  – keeping original.")
                 return full
             if not asset_path.exists():
                 asset_path.write_bytes(binary)
@@ -60,8 +60,8 @@ def process_file(file_path: Path, assets_dir: Path, processed: dict) -> None:
 
     new_content = DATA_URI_PATTERN.sub(replace_match, content)
     if new_content != content:
-        file_path.write_text(new_content, encoding="utf-8")
-        print(f"✎ Updated {file_path}")
+        path.write_text(new_content, encoding="utf-8")
+        print(f"✎ Updated {path}")
 
 
 def main() -> None:
@@ -70,9 +70,9 @@ def main() -> None:
     assets_dir.mkdir(parents=True, exist_ok=True)
     processed = {}
     cwd = Path(".")
-    for file_path in cwd.rglob("*"):
-        if file_path.is_file() and file_path.suffix.lower() in (".css", ".js", ".html"):
-            process_file(file_path, assets_dir, processed)
+    for path in cwd.rglob("*"):
+        if path.is_file() and path.suffix.lower() in (".css", ".js", ".html"):
+            process_file(path, assets_dir, processed)
     print("Done.")
 
 

@@ -20,13 +20,13 @@ logger = logging.getLogger(__name__)
 @dataclass
 class Entity:
     name: str
-    file_path: str
+    path: str
     line_number: int
 
 
 @dataclass
 class ExtractionResult:
-    file_path: Path
+    path: Path
     classes: list[Entity]
     functions: list[Entity]
     constants: list[Entity]
@@ -34,8 +34,8 @@ class ExtractionResult:
 
 
 class EntityExtractor(ast.NodeVisitor):
-    def __init__(self, file_path: Path):
-        self.file_path = file_path
+    def __init__(self, path: Path):
+        self.path = path
         self.classes: list[Entity] = []
         self.functions: list[Entity] = []
         self.constants: list[Entity] = []
@@ -44,9 +44,7 @@ class EntityExtractor(ast.NodeVisitor):
 
     def visit_ClassDef(self, node: ast.ClassDef) -> None:
         self.classes.append(
-            Entity(
-                name=node.name, file_path=str(self.file_path), line_number=node.lineno
-            )
+            Entity(name=node.name, path=str(self.path), line_number=node.lineno)
         )
         old_in_class = self._in_class
         self._in_class = True
@@ -58,7 +56,7 @@ class EntityExtractor(ast.NodeVisitor):
             self.functions.append(
                 Entity(
                     name=node.name,
-                    file_path=str(self.file_path),
+                    path=str(self.path),
                     line_number=node.lineno,
                 )
             )
@@ -69,7 +67,7 @@ class EntityExtractor(ast.NodeVisitor):
             self.functions.append(
                 Entity(
                     name=node.name,
-                    file_path=str(self.file_path),
+                    path=str(self.path),
                     line_number=node.lineno,
                 )
             )
@@ -82,7 +80,7 @@ class EntityExtractor(ast.NodeVisitor):
                     self.constants.append(
                         Entity(
                             name=target.id,
-                            file_path=str(self.file_path),
+                            path=str(self.path),
                             line_number=node.lineno,
                         )
                     )
@@ -100,23 +98,23 @@ class EntityExtractor(ast.NodeVisitor):
         self.generic_visit(node)
 
 
-def extract_from_file(file_path: Path) -> ExtractionResult:
+def extract_from_file(path: Path) -> ExtractionResult:
     try:
-        content = file_path.read_text(encoding="utf-8")
+        content = path.read_text(encoding="utf-8")
         tree = ast.parse(content)
-        extractor = EntityExtractor(file_path)
+        extractor = EntityExtractor(path)
         extractor.visit(tree)
         return ExtractionResult(
-            file_path=file_path,
+            path=path,
             classes=extractor.classes,
             functions=extractor.functions,
             constants=extractor.constants,
             imports=extractor.imports,
         )
     except (SyntaxError, UnicodeDecodeError) as e:
-        logger.warning(f"Failed to parse {file_path}: {e}")
+        logger.warning(f"Failed to parse {path}: {e}")
         return ExtractionResult(
-            file_path=file_path, classes=[], functions=[], constants=[], imports=set()
+            path=path, classes=[], functions=[], constants=[], imports=set()
         )
 
 
@@ -132,9 +130,9 @@ def save_entities(
 ) -> None:
     entity_dir = output_dir / entity_type
     entity_dir.mkdir(parents=True, exist_ok=True)
-    for file_path, entities in entities_by_file.items():
+    for path, entities in entities_by_file.items():
         if entities:
-            file_name = Path(file_path).stem + ".txt"
+            file_name = Path(path).stem + ".txt"
             output_file = entity_dir / file_name
             with open(output_file, "w", encoding="utf-8") as f:
                 f.writelines(
@@ -192,15 +190,15 @@ def main(
     logger.info("Aggregating results...")
     for result in results:
         for entity in result.classes:
-            entities_by_file["classes"][result.file_path].append(entity)
+            entities_by_file["classes"][result.path].append(entity)
             unique_classes.add(entity.name)
         for entity in result.functions:
-            entities_by_file["functions"][result.file_path].append(entity)
+            entities_by_file["functions"][result.path].append(entity)
             unique_functions.add(entity.name)
         for entity in result.constants:
-            entities_by_file["constants"][result.file_path].append(entity)
+            entities_by_file["constants"][result.path].append(entity)
             unique_constants.add(entity.name)
-        dir_name = result.file_path.parent.name or "root"
+        dir_name = result.path.parent.name or "root"
         imports_by_dir[dir_name].update(result.imports)
     entities_by_file = {key: dict(val) for key, val in entities_by_file.items()}
     logger.info(f"Saving results to {output_path}...")

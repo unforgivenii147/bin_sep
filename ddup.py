@@ -90,7 +90,7 @@ class _Def:
     name: str
     source_code: str
     content_hash: str
-    filepath: str
+    path: str
 
 
 def _extract_definitions(path: str, source: str) -> list[_Def]:
@@ -128,7 +128,7 @@ def _extract_definitions(path: str, source: str) -> list[_Def]:
                 name=name,
                 source_code=segment,
                 content_hash=_hash(segment),
-                filepath=path,
+                path=path,
             )
         )
     return defs
@@ -199,11 +199,11 @@ def _move_definitions(groups: dict[str, list[_Def]]) -> None:
     to_remove: dict[str, set[str]] = {}
     for hash_key, defs in groups.items():
         for d in defs:
-            if not d.filepath.endswith(".py") or any(
-                d.filepath.endswith(ext) for ext in _COMPRESSED_EXT
+            if not d.path.endswith(".py") or any(
+                d.path.endswith(ext) for ext in _COMPRESSED_EXT
             ):
                 continue
-            to_remove.setdefault(d.filepath, set()).add(hash_key)
+            to_remove.setdefault(d.path, set()).add(hash_key)
     for path, hashes in to_remove.items():
         try:
             source = Path(path).read_text(encoding="utf-8")

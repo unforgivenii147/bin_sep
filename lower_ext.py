@@ -8,23 +8,21 @@ from pathlib import Path
 
 def find_uppercase_extensions(directory: Path, autofix: bool = False):
     uppercase_files = []
-    for file_path in directory.rglob("*"):
-        if not file_path.is_file():
+    for path in directory.rglob("*"):
+        if not path.is_file():
             continue
-        if file_path.suffix:
-            extension = file_path.suffix[1:]
+        if path.suffix:
+            extension = path.suffix[1:]
             if any(c.isupper() for c in extension):
-                uppercase_files.append(file_path)
+                uppercase_files.append(path)
                 if autofix:
                     new_extension = "." + extension.lower()
-                    new_path = file_path.with_suffix(new_extension)
+                    new_path = path.with_suffix(new_extension)
                     try:
-                        file_path.rename(new_path)
-                        print(f"✓ Renamed: {file_path.name} → {new_path.name}")
+                        path.rename(new_path)
+                        print(f"✓ Renamed: {path.name} → {new_path.name}")
                     except Exception as e:
-                        print(
-                            f"✗ Failed to rename {file_path.name}: {e}", file=sys.stderr
-                        )
+                        print(f"✗ Failed to rename {path.name}: {e}", file=sys.stderr)
     return uppercase_files
 
 
@@ -46,9 +44,9 @@ def main() -> int:
     if uppercase_files:
         if not args.autofix:
             print(f"\nFound {len(uppercase_files)} file(s) with uppercase extensions:")
-            for file_path in uppercase_files:
+            for path in uppercase_files:
                 print(
-                    f"  • {file_path.relative_to(search_dir)} (extension: .{file_path.suffix[1:]})"
+                    f"  • {path.relative_to(search_dir)} (extension: .{path.suffix[1:]})"
                 )
             print("\nRun with -a or --autofix to convert them to lowercase")
         else:

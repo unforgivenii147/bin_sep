@@ -18,7 +18,7 @@ if __name__ == "__main__":
         reverse = True
         args.remove("-r")
     if not args:
-        print("Usage: python script.py [-r] <file_path>")
+        print("Usage: python script.py [-r] <path>")
         sys.exit(1)
     path = Path(args[0].strip())
     lines = read_lines(path, ke=True)

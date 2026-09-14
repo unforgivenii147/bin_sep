@@ -17,7 +17,7 @@ class Item:
     kind: str
     name: str
     source: str
-    file_path: str
+    path: str
     hash: str
 
 
@@ -63,7 +63,7 @@ def extract_items_from_file(path: Path, parser: Parser) -> list[Item]:
                     kind="function",
                     name=name,
                     source=code,
-                    file_path=str(path),
+                    path=str(path),
                     hash=sha256_text(code),
                 )
             )
@@ -78,7 +78,7 @@ def extract_items_from_file(path: Path, parser: Parser) -> list[Item]:
                     kind="class",
                     name=name,
                     source=code,
-                    file_path=str(path),
+                    path=str(path),
                     hash=sha256_text(code),
                 )
             )
@@ -102,7 +102,7 @@ def extract_items_from_file(path: Path, parser: Parser) -> list[Item]:
                         kind="const",
                         name=name,
                         source=code,
-                        file_path=str(path),
+                        path=str(path),
                         hash=sha256_text(code),
                     )
                 )
@@ -123,7 +123,7 @@ def extract_items_from_file(path: Path, parser: Parser) -> list[Item]:
                     kind="const",
                     name=name,
                     source=code,
-                    file_path=str(path),
+                    path=str(path),
                     hash=sha256_text(code),
                 )
             )

@@ -263,28 +263,28 @@ def is_already_compressed(data: bytes, sample_size: int = 4096) -> bool:
 
 
 def choose_algorithm(
-    file_path: str | Path,
+    path: str | Path,
     data: Optional[bytes] = None,
     file_size: Optional[int] = None,
 ) -> dict[str, str | int]:
     """Choose optimal compression algorithm for a file.
 
     Args:
-        file_path: Path to the file
+        path: Path to the file
         data: File content (if already read)
         file_size: Size of the file
 
     Returns:
         Dictionary with algorithm and level
     """
-    ext = Path(file_path).suffix.lower()
+    ext = Path(path).suffix.lower()
     if ext in EXTENSION_MAP:
         return EXTENSION_MAP[ext]
 
     if file_size is None and data is not None:
         file_size = len(data)
     elif file_size is None:
-        file_size = Path(file_path).stat().st_size
+        file_size = Path(path).stat().st_size
 
     if data is not None and is_already_compressed(data):
         return DEFAULT_SETTINGS["already_compressed"]
@@ -310,7 +310,7 @@ def choose_algorithm(
 
 
 def compress_single_file(
-    file_path: str | Path,
+    path: str | Path,
     output_path: Optional[str | Path] = None,
     remove_original: bool = False,
     verbose: bool = False,
@@ -318,7 +318,7 @@ def compress_single_file(
     """Compress a single file.
 
     Args:
-        file_path: Path to file to compress
+        path: Path to file to compress
         output_path: Output path (directory or file)
         remove_original: Whether to delete original after compression
         verbose: Enable verbose output
@@ -328,10 +328,10 @@ def compress_single_file(
     """
     start_time = time.time()
     try:
-        with open(file_path, "rb") as f:
+        with open(path, "rb") as f:
             data = f.read()
 
-        settings = choose_algorithm(file_path, data)
+        settings = choose_algorithm(path, data)
         algo = str(settings["algo"])
         level = int(settings["level"])
         is_large = len(data) > 50 * 1024 * 1024
@@ -339,9 +339,9 @@ def compress_single_file(
         compressed_data = compress_data(data, algo, level, is_large)
 
         if output_path is None:
-            output_path = str(file_path) + f".{algo}"
+            output_path = str(path) + f".{algo}"
         elif str(output_path).endswith(("/", "\\")):
-            output_path = Path(output_path) / (Path(file_path).name + f".{algo}")
+            output_path = Path(output_path) / (Path(path).name + f".{algo}")
         else:
             output_path = Path(output_path)
 
@@ -349,7 +349,7 @@ def compress_single_file(
             f.write(compressed_data)
 
         if remove_original:
-            Path(file_path).unlink()
+            Path(path).unlink()
 
         elapsed = time.time() - start_time
         original_size = len(data)
@@ -358,13 +358,13 @@ def compress_single_file(
 
         if verbose:
             logger.info(
-                f"✓ {Path(file_path).name}: {algo.upper()}:{level} "
+                f"✓ {Path(path).name}: {algo.upper()}:{level} "
                 f"{original_size:,d} → {compressed_size:,d} bytes ({ratio:.1f}%) "
                 f"in {elapsed:.2f}s"
             )
 
         return {
-            "file": str(file_path),
+            "file": str(path),
             "output": str(output_path),
             "algorithm": algo,
             "level": level,
@@ -376,12 +376,12 @@ def compress_single_file(
         }
     except Exception as e:
         if verbose:
-            logger.error(f"✗ Failed to compress {file_path}: {e}")
-        return {"file": str(file_path), "success": False, "error": str(e)}
+            logger.error(f"✗ Failed to compress {path}: {e}")
+        return {"file": str(path), "success": False, "error": str(e)}
 
 
 def compress_multiple_files(
-    file_paths: list[str | Path],
+    paths: list[str | Path],
     output_dir: Optional[str | Path] = None,
     max_workers: Optional[int] = None,
     remove_original: bool = False,
@@ -390,7 +390,7 @@ def compress_multiple_files(
     """Compress multiple files in parallel.
 
     Args:
-        file_paths: List of file paths to compress
+        paths: List of file paths to compress
         output_dir: Output directory for compressed files
         max_workers: Maximum number of worker processes
         remove_original: Whether to delete originals after compression
@@ -409,16 +409,16 @@ def compress_multiple_files(
 
     with ProcessPoolExecutor(max_workers=max_workers) as executor:
         futures: dict[Any, str | Path] = {}
-        for file_path in file_paths:
+        for path in paths:
             output_path = (
-                Path(output_dir) / (Path(file_path).name + ".compressed")
+                Path(output_dir) / (Path(path).name + ".compressed")
                 if output_dir
                 else None
             )
             future = executor.submit(
-                compress_single_file, file_path, output_path, remove_original, verbose
+                compress_single_file, path, output_path, remove_original, verbose
             )
-            futures[future] = file_path
+            futures[future] = path
 
         for future in as_completed(futures):
             result = future.result()
@@ -739,10 +739,8 @@ Examples:
                     f"  Overall ratio: {total_compressed / total_original * 100:.1f}%"
                 )
         else:
-            for file_path in files:
-                compress_single_file(
-                    file_path, args.output_dir, args.remove, args.verbose
-                )
+            for path in files:
+                compress_single_file(path, args.output_dir, args.remove, args.verbose)
 
     elif args.command == "archive":
         create_tar_archive(
@@ -755,8 +753,8 @@ Examples:
         )
 
     elif args.command == "decompress":
-        for file_path in args.files:
-            decompress_file(file_path, args.output_dir, args.verbose)
+        for path in args.files:
+            decompress_file(path, args.output_dir, args.verbose)
 
     elif args.command == "benchmark":
         from hybrid_compression_benchmark import benchmark_hybrid

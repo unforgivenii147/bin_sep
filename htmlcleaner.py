@@ -35,7 +35,7 @@ MIN_INLINE_SIZE = 0  # Minimum size in bytes to extract (0 = extract all)
 class ExtractionResult:
     """Result of processing a single HTML file."""
 
-    file_path: Path
+    path: Path
     success: bool
     css_count: int = 0
     js_count: int = 0
@@ -227,9 +227,9 @@ def extract_assets_from_html(
             continue
 
         # Build replacement tag
-        rel_file_path = rel_path / filename
+        rel_path = rel_path / filename
         # Normalize path separators for HTML
-        href = str(rel_file_path).replace("\\", "/")
+        href = str(rel_path).replace("\\", "/")
 
         if asset_type == "css":
             # Preserve other attributes except the ones we're replacing
@@ -296,57 +296,53 @@ def extract_assets_from_html(
     return modified_html, css_count, js_count
 
 
-def process_html_file(file_path: Path) -> ExtractionResult:
+def process_html_file(path: Path) -> ExtractionResult:
     """
     Process a single HTML file: extract assets and update in place.
 
     Args:
-        file_path: Path to HTML file
+        path: Path to HTML file
 
     Returns:
         ExtractionResult with processing status
     """
     try:
         # Read file with size check
-        if not file_path.is_file():
-            return ExtractionResult(
-                file_path=file_path, success=False, error="Not a file"
-            )
+        if not path.is_file():
+            return ExtractionResult(path=path, success=False, error="Not a file")
 
         # Check file size (skip extremely large files by default)
         MAX_FILE_SIZE = 50 * 1024 * 1024  # 50 MB
-        file_size = file_path.stat().st_size
+        file_size = path.stat().st_size
 
         if file_size > MAX_FILE_SIZE:
             return ExtractionResult(
-                file_path=file_path,
+                path=path,
                 success=False,
                 error=f"File too large ({file_size / 1024 / 1024:.1f} MB)",
             )
 
         if file_size == 0:
-            return ExtractionResult(
-                file_path=file_path, success=True, error="Empty file"
-            )
+            return ExtractionResult(path=path, success=True, error="Empty file")
 
         # Read HTML content
-        html_content = file_path.read_text(encoding="utf-8", errors="replace")
+        html_content = path.read_text(encoding="utf-8", errors="replace")
 
         # Create assets directory relative to HTML file
-        assets_dir = file_path.parent / ASSETS_DIR_NAME
+        assets_dir = path.parent / ASSETS_DIR_NAME
 
         # Extract assets
         modified_html, css_count, js_count = extract_assets_from_html(
-            html_content, file_path, assets_dir
+            html_content, path, assets_dir
         )
 
         # Only write back if changes were made
         if css_count > 0 or js_count > 0:
             # Write to temporary file first for atomic operation
-            temp_path = file_path.with_suffix(file_path.suffix + ".tmp")
+            temp_path = path.with_suffix(path.suffix + ".tmp")
             try:
                 temp_path.write_text(modified_html, encoding="utf-8")
-                temp_path.replace(file_path)
+                temp_path.replace(path)
             except Exception:
                 # Clean up temp file on failure
                 if temp_path.exists():
@@ -354,20 +350,18 @@ def process_html_file(file_path: Path) -> ExtractionResult:
                 raise
 
         return ExtractionResult(
-            file_path=file_path, success=True, css_count=css_count, js_count=js_count
+            path=path, success=True, css_count=css_count, js_count=js_count
         )
 
     except UnicodeDecodeError as e:
-        return ExtractionResult(
-            file_path=file_path, success=False, error=f"Encoding error: {e}"
-        )
+        return ExtractionResult(path=path, success=False, error=f"Encoding error: {e}")
     except PermissionError as e:
         return ExtractionResult(
-            file_path=file_path, success=False, error=f"Permission denied: {e}"
+            path=path, success=False, error=f"Permission denied: {e}"
         )
     except Exception as e:
         return ExtractionResult(
-            file_path=file_path, success=False, error=f"{type(e).__name__}: {e}"
+            path=path, success=False, error=f"{type(e).__name__}: {e}"
         )
 
 
@@ -502,17 +496,15 @@ def main() -> int:
                     if not args.quiet:
                         if result.css_count > 0 or result.js_count > 0:
                             print(
-                                f"✓ {result.file_path}: "
+                                f"✓ {result.path}: "
                                 f"{result.css_count} CSS, {result.js_count} JS extracted",
                                 file=sys.stderr,
                             )
                         elif result.error:
-                            print(
-                                f"○ {result.file_path}: {result.error}", file=sys.stderr
-                            )
+                            print(f"○ {result.path}: {result.error}", file=sys.stderr)
                 else:
                     total_errors += 1
-                    print(f"✗ {result.file_path}: {result.error}", file=sys.stderr)
+                    print(f"✗ {result.path}: {result.error}", file=sys.stderr)
 
         except KeyboardInterrupt:
             print("\nInterrupted by user.", file=sys.stderr)

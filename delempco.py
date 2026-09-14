@@ -77,12 +77,12 @@ class ProcessingStats:
     results: list[FileResult] = field(default_factory=list)
 
 
-def remove_blank_lines(file_path: Path, remove_spaces: bool = False) -> tuple[int, int]:
+def remove_blank_lines(path: Path, remove_spaces: bool = False) -> tuple[int, int]:
     """
     Remove blank lines (and optionally whitespace-only lines) from a file.
 
     Args:
-        file_path: Path to the file to process.
+        path: Path to the file to process.
         remove_spaces: If True, also remove lines that contain only whitespace.
 
     Returns:
@@ -92,7 +92,7 @@ def remove_blank_lines(file_path: Path, remove_spaces: bool = False) -> tuple[in
         OSError: If the file cannot be read or written.
     """
     try:
-        with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+        with open(path, "r", encoding="utf-8", errors="ignore") as f:
             lines = f.readlines()
     except OSError as e:
         raise OSError(f"Failed to read file: {e}")
@@ -108,7 +108,7 @@ def remove_blank_lines(file_path: Path, remove_spaces: bool = False) -> tuple[in
 
     if removed_lines > 0:
         try:
-            with open(file_path, "w", encoding="utf-8") as f:
+            with open(path, "w", encoding="utf-8") as f:
                 f.writelines(filtered)
         except OSError as e:
             raise OSError(f"Failed to write file: {e}")
@@ -116,34 +116,34 @@ def remove_blank_lines(file_path: Path, remove_spaces: bool = False) -> tuple[in
     return (total_lines, removed_lines)
 
 
-def process_file_worker(file_path: Path, remove_spaces: bool = False) -> FileResult:
+def process_file_worker(path: Path, remove_spaces: bool = False) -> FileResult:
     """
     Process a single file: detect binary, remove blank lines if text.
 
     Args:
-        file_path: Path to the file to process.
+        path: Path to the file to process.
         remove_spaces: If True, also remove whitespace-only lines.
 
     Returns:
         A FileResult describing the outcome.
     """
-    result: FileResult = FileResult(path=file_path, status="error")
+    result: FileResult = FileResult(path=path, status="error")
 
     try:
         try:
-            with open(file_path, "rb") as f:
+            with open(path, "rb") as f:
                 first_8kb: bytes = f.read(8192)
         except OSError:
             result.status = "error"
             result.error_message = "Permission denied"
             return result
 
-        if is_binary(file_path):
+        if is_binary(path):
             result.status = "skipped_binary"
             result.is_bin = True
             return result
 
-        total_lines, removed_lines = remove_blank_lines(file_path, remove_spaces)
+        total_lines, removed_lines = remove_blank_lines(path, remove_spaces)
         result.total_lines = total_lines
         result.removed_lines = removed_lines
 
@@ -188,9 +188,9 @@ def discover_files(directories: list[str]) -> tuple[list[Path], int]:
             skipped_dirs += 1
             continue
 
-        for file_path in dir_path.rglob("*"):
-            if file_path.is_file() and not should_skip(file_path):
-                files.append(file_path)
+        for path in dir_path.rglob("*"):
+            if path.is_file() and not should_skip(path):
+                files.append(path)
 
     return (files, skipped_dirs)
 
@@ -401,9 +401,9 @@ def main() -> int:
     # Use multiprocessing.Pool with apply_async
     with Pool(processes=NUM_WORKERS) as pool:
         async_results: list[AsyncResult[FileResult]] = []
-        for file_path in files:
+        for path in files:
             async_result: AsyncResult[FileResult] = pool.apply_async(
-                process_file_worker, (file_path, args.space)
+                process_file_worker, (path, args.space)
             )
             async_results.append(async_result)
 

@@ -7,13 +7,13 @@ from pathlib import Path
 from dh import is_binary
 
 
-def count_lines_of_code(file_path: Path, lang) -> tuple[int, int, int]:
-    if ".git" in str(file_path):
+def count_lines_of_code(path: Path, lang) -> tuple[int, int, int]:
+    if ".git" in str(path):
         return (0, 0, 0)
-    if is_binary(str(file_path)):
-        print(f"{file_path} is binary")
+    if is_binary(str(path)):
+        print(f"{path} is binary")
         return (0, 0, 0)
-    with file_path.open(encoding="utf-8") as file:
+    with path.open(encoding="utf-8") as file:
         code_lines = 0
         comment_lines = 0
         blank_lines = 0
@@ -35,14 +35,14 @@ def scan_directory(directory: str = "."):
         },
     }
     base_path = Path(directory)
-    for file_path in base_path.rglob("*"):
-        if not file_path.is_file():
+    for path in base_path.rglob("*"):
+        if not path.is_file():
             continue
-        file_extension = file_path.suffix.lower()
+        file_extension = path.suffix.lower()
         if not file_extension:
-            lang = get_language_from_shebang(str(file_path))
+            lang = get_language_from_shebang(str(path))
             if lang:
-                code, comments, blanks = count_lines_of_code(file_path, lang)
+                code, comments, blanks = count_lines_of_code(path, lang)
                 stats["languages"][lang]["code"] += code
                 stats["languages"][lang]["comments"] += comments
                 stats["languages"][lang]["blank"] += blanks
@@ -52,7 +52,7 @@ def scan_directory(directory: str = "."):
                 continue
         for lang, extensions in LANG_EXTENSIONS.items():
             if file_extension in extensions:
-                code, comments, blanks = count_lines_of_code(file_path, lang)
+                code, comments, blanks = count_lines_of_code(path, lang)
                 stats["languages"][lang]["code"] += code
                 stats["languages"][lang]["comments"] += comments
                 stats["languages"][lang]["blank"] += blanks

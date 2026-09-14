@@ -59,7 +59,7 @@ _IGNORED_CHILD_TYPES: Final[frozenset[str]] = frozenset(
 class ProcessingResult:
     """Outcome of processing a single Python file."""
 
-    file_path: Path
+    path: Path
     success: bool
     error: str | None = None
     original_size: int = 0
@@ -219,25 +219,25 @@ def validate_syntax(source: str) -> bool:
 # ---------------------------------------------------------------------------
 
 
-def process_file_tree_sitter(file_path: Path) -> ProcessingResult:
+def process_file_tree_sitter(path: Path) -> ProcessingResult:
     """Process a single file with the tree-sitter remover."""
     start_time: float = time.perf_counter()
     try:
-        original_content: str = file_path.read_text(encoding="utf-8")
+        original_content: str = path.read_text(encoding="utf-8")
         original_size: int = len(original_content.encode("utf-8"))
         remover: TreeSitterCommentRemover = TreeSitterCommentRemover()
         new_content: str = remover.remove_comments_and_docstrings(original_content)
         if not validate_syntax(new_content):
             return ProcessingResult(
-                file_path=file_path,
+                path=path,
                 success=False,
                 error="Syntax validation failed",
                 processing_time=time.perf_counter() - start_time,
             )
-        file_path.write_text(new_content, encoding="utf-8")
+        path.write_text(new_content, encoding="utf-8")
         new_size: int = len(new_content.encode("utf-8"))
         return ProcessingResult(
-            file_path=file_path,
+            path=path,
             success=True,
             original_size=original_size,
             new_size=new_size,
@@ -245,31 +245,31 @@ def process_file_tree_sitter(file_path: Path) -> ProcessingResult:
         )
     except Exception as exc:  # noqa: BLE001 - surface any failure via result
         return ProcessingResult(
-            file_path=file_path,
+            path=path,
             success=False,
             error=str(exc),
             processing_time=time.perf_counter() - start_time,
         )
 
 
-def process_file_ast(file_path: Path) -> ProcessingResult:
+def process_file_ast(path: Path) -> ProcessingResult:
     """Process a single file with the AST fallback remover."""
     start_time: float = time.perf_counter()
     try:
-        original_content: str = file_path.read_text(encoding="utf-8")
+        original_content: str = path.read_text(encoding="utf-8")
         original_size: int = len(original_content.encode("utf-8"))
         remover: ASTCommentRemover = ASTCommentRemover()
         new_content: str = remover.remove_comments_and_docstrings(original_content)
         if not validate_syntax(new_content):
             return ProcessingResult(
-                file_path=file_path,
+                path=path,
                 success=False,
                 error="Syntax validation failed",
                 processing_time=time.perf_counter() - start_time,
             )
         new_size: int = len(new_content.encode("utf-8"))
         return ProcessingResult(
-            file_path=file_path,
+            path=path,
             success=True,
             original_size=original_size,
             new_size=new_size,
@@ -277,7 +277,7 @@ def process_file_ast(file_path: Path) -> ProcessingResult:
         )
     except Exception as exc:  # noqa: BLE001 - surface any failure via result
         return ProcessingResult(
-            file_path=file_path,
+            path=path,
             success=False,
             error=str(exc),
             processing_time=time.perf_counter() - start_time,
@@ -314,7 +314,7 @@ def process_directory(
     pool: Pool = Pool(processes=WORKER_COUNT)
     try:
         async_results: list[Any] = [
-            pool.apply_async(process_func, (file_path,)) for file_path in py_files
+            pool.apply_async(process_func, (path,)) for path in py_files
         ]
         for async_result in async_results:
             result: ProcessingResult = async_result.get()
@@ -324,7 +324,7 @@ def process_directory(
             logger.info(
                 "{status} {name}{err}",
                 status=status,
-                name=result.file_path.name,
+                name=result.path.name,
                 err=error_msg,
             )
     finally:
@@ -371,7 +371,7 @@ def print_results(
     if failed:
         logger.warning("Failed files:")
         for r in failed:
-            logger.warning("  - {}: {}", r.file_path, r.error)
+            logger.warning("  - {}: {}", r.path, r.error)
 
 
 # ---------------------------------------------------------------------------

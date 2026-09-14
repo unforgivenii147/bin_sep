@@ -29,20 +29,20 @@ CHUNK_SIZE: int = 1024 * 64
 WORKER_COUNT: int = 8
 
 
-def compress_stream(input_stream: BinaryIO, output_file_path: Path) -> bool:
+def compress_stream(input_stream: BinaryIO, output_path: Path) -> bool:
     """
     Compress a binary stream to a zstd file.
 
     Args:
         input_stream: Binary stream to compress
-        output_file_path: Path where compressed file will be written
+        output_path: Path where compressed file will be written
 
     Returns:
         bool: True if compression successful, False otherwise
     """
     try:
         cctx = zstd.ZstdCompressor(level=ZSTD_LEVEL)
-        with open(output_file_path, "wb") as f_out:
+        with open(output_path, "wb") as f_out:
             compressor = cctx.stream_writer(f_out)
             while True:
                 chunk = input_stream.read(CHUNK_SIZE)
@@ -50,10 +50,10 @@ def compress_stream(input_stream: BinaryIO, output_file_path: Path) -> bool:
                     break
                 compressor.write(chunk)
             compressor.close()
-        logger.info(f"Compressed: {output_file_path.name}")
+        logger.info(f"Compressed: {output_path.name}")
         return True
     except Exception as e:
-        logger.error(f"Error compressing to {output_file_path.name}: {e}")
+        logger.error(f"Error compressing to {output_path.name}: {e}")
         return False
 
 
@@ -106,21 +106,21 @@ def process_directory(dir_path: Path) -> None:
         logger.error(f"Failed to archive directory {dir_path.name}: {e}")
 
 
-def process_file(file_path: Path) -> None:
+def process_file(path: Path) -> None:
     """
     Compress a single file into .zst format and remove the original.
 
     Args:
-        file_path: Path to the file to compress
+        path: Path to the file to compress
     """
-    output_zst = file_path.with_name(f"{file_path.name}.zst")
+    output_zst = path.with_name(f"{path.name}.zst")
     try:
-        with open(file_path, "rb") as f_in:
+        with open(path, "rb") as f_in:
             if compress_stream(f_in, output_zst):
-                file_path.unlink()
-                logger.info(f"Removed original file: {file_path.name}")
+                path.unlink()
+                logger.info(f"Removed original file: {path.name}")
     except Exception as e:
-        logger.error(f"Failed to compress file {file_path.name}: {e}")
+        logger.error(f"Failed to compress file {path.name}: {e}")
 
 
 def decompress_file(zst_path: Path) -> None:

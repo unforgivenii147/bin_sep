@@ -58,7 +58,7 @@ def create_html(channel_name: str, base_data) -> None:
     date_str = datetime.now().strftime("%d-%m-%Y")
     dir_path = Path(f"output/{date_str}_{channel_name}")
     dir_path.mkdir(exist_ok=True, parents=True)
-    file_path = dir_path / "bases.html"
+    path = dir_path / "bases.html"
     html_content = f"""
     <html>
     <head>
@@ -84,8 +84,8 @@ def create_html(channel_name: str, base_data) -> None:
             html_content += f'<li><a href="{link}">Get Base Layout</a></li>'
         html_content += "</ul></div>"
     html_content += "</body></html>"
-    file_path.write_text(html_content, encoding="utf-8")
-    print(f"Generated: {file_path}")
+    path.write_text(html_content, encoding="utf-8")
+    print(f"Generated: {path}")
 
 
 def main() -> None:

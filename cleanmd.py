@@ -59,7 +59,7 @@ class Styling:
 
 
 class ImageStats(NamedTuple):
-    file_path: Path
+    path: Path
     rel_path: str
     images_removed: int
     references_removed: int
@@ -137,22 +137,22 @@ def get_markdown_files(path: Path) -> list[Path]:
     return []
 
 
-def process_file(file_path: Path, config: ProcessingConfig) -> ImageStats:
+def process_file(path: Path, config: ProcessingConfig) -> ImageStats:
     try:
-        original_content = file_path.read_text(encoding=config.encoding)
+        original_content = path.read_text(encoding=config.encoding)
         original_size = len(original_content.encode(config.encoding))
         remover = MarkdownImageRemover(config)
         cleaned_content, images_removed = remover.remove_images(original_content)
         references_removed = images_removed
         if cleaned_content != original_content:
             if config.backup:
-                backup_path = file_path.with_suffix(file_path.suffix + ".bak")
-                file_path.write_text(original_content, encoding=config.encoding)
-            file_path.write_text(cleaned_content, encoding=config.encoding)
+                backup_path = path.with_suffix(path.suffix + ".bak")
+                path.write_text(original_content, encoding=config.encoding)
+            path.write_text(cleaned_content, encoding=config.encoding)
         final_size = len(cleaned_content.encode(config.encoding))
         return ImageStats(
-            file_path=file_path,
-            rel_path=str(file_path.relative_to(Path.cwd())),
+            path=path,
+            rel_path=str(path.relative_to(Path.cwd())),
             images_removed=images_removed,
             references_removed=references_removed,
             original_size=original_size,
@@ -161,8 +161,8 @@ def process_file(file_path: Path, config: ProcessingConfig) -> ImageStats:
         )
     except Exception as e:
         return ImageStats(
-            file_path=file_path,
-            rel_path=str(file_path.relative_to(Path.cwd())),
+            path=path,
+            rel_path=str(path.relative_to(Path.cwd())),
             images_removed=0,
             references_removed=0,
             original_size=0,
@@ -172,8 +172,8 @@ def process_file(file_path: Path, config: ProcessingConfig) -> ImageStats:
 
 
 def worker_process_file(args: tuple[Path, ProcessingConfig]) -> ImageStats:
-    file_path, config = args
-    return process_file(file_path, config)
+    path, config = args
+    return process_file(path, config)
 
 
 class Reporter:

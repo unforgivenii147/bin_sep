@@ -41,19 +41,19 @@ class HTMLStandaloneMaker:
         if self.verbose or level == "ERROR":
             print(f"[{level}] {message}")
 
-    def get_mime_type(self, file_path: Path) -> str:
-        ext = file_path.suffix.lower()
+    def get_mime_type(self, path: Path) -> str:
+        ext = path.suffix.lower()
         return self.MIME_MAP.get(ext, "application/octet-stream")
 
-    def encode_local_file_to_base64(self, file_path: Path) -> str | None:
+    def encode_local_file_to_base64(self, path: Path) -> str | None:
         try:
-            if not file_path.exists():
-                self.log(f"File not found: {file_path}", "ERROR")
+            if not path.exists():
+                self.log(f"File not found: {path}", "ERROR")
                 return None
-            content = file_path.read_bytes()
+            content = path.read_bytes()
             return base64.b64encode(content).decode("utf-8")
         except Exception as e:
-            self.log(f"Error encoding file {file_path}: {e}", "ERROR")
+            self.log(f"Error encoding file {path}: {e}", "ERROR")
             return None
 
     def find_local_resource(

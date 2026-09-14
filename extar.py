@@ -72,9 +72,9 @@ def process_archive(archive_path: Path, dry_run: bool = False, quiet: bool = Fal
             extracted_files = ["multiple files (tar contents)"]
         extracted_size = 0
         if extracted_files and extracted_files[0] != "multiple files (tar contents)":
-            for file_path in extracted_files:
-                if file_path.exists():
-                    extracted_size += file_path.stat().st_size
+            for path in extracted_files:
+                if path.exists():
+                    extracted_size += path.stat().st_size
         else:
             current_time = time.time()
             for item in extract_path.rglob("*"):

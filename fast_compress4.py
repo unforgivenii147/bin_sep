@@ -10,16 +10,16 @@ import zstandard as zstd
 
 
 def walk_files(directory: Path, pattern: str = "*") -> Iterator[tuple[Path, Path]]:
-    for file_path in directory.rglob(pattern):
-        if not file_path.is_file():
+    for path in directory.rglob(pattern):
+        if not path.is_file():
             continue
-        if file_path.suffix == ".zst":
+        if path.suffix == ".zst":
             continue
-        output_path = file_path.with_suffix(file_path.suffix + ".zst")
+        output_path = path.with_suffix(path.suffix + ".zst")
         if output_path.exists():
-            print(f"Skipping {file_path} - output already exists", file=sys.stderr)
+            print(f"Skipping {path} - output already exists", file=sys.stderr)
             continue
-        yield file_path, output_path
+        yield path, output_path
 
 
 def compress_file(
@@ -163,13 +163,13 @@ def main():
     processed = 0
     failed = 0
     if args.decompress:
-        for file_path, _ in walk_files(root_dir, f"*{args.pattern}*.zst"):
+        for path, _ in walk_files(root_dir, f"*{args.pattern}*.zst"):
             if args.dry_run:
                 print(
-                    f"[DRY RUN] Would decompress & {'remove' if remove_original else 'keep'}: {file_path}"
+                    f"[DRY RUN] Would decompress & {'remove' if remove_original else 'keep'}: {path}"
                 )
             elif decompress_file(
-                file_path, chunk_size=args.chunk_size, remove_original=remove_original
+                path, chunk_size=args.chunk_size, remove_original=remove_original
             ):
                 processed += 1
             else:

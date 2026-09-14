@@ -101,37 +101,35 @@ def add_main_guard(content: str) -> str:
     return content.rstrip() + MAIN_GUARD_TEMPLATE
 
 
-def process_file(
-    filepath: Path, add: bool = False, dry_run: bool = False
-) -> ProcessResult:
+def process_file(path: Path, add: bool = False, dry_run: bool = False) -> ProcessResult:
     """Inspect (and optionally rewrite) a single Python file.
 
     Returns a `ProcessResult` describing the outcome.
     """
     try:
-        content = filepath.read_text(encoding="utf-8")
+        content = path.read_text(encoding="utf-8")
     except OSError as exc:
-        logger.error(f"Failed to read {filepath}: {exc}")
-        return {"status": "error", "message": str(exc), "path": filepath}
+        logger.error(f"Failed to read {path}: {exc}")
+        return {"status": "error", "message": str(exc), "path": path}
 
     if has_main_guard(content):
-        return {"status": "skipped", "message": "Already has guard", "path": filepath}
+        return {"status": "skipped", "message": "Already has guard", "path": path}
 
     if not add:
-        return {"status": "missing", "message": "Missing guard", "path": filepath}
+        return {"status": "missing", "message": "Missing guard", "path": path}
 
     new_content = add_main_guard(add_main_function(content))
 
     if dry_run:
-        return {"status": "would_add", "message": "Would add guard", "path": filepath}
+        return {"status": "would_add", "message": "Would add guard", "path": path}
 
     try:
-        filepath.write_text(new_content, encoding="utf-8")
+        path.write_text(new_content, encoding="utf-8")
     except OSError as exc:
-        logger.error(f"Failed to write {filepath}: {exc}")
-        return {"status": "error", "message": str(exc), "path": filepath}
+        logger.error(f"Failed to write {path}: {exc}")
+        return {"status": "error", "message": str(exc), "path": path}
 
-    return {"status": "added", "message": "Added guard successfully", "path": filepath}
+    return {"status": "added", "message": "Added guard successfully", "path": path}
 
 
 def find_python_files(

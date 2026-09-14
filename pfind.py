@@ -92,10 +92,10 @@ def search_in_archive(archive_path, pattern):
     return results
 
 
-def search_file(file_path, pattern):
+def search_file(path, pattern):
     pattern_lower = pattern.lower()
-    if pattern_lower in file_path.name.lower():
-        return [(str(file_path.relative_to(Path.cwd())), None)]
+    if pattern_lower in path.name.lower():
+        return [(str(path.relative_to(Path.cwd())), None)]
     return []
 
 
@@ -138,11 +138,11 @@ def main():
         sys.exit(1)
     pattern = sys.argv[1]
     root_dirs = sys.argv[2:] if len(sys.argv) > 2 else None
-    for file_path, archive_member in search(pattern, root_dirs):
+    for path, archive_member in search(pattern, root_dirs):
         if archive_member:
-            print(f"{file_path}:{archive_member}")
+            print(f"{path}:{archive_member}")
         else:
-            print(file_path)
+            print(path)
 
 
 if __name__ == "__main__":

@@ -290,50 +290,48 @@ class RegexFixer:
         except SyntaxError:
             return False
 
-    def process_file(self, filepath: Path) -> tuple[Path, bool, str]:
+    def process_file(self, path: Path) -> tuple[Path, bool, str]:
         """Process a single file and return ``(path, success, message)``."""
         try:
-            original_code: str = filepath.read_text(encoding="utf-8")
+            original_code: str = path.read_text(encoding="utf-8")
         except Exception as e:
-            return (filepath, False, f"Failed to read: {e}")
+            return (path, False, f"Failed to read: {e}")
 
         if "re." not in original_code:
-            return (filepath, True, "No re calls found")
+            return (path, True, "No re calls found")
 
         modifications: list[StringModification] = self.process_tokens(original_code)
         if not modifications:
-            return (filepath, True, "No changes needed")
+            return (path, True, "No changes needed")
 
         if self.verbose:
-            logger.info(
-                f"Found {len(modifications)} modification(s) in {filepath.name}"
-            )
+            logger.info(f"Found {len(modifications)} modification(s) in {path.name}")
             for mod in modifications:
                 logger.debug(f"  {mod.original} -> {mod.modified}")
 
         new_code: str = self.apply_modifications(original_code, modifications)
         if not self.validate_code(new_code):
             return (
-                filepath,
+                path,
                 False,
                 "Validation failed - syntax error after conversion",
             )
 
         if self.dry_run:
-            return (filepath, True, f"Would modify {len(modifications)} string(s)")
+            return (path, True, f"Would modify {len(modifications)} string(s)")
 
         if self.create_backup:
-            backup_path: Path = filepath.with_suffix(filepath.suffix + ".bak")
+            backup_path: Path = path.with_suffix(path.suffix + ".bak")
             try:
-                shutil.copy2(filepath, backup_path)
+                shutil.copy2(path, backup_path)
             except Exception as e:
-                return (filepath, False, f"Failed to create backup: {e}")
+                return (path, False, f"Failed to create backup: {e}")
 
         try:
-            filepath.write_text(new_code, encoding="utf-8")
-            return (filepath, True, f"✓ Modified {len(modifications)} string(s)")
+            path.write_text(new_code, encoding="utf-8")
+            return (path, True, f"✓ Modified {len(modifications)} string(s)")
         except Exception as e:
-            return (filepath, False, f"Failed to write: {e}")
+            return (path, False, f"Failed to write: {e}")
 
     def collect_files(self, paths: list[Path]) -> list[Path]:
         """Collect all Python files under ``paths``, excluding common junk dirs."""
@@ -374,8 +372,8 @@ class RegexFixer:
 
         if len(files) == 1:
             results: list[tuple[Path, bool, str]] = []
-            for filepath in files:
-                result = self.process_file(filepath)
+            for path in files:
+                result = self.process_file(path)
                 results.append(result)
                 self._update_stats(result)
             return results
@@ -417,26 +415,26 @@ class RegexFixer:
         modified: list[tuple[Path, str]] = []
         unchanged: list[tuple[Path, str]] = []
         errors: list[tuple[Path, str]] = []
-        for filepath, success, message in results:
+        for path, success, message in results:
             if not success:
-                errors.append((filepath, message))
+                errors.append((path, message))
             elif "Modified" in message or "Would modify" in message:
-                modified.append((filepath, message))
+                modified.append((path, message))
             else:
-                unchanged.append((filepath, message))
+                unchanged.append((path, message))
 
         if modified:
             logger.info("📝 Modified files:")
-            for filepath, message in modified:
-                rel_path: str = self._get_relative_path(filepath)
+            for path, message in modified:
+                rel_path: str = self._get_relative_path(path)
                 logger.info(f"  ✓ {rel_path}")
                 if self.verbose:
                     logger.info(f"    {message}")
 
         if errors:
             logger.error("❌ Errors:")
-            for filepath, message in errors:
-                rel_path = self._get_relative_path(filepath)
+            for path, message in errors:
+                rel_path = self._get_relative_path(path)
                 logger.error(f"  ✗ {rel_path}: {message}")
 
         logger.info("=" * 40)

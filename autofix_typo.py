@@ -261,12 +261,12 @@ class TypoFixerWithLearning:
             elif choice == "n":
                 return word
 
-    def fix_file(self, filepath: Path) -> bool:
+    def fix_file(self, path: Path) -> bool:
         try:
-            with open(filepath, encoding="utf-8") as f:
+            with open(path, encoding="utf-8") as f:
                 lines = f.readlines()
         except Exception as e:
-            print(f"  Error reading {filepath}: {e}", file=sys.stderr)
+            print(f"  Error reading {path}: {e}", file=sys.stderr)
             return False
         fixed_lines = []
         changes = 0
@@ -299,13 +299,13 @@ class TypoFixerWithLearning:
             fixed_line = word_pattern.sub(replace_word, line)
             fixed_lines.append(fixed_line)
         if changes > 0 and not self.preview:
-            backup = filepath.with_suffix(filepath.suffix + ".bak")
-            shutil.copy2(filepath, backup)
-            with open(filepath, "w", encoding="utf-8") as f:
+            backup = path.with_suffix(path.suffix + ".bak")
+            shutil.copy2(path, backup)
+            with open(path, "w", encoding="utf-8") as f:
                 f.writelines(fixed_lines)
-            print(f"  Fixed {changes} typo(s) in {filepath}", file=sys.stderr)
+            print(f"  Fixed {changes} typo(s) in {path}", file=sys.stderr)
         elif changes > 0 and self.preview:
-            print(f"  Would fix {changes} typo(s) in {filepath}", file=sys.stderr)
+            print(f"  Would fix {changes} typo(s) in {path}", file=sys.stderr)
         self.changes_made += changes
         return changes > 0
 
@@ -313,11 +313,11 @@ class TypoFixerWithLearning:
         root_path = Path(cwd)
         extensions = {".md", ".py", ".toml", ".json", ".html", ".css", ".js", ".txt"}
         for ext in extensions:
-            for filepath in root_path.rglob(f"*{ext}"):
-                if filepath.is_file():
+            for path in root_path.rglob(f"*{ext}"):
+                if path.is_file():
                     self.files_processed += 1
-                    print(f"\nProcessing: {filepath}", file=sys.stderr)
-                    self.fix_file(filepath)
+                    print(f"\nProcessing: {path}", file=sys.stderr)
+                    self.fix_file(path)
         print(f"\nSummary: Processed {self.files_processed} files", file=sys.stderr)
         print(
             f"Active patterns: {len(self.learner.substitution_patterns)}",

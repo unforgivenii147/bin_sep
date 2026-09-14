@@ -17,9 +17,9 @@ SHEBANG_MAP = {
 TARGET_EXTENSIONS = {".py", ".sh"}
 
 
-def detect_shebang(filepath):
+def detect_shebang(path):
     try:
-        with open(filepath, encoding="utf-8", errors="ignore") as f:
+        with open(path, encoding="utf-8", errors="ignore") as f:
             first_line = f.readline().strip()
             if first_line.startswith("#!"):
                 interpreter = first_line[2:].strip()
@@ -31,33 +31,33 @@ def detect_shebang(filepath):
                     if key in interpreter.lower():
                         return ext
     except OSError as e:
-        print(f"Error reading {filepath}: {e}")
+        print(f"Error reading {path}: {e}")
     return None
 
 
-def should_rename(filepath, target_ext):
-    current_ext = os.path.splitext(filepath)[1].lower()
+def should_rename(path, target_ext):
+    current_ext = os.path.splitext(path)[1].lower()
     return current_ext != target_ext
 
 
-def rename_file(filepath, target_ext):
-    directory = os.path.dirname(filepath)
-    basename = os.path.splitext(os.path.basename(filepath))[0]
-    if not os.path.splitext(filepath)[1]:
-        basename = os.path.basename(filepath)
+def rename_file(path, target_ext):
+    directory = os.path.dirname(path)
+    basename = os.path.splitext(os.path.basename(path))[0]
+    if not os.path.splitext(path)[1]:
+        basename = os.path.basename(path)
     new_name = f"{basename}{target_ext}"
     new_path = os.path.join(directory, new_name)
     counter = 1
-    while os.path.exists(new_path) and new_path != filepath:
+    while os.path.exists(new_path) and new_path != path:
         new_name = f"{basename}_{counter}{target_ext}"
         new_path = os.path.join(directory, new_name)
         counter += 1
     try:
-        if new_path != filepath:
-            os.rename(filepath, new_path)
+        if new_path != path:
+            os.rename(path, new_path)
             return new_path
     except OSError as e:
-        print(f"Error renaming {filepath} to {new_path}: {e}")
+        print(f"Error renaming {path} to {new_path}: {e}")
         return None
     return None
 
@@ -71,15 +71,15 @@ def main():
     renamed_count = 0
     skipped_count = 0
     for item in os.listdir(current_dir):
-        filepath = os.path.join(current_dir, item)
-        if not os.path.isfile(filepath):
+        path = os.path.join(current_dir, item)
+        if not os.path.isfile(path):
             continue
-        target_ext = detect_shebang(filepath)
+        target_ext = detect_shebang(path)
         if target_ext is None:
             if verbose:
                 print(f"  SKIP: {item} (no recognized shebang)")
             continue
-        if not should_rename(filepath, target_ext):
+        if not should_rename(path, target_ext):
             if verbose:
                 print(f"  SKIP: {item} (already has correct extension)")
             skipped_count += 1
@@ -89,7 +89,7 @@ def main():
             print(f"  WOULD RENAME: {item} -> {new_name}")
             renamed_count += 1
         else:
-            result = rename_file(filepath, target_ext)
+            result = rename_file(path, target_ext)
             if result:
                 print(f"  RENAMED: {item} -> {os.path.basename(result)}")
                 renamed_count += 1

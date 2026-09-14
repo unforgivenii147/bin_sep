@@ -71,26 +71,26 @@ def stream_copy(src_file: Any, dst_file: Any, chunk_size: int = BUFFER_SIZE) -> 
         dst_file.write(chunk)
 
 
-def compress_file(file_path: Path) -> tuple[Path, bool, int, int, str]:
-    """Gzip ``file_path`` to ``<name>.gz``, delete the original on success.
+def compress_file(path: Path) -> tuple[Path, bool, int, int, str]:
+    """Gzip ``path`` to ``<name>.gz``, delete the original on success.
 
     Returns a tuple of ``(path, success, original_size, compressed_size, error)``.
     """
-    gz_path: Path = file_path.with_suffix(file_path.suffix + ".gz")
+    gz_path: Path = path.with_suffix(path.suffix + ".gz")
     try:
-        original_size: int = file_path.stat().st_size
+        original_size: int = path.stat().st_size
         with (
-            open(file_path, "rb") as f_in,
+            open(path, "rb") as f_in,
             gzip.open(gz_path, "wb", compresslevel=9) as f_out,
         ):
             stream_copy(f_in, f_out)
         compressed_size: int = gz_path.stat().st_size
-        file_path.unlink()
-        return (file_path, True, original_size, compressed_size, "")
+        path.unlink()
+        return (path, True, original_size, compressed_size, "")
     except Exception as e:  # noqa: BLE001
         if gz_path.exists():
             gz_path.unlink()
-        return (file_path, False, 0, 0, str(e))
+        return (path, False, 0, 0, str(e))
 
 
 def find_files_to_compress(
@@ -104,9 +104,9 @@ def find_files_to_compress(
         if not directory.exists():
             logger.warning("Directory '{}' does not exist, skipping...", directory)
             continue
-        for file_path in directory.rglob("*"):
-            if file_path.is_file() and file_path.suffix not in skip_extensions:
-                files_to_compress.append(file_path)
+        for path in directory.rglob("*"):
+            if path.is_file() and path.suffix not in skip_extensions:
+                files_to_compress.append(path)
     return files_to_compress
 
 
@@ -178,15 +178,14 @@ Examples:
     stats: CompressionStats = CompressionStats()
     with Pool(processes=WORKERS) as pool:
         async_results: list[Any] = [
-            pool.apply_async(compress_file, (file_path,))
-            for file_path in files_to_compress
+            pool.apply_async(compress_file, (path,)) for path in files_to_compress
         ]
         for async_result in async_results:
-            file_path, success, orig_size, comp_size, error = async_result.get()
+            path, success, orig_size, comp_size, error = async_result.get()
             try:
-                rel_path: Path = file_path.relative_to(Path.cwd())
+                rel_path: Path = path.relative_to(Path.cwd())
             except ValueError:
-                rel_path = file_path
+                rel_path = path
             display_path: str = str(rel_path)
             if len(display_path) > 47:
                 display_path = "..." + display_path[-44:]

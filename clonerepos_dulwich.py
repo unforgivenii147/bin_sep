@@ -34,11 +34,11 @@ MAX_SIZE_BYTES: int = MAX_SIZE_MB * 1024 * 1024
 DEFAULT_WORKERS: Final[int] = 8
 
 
-def read_repos(file_path: Path) -> list[str]:
-    """Read repository names from *file_path*, one per line, skipping blanks.
+def read_repos(path: Path) -> list[str]:
+    """Read repository names from *path*, one per line, skipping blanks.
 
     Args:
-        file_path: Path to the file containing repository names.
+        path: Path to the file containing repository names.
 
     Returns:
         A list of non-empty repository name strings.
@@ -46,13 +46,13 @@ def read_repos(file_path: Path) -> list[str]:
     Raises:
         SystemExit: If the file does not exist or contains no repositories.
     """
-    if not file_path.exists():
-        logger.error(f"Error: {file_path} does not exist")
+    if not path.exists():
+        logger.error(f"Error: {path} does not exist")
         sys.exit(1)
-    with open(file_path) as f:
+    with open(path) as f:
         repos: list[str] = [line.strip() for line in f if line.strip()]
     if not repos:
-        logger.error(f"Error: No repositories found in {file_path}")
+        logger.error(f"Error: No repositories found in {path}")
         sys.exit(1)
     return repos
 
@@ -124,17 +124,17 @@ def clone_repo(repo: str, base_dir: Path) -> tuple[str, bool, str]:
         return repo, False, f"Clone failed: {e!s}"
 
 
-def remove_from_repos_file(file_path: Path, repos_to_remove: set[str]) -> None:
-    """Remove *repos_to_remove* from the repository list file *file_path*."""
+def remove_from_repos_file(path: Path, repos_to_remove: set[str]) -> None:
+    """Remove *repos_to_remove* from the repository list file *path*."""
     if not repos_to_remove:
         return
-    current_repos: list[str] = read_repos(file_path)
+    current_repos: list[str] = read_repos(path)
     updated_repos: list[str] = [
         repo for repo in current_repos if repo not in repos_to_remove
     ]
-    with open(file_path, "w") as f:
+    with open(path, "w") as f:
         f.write("\n".join(updated_repos) + "\n" if updated_repos else "")
-    logger.info(f"\nRemoved {len(repos_to_remove)} repos from {file_path}")
+    logger.info(f"\nRemoved {len(repos_to_remove)} repos from {path}")
 
 
 def parse_args() -> argparse.Namespace:

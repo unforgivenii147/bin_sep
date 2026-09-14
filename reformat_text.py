@@ -40,14 +40,14 @@ def restructure_paragraph(paragraph: str) -> str:
     return "\n".join(lines)
 
 
-def restructure_file(filepath: Path) -> None:
-    backup = filepath.with_suffix(filepath.suffix + ".bak")
-    text = filepath.read_text(encoding="utf-8", errors="ignore")
+def restructure_file(path: Path) -> None:
+    backup = path.with_suffix(path.suffix + ".bak")
+    text = path.read_text(encoding="utf-8", errors="ignore")
     backup.write_text(text, encoding="utf-8")
     paragraphs = re.split(r"\n\s*\n", text.strip(), flags=re.MULTILINE)
     new_paragraphs = [restructure_paragraph(p) for p in paragraphs]
     new_text = "\n\n".join(new_paragraphs) + "\n"
-    filepath.write_text(new_text, encoding="utf-8")
+    path.write_text(new_text, encoding="utf-8")
 
 
 def main() -> None:

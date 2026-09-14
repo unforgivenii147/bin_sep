@@ -49,25 +49,25 @@ def split_text_into_chunks(text: str) -> list[str]:
     return chunks
 
 
-def process_file(file_path: Path, output_dir: Path) -> tuple[str, int, str | None]:
+def process_file(path: Path, output_dir: Path) -> tuple[str, int, str | None]:
     try:
-        with open(file_path, encoding="utf-8", errors="ignore") as f:
+        with open(path, encoding="utf-8", errors="ignore") as f:
             text = f.read()
         if not text.strip():
-            return (file_path.name, 0, None)
+            return (path.name, 0, None)
         chunks = split_text_into_chunks(text)
         if not chunks:
-            return (file_path.name, 0, None)
-        stem = file_path.stem
-        suffix = file_path.suffix
+            return (path.name, 0, None)
+        stem = path.stem
+        suffix = path.suffix
         for i, chunk in enumerate(chunks, 1):
             chunk_filename = f"{stem}_{i}{suffix}"
             chunk_path = output_dir / chunk_filename
             with open(chunk_path, "w", encoding="utf-8") as f:
                 f.write(chunk)
-        return (file_path.name, len(chunks), None)
+        return (path.name, len(chunks), None)
     except Exception as e:
-        return (file_path.name, 0, str(e))
+        return (path.name, 0, str(e))
 
 
 def get_text_files(paths: list[Path]) -> list[Path]:

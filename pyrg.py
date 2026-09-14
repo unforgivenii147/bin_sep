@@ -63,19 +63,19 @@ def get_files(
             for f in walk_files:
                 if not search_hidden and f.startswith("."):
                     continue
-                file_path = root / f
-                if file_path.is_symlink():
+                path = root / f
+                if path.is_symlink():
                     continue
                 try:
-                    if max_size and file_path.stat().st_size > max_size:
+                    if max_size and path.stat().st_size > max_size:
                         continue
                 except OSError:
                     continue
-                if include_globs and not matches_any_glob(file_path, include_globs):
+                if include_globs and not matches_any_glob(path, include_globs):
                     continue
-                if exclude_globs and matches_any_glob(file_path, exclude_globs):
+                if exclude_globs and matches_any_glob(path, exclude_globs):
                     continue
-                yield file_path
+                yield path
 
 
 def colorize_line(line: str, spans: list[tuple[int, int]]) -> str:

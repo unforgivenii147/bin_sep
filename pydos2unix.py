@@ -2,12 +2,13 @@
 from __future__ import annotations
 
 import argparse
-import logging
 from multiprocessing import Pool
 from pathlib import Path
+from dos2unix import dos2unix
+from dh import is_binary, get_nobinary
+from loguru import logger
 
-from dh import is_binary,get_nobinary
-
+MAX_WORKERS = 8
 CHUNK_SIZE = 32768
 SKIP_DIRS = {
     ".git",
@@ -24,43 +25,38 @@ def should_skip_dir(directory: Path) -> bool:
     return directory.name in SKIP_DIRS
 
 
-
-
-def convert_dos_to_unix_chunk(chunk: bytes) -> bytes:
-    return chunk.replace(b"\r\n", b"\n")
-
-
-def convert_file(file_path: Path) -> tuple[str, bool, str]:
+def convert_file(path: Path) -> tuple[str, bool, str]:
+    path = Path(path)
     try:
-        if not file_path.is_file():
-            return (str(file_path), False, "Not a file")
-        if is_binary(file_path):
-            return (str(file_path), False, "Binary file (skipped)")
-        converted = False
-        temp_data = bytes()
+        if not path.is_file():
+            return (str(path), False, "Not a file")
+        if is_binary(path):
+            return (str(path), False, "Binary file (skipped)")
         try:
-            with open(file_path, "rb") as f:
-                    f.write(temp_data)
-                return (str(file_path), True, "Converted")
+            data = f.read_bytes()
+            new_data = dos2unix(data)
+            if new_data != data:
+                path.write_bytes(new_data)
+                return (str(path), True, "Converted")
             else:
-                return (str(file_path), True, "Already Unix format")
+                return (str(path), True, "Already Unix format")
         except OSError as e:
-            return (str(file_path), False, f"Read/Write error: {e}")
+            return (str(path), False, f"Read/Write error: {e}")
     except Exception as e:
-        return (str(file_path), False, f"Error: {e}")
+        return (str(path), False, f"Error: {e}")
 
 
 def find_text_files(paths: list[Path]) -> list[Path]:
     files = []
     for path in paths:
         if path.is_file():
-            if is_text_file(path):
+            if not is_binary(path):
                 files.append(path)
         elif path.is_dir():
             for text_file in path.rglob("*"):
                 if any(should_skip_dir(parent) for parent in text_file.parents):
                     continue
-                if text_file.is_file() and is_text_file(text_file):
+                if text_file.is_file() and not is_binary(text_file):
                     files.append(text_file)
     return files
 
@@ -90,13 +86,6 @@ def main():
         help="Files or folders to process (default: current directory)",
     )
     parser.add_argument(
-        "-j",
-        "--jobs",
-        type=int,
-        default=cpu_count(),
-        help=f"Number of parallel jobs (default: {cpu_count()})",
-    )
-    parser.add_argument(
         "-q", "--quiet", action="store_true", help="Suppress output messages"
     )
     parser.add_argument(
@@ -123,12 +112,12 @@ def main():
     skipped_count = 0
     error_count = 0
     try:
-        with Pool(processes=args.jobs) as pool:
+        with Pool(processes=MAX_WORKERS) as pool:
             results = pool.map(convert_file, files_to_process)
-        for file_path, success, message in results:
+        for path, success, message in results:
             if args.verbose:
                 status = "✓" if success else "✗"
-                print(f"{status} {file_path}: {message}")
+                print(f"{status} {path}: {message}")
             if success:
                 if "Converted" in message:
                     converted_count += 1

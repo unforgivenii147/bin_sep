@@ -14,17 +14,17 @@ EXCLUDED_EXTENSIONS = [line.strip() for line in binf]
 binf.close()
 
 
-def process_file(filepath):
+def process_file(path):
     Path(path)
     counter = Counter()
     try:
-        with Path(filepath).open(encoding="utf-8", errors="ignore") as f:
+        with Path(path).open(encoding="utf-8", errors="ignore") as f:
             for line in f:
                 line = line.strip()
                 if line:
                     counter[line] += 1
     except Exception as e:
-        print(f"Error reading {filepath}: {e}")
+        print(f"Error reading {path}: {e}")
     return counter
 
 

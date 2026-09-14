@@ -12,10 +12,7 @@ N = int(sys.argv[1]) if len(sys.argv) > 1 else 11
 
 
 def get_sizes() -> list[tuple[Path, int]]:
-    return [
-        (file_path.relative_to(cwd), file_path.stat().st_size)
-        for file_path in get_files(cwd)
-    ]
+    return [(path.relative_to(cwd), path.stat().st_size) for path in get_files(cwd)]
 
 
 def main() -> None:
@@ -30,8 +27,8 @@ def main() -> None:
     max_path_len = min(max_path_len, 80)
     print(f"{'No.':<4} {'File Path':<{max_path_len}} {'Size':>12}")
     print("-" * (max_path_len + 20))
-    for i, (file_path, size) in enumerate(top_files, 1):
-        path_str = str(file_path)
+    for i, (path, size) in enumerate(top_files, 1):
+        path_str = str(path)
         if len(path_str) > max_path_len:
             path_str = "..." + path_str[-(max_path_len - 3) :]
         size_str = fsz(size)

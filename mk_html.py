@@ -103,38 +103,38 @@ def convert_md_to_rst(content: str) -> str:
 
 
 def convert_file_to_html(
-    file_path: Path, stylesheet_url: Optional[str] = None
+    path: Path, stylesheet_url: Optional[str] = None
 ) -> Optional[Path]:
     """Convert a single source file to HTML.
 
     Args:
-        file_path: Path to the source file (``.rst``, ``.txt`` or ``.md``).
+        path: Path to the source file (``.rst``, ``.txt`` or ``.md``).
         stylesheet_url: Optional stylesheet filename to link into the HTML.
 
     Returns:
         The path to the generated HTML file, or ``None`` on failure.
     """
     try:
-        html_path: Path = file_path.with_suffix(".html")
-        if html_path.exists() and html_path.stat().st_mtime > file_path.stat().st_mtime:
+        html_path: Path = path.with_suffix(".html")
+        if html_path.exists() and html_path.stat().st_mtime > path.stat().st_mtime:
             return html_path
 
-        content: str = file_path.read_text(encoding="utf-8")
+        content: str = path.read_text(encoding="utf-8")
         cleanup_temp: bool = False
         temp_file: Optional[Path] = None
 
-        if file_path.suffix.lower() == ".md":
+        if path.suffix.lower() == ".md":
             content = convert_md_to_rst(content)
-            temp_file = file_path.with_suffix(".rst")
+            temp_file = path.with_suffix(".rst")
             temp_file.write_text(content, encoding="utf-8")
-            file_path = temp_file
+            path = temp_file
             cleanup_temp = True
 
         cmd: list[str] = [
             sys.executable,
             "-m",
             "docutils.__main__",
-            str(file_path),
+            str(path),
             str(html_path),
         ]
         if stylesheet_url:
@@ -151,7 +151,7 @@ def convert_file_to_html(
                 ] + RST2HTML_OPTIONS.split()
                 if stylesheet_url:
                     cmd.extend(["--stylesheet", stylesheet_url, "--link-stylesheet"])
-                cmd.extend([str(file_path), str(html_path)])
+                cmd.extend([str(path), str(html_path)])
                 subprocess.run(
                     cmd, check=True, capture_output=True, text=True, timeout=30
                 )
@@ -163,7 +163,7 @@ def convert_file_to_html(
 
         return html_path
     except Exception as e:
-        logger.error(f"Error converting {file_path}: {e}")
+        logger.error(f"Error converting {path}: {e}")
         return None
 
 
@@ -189,14 +189,14 @@ def process_file(args: tuple[Path, Optional[str]]) -> tuple[Path, Optional[Path]
     """Worker entry point for converting a single file.
 
     Args:
-        args: A tuple of ``(file_path, stylesheet_url)``.
+        args: A tuple of ``(path, stylesheet_url)``.
 
     Returns:
         A tuple of ``(original_path, html_path_or_None)``.
     """
-    file_path, stylesheet_url = args
-    html_path: Optional[Path] = convert_file_to_html(file_path, stylesheet_url)
-    return (file_path, html_path)
+    path, stylesheet_url = args
+    html_path: Optional[Path] = convert_file_to_html(path, stylesheet_url)
+    return (path, html_path)
 
 
 def find_all_source_files(root_dir: Optional[Path] = None) -> list[Path]:

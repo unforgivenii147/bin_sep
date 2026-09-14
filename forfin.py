@@ -8,16 +8,16 @@ from multiprocessing import Pool, cpu_count
 from pathlib import Path
 
 
-def process_file(cli_app, cli_args, file_path):
+def process_file(cli_app, cli_args, path):
     try:
-        cmd = [cli_app] + cli_args + [str(file_path)]
+        cmd = [cli_app] + cli_args + [str(path)]
         result = subprocess.run(cmd, capture_output=True, text=True)
         if result.returncode == 0:
-            return f"✅ Processed: {file_path.name}"
+            return f"✅ Processed: {path.name}"
         else:
-            return f"❌ Failed: {file_path.name} - {result.stderr.strip()}"
+            return f"❌ Failed: {path.name} - {result.stderr.strip()}"
     except Exception as e:
-        return f"❌ Error processing {file_path.name}: {e!s}"
+        return f"❌ Error processing {path.name}: {e!s}"
 
 
 def main():

@@ -193,8 +193,8 @@ class Monolith:
         html = response.text
         return self.process_html(html, url)
 
-    def from_file(self, filepath):
-        path = Path(filepath).resolve()
+    def from_file(self, path):
+        path = Path(path).resolve()
         print(f"📂 Loading {path}...", file=sys.stderr)
         with open(path, "r", encoding="utf-8", errors="ignore") as f:
             html = f.read()

@@ -38,8 +38,8 @@ cascade_path = [
 ]
 
 
-def is_image_file(filepath: Path) -> bool:
-    return filepath.suffix.lower() in IMAGE_EXTENSIONS
+def is_image_file(path: Path) -> bool:
+    return path.suffix.lower() in IMAGE_EXTENSIONS
 
 
 def create_face_detector(cascade_path):
@@ -105,11 +105,11 @@ def process_image_batch(args):
 def collect_images(directory: Path, exclude_dir: Path) -> list:
     images = []
     try:
-        for filepath in directory.rglob("*"):
-            if exclude_dir in filepath.parents or filepath.parent == exclude_dir:
+        for path in directory.rglob("*"):
+            if exclude_dir in path.parents or path.parent == exclude_dir:
                 continue
-            if filepath.is_file() and is_image_file(filepath):
-                images.append(filepath)
+            if path.is_file() and is_image_file(path):
+                images.append(path)
     except Exception as e:
         logger.error(f"Error scanning directory: {e}")
     return images

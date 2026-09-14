@@ -32,17 +32,17 @@ def process_file(path) -> None:
     for page_num in range(num_pages):
         padded = str(page_num + 1).zfill(padding)
         page_filename = f"{filename_base}_{padded}.txt"
-        output_filepath = output_folder / page_filename
-        if output_filepath.exists():
+        output_path = output_folder / page_filename
+        if output_path.exists():
             continue
         try:
             page = reader.pages[page_num]
             text = page.extract_text()
             if text:
-                with output_filepath.open("w", encoding="utf-8") as txt_file:
+                with output_path.open("w", encoding="utf-8") as txt_file:
                     txt_file.write(text)
                 if page_num % 10 == 0:
-                    print(f"Saved: {output_filepath.name}")
+                    print(f"Saved: {output_path.name}")
             else:
                 print(f"Warning: No text extracted from page {page_num + 1}.")
         except Exception as e:

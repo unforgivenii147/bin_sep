@@ -43,7 +43,7 @@ def normalize_source(source: str) -> str:
     return "\n".join(line.rstrip() for line in source.strip().splitlines())
 
 
-def analyze_file(file_path: Path) -> dict[str, Any]:
+def analyze_file(path: Path) -> dict[str, Any]:
     """Analyze a single Python file for top-level function definitions.
 
     Returns a dict with ``definitions`` mapping (name, normalized source) to a
@@ -53,14 +53,14 @@ def analyze_file(file_path: Path) -> dict[str, Any]:
     definitions: defaultdict[DefinitionKey, list[str]] = defaultdict(list)
     source_map: SourceMap = {}
     try:
-        content: str = file_path.read_text(encoding="utf-8")
+        content: str = path.read_text(encoding="utf-8")
         tree: ast.Module = ast.parse(content)
         for node in tree.body:
             if isinstance(node, ast.FunctionDef):
                 source: str = get_source(node, content)
                 norm: str = normalize_source(source)
                 key: DefinitionKey = (node.name, norm)
-                definitions[key].append(str(file_path))
+                definitions[key].append(str(path))
                 if key not in source_map:
                     source_map[key] = source
     except Exception:
@@ -123,10 +123,10 @@ def save_dh_module(
     output_path.write_text("\n".join(lines), encoding="utf-8")
 
 
-def refactor_file(file_path: Path, repeated: list[RepeatedItem]) -> None:
-    """Remove duplicated functions from *file_path* and add imports for them."""
+def refactor_file(path: Path, repeated: list[RepeatedItem]) -> None:
+    """Remove duplicated functions from *path* and add imports for them."""
     try:
-        content: str = file_path.read_text(encoding="utf-8")
+        content: str = path.read_text(encoding="utf-8")
         tree: ast.Module = ast.parse(content)
     except Exception:
         return
@@ -170,7 +170,7 @@ def refactor_file(file_path: Path, repeated: list[RepeatedItem]) -> None:
             insert_pos = i
             break
     lines_to_keep.insert(insert_pos, import_stmt)
-    file_path.write_text("".join(lines_to_keep), encoding="utf-8")
+    path.write_text("".join(lines_to_keep), encoding="utf-8")
 
 
 def apply_refactoring(

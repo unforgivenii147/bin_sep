@@ -5,8 +5,8 @@ import re
 import sys
 
 
-def clean_terminal_transcript(filepath):
-    with open(filepath, encoding="utf-8", errors="replace") as f:
+def clean_terminal_transcript(path):
+    with open(path, encoding="utf-8", errors="replace") as f:
         content = f.read()
     ansi_escape = re.compile(
         r"\x1b(\[[0-9;]*[mABCDEFGHJKSTfhilmnprsu]|\][^\x07]*\x07|[()][AB012])"
@@ -21,9 +21,9 @@ def clean_terminal_transcript(filepath):
     content = re.sub(r"\n{3,}", "\n\n", content)
     content = "\n".join(line.rstrip() for line in content.splitlines())
     content = content.rstrip("\n") + "\n"
-    with open(filepath, "w", encoding="utf-8") as f:
+    with open(path, "w", encoding="utf-8") as f:
         f.write(content)
-    print(f"Cleaned: {filepath}")
+    print(f"Cleaned: {path}")
 
 
 if __name__ == "__main__":

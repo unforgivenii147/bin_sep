@@ -10,12 +10,12 @@ import ssdeep
 
 
 def get_all_files(root: str = "."):
-    file_paths = []
+    paths = []
     for dirpath, _, filenames in os.walk(root):
         for f in filenames:
             full_path = os.path.join(dirpath, f)
-            file_paths.append(full_path)
-    return file_paths
+            paths.append(full_path)
+    return paths
 
 
 def compute_hashes(files):

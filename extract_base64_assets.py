@@ -50,7 +50,7 @@ BASE64_SIGNATURES: dict[str, tuple[bytes, str, str]] = {
 class Base64Match:
     """Represents a base64-encoded data match found in a file."""
 
-    file_path: Path
+    path: Path
     start_pos: int
     end_pos: int
     base64_str: str
@@ -73,7 +73,7 @@ class ExtractedAsset:
 class ProcessingResult:
     """Represents the result of processing a file."""
 
-    file_path: Path
+    path: Path
     success: bool
     extracted_count: int
     replaced_count: int
@@ -203,13 +203,13 @@ class Base64PatternDetector:
     }
 
     @staticmethod
-    def find_all_base64(text: str, file_path: Path) -> list[Base64Match]:
+    def find_all_base64(text: str, path: Path) -> list[Base64Match]:
         """
         Find all base64-encoded data in text.
 
         Args:
             text: Text content to search
-            file_path: Path of the file being searched
+            path: Path of the file being searched
 
         Returns:
             List of Base64Match objects
@@ -235,7 +235,7 @@ class Base64PatternDetector:
 
                 matches.append(
                     Base64Match(
-                        file_path=file_path,
+                        path=path,
                         start_pos=match.start(),
                         end_pos=match.end(),
                         base64_str=base64_str,
@@ -274,21 +274,21 @@ class TreeSitterParser:
         self.available = False
         self.parsers: dict[str, Any] = {}
 
-    def parse_file(self, file_path: Path) -> Optional[str]:
+    def parse_file(self, path: Path) -> Optional[str]:
         """
         Read file content for parsing.
 
         Args:
-            file_path: Path to the file
+            path: Path to the file
 
         Returns:
             File content as string, or None on error
         """
         try:
-            with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+            with open(path, "r", encoding="utf-8", errors="ignore") as f:
                 return f.read()
         except Exception as e:
-            logger.error(f"Error reading file {file_path}: {e}")
+            logger.error(f"Error reading file {path}: {e}")
             return None
 
 
@@ -326,9 +326,7 @@ class AssetExtractor:
             mime_type, ext, category = detect_base64_mime_type(decoded_bytes)
 
             if not mime_type:
-                logger.warning(
-                    f"Could not detect MIME type for base64 in {match.file_path}"
-                )
+                logger.warning(f"Could not detect MIME type for base64 in {match.path}")
                 if "data:" in match.context:
                     try:
                         hint = match.context.split("data:")[1].split(";")[0]
@@ -347,9 +345,9 @@ class AssetExtractor:
 
             if asset_path.exists():
                 logger.debug(f"Asset already exists: {asset_path}")
-                asset_url = asset_path.relative_to(match.file_path.parent).as_posix()
+                asset_url = asset_path.relative_to(match.path.parent).as_posix()
                 return ExtractedAsset(
-                    original_file=match.file_path,
+                    original_file=match.path,
                     asset_path=asset_path,
                     asset_url=asset_url,
                     base64_match=match,
@@ -360,17 +358,17 @@ class AssetExtractor:
                 f.write(decoded_bytes)
 
             logger.debug(f"Extracted asset: {asset_path} ({len(decoded_bytes)} bytes)")
-            asset_url = asset_path.relative_to(match.file_path.parent).as_posix()
+            asset_url = asset_path.relative_to(match.path.parent).as_posix()
 
             return ExtractedAsset(
-                original_file=match.file_path,
+                original_file=match.path,
                 asset_path=asset_path,
                 asset_url=asset_url,
                 base64_match=match,
                 extracted_bytes=decoded_bytes,
             )
         except Exception as e:
-            logger.error(f"Failed to extract asset from {match.file_path}: {e}")
+            logger.error(f"Failed to extract asset from {match.path}: {e}")
             return None
 
 
@@ -381,44 +379,44 @@ class FileProcessor:
         self.extractor = asset_extractor
         self.parser = TreeSitterParser()
 
-    def process_file(self, file_path: Path) -> ProcessingResult:
+    def process_file(self, path: Path) -> ProcessingResult:
         """
         Process a single file for base64 assets.
 
         Args:
-            file_path: Path to the file to process
+            path: Path to the file to process
 
         Returns:
             ProcessingResult containing processing statistics
         """
         start_time = datetime.now()
         try:
-            if not file_path.exists():
+            if not path.exists():
                 return ProcessingResult(
-                    file_path=file_path,
+                    path=path,
                     success=False,
                     extracted_count=0,
                     replaced_count=0,
-                    error=f"File not found: {file_path}",
+                    error=f"File not found: {path}",
                     duration=(datetime.now() - start_time).total_seconds(),
                 )
 
-            if file_path.stat().st_size > MAX_FILE_SIZE:
+            if path.stat().st_size > MAX_FILE_SIZE:
                 return ProcessingResult(
-                    file_path=file_path,
+                    path=path,
                     success=False,
                     extracted_count=0,
                     replaced_count=0,
-                    error=f"File too large: {file_path.stat().st_size} bytes",
+                    error=f"File too large: {path.stat().st_size} bytes",
                     duration=(datetime.now() - start_time).total_seconds(),
                 )
 
             try:
-                with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+                with open(path, "r", encoding="utf-8", errors="ignore") as f:
                     content = f.read()
             except Exception as e:
                 return ProcessingResult(
-                    file_path=file_path,
+                    path=path,
                     success=False,
                     extracted_count=0,
                     replaced_count=0,
@@ -426,11 +424,11 @@ class FileProcessor:
                     duration=(datetime.now() - start_time).total_seconds(),
                 )
 
-            matches = Base64PatternDetector.find_all_base64(content, file_path)
+            matches = Base64PatternDetector.find_all_base64(content, path)
             if not matches:
-                logger.debug(f"No base64 found in {file_path}")
+                logger.debug(f"No base64 found in {path}")
                 return ProcessingResult(
-                    file_path=file_path,
+                    path=path,
                     success=True,
                     extracted_count=0,
                     replaced_count=0,
@@ -445,9 +443,9 @@ class FileProcessor:
                 if extracted_asset:
                     extracted_count += 1
 
-                    if file_path.suffix.lower() == ".css":
+                    if path.suffix.lower() == ".css":
                         new_reference = f"url('{extracted_asset.asset_url}')"
-                    elif file_path.suffix.lower() in {".html", ".htm"}:
+                    elif path.suffix.lower() in {".html", ".htm"}:
                         if "href=" in match.context:
                             new_reference = f'href="{extracted_asset.asset_url}"'
                         else:
@@ -459,7 +457,7 @@ class FileProcessor:
 
             if not replacements:
                 return ProcessingResult(
-                    file_path=file_path,
+                    path=path,
                     success=True,
                     extracted_count=0,
                     replaced_count=0,
@@ -470,25 +468,25 @@ class FileProcessor:
             for old_ref, new_ref in replacements:
                 modified_content = modified_content.replace(old_ref, new_ref)
 
-            self._write_file_atomic(file_path, modified_content)
+            self._write_file_atomic(path, modified_content)
 
             logger.info(
-                f"Processed {file_path.name}: "
+                f"Processed {path.name}: "
                 f"extracted={extracted_count}, "
                 f"replaced={len(replacements)}"
             )
 
             return ProcessingResult(
-                file_path=file_path,
+                path=path,
                 success=True,
                 extracted_count=extracted_count,
                 replaced_count=len(replacements),
                 duration=(datetime.now() - start_time).total_seconds(),
             )
         except Exception as e:
-            logger.error(f"Unexpected error processing {file_path}: {e}")
+            logger.error(f"Unexpected error processing {path}: {e}")
             return ProcessingResult(
-                file_path=file_path,
+                path=path,
                 success=False,
                 extracted_count=0,
                 replaced_count=0,
@@ -497,25 +495,25 @@ class FileProcessor:
             )
 
     @staticmethod
-    def _write_file_atomic(file_path: Path, content: str) -> None:
+    def _write_file_atomic(path: Path, content: str) -> None:
         """
         Write file content atomically with backup.
 
         Args:
-            file_path: Path to write to
+            path: Path to write to
             content: Content to write
         """
-        backup_path = file_path.with_suffix(file_path.suffix + ".bak")
-        shutil.copy2(file_path, backup_path)
+        backup_path = path.with_suffix(path.suffix + ".bak")
+        shutil.copy2(path, backup_path)
         try:
-            temp_path = file_path.with_suffix(file_path.suffix + ".tmp")
+            temp_path = path.with_suffix(path.suffix + ".tmp")
             with open(temp_path, "w", encoding="utf-8") as f:
                 f.write(content)
-            temp_path.replace(file_path)
-            logger.debug(f"Updated file: {file_path}")
+            temp_path.replace(path)
+            logger.debug(f"Updated file: {path}")
         except Exception as e:
             if backup_path.exists():
-                shutil.copy2(backup_path, file_path)
+                shutil.copy2(backup_path, path)
             raise
         finally:
             if backup_path.exists():
@@ -623,14 +621,14 @@ def process_file_task(args: tuple[Path, AssetExtractor]) -> ProcessingResult:
     Process a single file (used as multiprocessing task).
 
     Args:
-        args: Tuple of (file_path, asset_extractor)
+        args: Tuple of (path, asset_extractor)
 
     Returns:
         ProcessingResult for the file
     """
-    file_path, asset_extractor = args
+    path, asset_extractor = args
     processor = FileProcessor(asset_extractor)
-    return processor.process_file(file_path)
+    return processor.process_file(path)
 
 
 class Base64AssetExtractor:
@@ -698,7 +696,7 @@ class Base64AssetExtractor:
             logger.info("\nFailed files:")
             for result in self.results:
                 if not result.success:
-                    logger.info(f"  - {result.file_path}: {result.error}")
+                    logger.info(f"  - {result.path}: {result.error}")
 
         if self.results:
             logger.info("\nDetailed results:")
@@ -707,7 +705,7 @@ class Base64AssetExtractor:
             ):
                 if result.extracted_count > 0 or result.replaced_count > 0:
                     logger.info(
-                        f"  {result.file_path.name:40} "
+                        f"  {result.path.name:40} "
                         f"extracted={result.extracted_count:3} "
                         f"replaced={result.replaced_count:3} "
                         f"time={result.duration:.3f}s"

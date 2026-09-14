@@ -10,9 +10,9 @@ def is_blank_line(line: str):
     return line.strip() == ""
 
 
-def find_duplicates(file_path: Path, skip_blanks: bool = True):
+def find_duplicates(path: Path, skip_blanks: bool = True):
     try:
-        with open(file_path, encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             lines = f.readlines()
         duplicates = []
         i = 0
@@ -44,7 +44,7 @@ def remove_duplicates(lines: list[str], duplicates):
 
 
 def process_file(
-    file_path,
+    path,
     duplicates,
     dry_run: bool = False,
     auto_yes=False,
@@ -52,7 +52,7 @@ def process_file(
 ):
     if not duplicates:
         return False, auto_yes
-    print(f"\n{'[DRY RUN] ' if dry_run else ''}📄 {file_path.name}")
+    print(f"\n{'[DRY RUN] ' if dry_run else ''}📄 {path.name}")
     for line_num, content in duplicates:
         print(f"  Line {line_num}: {content}")
         print(f"  Line {line_num + 1}: {content}")
@@ -60,7 +60,7 @@ def process_file(
         return False, auto_yes
     if not auto_yes:
         response = (
-            input(f"\n  Remove duplicates from {file_path.name}? (y/n/a/q): ")
+            input(f"\n  Remove duplicates from {path.name}? (y/n/a/q): ")
             .strip()
             .lower()
         )
@@ -76,13 +76,13 @@ def process_file(
     else:
         should_fix = True
     if should_fix:
-        with open(file_path, encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             lines = f.readlines()
         new_lines = remove_duplicates(lines, duplicates)
-        backup = file_path.with_suffix(file_path.suffix + ".bak")
+        backup = path.with_suffix(path.suffix + ".bak")
         with open(backup, "w", encoding="utf-8") as f:
             f.writelines(lines)
-        with open(file_path, "w", encoding="utf-8") as f:
+        with open(path, "w", encoding="utf-8") as f:
             f.writelines(new_lines)
         print(f"  ✅ Fixed (backup: {backup.name})")
         return True, auto_yes
@@ -135,10 +135,8 @@ def main() -> None:
     print(f"\nFound {len(files_with_dups)} file(s) with sequential duplicates\n")
     auto_yes = args.yes
     fixed_count = 0
-    for file_path, dups in files_with_dups.items():
-        fixed, auto_yes = process_file(
-            file_path, dups, args.dry_run, auto_yes, skip_blanks
-        )
+    for path, dups in files_with_dups.items():
+        fixed, auto_yes = process_file(path, dups, args.dry_run, auto_yes, skip_blanks)
         if fixed:
             fixed_count += 1
     print("\n" + "=" * 40)

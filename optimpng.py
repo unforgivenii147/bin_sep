@@ -32,28 +32,28 @@ def find_png_files(directory: Path) -> list[Path]:
     return [p for p in directory.rglob("*") if p.suffix.lower() == PNG_SUFFIX]
 
 
-def optimize_png(file_path: Path) -> tuple[bool, Path, str | None]:
+def optimize_png(path: Path) -> tuple[bool, Path, str | None]:
     """
     Optimize a single PNG file using ``optipng -o7``.
 
     Args:
-        file_path: Path to the PNG file to optimize.
+        path: Path to the PNG file to optimize.
 
     Returns:
-        A tuple ``(success, file_path, error_message)`` where ``error_message``
+        A tuple ``(success, path, error_message)`` where ``error_message``
         is ``None`` on success.
     """
     try:
         subprocess.run(
-            ["optipng", "-o7", str(file_path)],
+            ["optipng", "-o7", str(path)],
             check=True,
             capture_output=True,
             text=True,
         )
     except subprocess.CalledProcessError as exc:
-        return False, file_path, str(exc)
+        return False, path, str(exc)
     else:
-        return True, file_path, None
+        return True, path, None
 
 
 def main() -> int:

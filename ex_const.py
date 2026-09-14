@@ -20,19 +20,19 @@ logging.basicConfig(
 )
 
 
-def get_file_hash(filepath: Path) -> str:
+def get_file_hash(path: Path) -> str:
     hasher = xxh64()
-    with Path(filepath).open("rb") as f:
+    with Path(path).open("rb") as f:
         while chunk := f.read(CHUNK_SIZE):
             hasher.update(chunk)
     return hasher.hexdigest()
 
 
-def extract_constants(filepath: Path) -> list[tuple[str, str, str]]:
+def extract_constants(path: Path) -> list[tuple[str, str, str]]:
     constants = []
     try:
-        with Path(filepath).open("r", encoding="utf-8") as f:
-            tree = ast.parse(f.read(), filename=str(filepath))
+        with Path(path).open("r", encoding="utf-8") as f:
+            tree = ast.parse(f.read(), filename=str(path))
         for node in ast.walk(tree):
             if isinstance(node, ast.Assign):
                 is_simple_assign = all(isinstance(t, ast.Name) for t in node.targets)
@@ -55,16 +55,16 @@ def extract_constants(filepath: Path) -> list[tuple[str, str, str]]:
                         )
                         constants.append((const_name, const_value, const_type))
     except SyntaxError as e:
-        logging.error(f"Syntax error in {filepath}: {e}")
+        logging.error(f"Syntax error in {path}: {e}")
     except Exception as e:
-        logging.error(f"Error processing {filepath}: {e}")
+        logging.error(f"Error processing {path}: {e}")
     return constants
 
 
-def process_file(filepath: Path) -> tuple[str, list[tuple[str, str, str]] | None]:
-    file_hash = get_file_hash(filepath)
+def process_file(path: Path) -> tuple[str, list[tuple[str, str, str]] | None]:
+    file_hash = get_file_hash(path)
     Path(path)
-    constants = extract_constants(filepath)
+    constants = extract_constants(path)
     return file_hash, constants
 
 

@@ -104,14 +104,14 @@ def remove_unused(source: str, unused) -> str:
     return ast.unparse(tree)
 
 
-def process_file(filepath, dry_run: bool = False):
+def process_file(path, dry_run: bool = False):
     Path(path)
     errors = []
-    filepath = Path(filepath)
+    path = Path(path)
     try:
-        source = filepath.read_text(encoding="utf-8")
+        source = path.read_text(encoding="utf-8")
     except Exception as e:
-        return filepath, {}, [f"Error reading file: {e}"]
+        return path, {}, [f"Error reading file: {e}"]
     unused, parse_errors = find_unused_symbols(source)
     errors.extend(parse_errors)
     nothing_to_remove = (
@@ -121,17 +121,17 @@ def process_file(filepath, dry_run: bool = False):
         and not unused["imports"]
     )
     if nothing_to_remove:
-        return filepath, unused, errors
+        return path, unused, errors
     try:
         new_source = remove_unused(source, unused)
     except Exception:
         errors.append("Error rewriting file:\n" + traceback.format_exc())
-        return filepath, unused, errors
+        return path, unused, errors
     if not dry_run:
-        backup_path = filepath.with_suffix(filepath.suffix + ".bak")
-        shutil.copy2(filepath, backup_path)
-        filepath.write_text(new_source, encoding="utf-8")
-    return filepath, unused, errors
+        backup_path = path.with_suffix(path.suffix + ".bak")
+        shutil.copy2(path, backup_path)
+        path.write_text(new_source, encoding="utf-8")
+    return path, unused, errors
 
 
 def gather_python_files(root: Path) -> list[Path]:
@@ -161,12 +161,12 @@ def main() -> None:
     with mp.Pool(args.workers) as pool:
         results = pool.map(worker, [(f, args.dry_run) for f in py_files])
     print("\n=== RESULTS ===\n")
-    for filepath, unused, errors in results:
+    for path, unused, errors in results:
         if any(unused.values()):
             if args.dry_run:
-                print(f"[DRY-RUN] {filepath}")
+                print(f"[DRY-RUN] {path}")
             else:
-                print(f"Updated {filepath} (backup created)")
+                print(f"Updated {path} (backup created)")
             if unused["functions"]:
                 print("  Unused functions:", unused["functions"])
             if unused["classes"]:
@@ -176,7 +176,7 @@ def main() -> None:
             if unused["imports"]:
                 print("  Unused imports:", list(unused["imports"].keys()))
         for err in errors:
-            print(f"[ERROR] {filepath}: {err}")
+            print(f"[ERROR] {path}: {err}")
 
 
 if __name__ == "__main__":

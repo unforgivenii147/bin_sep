@@ -52,14 +52,12 @@ URL_REGEX: re.Pattern[str] = re.compile(
 MAX_WORKERS: int = 8
 
 
-def extract_links_from_text(
-    text: str, file_path: Path | str
-) -> tuple[list[str], list[str]]:
+def extract_links_from_text(text: str, path: Path | str) -> tuple[list[str], list[str]]:
     """Extract generic URLs and GitHub repository URLs from a text blob.
 
     Args:
         text: The text content to scan for URLs.
-        file_path: The originating file path (used for logging/debugging context).
+        path: The originating file path (used for logging/debugging context).
 
     Returns:
         A tuple of (generic_urls, github_urls).
@@ -70,12 +68,12 @@ def extract_links_from_text(
 
 
 def read_file_with_encodings(
-    file_path: Path,
+    path: Path,
 ) -> tuple[str | None, str | None]:
     """Read a file trying a sequence of common encodings, then chardet fallback.
 
     Args:
-        file_path: Path to the file to read.
+        path: Path to the file to read.
 
     Returns:
         A tuple (content, encoding). Content is None if reading fails.
@@ -85,17 +83,17 @@ def read_file_with_encodings(
     encodings_to_try: list[str] = ["utf-8", "latin-1", "iso-8859-1", "cp1252"]
     for encoding in encodings_to_try:
         try:
-            content: str = file_path.read_text(encoding=encoding)
-            logger.debug(f"Successfully read {file_path} with {encoding}")
+            content: str = path.read_text(encoding=encoding)
+            logger.debug(f"Successfully read {path} with {encoding}")
             return content, None
         except UnicodeDecodeError:
             continue
         except Exception as e:
-            logger.warning(f"Error reading {file_path} with {encoding}: {e}")
+            logger.warning(f"Error reading {path} with {encoding}: {e}")
             continue
 
     try:
-        raw_data: bytes = file_path.read_bytes()
+        raw_data: bytes = path.read_bytes()
         result: dict[str, object] = chardet.detect(raw_data)
         detected_encoding_obj: object = result.get("encoding")
         detected_encoding: str | None = (
@@ -105,24 +103,24 @@ def read_file_with_encodings(
             try:
                 content = raw_data.decode(detected_encoding)
                 logger.debug(
-                    f"Successfully read {file_path} with detected encoding {detected_encoding}"
+                    f"Successfully read {path} with detected encoding {detected_encoding}"
                 )
                 return content, detected_encoding
             except Exception as e:
                 logger.warning(
-                    f"Error decoding {file_path} with detected encoding {detected_encoding}: {e}"
+                    f"Error decoding {path} with detected encoding {detected_encoding}: {e}"
                 )
     except Exception as e:
-        logger.error(f"Failed to read or detect encoding for {file_path}: {e}")
+        logger.error(f"Failed to read or detect encoding for {path}: {e}")
 
     return None, None
 
 
-def _process_tar_archive(file_path: Path) -> tuple[list[str], list[str]]:
+def _process_tar_archive(path: Path) -> tuple[list[str], list[str]]:
     """Extract URLs from all members of a tar archive.
 
     Args:
-        file_path: Path to the tar archive.
+        path: Path to the tar archive.
 
     Returns:
         A tuple of (local_urls, github_urls).
@@ -130,7 +128,7 @@ def _process_tar_archive(file_path: Path) -> tuple[list[str], list[str]]:
     local_urls: list[str] = []
     github_urls: list[str] = []
     try:
-        with tarfile.open(file_path, "r:*") as tar:
+        with tarfile.open(path, "r:*") as tar:
             for member in tar.getmembers():
                 if not member.isfile():
                     continue
@@ -149,25 +147,25 @@ def _process_tar_archive(file_path: Path) -> tuple[list[str], list[str]]:
                     )
                     if member_content_str:
                         urls, gh_urls = extract_links_from_text(
-                            member_content_str, f"{file_path}/{member.name}"
+                            member_content_str, f"{path}/{member.name}"
                         )
                         local_urls.extend(urls)
                         github_urls.extend(gh_urls)
                 except Exception as e:
                     logger.warning(
-                        f"Error processing member {member.name} in {file_path}: {e}"
+                        f"Error processing member {member.name} in {path}: {e}"
                     )
-        logger.debug(f"Extracted from Tar archive: {file_path}")
+        logger.debug(f"Extracted from Tar archive: {path}")
     except Exception as e:
-        logger.error(f"Unexpected error processing tar archive {file_path}: {e}")
+        logger.error(f"Unexpected error processing tar archive {path}: {e}")
     return local_urls, github_urls
 
 
-def _process_zip_archive(file_path: Path) -> tuple[list[str], list[str]]:
+def _process_zip_archive(path: Path) -> tuple[list[str], list[str]]:
     """Extract URLs from all members of a zip/whl archive.
 
     Args:
-        file_path: Path to the zip or whl archive.
+        path: Path to the zip or whl archive.
 
     Returns:
         A tuple of (local_urls, github_urls).
@@ -175,7 +173,7 @@ def _process_zip_archive(file_path: Path) -> tuple[list[str], list[str]]:
     local_urls: list[str] = []
     github_urls: list[str] = []
     try:
-        with zipfile.ZipFile(file_path, "r") as zip_ref:
+        with zipfile.ZipFile(path, "r") as zip_ref:
             for file_info in zip_ref.infolist():
                 if file_info.is_dir():
                     continue
@@ -191,24 +189,24 @@ def _process_zip_archive(file_path: Path) -> tuple[list[str], list[str]]:
                     )
                     if member_content_str:
                         urls, gh_urls = extract_links_from_text(
-                            member_content_str, f"{file_path}/{file_info.filename}"
+                            member_content_str, f"{path}/{file_info.filename}"
                         )
                         local_urls.extend(urls)
                         github_urls.extend(gh_urls)
-        logger.debug(f"Extracted from ZIP archive: {file_path}")
+        logger.debug(f"Extracted from ZIP archive: {path}")
     except Exception as e:
-        logger.error(f"Unexpected error processing zip archive {file_path}: {e}")
+        logger.error(f"Unexpected error processing zip archive {path}: {e}")
     return local_urls, github_urls
 
 
-def _process_7z_archive(file_path: Path) -> tuple[list[str], list[str]]:
+def _process_7z_archive(path: Path) -> tuple[list[str], list[str]]:
     """Handle 7z archives without a dedicated extractor.
 
     Currently treats the file as binary and attempts text extraction, since
     py7zr is not a dependency.
 
     Args:
-        file_path: Path to the 7z archive.
+        path: Path to the 7z archive.
 
     Returns:
         A tuple of (local_urls, github_urls).

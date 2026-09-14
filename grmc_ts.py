@@ -28,11 +28,11 @@ def should_preserve_comment(comment_bytes: bytes) -> bool:
     )
 
 
-def process_file(file_path: Path) -> str:
+def process_file(path: Path) -> str:
     try:
-        source_bytes = file_path.read_bytes()
+        source_bytes = path.read_bytes()
     except Exception as e:
-        return f"[ERROR] Failed to read {file_path}: {e}"
+        return f"[ERROR] Failed to read {path}: {e}"
     parser = get_parser()
     tree = parser.parse(source_bytes)
     root = tree.root_node
@@ -72,21 +72,21 @@ def process_file(file_path: Path) -> str:
             if cursor.goto_next_sibling():
                 break
     if not removals:
-        return f"[SKIPPED] No structural modifications needed for {file_path}"
+        return f"[SKIPPED] No structural modifications needed for {path}"
     removals.sort(key=lambda x: x[0], reverse=True)
     modified_bytes = bytearray(source_bytes)
     for start, end, replacement in removals:
         modified_bytes[start:end] = replacement
     final_code = bytes(modified_bytes)
     try:
-        ast.parse(final_code, filename=str(file_path))
+        ast.parse(final_code, filename=str(path))
     except SyntaxError as e:
-        return f"[WARNING] Validation failed for {file_path} (Changes rejected): {e}"
+        return f"[WARNING] Validation failed for {path} (Changes rejected): {e}"
     try:
-        file_path.write_bytes(final_code)
-        return f"[SUCCESS] Processed and stripped: {file_path}"
+        path.write_bytes(final_code)
+        return f"[SUCCESS] Processed and stripped: {path}"
     except Exception as e:
-        return f"[ERROR] Failed to save updates to {file_path}: {e}"
+        return f"[ERROR] Failed to save updates to {path}: {e}"
 
 
 def gather_files(inputs) -> list[Path]:

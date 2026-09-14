@@ -133,17 +133,17 @@ class HTMLMinifier:
         """Build the html-minifier-terser CLI argument list."""
         return ["html-minifier-terser", "--config-file", str(config_file)]
 
-    def minify_file(self, file_path: Path) -> MinifyStats:
+    def minify_file(self, path: Path) -> MinifyStats:
         """Minify a single HTML file in place and return its statistics."""
         config_file: Path | None = None
         try:
-            original_size = file_path.stat().st_size
+            original_size = path.stat().st_size
             with tempfile.NamedTemporaryFile(
                 mode="w", suffix=".json", delete=False, encoding="utf-8"
             ) as f:
                 json.dump(self.config, f)
                 config_file = Path(f.name)
-            content = file_path.read_text(encoding="utf-8")
+            content = path.read_text(encoding="utf-8")
             cmd = self._build_cli_args(config_file)
             process = subprocess.run(
                 cmd,
@@ -154,24 +154,24 @@ class HTMLMinifier:
             )
             if process.returncode != 0:
                 return MinifyStats(
-                    path=file_path,
+                    path=path,
                     original_size=original_size,
                     minified_size=original_size,
                     success=False,
                     error=f"Minification failed: {process.stderr.strip()}",
                 )
             minified_content = self._post_process(process.stdout)
-            file_path.write_text(minified_content, encoding="utf-8")
-            minified_size = file_path.stat().st_size
+            path.write_text(minified_content, encoding="utf-8")
+            minified_size = path.stat().st_size
             return MinifyStats(
-                path=file_path,
+                path=path,
                 original_size=original_size,
                 minified_size=minified_size,
                 success=True,
             )
         except Exception as exc:  # noqa: BLE001 - surfaced via MinifyStats
             return MinifyStats(
-                path=file_path,
+                path=path,
                 original_size=0,
                 minified_size=0,
                 success=False,
@@ -221,8 +221,7 @@ class HTMLMinifier:
         results: list[MinifyStats] = []
         with Pool(processes=POOL_SIZE) as pool:
             async_results: list[AsyncResult[MinifyStats]] = [
-                pool.apply_async(self.minify_file, (file_path,))
-                for file_path in html_files
+                pool.apply_async(self.minify_file, (path,)) for path in html_files
             ]
             for async_result in async_results:
                 try:

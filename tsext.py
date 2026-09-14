@@ -12,12 +12,12 @@ PY_LANGUAGE = Language(tsp.language())
 parser = Parser(PY_LANGUAGE)
 
 
-def extract_python_code_elements(filepath: Path):
+def extract_python_code_elements(path: Path):
     try:
-        with Path(filepath).open("rb") as f:
+        with Path(path).open("rb") as f:
             tree = parser.parse(f.read())
     except Exception as e:
-        print(f"Error parsing file {filepath}: {e}")
+        print(f"Error parsing file {path}: {e}")
         return [], [], []
     functions = []
     classes = []

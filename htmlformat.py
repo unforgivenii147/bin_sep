@@ -39,7 +39,7 @@ logger = logging.getLogger(__name__)
 class ProcessingResult:
     """Result of processing a single file."""
 
-    file_path: Path
+    path: Path
     success: bool
     error: Optional[str] = None
     bytes_processed: int = 0
@@ -239,7 +239,7 @@ class HTMLFormatter:
         return "\n".join(result)
 
 
-def read_file_safe(file_path: Path, max_size: int = MAX_FILE_SIZE) -> Optional[str]:
+def read_file_safe(path: Path, max_size: int = MAX_FILE_SIZE) -> Optional[str]:
     """
     Safely read a file with size limit and encoding detection.
 
@@ -247,46 +247,46 @@ def read_file_safe(file_path: Path, max_size: int = MAX_FILE_SIZE) -> Optional[s
     """
     try:
         # Check file size
-        file_size = file_path.stat().st_size
+        file_size = path.stat().st_size
         if file_size > max_size:
-            logger.warning(f"File too large ({file_size} bytes): {file_path}")
+            logger.warning(f"File too large ({file_size} bytes): {path}")
             return None
 
         # Try UTF-8 first, then fallback to latin-1
         try:
-            content = file_path.read_text(encoding="utf-8")
+            content = path.read_text(encoding="utf-8")
         except UnicodeDecodeError:
-            logger.debug(f"UTF-8 decode failed, trying latin-1: {file_path}")
-            content = file_path.read_text(encoding="latin-1")
+            logger.debug(f"UTF-8 decode failed, trying latin-1: {path}")
+            content = path.read_text(encoding="latin-1")
 
         return content
 
     except (OSError, IOError) as e:
-        logger.error(f"Failed to read {file_path}: {e}")
+        logger.error(f"Failed to read {path}: {e}")
         return None
     except Exception as e:
-        logger.error(f"Unexpected error reading {file_path}: {e}")
+        logger.error(f"Unexpected error reading {path}: {e}")
         return None
 
 
-def write_file_atomic(file_path: Path, content: str) -> bool:
+def write_file_atomic(path: Path, content: str) -> bool:
     """
     Write file atomically using a temporary file.
 
     Returns True if successful, False otherwise.
     """
-    temp_path = file_path.with_suffix(file_path.suffix + ".tmp")
+    temp_path = path.with_suffix(path.suffix + ".tmp")
 
     try:
         # Write to temporary file
         temp_path.write_text(content, encoding="utf-8")
 
         # Atomic rename
-        temp_path.replace(file_path)
+        temp_path.replace(path)
         return True
 
     except Exception as e:
-        logger.error(f"Failed to write {file_path}: {e}")
+        logger.error(f"Failed to write {path}: {e}")
         # Clean up temp file if it exists
         try:
             if temp_path.exists():
@@ -332,7 +332,7 @@ def find_html_files(paths: list[Path]) -> Iterator[Path]:
             continue
 
 
-def process_file(file_path: Path) -> ProcessingResult:
+def process_file(path: Path) -> ProcessingResult:
     """
     Process a single HTML file.
 
@@ -340,10 +340,10 @@ def process_file(file_path: Path) -> ProcessingResult:
     """
     try:
         # Read file
-        content = read_file_safe(file_path)
+        content = read_file_safe(path)
         if content is None:
             return ProcessingResult(
-                file_path=file_path, success=False, error="Failed to read file"
+                path=path, success=False, error="Failed to read file"
             )
 
         # Format HTML
@@ -355,9 +355,9 @@ def process_file(file_path: Path) -> ProcessingResult:
 
         # Write back if modified
         if was_modified:
-            if not write_file_atomic(file_path, formatted):
+            if not write_file_atomic(path, formatted):
                 return ProcessingResult(
-                    file_path=file_path,
+                    path=path,
                     success=False,
                     error="Failed to write file",
                     bytes_processed=len(content),
@@ -365,7 +365,7 @@ def process_file(file_path: Path) -> ProcessingResult:
                 )
 
         return ProcessingResult(
-            file_path=file_path,
+            path=path,
             success=True,
             bytes_processed=len(content),
             tags_formatted=tag_count,
@@ -373,8 +373,8 @@ def process_file(file_path: Path) -> ProcessingResult:
         )
 
     except Exception as e:
-        logger.error(f"Unexpected error processing {file_path}: {e}")
-        return ProcessingResult(file_path=file_path, success=False, error=str(e))
+        logger.error(f"Unexpected error processing {path}: {e}")
+        return ProcessingResult(path=path, success=False, error=str(e))
 
 
 def main() -> int:
@@ -458,12 +458,12 @@ Examples:
 
                     if result.was_modified:
                         modified_count += 1
-                        logger.info(f"✓ Formatted: {result.file_path}")
+                        logger.info(f"✓ Formatted: {result.path}")
                     else:
-                        logger.debug(f"✓ Already formatted: {result.file_path}")
+                        logger.debug(f"✓ Already formatted: {result.path}")
                 else:
                     failed_count += 1
-                    logger.error(f"✗ Failed: {result.file_path} - {result.error}")
+                    logger.error(f"✗ Failed: {result.path} - {result.error}")
 
     except KeyboardInterrupt:
         logger.warning("\nInterrupted by user")

@@ -51,9 +51,9 @@ SHEBANG_MAPPING = {
 }
 
 
-def get_shebang(file_path: Path) -> str | None:
+def get_shebang(path: Path) -> str | None:
     try:
-        with open(file_path, encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             first_line = f.readline().strip()
             if first_line.startswith("#!"):
                 return first_line
@@ -109,27 +109,27 @@ def main() -> None:
     if not files:
         print("No files found in current directory.")
         return
-    for file_path in files:
-        if file_path.name.startswith("."):
+    for path in files:
+        if path.name.startswith("."):
             continue
-        shebang = get_shebang(file_path)
+        shebang = get_shebang(path)
         if not shebang:
             continue
         extension = get_extension_from_shebang(shebang)
         if not extension:
             short_shebang = shebang[:50] + "..." if len(shebang) > 50 else shebang
-            print(f"❓ Unknown shebang in: {file_path.name}")
+            print(f"❓ Unknown shebang in: {path.name}")
             print(f"   Shebang: {short_shebang}")
             unknown_count += 1
             continue
-        old_name = file_path.stem
-        if not file_path.suffix or file_path.suffix != extension:
+        old_name = path.stem
+        if not path.suffix or path.suffix != extension:
             new_name = f"{old_name}{extension}"
         else:
             skipped_count += 1
             continue
-        new_path = file_path.parent / new_name
-        if rename_file(file_path, new_path):
+        new_path = path.parent / new_name
+        if rename_file(path, new_path):
             renamed_count += 1
     print(f"\n{'=' * 40}")
     print("📊 Summary:")
@@ -149,16 +149,16 @@ def dry_run() -> None:
     print("🔍 DRY RUN MODE - No files will be renamed\n")
     check_termux()
     print(f"📂 Scanning directory: {cwd}\n")
-    for file_path in cwd.iterdir():
-        if not file_path.is_file() or file_path.name.startswith("."):
+    for path in cwd.iterdir():
+        if not path.is_file() or path.name.startswith("."):
             continue
-        shebang = get_shebang(file_path)
+        shebang = get_shebang(path)
         if not shebang:
             continue
         extension = get_extension_from_shebang(shebang)
-        if extension and not file_path.suffix == extension:
-            new_name = f"{file_path.stem}{extension}"
-            print(f"  Would rename: {file_path.name} -> {new_name}")
+        if extension and not path.suffix == extension:
+            new_name = f"{path.stem}{extension}"
+            print(f"  Would rename: {path.name} -> {new_name}")
     print("\nRun without '--dry-run' to apply changes.")
 
 

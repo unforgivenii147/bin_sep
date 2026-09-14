@@ -59,7 +59,7 @@ MINIFIER_FLAGS: tuple[str, ...] = (
 class MinifyResult:
     """Outcome of minifying a single HTML file."""
 
-    file_path: Path
+    path: Path
     original_size: int
     minified_size: int
     duration: float
@@ -76,7 +76,7 @@ class MinifyResult:
 
     def report(self, cwd: Path) -> str:
         """Return a human-readable single-line report for this result."""
-        rel = self.file_path.relative_to(cwd)
+        rel = self.path.relative_to(cwd)
         if self.error:
             return f"✗ {rel}: {self.error}"
         return (
@@ -85,16 +85,16 @@ class MinifyResult:
         )
 
 
-def _minify_file(file_path: Path) -> MinifyResult:
+def _minify_file(path: Path) -> MinifyResult:
     """Run html-minifier-terser on a single file in-place and return the result."""
     start: float = time.perf_counter()
-    original_size: int = file_path.stat().st_size
+    original_size: int = path.stat().st_size
     args: list[str] = [
         "html-minifier-terser",
         *MINIFIER_FLAGS,
         "--output",
-        str(file_path),
-        str(file_path),
+        str(path),
+        str(path),
     ]
     try:
         result: subprocess.CompletedProcess[str] = subprocess.run(
@@ -106,19 +106,19 @@ def _minify_file(file_path: Path) -> MinifyResult:
         if result.returncode != 0:
             error_msg: str = result.stderr.strip() or f"Exit code {result.returncode}"
             return MinifyResult(
-                file_path,
+                path,
                 original_size,
                 original_size,
                 time.perf_counter() - start,
                 error_msg,
             )
-        minified_size: int = file_path.stat().st_size
+        minified_size: int = path.stat().st_size
         return MinifyResult(
-            file_path, original_size, minified_size, time.perf_counter() - start
+            path, original_size, minified_size, time.perf_counter() - start
         )
     except FileNotFoundError:
         return MinifyResult(
-            file_path,
+            path,
             original_size,
             original_size,
             time.perf_counter() - start,
@@ -126,7 +126,7 @@ def _minify_file(file_path: Path) -> MinifyResult:
         )
     except subprocess.TimeoutExpired:
         return MinifyResult(
-            file_path,
+            path,
             original_size,
             original_size,
             time.perf_counter() - start,
@@ -134,7 +134,7 @@ def _minify_file(file_path: Path) -> MinifyResult:
         )
     except Exception as e:  # noqa: BLE001
         return MinifyResult(
-            file_path, original_size, original_size, time.perf_counter() - start, str(e)
+            path, original_size, original_size, time.perf_counter() - start, str(e)
         )
 
 

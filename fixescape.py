@@ -8,20 +8,20 @@ from pathlib import Path
 INVALID_ESCAPE_PATTERN = re.compile(r'(?<!\\)\\(?![\\\'"abfnrtvNuUx0-7\n])')
 
 
-def process_file(file_path: Path, autofix: bool = False) -> tuple[Path, int, bool]:
+def process_file(path: Path, autofix: bool = False) -> tuple[Path, int, bool]:
     try:
-        content = file_path.read_text(encoding="utf-8")
+        content = path.read_text(encoding="utf-8")
     except (UnicodeDecodeError, PermissionError):
-        return (file_path, 0, False)
+        return (path, 0, False)
     matches = list(INVALID_ESCAPE_PATTERN.finditer(content))
     count = len(matches)
     if count == 0:
-        return (file_path, 0, False)
+        return (path, 0, False)
     if autofix:
         fixed_content = INVALID_ESCAPE_PATTERN.sub(r"\\\\", content)
-        file_path.write_text(fixed_content, encoding="utf-8")
-        return (file_path, count, True)
-    return (file_path, count, False)
+        path.write_text(fixed_content, encoding="utf-8")
+        return (path, count, True)
+    return (path, count, False)
 
 
 def main():
@@ -43,18 +43,18 @@ def main():
     num_workers = 8
     async_results = []
     with mp.Pool(processes=num_workers) as pool:
-        for file_path in py_files:
-            res = pool.apply_async(process_file, args=(file_path, args.autofix))
+        for path in py_files:
+            res = pool.apply_async(process_file, args=(path, args.autofix))
             async_results.append(res)
         results = [res.get() for res in async_results]
     total_issues = 0
     flagged_files = 0
     print(f"Scanning {len(py_files)} Python files using {num_workers} workers...\n")
-    for file_path, count, fixed in results:
+    for path, count, fixed in results:
         if count > 0:
             flagged_files += 1
             total_issues += count
-            rel_path = file_path.relative_to(current_dir)
+            rel_path = path.relative_to(current_dir)
             status = "FIXED" if fixed else "FOUND"
             print(f"[{status}] {rel_path}: {count} invalid escape sequence(s)")
     print("\n--- Summary ---")

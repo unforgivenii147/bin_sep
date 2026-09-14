@@ -9,27 +9,27 @@ from pathlib import Path
 TEXT_SUFFIXES = {".py", ".sh", ".bash", ".pl", ".rb", ".pyw", ".txt"}
 
 
-def check_and_make_executable(file_path: Path) -> dict:
+def check_and_make_executable(path: Path) -> dict:
     result = {
-        "path": file_path,
+        "path": path,
         "is_shebang": False,
         "permission_changed": False,
         "error": None,
     }
     try:
-        if not file_path.is_file():
+        if not path.is_file():
             return result
-        if file_path.suffix and file_path.suffix.lower() not in TEXT_SUFFIXES:
+        if path.suffix and path.suffix.lower() not in TEXT_SUFFIXES:
             return result
-        with file_path.open("rb") as f:
+        with path.open("rb") as f:
             first_two_bytes = f.read(2)
         if first_two_bytes == b"#!":
             result["is_shebang"] = True
             if os.name == "posix":
-                current_mode = file_path.stat().st_mode
+                current_mode = path.stat().st_mode
                 if not (current_mode & stat.S_IXUSR):
                     new_mode = current_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH
-                    file_path.chmod(new_mode)
+                    path.chmod(new_mode)
                     result["permission_changed"] = True
     except Exception as e:
         result["error"] = f"Failed to process: {e}"

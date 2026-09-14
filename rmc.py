@@ -265,14 +265,14 @@ def iter_py_files(paths: list[Path]) -> Iterator[Path]:
         if not path.is_dir():
             continue
         try:
-            for file_path in path.rglob("*.py"):
-                if not file_path.is_file():
+            for path in path.rglob("*.py"):
+                if not path.is_file():
                     continue
-                resolved = file_path.resolve()
+                resolved = path.resolve()
                 if resolved in seen:
                     continue
                 seen.add(resolved)
-                yield file_path
+                yield path
         except OSError as exc:
             logger.error(f"{path}: ERROR walking directory: {exc}")
 

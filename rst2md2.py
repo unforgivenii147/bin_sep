@@ -7,36 +7,36 @@ import sys
 from pathlib import Path
 
 
-def convert_file(filepath: Path, backup=True, remove_original=False) -> bool:
-    filepath = Path(filepath)
-    if not filepath.exists():
-        print(f"Error: {filepath} not found")
+def convert_file(path: Path, backup=True, remove_original=False) -> bool:
+    path = Path(path)
+    if not path.exists():
+        print(f"Error: {path} not found")
         return False
-    if filepath.suffix.lower() != ".rst":
-        print(f"Skipping {filepath}: not an .rst file")
+    if path.suffix.lower() != ".rst":
+        print(f"Skipping {path}: not an .rst file")
         return False
-    md_path = filepath.with_suffix(".md")
+    md_path = path.with_suffix(".md")
     if backup and not remove_original:
-        backup_path = filepath.with_suffix(".rst.bak")
+        backup_path = path.with_suffix(".rst.bak")
         import shutil
 
-        shutil.copy2(filepath, backup_path)
+        shutil.copy2(path, backup_path)
         print(f"Backup created: {backup_path}")
     try:
         subprocess.run(
-            ["pandoc", "-f", "rst", "-t", "gfm", "-o", str(md_path), str(filepath)],
+            ["pandoc", "-f", "rst", "-t", "gfm", "-o", str(md_path), str(path)],
             capture_output=True,
             text=True,
             check=True,
         )
         if remove_original:
-            filepath.unlink()
-            print(f"Converted and removed original: {filepath} -> {md_path}")
+            path.unlink()
+            print(f"Converted and removed original: {path} -> {md_path}")
         else:
-            print(f"Converted: {filepath} -> {md_path}")
+            print(f"Converted: {path} -> {md_path}")
         return True
     except subprocess.CalledProcessError as e:
-        print(f"Error converting {filepath}: {e.stderr}")
+        print(f"Error converting {path}: {e.stderr}")
         return False
 
 

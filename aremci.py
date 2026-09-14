@@ -23,14 +23,14 @@ DOCSTRING_START_REGEX = re.compile(
 MAX_WORKERS = 4
 
 
-def strip_comments_and_docstrings(file_path_str) -> bool:
-    file_path = Path(file_path_str)
-    backup_path = file_path.with_suffix(file_path.suffix + ".bak")
+def strip_comments_and_docstrings(path_str) -> bool:
+    path = Path(path_str)
+    backup_path = path.with_suffix(path.suffix + ".bak")
     original_content = ""
     try:
-        original_content = Path(file_path).read_text(encoding="utf-8")
+        original_content = Path(path).read_text(encoding="utf-8")
     except Exception as e:
-        print(f"Error reading file {file_path}: {e}")
+        print(f"Error reading file {path}: {e}")
         return False
     DOCSTRING_START_REGEX.sub("\x01", original_content, count=3)
 
@@ -67,30 +67,30 @@ def strip_comments_and_docstrings(file_path_str) -> bool:
             final_code = cleaned_content_heuristic
         except SyntaxError:
             print(
-                f"Syntax error after stripping comments/docstrings from {file_path}. Reverting."
+                f"Syntax error after stripping comments/docstrings from {path}. Reverting."
             )
             return False
     except SyntaxError as e:
-        print(f"Original code has syntax error: {file_path} - {e}. Skipping.")
+        print(f"Original code has syntax error: {path} - {e}. Skipping.")
         return False
     try:
-        shutil.copy2(file_path, backup_path)
+        shutil.copy2(path, backup_path)
         print(f"Backup created: {backup_path}")
     except Exception as e:
-        print(f"Error creating backup for {file_path}: {e}")
+        print(f"Error creating backup for {path}: {e}")
         return False
     try:
-        Path(file_path).write_text(final_code, encoding="utf-8")
-        print(f"Successfully stripped comments/docstrings from {file_path}")
+        Path(path).write_text(final_code, encoding="utf-8")
+        print(f"Successfully stripped comments/docstrings from {path}")
         return True
     except Exception as e:
-        print(f"Error writing cleaned file {file_path}: {e}")
+        print(f"Error writing cleaned file {path}: {e}")
         try:
-            shutil.move(backup_path, file_path)
-            print(f"Restored original content from backup for {file_path}")
+            shutil.move(backup_path, path)
+            print(f"Restored original content from backup for {path}")
         except Exception as restore_e:
             print(
-                f"CRITICAL ERROR: Failed to write cleaned file and restore backup for {file_path}: {restore_e}"
+                f"CRITICAL ERROR: Failed to write cleaned file and restore backup for {path}: {restore_e}"
             )
         return False
 
@@ -101,17 +101,17 @@ def process_directory(directory: str) -> None:
     processed_count = 0
     with ProcessPoolExecutor(max_workers=MAX_WORKERS) as executor:
         futures = {
-            executor.submit(strip_comments_and_docstrings, file_path): file_path
-            for file_path in python_files
+            executor.submit(strip_comments_and_docstrings, path): path
+            for path in python_files
         }
         for future in futures:
-            file_path = futures[future]
+            path = futures[future]
             try:
                 success = future.result()
                 if success:
                     processed_count += 1
             except Exception as e:
-                print(f"Error processing future for {file_path}: {e}")
+                print(f"Error processing future for {path}: {e}")
     print(f"""
 Finished processing. Successfully stripped comments/docstrings from {processed_count}/{len(python_files)} files.""")
 

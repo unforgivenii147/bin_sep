@@ -33,9 +33,9 @@ def get_package_files(pkg_name: str) -> list[Path]:
         return []
 
 
-def is_ignored_path(file_path: Path) -> bool:
+def is_ignored_path(path: Path) -> bool:
     ignore_dirs = {"share/man", "share/info", "share/doc"}
-    parts = file_path.parts
+    parts = path.parts
     for i in range(len(parts) - 1):
         if (f"{parts[i]}/share" == "share" or parts[i] == "share") and i + 1 < len(
             parts
@@ -43,7 +43,7 @@ def is_ignored_path(file_path: Path) -> bool:
             subdir = parts[i + 1]
             if subdir in {"man", "info", "doc"}:
                 return True
-    path_str = str(file_path)
+    path_str = str(path)
     return any(
         f"/{ignore}/" in path_str or path_str.endswith(f"/{ignore}")
         for ignore in ignore_dirs
@@ -54,12 +54,12 @@ def check_package(pkg_name: str) -> dict:
     files = get_package_files(pkg_name)
     missing = []
     checked = 0
-    for file_path in files:
-        if is_ignored_path(file_path):
+    for path in files:
+        if is_ignored_path(path):
             continue
         checked += 1
-        if not file_path.exists():
-            missing.append(str(file_path))
+        if not path.exists():
+            missing.append(str(path))
     return {
         "package": pkg_name,
         "total_checked": checked,

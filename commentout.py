@@ -41,11 +41,11 @@ def main():
     if len(sys.argv) < 3 or len(sys.argv) > 4:
         print("Usage: python commentout.py <filename> <start_line> [end_line]")
         sys.exit(1)
-    file_path = Path(sys.argv[1])
-    if not file_path.exists():
-        print(f"Error: File {file_path} not found.")
+    path = Path(sys.argv[1])
+    if not path.exists():
+        print(f"Error: File {path} not found.")
         sys.exit(1)
-    ext = file_path.suffix.lower()
+    ext = path.suffix.lower()
     comment_char = COMMENT_MAP.get(ext)
     if not comment_char:
         comment_char = "#"
@@ -57,9 +57,9 @@ def main():
         print("Error: Line numbers must be integers.")
         sys.exit(1)
     with (
-        open(file_path, "r", encoding="utf-8", errors="ignore") as infile,
+        open(path, "r", encoding="utf-8", errors="ignore") as infile,
         NamedTemporaryFile(
-            "w", delete=False, dir=file_path.parent, encoding="utf-8"
+            "w", delete=False, dir=path.parent, encoding="utf-8"
         ) as temp_file,
     ):
         temp_path = Path(temp_file.name)
@@ -89,8 +89,8 @@ def main():
                 else:
                     temp_file.writelines(lines)
                 current_line_idx += len(lines)
-    os.replace(temp_path, file_path)
-    print(f"Successfully processed {file_path} using '{comment_char}'")
+    os.replace(temp_path, path)
+    print(f"Successfully processed {path} using '{comment_char}'")
 
 
 if __name__ == "__main__":

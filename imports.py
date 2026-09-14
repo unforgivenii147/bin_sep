@@ -94,20 +94,20 @@ def get_local_packages(start_path: Path) -> set[str]:
     return packages
 
 
-def _process_file(file_path: Path) -> tuple[Path, set[str], bool, Optional[str]]:
+def _process_file(path: Path) -> tuple[Path, set[str], bool, Optional[str]]:
     """
     Process a single Python file to extract its imports.
 
     Args:
-        file_path: Path to the Python file to process
+        path: Path to the Python file to process
 
     Returns:
-        Tuple containing (file_path, imports_set, success_flag, error_message)
+        Tuple containing (path, imports_set, success_flag, error_message)
     """
     imports: set[str] = set()
     error: Optional[str] = None
     try:
-        code = file_path.read_text(encoding="utf-8")
+        code = path.read_text(encoding="utf-8")
         tree = ast.parse(code)
         visitor = ImportVisitor()
         visitor.visit(tree)
@@ -118,7 +118,7 @@ def _process_file(file_path: Path) -> tuple[Path, set[str], bool, Optional[str]]
         error = f"UnicodeDecodeError: {e}"
     except Exception as e:
         error = f"Error: {e}"
-    return file_path, imports, error is None, error
+    return path, imports, error is None, error
 
 
 def has_python_files(dir_path: Path) -> bool:
@@ -176,7 +176,7 @@ def find_imports_for_directory(
     with Pool(processes=NUM_WORKERS) as pool:
         results = pool.map(_process_file, files)
 
-    for _file_path, imports, success, _error in results:
+    for _path, imports, success, _error in results:
         if success:
             all_imports.update(imports)
 
@@ -438,7 +438,7 @@ def main() -> None:
             with Pool(processes=NUM_WORKERS) as pool:
                 results = pool.map(_process_file, dir_files)
 
-            for _file_path, imports, success, _error in results:
+            for _path, imports, success, _error in results:
                 if success:
                     all_imports.update(imports)
 

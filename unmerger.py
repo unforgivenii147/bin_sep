@@ -6,17 +6,17 @@ import sys
 from pathlib import Path
 
 
-def parse_merged_file(filepath):
-    with open(filepath, "r") as f:
+def parse_merged_file(path):
+    with open(path, "r") as f:
         content = f.read()
     pattern = r"^# File: (.+?)$"
     parts = re.split(pattern, content, flags=re.MULTILINE)
     files = {}
     for i in range(1, len(parts), 2):
         if i + 1 < len(parts):
-            file_path = parts[i].strip()
+            path = parts[i].strip()
             file_content = parts[i + 1].lstrip("\n").rstrip()
-            files[file_path] = file_content
+            files[path] = file_content
     return files
 
 
@@ -42,8 +42,8 @@ def main():
         sys.exit(1)
     input_file = sys.argv[1]
     files = parse_merged_file(input_file)
-    for file_path, file_content in files.items():
-        path = Path(file_path)
+    for path, file_content in files.items():
+        path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
         unique_path = get_unique_path(path)
         unique_path.write_text(file_content)

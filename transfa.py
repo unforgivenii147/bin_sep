@@ -60,6 +60,6 @@ def translate_file(file_input: str) -> None:
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: python transfa.py <file_path>")
+        print("Usage: python transfa.py <path>")
         sys.exit(1)
     translate_file(sys.argv[1])

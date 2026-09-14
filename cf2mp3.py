@@ -453,11 +453,11 @@ def uses_concurrent_futures(source: str) -> bool:
     return False
 
 
-def migrate_file(file_path: Path) -> tuple[bool, list[str]]:
+def migrate_file(path: Path) -> tuple[bool, list[str]]:
     try:
-        source = file_path.read_text(encoding="utf-8")
+        source = path.read_text(encoding="utf-8")
     except Exception as e:
-        print(f"Error reading {file_path}: {e}")
+        print(f"Error reading {path}: {e}")
         return False, []
     if not uses_concurrent_futures(source):
         return False, []
@@ -465,10 +465,10 @@ def migrate_file(file_path: Path) -> tuple[bool, list[str]]:
         migrator = FuturesToPoolMigrator(source)
         new_source, changes = migrator.migrate()
         if new_source != source:
-            file_path.write_text(new_source, encoding="utf-8")
+            path.write_text(new_source, encoding="utf-8")
             return True, changes
     except Exception as e:
-        print(f"Error migrating {file_path}: {e}")
+        print(f"Error migrating {path}: {e}")
     return False, []
 
 
@@ -483,18 +483,18 @@ def main() -> int:
     )
     changed_count = 0
     total_changes = 0
-    for file_path in python_files:
+    for path in python_files:
         try:
-            changed, changes = migrate_file(file_path)
+            changed, changes = migrate_file(path)
             if changed:
                 changed_count += 1
                 total_changes += len(changes)
-                print(f"\n✓ {file_path}: {len(changes)} changes")
+                print(f"\n✓ {path}: {len(changes)} changes")
                 unique_changes = list(dict.fromkeys(changes))
                 for change in unique_changes:
                     print(f"  - {change}")
         except Exception as e:
-            print(f"\n✗ Error processing {file_path}: {e}")
+            print(f"\n✗ Error processing {path}: {e}")
     print(f"\n{'=' * 60}")
     print(f"Migration complete!")
     print(f"Files modified: {changed_count}")

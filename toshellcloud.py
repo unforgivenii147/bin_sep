@@ -6,11 +6,11 @@ from multiprocessing import Pool
 from pathlib import Path
 
 
-def convert_shebang(file_path: Path) -> tuple[str, bool, str | None]:
+def convert_shebang(path: Path) -> tuple[str, bool, str | None]:
     try:
-        content = file_path.read_text(encoding="utf-8")
+        content = path.read_text(encoding="utf-8")
         if not content.startswith("#!"):
-            return str(file_path), False, "No shebang found"
+            return str(path), False, "No shebang found"
         lines = content.split("\n")
         shebang = lines[0]
         termux_patterns = [
@@ -20,17 +20,17 @@ def convert_shebang(file_path: Path) -> tuple[str, bool, str | None]:
             "#!/data/data/com.termux/files/usr/bin/env python3",
         ]
         if shebang not in termux_patterns:
-            return str(file_path), False, "Not a Termux shebang"
+            return str(path), False, "Not a Termux shebang"
         if "python3" in shebang:
             new_shebang = "#!/usr/bin/env python3"
         else:
             new_shebang = "#!/usr/bin/env python"
         lines[0] = new_shebang
         new_content = "\n".join(lines)
-        file_path.write_text(new_content, encoding="utf-8")
-        return str(file_path), True, None
+        path.write_text(new_content, encoding="utf-8")
+        return str(path), True, None
     except Exception as e:
-        return str(file_path), False, str(e)
+        return str(path), False, str(e)
 
 
 def find_py_files(directory: Path) -> list:
@@ -60,16 +60,16 @@ def main():
     failed = 0
     print("\nResults:")
     print("-" * 40)
-    for file_path, success, error in results:
+    for path, success, error in results:
         if success:
             successful += 1
-            print(f"✅ {file_path}")
+            print(f"✅ {path}")
         elif error == "No shebang found" or error == "Not a Termux shebang":
             skipped += 1
-            print(f"⏭️  {file_path} - {error}")
+            print(f"⏭️  {path} - {error}")
         else:
             failed += 1
-            print(f"❌ {file_path} - {error}")
+            print(f"❌ {path} - {error}")
     print("-" * 40)
     print(f"\nSummary:")
     print(f"  Successfully converted: {successful}")

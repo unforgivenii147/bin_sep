@@ -13,10 +13,10 @@ def get_python_files(root_dir: Path) -> list[Path]:
     return list(root_dir.rglob("*.py"))
 
 
-def extract_imports(file_path: Path) -> set[str]:
+def extract_imports(path: Path) -> set[str]:
     try:
-        with open(file_path, encoding="utf-8") as f:
-            tree = ast.parse(f.read(), filename=str(file_path))
+        with open(path, encoding="utf-8") as f:
+            tree = ast.parse(f.read(), filename=str(path))
     except (SyntaxError, UnicodeDecodeError):
         return set()
     imports = set()
@@ -29,10 +29,10 @@ def extract_imports(file_path: Path) -> set[str]:
     return imports
 
 
-def extract_used_names(file_path: Path) -> set[str]:
+def extract_used_names(path: Path) -> set[str]:
     try:
-        with open(file_path, encoding="utf-8") as f:
-            tree = ast.parse(f.read(), filename=str(file_path))
+        with open(path, encoding="utf-8") as f:
+            tree = ast.parse(f.read(), filename=str(path))
     except (SyntaxError, UnicodeDecodeError):
         return set()
     names = set()
@@ -52,20 +52,20 @@ def is_module_available(name: str) -> bool:
         return False
 
 
-def check_file(file_path: Path) -> tuple[Path, list[str]]:
-    imported = extract_imports(file_path)
-    used = extract_used_names(file_path)
+def check_file(path: Path) -> tuple[Path, list[str]]:
+    imported = extract_imports(path)
+    used = extract_used_names(path)
     missing = []
     for name in used:
         if name not in imported and is_module_available(name):
             missing.append(name)
-    return file_path, missing
+    return path, missing
 
 
-def fix_file(file_path: Path, missing_imports: list[str]) -> None:
+def fix_file(path: Path, missing_imports: list[str]) -> None:
     if not missing_imports:
         return
-    with open(file_path, encoding="utf-8") as f:
+    with open(path, encoding="utf-8") as f:
         content = f.read()
     try:
         tree = ast.parse(content)
@@ -86,7 +86,7 @@ def fix_file(file_path: Path, missing_imports: list[str]) -> None:
     for node in tree.body[:insert_pos]:
         line_count = node.end_lineno or line_count
     lines.insert(line_count, import_text)
-    with open(file_path, "w", encoding="utf-8") as f:
+    with open(path, "w", encoding="utf-8") as f:
         f.write("\n".join(lines))
 
 
@@ -130,15 +130,15 @@ def main():
     files_with_issues = []
     with Pool(processes=args.jobs) as pool:
         results = pool.map(check_file, python_files)
-    for file_path, missing in results:
+    for path, missing in results:
         if missing:
-            files_with_issues.append((file_path, missing))
-            rel_path = file_path.relative_to(root_dir)
+            files_with_issues.append((path, missing))
+            rel_path = path.relative_to(root_dir)
             print(f"\n{rel_path}:")
             for imp in sorted(set(missing)):
                 print(f"  - Missing: {imp}")
             if args.auto_fix:
-                fix_file(file_path, missing)
+                fix_file(path, missing)
                 print("  ✓ Fixed")
     print(f"\n{'=' * 40}")
     if files_with_issues:

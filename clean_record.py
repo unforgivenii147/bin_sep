@@ -22,13 +22,13 @@ def clean_records():
                 if not line.strip():
                     continue
                 parts = line.split(",")
-                file_path = parts[0]
-                path_obj = Path(file_path)
+                path = parts[0]
+                path_obj = Path(path)
                 is_in_dist_info = any(
                     part.endswith(".dist-info") for part in path_obj.parts
                 )
                 if is_in_dist_info and path_obj.name not in ALLOWED_DIST_INFO_FILES:
-                    print(f"Removed dist-info reference: {file_path}")
+                    print(f"Removed dist-info reference: {path}")
                     continue
                 filtered.append(line)
             record_file.write_text("\n".join(filtered) + ("\n" if filtered else ""))

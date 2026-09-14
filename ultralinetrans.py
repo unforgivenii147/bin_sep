@@ -92,15 +92,15 @@ def batch_translate(texts: list[str]) -> list[str]:
         return texts
 
 
-def safe_overwrite(filepath: Path, content: str) -> None:
-    """Atomically overwrite filepath with content via a temp file in the same dir."""
+def safe_overwrite(path: Path, content: str) -> None:
+    """Atomically overwrite path with content via a temp file in the same dir."""
     tmp_path: Path
     with tempfile.NamedTemporaryFile(
-        mode="w", encoding="utf-8", delete=False, dir=filepath.parent
+        mode="w", encoding="utf-8", delete=False, dir=path.parent
     ) as tmp:
         tmp.write(content)
         tmp_path = Path(tmp.name)
-    shutil.move(str(tmp_path), str(filepath))
+    shutil.move(str(tmp_path), str(path))
 
 
 def translate_python_file(source: str) -> str:

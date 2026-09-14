@@ -23,16 +23,16 @@ def is_constant(node: AST) -> bool:
     )
 
 
-def write_to_file(file_path: Path, content) -> None:
-    with Path(file_path).open("a", encoding="utf-8") as f:
+def write_to_file(path: Path, content) -> None:
+    with Path(path).open("a", encoding="utf-8") as f:
         f.write(content + "\n\n")
 
 
 for root, _, files in os.walk("."):
     for file in files:
         if file.endswith(".py") and not file.startswith("output"):
-            file_path = Path(root) / file
-            content = Path(file_path).read_text(encoding="utf-8")
+            path = Path(root) / file
+            content = Path(path).read_text(encoding="utf-8")
             tree = ast.parse(content)
             for node in ast.walk(tree):
                 if isinstance(node, ast.FunctionDef):

@@ -46,8 +46,8 @@ class DuplicateFunctionFinder(ast.NodeVisitor):
         self.functions.append(func_info)
         self.generic_visit(node)
 
-    def analyze_file(self, filepath: str) -> dict[str, list[FunctionInfo]]:
-        with open(filepath, encoding="utf-8") as f:
+    def analyze_file(self, path: str) -> dict[str, list[FunctionInfo]]:
+        with open(path, encoding="utf-8") as f:
             content = f.read()
             self.source_lines = content.splitlines()
         try:
@@ -63,8 +63,8 @@ class DuplicateFunctionFinder(ast.NodeVisitor):
 
 
 class DuplicateFunctionRemover:
-    def __init__(self, filepath: str) -> None:
-        self.filepath = Path(filepath)
+    def __init__(self, path: str) -> None:
+        self.path = Path(path)
         self.content = None
         self.lines = None
 
@@ -84,7 +84,7 @@ class DuplicateFunctionRemover:
     def remove_duplicates(
         self, groups: dict[str, list[FunctionInfo]], keep_choice: dict[str, int]
     ) -> bool:
-        with open(self.filepath, encoding="utf-8") as f:
+        with open(self.path, encoding="utf-8") as f:
             self.content = f.read()
             self.lines = self.content.splitlines()
         lines_to_remove = set()
@@ -102,7 +102,7 @@ class DuplicateFunctionRemover:
             if i not in lines_to_remove:
                 new_lines.append(line)
         try:
-            with open(self.filepath, "w", encoding="utf-8") as f:
+            with open(self.path, "w", encoding="utf-8") as f:
                 f.write("\n".join(new_lines))
             return True
         except Exception as e:
@@ -110,9 +110,9 @@ class DuplicateFunctionRemover:
             return False
 
     def backup_file(self) -> str:
-        backup_path = self.filepath.with_suffix(self.filepath.suffix + ".backup")
+        backup_path = self.path.with_suffix(self.path.suffix + ".backup")
         with (
-            open(self.filepath, encoding="utf-8") as src,
+            open(self.path, encoding="utf-8") as src,
             open(backup_path, "w", encoding="utf-8") as dst,
         ):
             dst.write(src.read())
@@ -175,22 +175,22 @@ def main() -> None:
         help="Create a backup before removing (implies -r)",
     )
     args = parser.parse_args()
-    filepath = args.file
-    if not Path(filepath).exists():
-        print(f"Error: File '{filepath}' not found")
+    path = args.file
+    if not Path(path).exists():
+        print(f"Error: File '{path}' not found")
         sys.exit(1)
-    if not filepath.endswith(".py"):
-        print(f"Warning: File '{filepath}' does not have .py extension")
+    if not path.endswith(".py"):
+        print(f"Warning: File '{path}' does not have .py extension")
         response = input("Continue anyway? (y/N): ")
         if response.lower() != "y":
             sys.exit(0)
-    print(f"Analyzing {filepath}...")
+    print(f"Analyzing {path}...")
     finder = DuplicateFunctionFinder()
-    duplicates = finder.analyze_file(filepath)
+    duplicates = finder.analyze_file(path)
     if not display_duplicates(duplicates):
         sys.exit(0)
     if args.remove or args.backup:
-        remover = DuplicateFunctionRemover(filepath)
+        remover = DuplicateFunctionRemover(path)
         if args.backup:
             backup_path = remover.backup_file()
             print(f"\nBackup created at: {backup_path}")

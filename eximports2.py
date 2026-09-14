@@ -23,11 +23,11 @@ def extract_file(src: bytes, tree: Tree) -> list[str]:
     ]
 
 
-def get_relative_path(file_path: Path, base_path: Path) -> Path:
+def get_relative_path(path: Path, base_path: Path) -> Path:
     try:
-        return file_path.relative_to(base_path)
+        return path.relative_to(base_path)
     except ValueError:
-        return file_path
+        return path
 
 
 folder_imports = defaultdict(list)

@@ -58,22 +58,22 @@ def main() -> None:
             "Usage: python transformimports_optimized.py <python_file>", file=sys.stderr
         )
         sys.exit(1)
-    filepath = Path(sys.argv[1])
-    if not filepath.exists() or filepath.suffix != ".py":
-        print(f"Error: Invalid Python file '{filepath}'", file=sys.stderr)
+    path = Path(sys.argv[1])
+    if not path.exists() or path.suffix != ".py":
+        print(f"Error: Invalid Python file '{path}'", file=sys.stderr)
         sys.exit(1)
     try:
-        content = filepath.read_text(encoding="utf-8")
+        content = path.read_text(encoding="utf-8")
         tree = ast.parse(content)
         transformer = ImportTransformer(tree)
         new_tree = transformer.visit(tree)
         if transformer.modified:
             ast.fix_missing_locations(new_tree)
             new_content = ast.unparse(new_tree)
-            filepath.write_text(new_content, encoding="utf-8")
-            print(f"✓ Successfully transformed imports in '{filepath}'.")
+            path.write_text(new_content, encoding="utf-8")
+            print(f"✓ Successfully transformed imports in '{path}'.")
         else:
-            print(f"No transformations needed for '{filepath}'.")
+            print(f"No transformations needed for '{path}'.")
     except SyntaxError as e:
         print(f"Error: File has syntax errors: {e}", file=sys.stderr)
         sys.exit(1)

@@ -73,45 +73,45 @@ def get_files_to_process(root_dir: Path, compress: bool) -> list[Path]:
 
 
 def compress_file(
-    filepath: Path,
+    path: Path,
     preset: int = 9,
     threads: int = 4,
     remove_orig: bool = True,
 ) -> tuple[Path, bool, str]:
     """Compress a single file with lzma_mt, optionally removing the original."""
     try:
-        with open(filepath, "rb") as f:
+        with open(path, "rb") as f:
             data: bytes = f.read()
         compressed: bytes = lzma_mt.compress(data, preset=preset, threads=threads)
-        output_path: Path = filepath.parent / (filepath.name + ".xz")
+        output_path: Path = path.parent / (path.name + ".xz")
         with open(output_path, "wb") as f:
             f.write(compressed)
         if remove_orig:
-            filepath.unlink()
-        return filepath, True, f"Compressed to {output_path.name}"
+            path.unlink()
+        return path, True, f"Compressed to {output_path.name}"
     except Exception as e:
-        return filepath, False, f"Error: {e!s}"
+        return path, False, f"Error: {e!s}"
 
 
 def decompress_file(
-    filepath: Path,
+    path: Path,
     remove_orig: bool = True,
 ) -> tuple[Path, bool, str]:
     """Decompress a single .xz file, optionally removing the original."""
     try:
-        if filepath.suffix.lower() != ".xz":
-            return filepath, False, "Error: Not an .xz file"
-        with open(filepath, "rb") as f:
+        if path.suffix.lower() != ".xz":
+            return path, False, "Error: Not an .xz file"
+        with open(path, "rb") as f:
             data: bytes = f.read()
         decompressed: bytes = lzma_mt.decompress(data)
-        output_path: Path = filepath.parent / filepath.stem
+        output_path: Path = path.parent / path.stem
         with open(output_path, "wb") as f:
             f.write(decompressed)
         if remove_orig:
-            filepath.unlink()
-        return filepath, True, f"Decompressed to {output_path.name}"
+            path.unlink()
+        return path, True, f"Decompressed to {output_path.name}"
     except Exception as e:
-        return filepath, False, f"Error: {e!s}"
+        return path, False, f"Error: {e!s}"
 
 
 def _process_files_impl(
@@ -151,7 +151,7 @@ def _process_files_impl(
 
         completed: int = 0
         for result in results:
-            filepath, success, message = result.get()
+            path, success, message = result.get()
             completed += 1
             pct: float = completed / total * 40
             logger.info(f"[{pct:5.1f}%] {completed}/{total}")
@@ -161,7 +161,7 @@ def _process_files_impl(
             else:
                 total_failed += 1
                 status = "✗"
-            rel_path: Path = filepath.relative_to(root_dir)
+            rel_path: Path = path.relative_to(root_dir)
             logger.info(f"{status} {rel_path}: {message}")
 
     logger.info("─" * 40)

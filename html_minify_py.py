@@ -108,13 +108,13 @@ def minify(
 
 
 def process_file(
-    file_path: str | Path,
+    path: str | Path,
     **options,
 ) -> str:
-    file_path = Path(file_path)
-    html_str = file_path.read_text(encoding="utf-8")
+    path = Path(path)
+    html_str = path.read_text(encoding="utf-8")
     minified = minify(html_str, **options)
-    file_path.write_text(minified, encoding="utf-8")
+    path.write_text(minified, encoding="utf-8")
     return minified
 
 

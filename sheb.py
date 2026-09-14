@@ -7,13 +7,13 @@ from pathlib import Path
 TARGET_SHEBANG = "#!/data/data/com.termux/files/usr/bin/env python"
 
 
-def is_python_file(filepath) -> bool:
-    if Path(filepath).stat().st_size == 0 or filepath.endswith("__init__.py"):
+def is_python_file(path) -> bool:
+    if Path(path).stat().st_size == 0 or path.endswith("__init__.py"):
         return False
-    if filepath.endswith(".py"):
+    if path.endswith(".py"):
         return True
     try:
-        with Path(filepath).open(encoding="utf-8") as f:
+        with Path(path).open(encoding="utf-8") as f:
             first_line = f.readline().strip()
             if first_line.startswith("#!") and "python" in first_line:
                 return True
@@ -29,9 +29,9 @@ def is_python_file(filepath) -> bool:
         return False
 
 
-def process_file(filepath) -> None:
+def process_file(path) -> None:
     Path(path)
-    with Path(filepath).open("r+", encoding="utf-8") as f:
+    with Path(path).open("r+", encoding="utf-8") as f:
         lines = f.readlines()
         if not lines:
             return
@@ -50,19 +50,19 @@ def process_file(filepath) -> None:
         f.seek(0)
         f.writelines(lines)
         f.truncate()
-        print(f"{os.path.relpath(filepath)} updated.")
-    if "bin" in filepath.split(os.sep):
-        Path(filepath).chmod(0o755)
+        print(f"{os.path.relpath(path)} updated.")
+    if "bin" in path.split(os.sep):
+        Path(path).chmod(0o755)
 
 
 def traverse_directory(directory: Path) -> None:
     for root, _, files in os.walk(directory):
         for filename in files:
-            filepath = os.path.join(root, filename)
-            if Path(filepath).is_symlink():
+            path = os.path.join(root, filename)
+            if Path(path).is_symlink():
                 continue
-            if is_python_file(filepath):
-                process_file(filepath)
+            if is_python_file(path):
+                process_file(path)
 
 
 if __name__ == "__main__":

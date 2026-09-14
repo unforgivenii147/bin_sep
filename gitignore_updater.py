@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class ProcessResult:
-    filepath: Path
+    path: Path
     success: bool
     modified: bool
     error: str | None = None
@@ -36,56 +36,56 @@ def validate_input_line(line: str) -> str:
     return normalized
 
 
-def line_exists_in_file(filepath: Path, target_line: str) -> bool:
+def line_exists_in_file(path: Path, target_line: str) -> bool:
     try:
-        with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
+        with open(path, "r", encoding="utf-8", errors="ignore") as f:
             for line in f:
                 if line.rstrip("\n\r") == target_line:
                     return True
         return False
     except OSError as e:
-        logger.warning(f"Error reading {filepath}: {e}")
+        logger.warning(f"Error reading {path}: {e}")
         return False
 
 
-def append_line_to_gitignore(filepath: Path, target_line: str) -> ProcessResult:
+def append_line_to_gitignore(path: Path, target_line: str) -> ProcessResult:
     try:
-        if not os.access(filepath.parent, os.W_OK):
+        if not os.access(path.parent, os.W_OK):
             return ProcessResult(
-                filepath=filepath,
+                path=path,
                 success=False,
                 modified=False,
                 error="Permission denied",
-                message=f"No write permission for {filepath.parent}",
+                message=f"No write permission for {path.parent}",
             )
-        if filepath.exists() and line_exists_in_file(filepath, target_line):
+        if path.exists() and line_exists_in_file(path, target_line):
             return ProcessResult(
-                filepath=filepath,
+                path=path,
                 success=True,
                 modified=False,
                 message="Line already exists",
             )
         try:
-            content = filepath.read_text(encoding="utf-8")
+            content = path.read_text(encoding="utf-8")
         except UnicodeDecodeError:
-            content = filepath.read_text(encoding="utf-8", errors="ignore")
-            logger.warning(f"Encoding issues in {filepath}, using fallback")
+            content = path.read_text(encoding="utf-8", errors="ignore")
+            logger.warning(f"Encoding issues in {path}, using fallback")
         needs_newline = content and not content.endswith("\n")
         new_content = content
         if needs_newline:
             new_content += "\n"
         new_content += target_line + "\n"
-        filepath.write_text(new_content, encoding="utf-8")
+        path.write_text(new_content, encoding="utf-8")
         return ProcessResult(
-            filepath=filepath,
+            path=path,
             success=True,
             modified=True,
             message="Line added successfully",
         )
     except Exception as e:
-        logger.error(f"Unexpected error processing {filepath}: {e}")
+        logger.error(f"Unexpected error processing {path}: {e}")
         return ProcessResult(
-            filepath=filepath,
+            path=path,
             success=False,
             modified=False,
             error=str(e),
@@ -118,8 +118,8 @@ def find_gitignore_files(search_paths: list[Path]) -> list[Path]:
 
 
 def process_gitignore_wrapper(args: tuple[Path, str]) -> ProcessResult:
-    filepath, target_line = args
-    return append_line_to_gitignore(filepath, target_line)
+    path, target_line = args
+    return append_line_to_gitignore(path, target_line)
 
 
 def main() -> int:
@@ -153,7 +153,7 @@ def main() -> int:
         logger.warning("No .gitignore files found")
         return 0
     logger.info(f"Found {len(gitignore_files)} .gitignore file(s)")
-    tasks = [(filepath, target_line) for filepath in gitignore_files]
+    tasks = [(path, target_line) for path in gitignore_files]
     num_workers = min(4, cpu_count() or 1)
     logger.info(f"Using {num_workers} worker(s)")
     results = []
@@ -182,7 +182,7 @@ def main() -> int:
         logger.info("\nFailed files:")
         for result in results:
             if not result.success:
-                logger.info(f"  {result.filepath}: {result.message}")
+                logger.info(f"  {result.path}: {result.message}")
     return 0 if failed == 0 else 1
 
 

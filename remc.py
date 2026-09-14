@@ -93,28 +93,28 @@ def remove_blank_lines(content: str) -> str:
     return "\n".join(line.rstrip() for line in content.split("\n"))
 
 
-def process_file(file_path: Path) -> None:
+def process_file(path: Path) -> None:
     Path(path)
     try:
-        original = file_path.read_text(encoding="utf-8")
+        original = path.read_text(encoding="utf-8")
         try:
             modified, removed = rm_ast(original)
         except:
             modified, removed = rm_doc(original)
         modified = remove_blank_lines(modified)
         if removed:
-            print(f"✓ {file_path.name} : ", end="")
+            print(f"✓ {path.name} : ", end="")
             cprint(f"{removed}", "cyan")
             try:
                 tree = ast.parse(modified)
-                file_path.write_text(modified, encoding="utf-8")
+                path.write_text(modified, encoding="utf-8")
                 del tree
                 return
             except:
-                cprint(f"{file_path.name} ast parse error", "cyan")
+                cprint(f"{path.name} ast parse error", "cyan")
                 return
     except Exception as exc:
-        print(f"✗ Error processing {file_path}: {exc}")
+        print(f"✗ Error processing {path}: {exc}")
         return
 
 

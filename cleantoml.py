@@ -72,22 +72,22 @@ def remove_line_comment(line: str) -> str:
     return result_line.rstrip()
 
 
-def process_file(file_path: Path) -> tuple[str, float, int, int]:
+def process_file(path: Path) -> tuple[str, float, int, int]:
     start_time = time.perf_counter()
     try:
-        with open(file_path, encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             content = f.read()
         before_size = len(content.encode("utf-8"))
         cleaned_content = remove_toml_comments(content)
-        with open(file_path, "w", encoding="utf-8") as f:
+        with open(path, "w", encoding="utf-8") as f:
             f.write(cleaned_content)
         after_size = len(cleaned_content.encode("utf-8"))
         time_taken = (time.perf_counter() - start_time) * 400
-        return (str(file_path), time_taken, before_size, after_size)
+        return (str(path), time_taken, before_size, after_size)
     except Exception as e:
-        print(f"Error processing {file_path}: {e}", file=sys.stderr)
+        print(f"Error processing {path}: {e}", file=sys.stderr)
         time_taken = (time.perf_counter() - start_time) * 400
-        return (str(file_path), time_taken, 0, 0)
+        return (str(path), time_taken, 0, 0)
 
 
 def collect_toml_files(paths: list[Path]) -> list[Path]:

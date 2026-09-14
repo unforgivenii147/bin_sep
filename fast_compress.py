@@ -253,24 +253,24 @@ def iter_files(base_dir: Path, compress: bool) -> Iterator[Path]:
     skipped_dirs = 0
     skipped_media = 0
 
-    def accept_file(file_path: Path) -> bool:
+    def accept_file(path: Path) -> bool:
         nonlocal skipped_extensions, skipped_media
-        path_str = str(file_path)
+        path_str = str(path)
         if ".egg-info" in path_str or ".dist-info" in path_str:
             skipped_extensions += 1
             return False
         if compress:
-            suf = file_path.suffix.lower()
+            suf = path.suffix.lower()
             if suf in SKIP_EXTENSIONS_COMPRESS:
                 skipped_extensions += 1
                 if suf in MEDIA_EXTENSIONS:
                     skipped_media += 1
                 return False
             return True
-        if file_path.name.endswith(".tar.zst"):
+        if path.name.endswith(".tar.zst"):
             skipped_extensions += 1
             return False
-        if file_path.suffix not in VALID_DECOMPRESS_EXTENSIONS:
+        if path.suffix not in VALID_DECOMPRESS_EXTENSIONS:
             skipped_extensions += 1
             return False
         return True
@@ -291,12 +291,12 @@ def iter_files(base_dir: Path, compress: bool) -> Iterator[Path]:
             skipped_editable += 1
             continue
         for file_name in file_names:
-            file_path = root_path / file_name
-            if file_path.is_symlink():
+            path = root_path / file_name
+            if path.is_symlink():
                 skipped_symlinks += 1
                 continue
-            if accept_file(file_path):
-                yield file_path
+            if accept_file(path):
+                yield path
 
     if skipped_symlinks > 0:
         logger.warning("Skipped {} symlinks", skipped_symlinks)
@@ -397,13 +397,13 @@ def process_stream(
 
     # First pass: build the list of tasks (so we know the total up-front).
     tasks: list[tuple[Path, Path]] = []
-    for file_path in iter_files(base_dir, compress):
-        op_out = _output_path_for(file_path, compress)
+    for path in iter_files(base_dir, compress):
+        op_out = _output_path_for(path, compress)
         if op_out.exists():
             skipped += 1
             completed += 1
             continue
-        tasks.append((file_path, op_out))
+        tasks.append((path, op_out))
 
     total_submitted = len(tasks)
     grand_total = total_submitted + skipped
@@ -421,16 +421,16 @@ def process_stream(
 
     with Pool(processes=POOL_WORKERS) as pool:
         async_results: list[AsyncResult[tuple[bool, Path, Path | str, int, int]]] = []
-        for file_path, op_out in tasks:
+        for path, op_out in tasks:
             if compress:
                 ar = pool.apply_async(
                     compress_file,
-                    (file_path, op_out, level, remove_original),
+                    (path, op_out, level, remove_original),
                 )
             else:
                 ar = pool.apply_async(
                     decompress_file,
-                    (file_path, op_out, remove_original),
+                    (path, op_out, remove_original),
                 )
             async_results.append(ar)
 

@@ -3,7 +3,7 @@
 Generate a Python script that recursively scans a directory for text files and detects non-English content line by line using the langdetect-hc library. The script should:
 
 - Use multiprocessing.Pool.apply_async with a fixed pool of 8 workers for parallel file processing (no concurrent.futures, no configurable worker count).
-- Define dataclasses `DetectionResult` (file_path, non_english_lines, total_lines, error) and `ScanConfig` (confidence_threshold, min_line_length, max_line_length, chunk_size, encoding, text_extensions, ignore_dirs, ignore_files, batch_size).
+- Define dataclasses `DetectionResult` (path, non_english_lines, total_lines, error) and `ScanConfig` (confidence_threshold, min_line_length, max_line_length, chunk_size, encoding, text_extensions, ignore_dirs, ignore_files, batch_size).
 - Implement a `NonEnglishDetector` class with methods: is_text_file, should_ignore, read_file_lines (trying multiple encodings), filter_lines, _is_code_pattern, process_file, scan_directory, save_results.
 - Use `loguru` for all logging output (no print, no standard logging).
 - Use `pathlib.Path` exclusively for path handling.
@@ -51,7 +51,7 @@ REPORT_PREVIEW_LENGTH: int = 150
 class DetectionResult:
     """Result of scanning a single file for non-English content."""
 
-    file_path: Path
+    path: Path
     non_english_lines: list[dict[str, Any]] = field(default_factory=list)
     total_lines: int = 0
     error: str | None = None
@@ -184,9 +184,9 @@ class NonEnglishDetector:
             confidence_threshold=config.confidence_threshold
         )
 
-    def is_text_file(self, file_path: Path) -> bool:
+    def is_text_file(self, path: Path) -> bool:
         """Return True if the file is considered a text file to scan."""
-        if file_path.suffix.lower() in self.config.text_extensions:
+        if path.suffix.lower() in self.config.text_extensions:
             return True
         no_ext_names: set[str] = {
             "makefile",
@@ -207,15 +207,15 @@ class NonEnglishDetector:
             "contributing",
             "notice",
         }
-        return file_path.name.lower() in no_ext_names
+        return path.name.lower() in no_ext_names
 
-    def should_ignore(self, file_path: Path) -> bool:
+    def should_ignore(self, path: Path) -> bool:
         """Return True if the file should be skipped during scanning."""
-        parts: tuple[str, ...] = file_path.parts
+        parts: tuple[str, ...] = path.parts
         for part in parts:
             if part in self.config.ignore_dirs or part.startswith("."):
                 return True
-        if file_path.name in self.config.ignore_files:
+        if path.name in self.config.ignore_files:
             return True
         binary_extensions: set[str] = {
             ".pyc",
@@ -263,16 +263,16 @@ class NonEnglishDetector:
             ".sqlite3",
             ".mdb",
         }
-        if file_path.suffix.lower() in binary_extensions:
+        if path.suffix.lower() in binary_extensions:
             return True
         try:
-            if file_path.stat().st_size > MAX_FILE_SIZE_BYTES:
+            if path.stat().st_size > MAX_FILE_SIZE_BYTES:
                 return True
         except OSError:
             return True
         return False
 
-    def read_file_lines(self, file_path: Path) -> list[str] | None:
+    def read_file_lines(self, path: Path) -> list[str] | None:
         """Read the file as a list of lines trying multiple encodings, or None."""
         encodings: list[str] = [
             self.config.encoding,
@@ -283,7 +283,7 @@ class NonEnglishDetector:
         ]
         for encoding in encodings:
             try:
-                with open(file_path, "r", encoding=encoding, errors="ignore") as f:
+                with open(path, "r", encoding=encoding, errors="ignore") as f:
                     return f.readlines()
             except (UnicodeDecodeError, PermissionError, OSError):
                 continue
@@ -374,11 +374,11 @@ class NonEnglishDetector:
         ]
         return any(code_indicators)
 
-    def process_file(self, file_path: Path) -> DetectionResult:
+    def process_file(self, path: Path) -> DetectionResult:
         """Process a single file, returning a DetectionResult with any findings."""
-        result: DetectionResult = DetectionResult(file_path=file_path)
+        result: DetectionResult = DetectionResult(path=path)
         try:
-            lines: list[str] | None = self.read_file_lines(file_path)
+            lines: list[str] | None = self.read_file_lines(path)
             if lines is None:
                 result.error = "Could not read file"
                 return result
@@ -422,32 +422,31 @@ class NonEnglishDetector:
     def scan_directory(self, root_dir: Path = Path(".")) -> list[DetectionResult]:
         """Scan a directory tree and return DetectionResult for each file."""
         results: list[DetectionResult] = []
-        file_paths: list[Path] = []
+        paths: list[Path] = []
         logger.info(f"Scanning directory: {root_dir.absolute()}")
-        for file_path in root_dir.rglob("*"):
+        for path in root_dir.rglob("*"):
             if (
-                file_path.is_file()
-                and self.is_text_file(file_path)
-                and not self.should_ignore(file_path)
+                path.is_file()
+                and self.is_text_file(path)
+                and not self.should_ignore(path)
             ):
-                file_paths.append(file_path)
-        logger.info(f"Found {len(file_paths)} text files to process")
-        if not file_paths:
+                paths.append(path)
+        logger.info(f"Found {len(paths)} text files to process")
+        if not paths:
             return results
 
-        total: int = len(file_paths)
+        total: int = len(paths)
         completed: int = 0
         with mp.Pool(processes=POOL_WORKERS) as pool:
             async_results: list[tuple[Any, Path]] = [
-                (pool.apply_async(self.process_file, (path,)), path)
-                for path in file_paths
+                (pool.apply_async(self.process_file, (path,)), path) for path in paths
             ]
-            for async_result, file_path in async_results:
+            for async_result, path in async_results:
                 completed += 1
                 try:
                     result: DetectionResult = async_result.get()
                     results.append(result)
-                    rel: Path = file_path.relative_to(root_dir)
+                    rel: Path = path.relative_to(root_dir)
                     if result.non_english_lines:
                         logger.warning(
                             f"[{completed}/{total}] non-English lines in "
@@ -456,7 +455,7 @@ class NonEnglishDetector:
                     else:
                         logger.info(f"[{completed}/{total}] ok {rel}")
                 except Exception as e:
-                    rel = file_path.relative_to(root_dir)
+                    rel = path.relative_to(root_dir)
                     logger.error(f"[{completed}/{total}] failed {rel}: {e!s}")
         return results
 
@@ -483,7 +482,7 @@ class NonEnglishDetector:
                 if not result.non_english_lines and not result.error:
                     continue
                 f.write(f"\n{'=' * 40}\n")
-                f.write(f"File: {result.file_path}\n")
+                f.write(f"File: {result.path}\n")
                 f.write(f"Total lines: {result.total_lines}\n")
                 f.write(f"Non-English lines: {len(result.non_english_lines)}\n")
                 if result.error:

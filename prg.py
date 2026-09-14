@@ -22,15 +22,15 @@ def walk_paths(paths: list[str | Path]) -> Generator[Path, None, None]:
 
 
 def search_file(
-    file_path: Path, pattern: str
+    path: Path, pattern: str
 ) -> Generator[tuple[Path, int, str], None, None]:
     try:
-        with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+        with open(path, "r", encoding="utf-8", errors="ignore") as f:
             for line_num, line in enumerate(f, 1):
                 matches = list(re.finditer(pattern, line))
                 if matches:
                     colorized = colorize_line(line.rstrip("\n"), matches)
-                    yield file_path, line_num, colorized
+                    yield path, line_num, colorized
     except OSError:
         pass
 
@@ -50,22 +50,18 @@ def colorize_line(line: str, matches) -> str:
 
 
 def ripgrep(paths: list[str | Path], pattern: str, max_workers: int = 8):
-    def process_file(file_path: Path):
-        if (
-            is_binary(file_path)
-            or (file_path.suffix not in TXT_EXT)
-            or (file_path.suffix in BIN_EXT)
-        ):
+    def process_file(path: Path):
+        if is_binary(path) or (path.suffix not in TXT_EXT) or (path.suffix in BIN_EXT):
             return []
-        print(f"-> {file_path.name} ... ")
-        return list(search_file(file_path, pattern))
+        print(f"-> {path.name} ... ")
+        return list(search_file(path, pattern))
 
     results = []
     with Pool(8) as p:
         results = p.map(process_file, files)
     for result in results:
-        for file_path, line_num, colorized_line in result:
-            print(f"{file_path}({line_num}) {colorized_line}")
+        for path, line_num, colorized_line in result:
+            print(f"{path}({line_num}) {colorized_line}")
 
 
 if __name__ == "__main__":

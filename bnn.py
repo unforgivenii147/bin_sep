@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class FileStats:
-    filepath: Path
+    path: Path
     success: bool
     replacements: int = 0
     original_size: int = 0
@@ -25,7 +25,7 @@ class FileStats:
     error_msg: str | None = None
 
     def __str__(self) -> str:
-        relpath = self.filepath.relative_to(Path.cwd())
+        relpath = self.path.relative_to(Path.cwd())
         if not self.success:
             return f"✗ {relpath}: {self.error_msg}"
         size_delta = self.new_size - self.original_size
@@ -35,19 +35,19 @@ class FileStats:
         return f"✓ {relpath}: {self.replacements} replacements {size_change}"
 
 
-def is_text_file(filepath: Path, max_sample: int = 8192) -> bool:
+def is_text_file(path: Path, max_sample: int = 8192) -> bool:
     try:
-        with open(filepath, "rb") as f:
+        with open(path, "rb") as f:
             chunk = f.read(max_sample)
             return b"\x00" not in chunk
     except OSError:
         return False
 
 
-def should_process_file(filepath: Path, text_only: bool = True) -> bool:
-    if filepath.is_dir() or filepath.is_symlink():
+def should_process_file(path: Path, text_only: bool = True) -> bool:
+    if path.is_dir() or path.is_symlink():
         return False
-    return not (text_only and not is_text_file(filepath))
+    return not (text_only and not is_text_file(path))
 
 
 def collect_files(inputs: list[str | Path]) -> Generator[Path, None, None]:
@@ -57,20 +57,20 @@ def collect_files(inputs: list[str | Path]) -> Generator[Path, None, None]:
             if should_process_file(path):
                 yield path
         elif path.is_dir():
-            for filepath in path.rglob("*"):
-                if should_process_file(filepath):
-                    yield filepath
+            for path in path.rglob("*"):
+                if should_process_file(path):
+                    yield path
         else:
             logger.warning(f"Path not found: {path}")
 
 
 def process_file_chunked(
-    filepath: Path,
+    path: Path,
     chunk_size: int = 1024 * 1024,
 ) -> FileStats:
-    stats = FileStats(filepath=filepath, success=True)
+    stats = FileStats(path=path, success=True)
     try:
-        stats.original_size = filepath.stat().st_size
+        stats.original_size = path.stat().st_size
         with tempfile.NamedTemporaryFile(
             mode="w",
             delete=False,
@@ -80,7 +80,7 @@ def process_file_chunked(
             temp_path = Path(temp_file.name)
             try:
                 total_replacements = 0
-                with open(filepath, "r", encoding="utf-8", errors="replace") as f:
+                with open(path, "r", encoding="utf-8", errors="replace") as f:
                     buffer = ""
                     while True:
                         chunk = f.read(chunk_size)
@@ -109,9 +109,9 @@ def process_file_chunked(
             except Exception as e:
                 temp_path.unlink()
                 raise
-            temp_path.chmod(filepath.stat().st_mode)
+            temp_path.chmod(path.stat().st_mode)
         stats.new_size = temp_path.stat().st_size
-        shutil.move(str(temp_path), str(filepath))
+        shutil.move(str(temp_path), str(path))
     except UnicodeDecodeError as e:
         stats.success = False
         stats.error_msg = f"Encoding error: {e}"
@@ -193,7 +193,7 @@ Examples:
     logger.info(f"Found {len(files)} files to process")
     logger.info(f"Starting parallel processing with {args.workers} workers")
     results = Parallel(n_jobs=args.workers, verbose=0)(
-        delayed(process_file_chunked)(filepath, chunk_size) for filepath in files
+        delayed(process_file_chunked)(path, chunk_size) for path in files
     )
     print("\n" + "=" * 40)
     print("PROCESSING RESULTS")

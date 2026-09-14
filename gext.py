@@ -93,7 +93,7 @@ class EntityExtractor(ast.NodeVisitor):
         super().generic_visit(node)
 
 
-def get_unique_filepath(base_path: Path) -> Path:
+def get_unique_path(base_path: Path) -> Path:
     if not base_path.exists():
         return base_path
     name = base_path.stem
@@ -112,7 +112,7 @@ def save_entity(entity: dict[str, Any]):
     output_path_base.parent.mkdir(parents=True, exist_ok=True)
     comment = f"# Original path: {entity['path']}\n"
     content = comment + entity["code"]
-    final_py_path = get_unique_filepath(output_path_base)
+    final_py_path = get_unique_path(output_path_base)
     try:
         with open(final_py_path, "w", encoding="utf-8") as f:
             f.write(content)

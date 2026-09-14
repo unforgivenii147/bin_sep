@@ -21,7 +21,7 @@ def parse_vulture_output(lines: list[str]) -> dict[str, list[tuple[int, str, str
         match = VULTURE_LINE_PATTERN.match(line)
         if not match:
             continue
-        filepath = match.group(1)
+        path = match.group(1)
         line_num = int(match.group(2))
         full_message = match.group(3)
         issue_type = None
@@ -44,19 +44,19 @@ def parse_vulture_output(lines: list[str]) -> dict[str, list[tuple[int, str, str
         else:
             issue_type = "other"
             name = ""
-        results[filepath].append((line_num, issue_type, name))
+        results[path].append((line_num, issue_type, name))
     return dict(results)
 
 
-def fix_file(filepath: str, issues: list[tuple[int, str, str]]) -> bool:
-    if not os.path.exists(filepath):
-        print(f"Warning: File not found: {filepath}")
+def fix_file(path: str, issues: list[tuple[int, str, str]]) -> bool:
+    if not os.path.exists(path):
+        print(f"Warning: File not found: {path}")
         return False
     try:
-        with open(filepath, encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             lines = f.readlines()
     except Exception as e:
-        print(f"Error reading {filepath}: {e}")
+        print(f"Error reading {path}: {e}")
         return False
     original_lines = lines.copy()
     modified = False
@@ -97,7 +97,7 @@ def fix_file(filepath: str, issues: list[tuple[int, str, str]]) -> bool:
                 lines[idx] = _comment_out_line(line)
                 modified = True
         except Exception as e:
-            print(f"Error processing {filepath}:{line_num} - {e}")
+            print(f"Error processing {path}:{line_num} - {e}")
             continue
     if lines_to_remove:
         lines = [line for i, line in enumerate(lines) if i not in lines_to_remove]
@@ -105,13 +105,13 @@ def fix_file(filepath: str, issues: list[tuple[int, str, str]]) -> bool:
         modified = True
     if modified:
         try:
-            with open(filepath, "w", encoding="utf-8") as f:
+            with open(path, "w", encoding="utf-8") as f:
                 f.writelines(lines)
-            print(f"Fixed: {filepath}")
+            print(f"Fixed: {path}")
             return True
         except Exception as e:
-            print(f"Error writing {filepath}: {e}")
-            with open(filepath, "w", encoding="utf-8") as f:
+            print(f"Error writing {path}: {e}")
+            with open(path, "w", encoding="utf-8") as f:
                 f.writelines(original_lines)
             return False
     return False
@@ -221,15 +221,15 @@ def main():
         sys.exit(0)
     print(f"Found issues in {len(issues_by_file)} files.")
     print("\nThe following files will be modified:")
-    for filepath in issues_by_file:
-        print(f"  {filepath}: {len(issues_by_file[filepath])} issues")
+    for path in issues_by_file:
+        print(f"  {path}: {len(issues_by_file[path])} issues")
     response = input("\nProceed with fixes? (y/N): ").strip().lower()
     if response not in ("y", "yes"):
         print("Aborted.")
         sys.exit(0)
     fixed_count = 0
-    for filepath, issues in issues_by_file.items():
-        if fix_file(filepath, issues):
+    for path, issues in issues_by_file.items():
+        if fix_file(path, issues):
             fixed_count += 1
     print(f"\nDone! Fixed {fixed_count} files.")
 

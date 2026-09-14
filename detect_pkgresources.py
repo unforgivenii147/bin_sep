@@ -34,17 +34,17 @@ REPLACEMENTS = {
 }
 
 
-def detect_pkg_resources(file_path: Path) -> dict:
+def detect_pkg_resources(path: Path) -> dict:
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(path, "r", encoding="utf-8") as f:
             content = f.read()
     except (OSError, UnicodeDecodeError) as e:
-        return {"file": file_path, "error": str(e), "found": False}
+        return {"file": path, "error": str(e), "found": False}
     has_import = re.search(
         r"^import\s+pkg_resources|^from\s+pkg_resources", content, re.MULTILINE
     )
     if not has_import:
-        return {"file": file_path, "found": False}
+        return {"file": path, "found": False}
     usages = []
     for pattern, _ in REPLACEMENTS:
         matches = re.finditer(pattern, content)
@@ -52,7 +52,7 @@ def detect_pkg_resources(file_path: Path) -> dict:
             line_num = content[: match.start()].count("\n") + 1
             usages.append({"pattern": pattern, "line": line_num})
     result = {
-        "file": file_path,
+        "file": path,
         "found": bool(usages),
         "usages": usages,
         "imports_needed": set(),
@@ -74,12 +74,12 @@ def detect_pkg_resources(file_path: Path) -> dict:
     return result
 
 
-def autofix_pkg_resources(file_path: Path) -> dict:
+def autofix_pkg_resources(path: Path) -> dict:
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(path, "r", encoding="utf-8") as f:
             content = f.read()
     except (OSError, UnicodeDecodeError) as e:
-        return {"file": file_path, "error": str(e), "fixed": False}
+        return {"file": path, "error": str(e), "fixed": False}
     original_content = content
     content = re.sub(
         r"^import\s+pkg_resources\n|^from\s+pkg_resources.*\n",
@@ -111,16 +111,16 @@ def autofix_pkg_resources(file_path: Path) -> dict:
             content = import_lines + "\n" + content
     if content != original_content:
         try:
-            with open(file_path, "w", encoding="utf-8") as f:
+            with open(path, "w", encoding="utf-8") as f:
                 f.write(content)
             return {
-                "file": file_path,
+                "file": path,
                 "fixed": True,
                 "imports_added": sorted(imports_needed),
             }
         except OSError as e:
-            return {"file": file_path, "error": f"Write failed: {e}", "fixed": False}
-    return {"file": file_path, "fixed": False, "reason": "No changes needed"}
+            return {"file": path, "error": f"Write failed: {e}", "fixed": False}
+    return {"file": path, "fixed": False, "reason": "No changes needed"}
 
 
 def collect_python_files(paths: list[str]) -> list[Path]:

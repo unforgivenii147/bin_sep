@@ -70,10 +70,10 @@ class UniversalTranslator:
             return text
 
 
-def process_file(file_path: Path, batch_size: int = 10) -> None:
-    logger.info("Processing: %s", file_path)
+def process_file(path: Path, batch_size: int = 10) -> None:
+    logger.info("Processing: %s", path)
     try:
-        source = file_path.read_text(encoding="utf-8", errors="ignore")
+        source = path.read_text(encoding="utf-8", errors="ignore")
         lines = source.splitlines(keepends=True)
         target_indices = [i for i, line in enumerate(lines) if is_non_english(line)]
         if not target_indices:
@@ -93,10 +93,10 @@ def process_file(file_path: Path, batch_size: int = 10) -> None:
                 logger.info(
                     "  Progress: %d/%d lines translated", i + 1, len(target_indices)
                 )
-        file_path.write_text("".join(lines), encoding="utf-8", errors="ignore")
+        path.write_text("".join(lines), encoding="utf-8", errors="ignore")
         logger.info("  ✓ Completed: %d lines translated", translated_count)
     except Exception as e:
-        logger.error("  ✗ Error processing %s: %s", file_path, e)
+        logger.error("  ✗ Error processing %s: %s", path, e)
 
 
 def worker(args: tuple[Path, int]) -> None:
@@ -134,13 +134,13 @@ def main() -> None:
                 files_to_process.append(path)
         elif path.is_dir():
             for ext in args.extensions:
-                for file_path in path.rglob(f"*{ext}"):
+                for path in path.rglob(f"*{ext}"):
                     if (
-                        file_path.is_file()
-                        and file_path.resolve() not in exclude_paths
-                        and (not any(part.startswith(".") for part in file_path.parts))
+                        path.is_file()
+                        and path.resolve() not in exclude_paths
+                        and (not any(part.startswith(".") for part in path.parts))
                     ):
-                        files_to_process.append(file_path)
+                        files_to_process.append(path)
     if not files_to_process:
         logger.info("No files to process.")
         return

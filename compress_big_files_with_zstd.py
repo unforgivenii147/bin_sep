@@ -80,7 +80,7 @@ class ProgressDisplay:
 
     def update(
         self,
-        file_path: Path,
+        path: Path,
         original_size: int,
         compressed_size: int,
         status: str = "compressed",
@@ -109,7 +109,7 @@ class ProgressDisplay:
             filled = max(0, min(filled, bar_length - 1))
             bar = "=" * filled + ">" + "." * (bar_length - filled - 1)
             status_color = GREEN if status == "compressed" else YELLOW
-            filename = file_path.name
+            filename = path.name
             if len(filename) > 30:
                 filename = filename[:27] + "..."
             sys.stdout.write(
@@ -141,29 +141,29 @@ class ProgressDisplay:
                 )
 
 
-def should_compress_file(file_path: Path, threshold: int) -> bool:
+def should_compress_file(path: Path, threshold: int) -> bool:
     """Return True if the file is eligible for compression."""
-    if file_path.suffix.lower() in COMPRESSED_EXTENSIONS:
+    if path.suffix.lower() in COMPRESSED_EXTENSIONS:
         return False
     try:
-        size = file_path.stat().st_size
+        size = path.stat().st_size
     except OSError:
         return False
     return size > threshold
 
 
 def compress_file(
-    file_path: Path,
+    path: Path,
     progress: ProgressDisplay,
     level: int = DEFAULT_LEVEL,
 ) -> tuple[bool, Path, Path | None, int]:
     """Compress a single file, replacing it if the result is smaller."""
-    original_size = file_path.stat().st_size
-    compressed_path = file_path.with_suffix(file_path.suffix + ".zst")
-    temp_path = file_path.with_suffix(file_path.suffix + ".zst.tmp")
+    original_size = path.stat().st_size
+    compressed_path = path.with_suffix(path.suffix + ".zst")
+    temp_path = path.with_suffix(path.suffix + ".zst.tmp")
     try:
         cctx = zstd.ZstdCompressor(level=level, threads=ZSTD_THREADS)
-        with open(file_path, "rb") as f_in:
+        with open(path, "rb") as f_in:
             data = f_in.read()
         compressed_data = cctx.compress(data)
         compressed_size = len(compressed_data)
@@ -171,11 +171,11 @@ def compress_file(
             with open(temp_path, "wb") as f_out:
                 f_out.write(compressed_data)
             temp_path.rename(compressed_path)
-            file_path.unlink()
-            progress.update(file_path, original_size, compressed_size, "compressed")
-            return True, file_path, compressed_path, compressed_size
-        progress.update(file_path, original_size, original_size, "skipped")
-        return False, file_path, None, original_size
+            path.unlink()
+            progress.update(path, original_size, compressed_size, "compressed")
+            return True, path, compressed_path, compressed_size
+        progress.update(path, original_size, original_size, "skipped")
+        return False, path, None, original_size
     except Exception as exc:  # noqa: BLE001 - surfaced via progress
         if temp_path.exists():
             try:
@@ -183,23 +183,23 @@ def compress_file(
             except OSError:
                 pass
         progress.update(
-            file_path,
+            path,
             original_size,
             original_size,
             f"error: {str(exc)[:20]}",
         )
-        return False, file_path, None, original_size
+        return False, path, None, original_size
 
 
 def _worker(args: tuple[Path, int]) -> tuple[bool, Path, Path | None, int]:
     """Multiprocessing entry point that updates the shared progress state."""
-    file_path, level = args
-    original_size = file_path.stat().st_size
-    compressed_path = file_path.with_suffix(file_path.suffix + ".zst")
-    temp_path = file_path.with_suffix(file_path.suffix + ".zst.tmp")
+    path, level = args
+    original_size = path.stat().st_size
+    compressed_path = path.with_suffix(path.suffix + ".zst")
+    temp_path = path.with_suffix(path.suffix + ".zst.tmp")
     try:
         cctx = zstd.ZstdCompressor(level=level, threads=ZSTD_THREADS)
-        with open(file_path, "rb") as f_in:
+        with open(path, "rb") as f_in:
             data = f_in.read()
         compressed_data = cctx.compress(data)
         compressed_size = len(compressed_data)
@@ -207,23 +207,23 @@ def _worker(args: tuple[Path, int]) -> tuple[bool, Path, Path | None, int]:
             with open(temp_path, "wb") as f_out:
                 f_out.write(compressed_data)
             temp_path.rename(compressed_path)
-            file_path.unlink()
-            _record(file_path, original_size, compressed_size, "compressed")
-            return True, file_path, compressed_path, compressed_size
-        _record(file_path, original_size, original_size, "skipped")
-        return False, file_path, None, original_size
+            path.unlink()
+            _record(path, original_size, compressed_size, "compressed")
+            return True, path, compressed_path, compressed_size
+        _record(path, original_size, original_size, "skipped")
+        return False, path, None, original_size
     except Exception as exc:  # noqa: BLE001 - surfaced via progress
         if temp_path.exists():
             try:
                 temp_path.unlink()
             except OSError:
                 pass
-        _record(file_path, original_size, original_size, f"error: {str(exc)[:20]}")
-        return False, file_path, None, original_size
+        _record(path, original_size, original_size, f"error: {str(exc)[:20]}")
+        return False, path, None, original_size
 
 
 def _record(
-    file_path: Path,
+    path: Path,
     original_size: int,
     compressed_size: int,
     status: str,
@@ -250,7 +250,7 @@ def _record(
     filled = max(0, min(int(bar_length * percent / 100.0), bar_length - 1))
     bar = "=" * filled + ">" + "." * (bar_length - filled - 1)
     status_color = GREEN if status == "compressed" else YELLOW
-    filename = file_path.name
+    filename = path.name
     if len(filename) > 30:
         filename = filename[:27] + "..."
     sys.stdout.write(

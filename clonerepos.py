@@ -34,11 +34,11 @@ NUM_WORKERS: Final[int] = 8
 REQUEST_TIMEOUT: Final[int] = 30
 
 
-def read_repos(file_path: Path) -> list[str]:
+def read_repos(path: Path) -> list[str]:
     """Read repository identifiers from a text file, one per line.
 
     Args:
-        file_path: Path to the file containing repository names.
+        path: Path to the file containing repository names.
 
     Returns:
         A list of non-empty, stripped repository identifier strings.
@@ -46,13 +46,13 @@ def read_repos(file_path: Path) -> list[str]:
     Raises:
         SystemExit: If the file does not exist or contains no repositories.
     """
-    if not file_path.exists():
-        logger.error(f"Error: {file_path} does not exist")
+    if not path.exists():
+        logger.error(f"Error: {path} does not exist")
         sys.exit(1)
-    with open(file_path) as f:
+    with open(path) as f:
         repos: list[str] = [line.strip() for line in f if line.strip()]
     if not repos:
-        logger.error(f"Error: No repositories found in {file_path}")
+        logger.error(f"Error: No repositories found in {path}")
         sys.exit(1)
     return repos
 

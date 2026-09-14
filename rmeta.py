@@ -9,20 +9,20 @@ from bs4 import BeautifulSoup
 meta_tag_pattern = re.compile(r"<meta[^>]*>", re.IGNORECASE)
 
 
-def remove_meta_tags(filepath: Path) -> None:
+def remove_meta_tags(path: Path) -> None:
     try:
-        html_content = filepath.read_text(encoding="utf-8", errors="ignore")
+        html_content = path.read_text(encoding="utf-8", errors="ignore")
         soup = BeautifulSoup(html_content, "html.parser")
         metaz = soup.find_all("meta")
         if metaz:
             new_html_content = meta_tag_pattern.sub("", html_content)
         if new_html_content != html_content:
-            filepath.write_text(new_html_content, encoding="utf-8")
-            print(f"Removed meta tags from: {filepath}")
+            path.write_text(new_html_content, encoding="utf-8")
+            print(f"Removed meta tags from: {path}")
         else:
-            print(f"No meta tags found or removed in: {filepath}")
+            print(f"No meta tags found or removed in: {path}")
     except Exception as e:
-        print(f"Error processing {filepath}: {e}")
+        print(f"Error processing {path}: {e}")
 
 
 def process_directory(directory: Path) -> None:

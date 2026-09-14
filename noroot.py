@@ -13,9 +13,9 @@ IF_BLOCK_REGEX = re.compile(
 )
 
 
-def remove_conditional_exit_blocks(file_path: Path) -> None:
+def remove_conditional_exit_blocks(path: Path) -> None:
     try:
-        original_content = file_path.read_text(encoding="utf-8")
+        original_content = path.read_text(encoding="utf-8")
         modified_content = original_content
         while True:
             match = IF_BLOCK_REGEX.search(modified_content)
@@ -25,10 +25,10 @@ def remove_conditional_exit_blocks(file_path: Path) -> None:
                 modified_content[: match.start()] + modified_content[match.end() :]
             )
         if original_content != modified_content:
-            file_path.write_text(modified_content, encoding="utf-8")
-            print(f"Cleaned: {file_path}")
+            path.write_text(modified_content, encoding="utf-8")
+            print(f"Cleaned: {path}")
     except Exception as e:
-        print(f"Error processing {file_path}: {e}", file=sys.stderr)
+        print(f"Error processing {path}: {e}", file=sys.stderr)
 
 
 def main() -> None:

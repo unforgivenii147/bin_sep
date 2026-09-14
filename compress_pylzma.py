@@ -54,7 +54,7 @@ def create_tar_for_directory(dir_path: Path) -> bytes:
 
 
 def compress_file(
-    file_path: Path,
+    path: Path,
     output_dir: Path,
     tar_subdirs_first: bool = False,
 ) -> Optional[str]:
@@ -62,7 +62,7 @@ def compress_file(
     Compress a single file or directory into a .7z (or .tar.7z) archive.
 
     Args:
-        file_path: Path to the file or directory to compress.
+        path: Path to the file or directory to compress.
         output_dir: Directory where the compressed archive will be written.
         tar_subdirs_first: If True, directories are tarred before compression
             and produce a .tar.7z output.
@@ -72,60 +72,60 @@ def compress_file(
         On error, returns an error message string.
     """
     try:
-        file_path = Path(file_path)
-        if file_path.is_dir():
+        path = Path(path)
+        if path.is_dir():
             if tar_subdirs_first:
-                tar_data = create_tar_for_directory(file_path)
+                tar_data = create_tar_for_directory(path)
                 compressed_data = pylzma.compress(tar_data)
-                output_file = output_dir / f"{file_path.name}.tar.7z"
+                output_file = output_dir / f"{path.name}.tar.7z"
             else:
                 return None
         else:
-            with open(file_path, "rb") as f:
+            with open(path, "rb") as f:
                 data = f.read()
             compressed_data = pylzma.compress(data)
-            output_file = output_dir / f"{file_path.name}.7z"
+            output_file = output_dir / f"{path.name}.7z"
 
         with open(output_file, "wb") as f:
             f.write(compressed_data)
-        return f"Compressed: {file_path} -> {output_file}"
+        return f"Compressed: {path} -> {output_file}"
     except Exception as e:
-        return f"Error compressing {file_path}: {e!s}"
+        return f"Error compressing {path}: {e!s}"
 
 
-def decompress_file(file_path: Path, output_dir: Path) -> str:
+def decompress_file(path: Path, output_dir: Path) -> str:
     """
     Decompress a .7z or .tar.7z archive into the output directory.
 
     Args:
-        file_path: Path to the compressed archive.
+        path: Path to the compressed archive.
         output_dir: Directory where the decompressed content will be written.
 
     Returns:
         A status message string describing the result.
     """
     try:
-        file_path = Path(file_path)
-        with open(file_path, "rb") as f:
+        path = Path(path)
+        with open(path, "rb") as f:
             compressed_data = f.read()
         decompressed_data = pylzma.decompress(compressed_data)
 
-        if file_path.suffixes == [".tar", ".7z"]:
-            output_name = file_path.name.replace(".tar.7z", "")
+        if path.suffixes == [".tar", ".7z"]:
+            output_name = path.name.replace(".tar.7z", "")
             tar_buffer = io.BytesIO(decompressed_data)
             with tarfile.open(fileobj=tar_buffer, mode="r") as tar:
                 tar.extractall(path=str(output_dir))
-            return f"Decompressed: {file_path} -> {output_dir}/{output_name}"
-        elif file_path.suffix == ".7z":
-            output_name = file_path.name.replace(".7z", "")
+            return f"Decompressed: {path} -> {output_dir}/{output_name}"
+        elif path.suffix == ".7z":
+            output_name = path.name.replace(".7z", "")
             output_file = output_dir / output_name
             with open(output_file, "wb") as f:
                 f.write(decompressed_data)
-            return f"Decompressed: {file_path} -> {output_file}"
+            return f"Decompressed: {path} -> {output_file}"
         else:
-            return f"Skipped (not a .7z or .tar.7z file): {file_path}"
+            return f"Skipped (not a .7z or .tar.7z file): {path}"
     except Exception as e:
-        return f"Error decompressing {file_path}: {e!s}"
+        return f"Error decompressing {path}: {e!s}"
 
 
 def process_files_parallel(

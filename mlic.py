@@ -14,13 +14,13 @@ MIN_CHARS = 100
 
 
 def find_multiline_strings(
-    file_path: Path, min_lines: int = 2, min_chars: int = 10
+    path: Path, min_lines: int = 2, min_chars: int = 10
 ) -> dict[str, list[tuple[int, int]]]:
     try:
-        with open(file_path, encoding="utf-8", errors="ignore") as f:
+        with open(path, encoding="utf-8", errors="ignore") as f:
             lines = f.readlines()
     except Exception as e:
-        print(f"Error reading {file_path}: {e}", file=sys.stderr)
+        print(f"Error reading {path}: {e}", file=sys.stderr)
         return {}
     strings = defaultdict(list)
     i = 0
@@ -96,9 +96,9 @@ def find_files(directory: Path, extensions: set[str] | None = None) -> list[Path
 def process_file(
     args: tuple[Path, int, int],
 ) -> tuple[Path, dict[str, list[tuple[int, int]]]]:
-    file_path, min_lines, min_chars = args
-    strings = find_multiline_strings(file_path, min_lines, min_chars)
-    return file_path, strings
+    path, min_lines, min_chars = args
+    strings = find_multiline_strings(path, min_lines, min_chars)
+    return path, strings
 
 
 def find_repeated_strings(
@@ -118,13 +118,13 @@ def find_repeated_strings(
         args = [(f, min_lines, min_chars) for f in files]
         futures = {executor.submit(process_file, arg): arg[0] for arg in args}
         for future in concurrent.futures.as_completed(futures):
-            file_path = futures[future]
+            path = futures[future]
             try:
-                file_path, strings = future.result()
+                path, strings = future.result()
                 for norm_str, positions in strings.items():
-                    all_strings[norm_str].append((file_path, positions))
+                    all_strings[norm_str].append((path, positions))
             except Exception as e:
-                print(f"Error processing {file_path}: {e}", file=sys.stderr)
+                print(f"Error processing {path}: {e}", file=sys.stderr)
     repeated = {k: v for k, v in all_strings.items() if len(v) > 1}
     if half:
         total_files = len(files)
@@ -153,13 +153,13 @@ def remove_strings_from_files(
     else:
         selected_strings = repeated_strings
     for norm_str, occurrences in selected_strings.items():
-        for file_path, positions in occurrences:
-            files_to_modify[file_path].update(positions)
+        for path, positions in occurrences:
+            files_to_modify[path].update(positions)
     skipped_files = []
     modified_files = []
-    for file_path, positions in files_to_modify.items():
+    for path, positions in files_to_modify.items():
         try:
-            with open(file_path, encoding="utf-8", errors="ignore") as f:
+            with open(path, encoding="utf-8", errors="ignore") as f:
                 original_content = f.read()
                 lines = f.seek(0) or original_content.splitlines(True)
             lines = original_content.splitlines(True)
@@ -167,25 +167,25 @@ def remove_strings_from_files(
             for start, end in sorted_positions:
                 del lines[start : end + 1]
             new_content = "".join(lines)
-            if file_path.suffix.lower() == ".py" and validate:
+            if path.suffix.lower() == ".py" and validate:
                 is_valid, error_msg = validate_python_syntax(new_content)
                 if not is_valid:
                     print(
-                        f"SKIPPED: {file_path} - Syntax validation failed: {error_msg}",
+                        f"SKIPPED: {path} - Syntax validation failed: {error_msg}",
                         file=sys.stderr,
                     )
-                    skipped_files.append((file_path, error_msg))
+                    skipped_files.append((path, error_msg))
                     continue
-            with open(file_path, "w", encoding="utf-8") as f:
+            with open(path, "w", encoding="utf-8") as f:
                 f.write(new_content)
-            print(f"Modified: {file_path} - Removed {len(positions)} string(s)")
-            modified_files.append(file_path)
+            print(f"Modified: {path} - Removed {len(positions)} string(s)")
+            modified_files.append(path)
         except Exception as e:
-            print(f"Error modifying {file_path}: {e}", file=sys.stderr)
+            print(f"Error modifying {path}: {e}", file=sys.stderr)
     if skipped_files:
         print(f"\nSkipped {len(skipped_files)} file(s) due to syntax errors:")
-        for file_path, error in skipped_files:
-            print(f"  - {file_path}: {error}")
+        for path, error in skipped_files:
+            print(f"  - {path}: {error}")
     return modified_files, skipped_files
 
 
@@ -295,8 +295,8 @@ def main():
         preview = preview.replace("\n", "\\n")
         print(f"\n{i}. Found in {len(occurrences)} files:")
         print(f"   Preview: {preview}")
-        for file_path, positions in occurrences:
-            print(f"   - {file_path}")
+        for path, positions in occurrences:
+            print(f"   - {path}")
             for start, end in positions:
                 print(f"     Lines {start + 1}-{end + 1}")
     if args.remove is not None:

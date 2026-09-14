@@ -68,10 +68,10 @@ def find_duplicates() -> None:
         if len(paths) > 1:
             duplicate_count += len(paths) - 1
             print(f"hash {hash} :")
-            for file_path in paths:
-                relative_path = file_path.relative_to(cwd)
+            for path in paths:
+                relative_path = path.relative_to(cwd)
                 cprint(f" - {relative_path}", "cyan")
-                total += gsz(file_path)
+                total += gsz(path)
     if total:
         cprint(f"total : {fsz(total)}")
     else:

@@ -15,27 +15,27 @@ def flatten_directory(directory="."):
     files_to_move = []
     for subdir in root.iterdir():
         if subdir.is_dir():
-            for file_path in subdir.iterdir():
-                if file_path.is_file():
-                    files_to_move.append(file_path)
+            for path in subdir.iterdir():
+                if path.is_file():
+                    files_to_move.append(path)
     if not files_to_move:
         print("No files found in subdirectories.")
         return
     print(f"Found {len(files_to_move)} file(s) to move")
     moved_count = 0
     skipped_count = 0
-    for file_path in files_to_move:
-        target_path = root / file_path.name
+    for path in files_to_move:
+        target_path = root / path.name
         if target_path.exists():
-            print(f"Skipping: {file_path} -> {target_path} (file already exists)")
+            print(f"Skipping: {path} -> {target_path} (file already exists)")
             skipped_count += 1
             continue
         try:
-            shutil.move(str(file_path), str(target_path))
-            print(f"Moved: {file_path} -> {target_path}")
+            shutil.move(str(path), str(target_path))
+            print(f"Moved: {path} -> {target_path}")
             moved_count += 1
         except Exception as e:
-            print(f"Error moving {file_path}: {e}")
+            print(f"Error moving {path}: {e}")
     print(f"\nMoved {moved_count} file(s), skipped {skipped_count} file(s)")
     removed_dirs = 0
     for subdir in root.iterdir():

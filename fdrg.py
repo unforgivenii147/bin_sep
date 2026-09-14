@@ -79,7 +79,7 @@ def should_skip_file(path: Path) -> bool:
 
 
 def search_in_file(
-    file_path: Path,
+    path: Path,
     search_string: str,
     search_content: bool,
 ) -> list[SearchResult]:
@@ -91,15 +91,15 @@ def search_in_file(
     pause_event.wait()
     results: list[SearchResult] = []
     if not search_content:
-        if search_string.lower() in file_path.name.lower():
-            results.append((str(file_path), None))
+        if search_string.lower() in path.name.lower():
+            results.append((str(path), None))
         return results
     try:
-        with file_path.open(encoding="utf-8", errors="ignore") as f:
+        with path.open(encoding="utf-8", errors="ignore") as f:
             for ln, line in enumerate(f, 1):
                 pause_event.wait()
                 if search_string in line:
-                    results.append((str(file_path), ln))
+                    results.append((str(path), ln))
     except Exception:
         pass
     return results
@@ -197,11 +197,11 @@ def collect_files(
 
 def _report(results: Sequence[SearchResult]) -> int:
     """Log each result and return the count of newly reported matches."""
-    for file_path, line_num in results:
+    for path, line_num in results:
         if line_num is not None:
-            logger.info(f"[FOUND] {file_path} (Line: {line_num})")
+            logger.info(f"[FOUND] {path} (Line: {line_num})")
         else:
-            logger.info(f"[FOUND] {file_path}")
+            logger.info(f"[FOUND] {path}")
     return len(results)
 
 

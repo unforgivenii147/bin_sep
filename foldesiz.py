@@ -56,21 +56,21 @@ def distribute_files(files, folders, cwd: Path) -> None:
     for min_size, max_size, folder_name in folders:
         size_to_folder[min_size, max_size] = folder_name
     moved_count = 0
-    for filepath, size in files:
+    for path, size in files:
         for (min_size, max_size), folder_name in size_to_folder.items():
             if min_size <= size <= max_size:
                 dest_folder = os.path.join(cwd, folder_name)
-                dest_path = os.path.join(dest_folder, Path(filepath).name)
+                dest_path = os.path.join(dest_folder, Path(path).name)
                 try:
                     dest_path = unique_path(dest_path)
-                    shutil.move(filepath, dest_path)
+                    shutil.move(path, dest_path)
                     moved_count += 1
                     break
                 except Exception as e:
-                    print(f"Failed to move {filepath}: {e}")
+                    print(f"Failed to move {path}: {e}")
                 break
         else:
-            print(f"No folder match for {Path(filepath).name} ({size:,} bytes)")
+            print(f"No folder match for {Path(path).name} ({size:,} bytes)")
 
 
 def main() -> None:

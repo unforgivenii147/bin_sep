@@ -184,10 +184,10 @@ def analyze_imports(
     return (unused, None)
 
 
-def process_py_file(file_path: str) -> FileReport:
-    path_obj = Path(file_path)
+def process_py_file(path: str) -> FileReport:
+    path_obj = Path(path)
     try:
-        with open(file_path, "r", encoding="utf-8", errors="replace") as f:
+        with open(path, "r", encoding="utf-8", errors="replace") as f:
             source = f.read()
         file_size = len(source.encode("utf-8"))
     except PermissionError:
@@ -275,8 +275,8 @@ def process_archive_member(virtual_path: str, source: str) -> FileReport:
     )
 
 
-def _process_py_file_worker(file_path: str) -> FileReport:
-    return process_py_file(file_path)
+def _process_py_file_worker(path: str) -> FileReport:
+    return process_py_file(path)
 
 
 def _process_archive_worker(args: tuple[str, str]) -> FileReport:
@@ -402,10 +402,10 @@ def _reconstruct_import_line(
 
 
 def autofix_file(
-    file_path: str, unused: list[UnusedImport], dry_run: bool = False
+    path: str, unused: list[UnusedImport], dry_run: bool = False
 ) -> tuple[bool, str | None]:
     try:
-        with open(file_path, "r", encoding="utf-8", errors="replace") as f:
+        with open(path, "r", encoding="utf-8", errors="replace") as f:
             source = f.read()
     except Exception as e:
         return (False, f"Read error: {e}")
@@ -415,7 +415,7 @@ def autofix_file(
     if dry_run:
         return (True, None)
     try:
-        with open(file_path, "w", encoding="utf-8") as f:
+        with open(path, "w", encoding="utf-8") as f:
             f.write(modified)
     except Exception as e:
         return (False, f"Write error: {e}")

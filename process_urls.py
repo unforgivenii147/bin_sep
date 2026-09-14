@@ -94,16 +94,16 @@ def main() -> None:
     if len(sys.argv) < 2:
         print("Usage: python script_name.py <input_file>")
         sys.exit(1)
-    input_file_path = Path(sys.argv[1])
-    if not input_file_path.exists():
-        print(f"Error: Input file '{input_file_path}' not found.")
+    input_path = Path(sys.argv[1])
+    if not input_path.exists():
+        print(f"Error: Input file '{input_path}' not found.")
         sys.exit(1)
     try:
-        lines = input_file_path.read_text(encoding="utf-8").splitlines()
+        lines = input_path.read_text(encoding="utf-8").splitlines()
         pruned_urls = prune_subaddresses(lines)
-        input_file_path.write_text("\n".join(pruned_urls) + "\n", encoding="utf-8")
+        input_path.write_text("\n".join(pruned_urls) + "\n", encoding="utf-8")
         print(
-            f"Successfully pruned URLs in '{input_file_path}'. {len(lines) - len(pruned_urls)} URLs removed."
+            f"Successfully pruned URLs in '{input_path}'. {len(lines) - len(pruned_urls)} URLs removed."
         )
     except Exception as e:
         print(f"An error occurred: {e}", file=sys.stderr)

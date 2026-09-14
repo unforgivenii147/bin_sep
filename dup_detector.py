@@ -27,9 +27,9 @@ def get_py_files(directory):
     return py_files
 
 
-def extract_objects(file_path):
+def extract_objects(path):
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(path, "r", encoding="utf-8") as f:
             source = f.read()
         tree = ast.parse(source)
     except (SyntaxError, UnicodeDecodeError):
@@ -60,7 +60,7 @@ def extract_objects(file_path):
                     "object_type": obj_type,
                     "object_name": name,
                     "source_code": src_code,
-                    "reference_file": file_path,
+                    "reference_file": path,
                     "content_hash": content_hash,
                     "start_line": node.lineno,
                     "end_line": node.end_lineno,
@@ -70,8 +70,8 @@ def extract_objects(file_path):
     return objects
 
 
-def process_file(file_path):
-    return extract_objects(file_path)
+def process_file(path):
+    return extract_objects(path)
 
 
 def save_exact_duplicates(
@@ -149,15 +149,15 @@ def refactor_duplicates(hash_groups):
     with open(utils_path, "w", encoding="utf-8") as f:
         f.write(utils_content)
     print(f"[+] Created/Updated {utils_path}")
-    for file_path, names_to_import in file_imports.items():
-        with open(file_path, "r", encoding="utf-8") as f:
+    for path, names_to_import in file_imports.items():
+        with open(path, "r", encoding="utf-8") as f:
             lines = f.readlines()
         objs_to_remove = [
             obj
             for group in hash_groups.values()
             if len(group) > 5
             for obj in group
-            if obj["reference_file"] == file_path
+            if obj["reference_file"] == path
         ]
         objs_to_remove.sort(key=lambda x: x["start_line"], reverse=True)
         for obj in objs_to_remove:
@@ -173,7 +173,7 @@ def refactor_duplicates(hash_groups):
         for name in sorted(names_to_import):
             lines.insert(insert_idx, f"from utils import {name}\n")
             insert_idx += 1
-        with open(file_path, "w", encoding="utf-8") as f:
+        with open(path, "w", encoding="utf-8") as f:
             f.writelines(lines)
     print(f"[+] Refactored {len(file_imports)} files.")
 

@@ -62,24 +62,24 @@ FUNCTION_START_PATTERN: Final[re.Pattern[str]] = re.compile(
 SAFE_NAME_PATTERN: Final[re.Pattern[str]] = re.compile(r"[^\w\-]")
 
 
-def is_bash_script(file_path: Path) -> bool:
+def is_bash_script(path: Path) -> bool:
     """Return True if the given path appears to be a Bash/shell script.
 
     A file is considered a shell script if it ends with ``.sh`` or, for
     extensionless files under the size limit, its shebang line references a
     known shell interpreter. Binary files and non-files are rejected.
     """
-    if file_path.suffix == ".sh":
+    if path.suffix == ".sh":
         return True
-    if not file_path.is_file():
+    if not path.is_file():
         return False
     try:
-        if file_path.stat().st_size > MAX_SCRIPT_SIZE_BYTES:
+        if path.stat().st_size > MAX_SCRIPT_SIZE_BYTES:
             return False
     except OSError:
         return False
     try:
-        with open(file_path, "rb") as handle:
+        with open(path, "rb") as handle:
             first_bytes = handle.read(2)
             if b"\x00" in first_bytes:
                 return False

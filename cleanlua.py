@@ -81,7 +81,7 @@ def process_file_worker(args: tuple[Path, Path]) -> tuple[str, int, str]:
     """Worker helper unpacking tuple arguments for multiprocessing.Pool.imap.
 
     Args:
-        args (tuple[Path, Path]): Pair of (target_file_path, base_path).
+        args (tuple[Path, Path]): Pair of (target_path, base_path).
 
     Returns:
         tuple[str, int, str]: Relative path string, count of comments removed, and error string if any.

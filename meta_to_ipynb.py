@@ -84,8 +84,8 @@ def find_section_boundaries(content, start_pos=0):
     return sections
 
 
-def convert_metadata_to_notebook(metadata_file_path):
-    with open(metadata_file_path, "r", encoding="utf-8") as f:
+def convert_metadata_to_notebook(metadata_path):
+    with open(metadata_path, "r", encoding="utf-8") as f:
         content = f.read()
     lines = content.split("\n")
     metadata, content_start = parse_metadata_section(lines)

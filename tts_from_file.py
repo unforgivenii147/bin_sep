@@ -36,10 +36,10 @@ def main() -> None:
     if len(sys.argv) < 2:
         print("Usage: python tts_from_file.py /path/to/file.txt")
         sys.exit(1)
-    file_path = sys.argv[1]
-    path = Path(file_path)
+    path = sys.argv[1]
+    path = Path(path)
     if not path.exists():
-        print(f"File not found: {file_path}")
+        print(f"File not found: {path}")
         sys.exit(1)
     text = path.read_text(encoding="utf-8", errors="ignore")
     chunks = chunk_text(text)

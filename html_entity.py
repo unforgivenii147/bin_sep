@@ -43,18 +43,18 @@ def replace_entities(text: str) -> str:
     return ENTITY_PATTERN.sub(replacer, text)
 
 
-def process_file(filepath: Path) -> tuple[Path, bool, str]:
+def process_file(path: Path) -> tuple[Path, bool, str]:
     try:
-        with open(filepath, encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             content = f.read()
         new_content = replace_entities(content)
         changed = content != new_content
         if changed:
-            with open(filepath, "w", encoding="utf-8") as f:
+            with open(path, "w", encoding="utf-8") as f:
                 f.write(new_content)
-        return (filepath, changed, "")
+        return (path, changed, "")
     except Exception as e:
-        return (filepath, False, str(e))
+        return (path, False, str(e))
 
 
 def main() -> None:
@@ -65,11 +65,11 @@ def main() -> None:
     error_files = []
     with mp.Pool(processes=8) as pool:
         results = pool.map(process_file, files)
-        for filepath, changed, error in results:
+        for path, changed, error in results:
             if error:
-                error_files.append((filepath, error))
+                error_files.append((path, error))
             elif changed:
-                changed_files.append(filepath)
+                changed_files.append(path)
     print("\n" + "=" * 40)
     print("SUMMARY")
     print("-" * 40)

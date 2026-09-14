@@ -143,44 +143,44 @@ def reconstruct_wheel_name(
 
 
 def _process_single_file(
-    file_path: Path, dry_run: bool, backup_dir: Path | None
+    path: Path, dry_run: bool, backup_dir: Path | None
 ) -> tuple[bool, str | None]:
     """
     Process a single wheel file: extract metadata and rename if needed.
 
     Args:
-        file_path: Path to the wheel file.
+        path: Path to the wheel file.
         dry_run: If True, do not perform renames.
         backup_dir: Directory for backups, or None to skip backups.
 
     Returns:
         A tuple (renamed, failed_filename). If succeeded, failed_filename is None.
     """
-    logger.info("[{}] Processing", file_path.name)
-    metadata = extract_metadata_from_wheel(file_path)
+    logger.info("[{}] Processing", path.name)
+    metadata = extract_metadata_from_wheel(path)
     if not metadata:
-        return False, file_path.name
-    proper_name = reconstruct_wheel_name(file_path, metadata, file_path.name)
+        return False, path.name
+    proper_name = reconstruct_wheel_name(path, metadata, path.name)
     if not proper_name:
-        return False, file_path.name
-    if proper_name == file_path.name:
-        logger.info("Already has correct name: {}", file_path.name)
+        return False, path.name
+    if proper_name == path.name:
+        logger.info("Already has correct name: {}", path.name)
         return False, None
     if dry_run:
         logger.info("Would rename to: {}", proper_name)
         return True, None
     if backup_dir is not None:
-        backup_path = backup_dir / file_path.name
-        shutil.copy2(file_path, backup_path)
+        backup_path = backup_dir / path.name
+        shutil.copy2(path, backup_path)
         logger.info("Backup created: {}", backup_path.name)
     try:
-        new_path = file_path.parent / proper_name
-        file_path.rename(new_path)
+        new_path = path.parent / proper_name
+        path.rename(new_path)
         logger.success("Renamed to: {}", proper_name)
         return True, None
     except OSError as e:
-        logger.error("Error renaming {}: {}", file_path.name, e)
-        return False, file_path.name
+        logger.error("Error renaming {}: {}", path.name, e)
+        return False, path.name
 
 
 def fix_whl_files_by_metadata(
@@ -210,9 +210,9 @@ def fix_whl_files_by_metadata(
         backup_dir = path / BACKUP_DIR_NAME
         backup_dir.mkdir(exist_ok=True)
         logger.info("Backups will be saved to: {}", backup_dir)
-    for idx, file_path in enumerate(whl_files, 1):
-        logger.info("[{}/{}] Processing: {}", idx, len(whl_files), file_path.name)
-        renamed, failed = _process_single_file(file_path, dry_run, backup_dir)
+    for idx, path in enumerate(whl_files, 1):
+        logger.info("[{}/{}] Processing: {}", idx, len(whl_files), path.name)
+        renamed, failed = _process_single_file(path, dry_run, backup_dir)
         if renamed:
             renamed_count += 1
         if failed is not None:

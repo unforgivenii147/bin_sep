@@ -96,16 +96,16 @@ def add_imports(lines: list[str], imports: set[tuple[str, str]]) -> list[str]:
 
 
 def process_file(
-    file_path: Path, dh_func_map: dict[str, tuple[str, str]], dry_run: bool = True
+    path: Path, dh_func_map: dict[str, tuple[str, str]], dry_run: bool = True
 ) -> tuple[Path, int, set[tuple[str, str]]]:
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(path, "r", encoding="utf-8") as f:
             content = f.read()
     except (OSError, UnicodeDecodeError):
-        return (file_path, 0, set())
+        return (path, 0, set())
     matches = find_matching_inlined_functions(content, dh_func_map)
     if not matches:
-        return (file_path, 0, set())
+        return (path, 0, set())
     lines = content.split("\n")
     imports_needed = set()
     for func_name, start_line, end_line in matches:
@@ -113,15 +113,15 @@ def process_file(
             module_name, _ = dh_func_map[func_name]
             imports_needed.add((func_name, module_name))
     if not imports_needed:
-        return (file_path, 0, set())
+        return (path, 0, set())
     if not dry_run:
         matches_sorted = sorted(matches, key=lambda x: x[1], reverse=True)
         for func_name, start_line, end_line in matches_sorted:
             del lines[start_line:end_line]
         lines = add_imports(lines, imports_needed)
-        with open(file_path, "w", encoding="utf-8") as f:
+        with open(path, "w", encoding="utf-8") as f:
             f.write("\n".join(lines))
-    return (file_path, len(imports_needed), imports_needed)
+    return (path, len(imports_needed), imports_needed)
 
 
 def main():
@@ -164,16 +164,16 @@ def main():
         total_removed = 0
         changes_by_file = {}
         for future in as_completed(futures):
-            file_path, count, imports = future.result()
+            path, count, imports = future.result()
             if count > 0:
-                changes_by_file[file_path] = imports
+                changes_by_file[path] = imports
                 total_removed += count
     if not changes_by_file:
         print("No matching inlined dh functions found (identical by content hash).")
         return
-    for file_path in sorted(changes_by_file.keys()):
-        imports = changes_by_file[file_path]
-        print(f"{file_path.name}:")
+    for path in sorted(changes_by_file.keys()):
+        imports = changes_by_file[path]
+        print(f"{path.name}:")
         for func_name, module_name in sorted(imports):
             print(
                 f"  - Replace {func_name}() and add: from dh.{module_name} import {func_name}"

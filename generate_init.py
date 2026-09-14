@@ -6,12 +6,12 @@ import sys
 from pathlib import Path
 
 
-def get_public_names(file_path: Path) -> list[str]:
+def get_public_names(path: Path) -> list[str]:
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
-            tree = ast.parse(f.read(), filename=str(file_path))
+        with open(path, "r", encoding="utf-8") as f:
+            tree = ast.parse(f.read(), filename=str(path))
     except SyntaxError as e:
-        print(f"Warning: Could not parse {file_path}: {e}", file=sys.stderr)
+        print(f"Warning: Could not parse {path}: {e}", file=sys.stderr)
         return []
     public_names = []
     for node in ast.walk(tree):
@@ -25,9 +25,9 @@ def get_public_names(file_path: Path) -> list[str]:
 
 def get_python_modules(directory: Path) -> list[Path]:
     modules = []
-    for file_path in directory.glob("*.py"):
-        if file_path.name != "__init__.py" and (not file_path.name.startswith("_")):
-            modules.append(file_path)
+    for path in directory.glob("*.py"):
+        if path.name != "__init__.py" and (not path.name.startswith("_")):
+            modules.append(path)
     return sorted(modules)
 
 

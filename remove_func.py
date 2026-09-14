@@ -31,20 +31,20 @@ def is_target_func(node: ast.AST, inspect_only: bool) -> bool:
 
 
 def process_file(args: tuple[Path, bool]) -> tuple[Path, bool, str]:
-    filepath, inspect_only = args
-    if filepath.name in {"remove_func.py", "ll.py"}:
-        return filepath, False, "Skipped by filename"
+    path, inspect_only = args
+    if path.name in {"remove_func.py", "ll.py"}:
+        return path, False, "Skipped by filename"
     try:
-        source = filepath.read_text(encoding="utf-8")
+        source = path.read_text(encoding="utf-8")
     except Exception as error:
-        return filepath, False, f"Read error: {error}"
+        return path, False, f"Read error: {error}"
     try:
         tree = ast.parse(source)
     except SyntaxError:
-        return filepath, False, "Original file has a syntax error"
+        return path, False, "Original file has a syntax error"
     target_funcs = [node for node in tree.body if is_target_func(node, inspect_only)]
     if not target_funcs:
-        return filepath, False, "Target function not found"
+        return path, False, "Target function not found"
     lines_to_delete: set[int] = set()
     for func in target_funcs:
         start_line = func.lineno - 1
@@ -85,12 +85,12 @@ def process_file(args: tuple[Path, bool]) -> tuple[Path, bool, str]:
     try:
         ast.parse(new_source)
     except SyntaxError as error:
-        return filepath, False, f"Validation failed: {error}"
+        return path, False, f"Validation failed: {error}"
     try:
-        filepath.write_text(new_source, encoding="utf-8")
+        path.write_text(new_source, encoding="utf-8")
     except Exception as error:
-        return filepath, False, f"Write error: {error}"
-    return filepath, True, "Successfully updated"
+        return path, False, f"Write error: {error}"
+    return path, True, "Successfully updated"
 
 
 def main() -> None:
@@ -112,9 +112,9 @@ def main() -> None:
     )
     args = parser.parse_args()
     files = [
-        filepath
-        for filepath in Path(".").rglob("*.py")
-        if filepath.is_file() and filepath.resolve() != Path(__file__).resolve()
+        path
+        for path in Path(".").rglob("*.py")
+        if path.is_file() and path.resolve() != Path(__file__).resolve()
     ]
     if not files:
         print("No Python files found in the current directory.")
@@ -123,16 +123,16 @@ def main() -> None:
     print(f"Mode: {mode}")
     print(f"Found {len(files)} Python files. Processing with 8 workers...")
     print("Changes will be applied automatically.")
-    work_items = [(filepath, args.inspect) for filepath in files]
+    work_items = [(path, args.inspect) for path in files]
     with Pool(8) as pool:
-        for filepath, success, message in pool.imap_unordered(
+        for path, success, message in pool.imap_unordered(
             process_file,
             work_items,
         ):
             if success:
-                cprint(f"[UPDATED] {filepath}: {message}")
+                cprint(f"[UPDATED] {path}: {message}")
             elif message != "Target function not found":
-                cprint(f"[SKIPPED] {filepath}: {message}")
+                cprint(f"[SKIPPED] {path}: {message}")
 
 
 if __name__ == "__main__":

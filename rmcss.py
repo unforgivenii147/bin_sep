@@ -10,19 +10,19 @@ from pathlib import Path
 COMMENT_PATTERN = re.compile("<!--.*?-->", re.DOTALL)
 
 
-def remove_comments_from_file(file_path):
+def remove_comments_from_file(path):
     try:
-        with open(file_path, encoding="utf-8", errors="ignore") as f:
+        with open(path, encoding="utf-8", errors="ignore") as f:
             content = f.read()
         new_content = COMMENT_PATTERN.sub("", content)
         if new_content != content:
-            with open(file_path, "w", encoding="utf-8", errors="ignore") as f:
+            with open(path, "w", encoding="utf-8", errors="ignore") as f:
                 f.write(new_content)
-            return (file_path, True, None)
+            return (path, True, None)
         else:
-            return (file_path, False, None)
+            return (path, False, None)
     except Exception as e:
-        return (file_path, False, str(e))
+        return (path, False, str(e))
 
 
 def find_files(directory, extensions=None):
@@ -31,9 +31,9 @@ def find_files(directory, extensions=None):
     directory = Path(directory)
     if not directory.exists():
         raise ValueError(f"Directory {directory} does not exist")
-    for file_path in directory.rglob("*"):
-        if file_path.is_file() and file_path.suffix.lower() in extensions:
-            yield file_path
+    for path in directory.rglob("*"):
+        if path.is_file() and path.suffix.lower() in extensions:
+            yield path
 
 
 def main():
@@ -79,12 +79,11 @@ def main():
         error_count = 0
         with ProcessPoolExecutor(max_workers=args.workers) as executor:
             future_to_file = {
-                executor.submit(remove_comments_from_file, file_path): file_path
-                for file_path in files
+                executor.submit(remove_comments_from_file, path): path for path in files
             }
             for future in as_completed(future_to_file):
-                file_path, was_updated, error = future.result()
-                rel_path = file_path.relative_to(args.directory)
+                path, was_updated, error = future.result()
+                rel_path = path.relative_to(args.directory)
                 if error:
                     print(f"❌ ERROR: {rel_path} - {error}")
                     error_count += 1

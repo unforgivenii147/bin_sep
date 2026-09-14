@@ -84,11 +84,11 @@ def translate_comments(content: str) -> tuple[str, bool]:
     return ("".join(new_lines), modified)
 
 
-def process_file(filepath: Path) -> bool:
+def process_file(path: Path) -> bool:
     try:
-        backup_path = filepath.with_suffix(filepath.suffix + ".bak")
-        shutil.copyfile(filepath, backup_path)
-        content = filepath.read_text(encoding="utf-8")
+        backup_path = path.with_suffix(path.suffix + ".bak")
+        shutil.copyfile(path, backup_path)
+        content = path.read_text(encoding="utf-8")
         content_after_comments, comments_modified = translate_comments(content)
         try:
             tree = ast.parse(content_after_comments)
@@ -96,14 +96,14 @@ def process_file(filepath: Path) -> bool:
             new_tree = transformer.visit(tree)
             if transformer.modified or comments_modified:
                 new_content = ast.unparse(new_tree)
-                filepath.write_text(new_content, encoding="utf-8")
+                path.write_text(new_content, encoding="utf-8")
                 return True
         except SyntaxError:
             if comments_modified:
-                filepath.write_text(content_after_comments, encoding="utf-8")
+                path.write_text(content_after_comments, encoding="utf-8")
                 return True
     except Exception as e:
-        logger.error("Failed to process %s: %s", filepath, e)
+        logger.error("Failed to process %s: %s", path, e)
     return False
 
 

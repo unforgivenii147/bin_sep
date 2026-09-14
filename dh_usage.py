@@ -11,11 +11,11 @@ REPORT = Path.home() / "dh_usage.txt"
 PACKAGE = "dh"
 
 
-def extract_dh_imports(filepath: Path) -> list[str]:
+def extract_dh_imports(path: Path) -> list[str]:
     try:
-        tree = ast.parse(filepath.read_text(encoding="utf-8"))
+        tree = ast.parse(path.read_text(encoding="utf-8"))
     except (SyntaxError, UnicodeDecodeError) as e:
-        print(f"   ⚠️  Skipping {filepath.name}: {e}")
+        print(f"   ⚠️  Skipping {path.name}: {e}")
         return []
     imported: list[str] = []
     for node in ast.walk(tree):
@@ -50,9 +50,9 @@ def extract_dh_imports(filepath: Path) -> list[str]:
     return imported
 
 
-def count_calls(filepath: Path, func_names: list[str]) -> dict[str, int]:
+def count_calls(path: Path, func_names: list[str]) -> dict[str, int]:
     try:
-        tree = ast.parse(filepath.read_text(encoding="utf-8"))
+        tree = ast.parse(path.read_text(encoding="utf-8"))
     except (SyntaxError, UnicodeDecodeError):
         return {}
     name_set = set(func_names)

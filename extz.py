@@ -18,8 +18,8 @@ def walk_files(directory):
 def main():
     current_dir = Path.cwd()
     extension_counter = Counter()
-    for file_path in walk_files(current_dir):
-        ext = file_path.suffix if file_path.suffix else ".no_ext"
+    for path in walk_files(current_dir):
+        ext = path.suffix if path.suffix else ".no_ext"
         extension_counter[ext] += 1
     if extension_counter:
         max_ext_len = max(len(ext) for ext in extension_counter)

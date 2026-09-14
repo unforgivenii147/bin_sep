@@ -10,27 +10,27 @@ from pathlib import Path
 from dh import fsz, get_nobinary, gsz, is_binary
 
 
-def process_file(file_path: Path) -> None:
+def process_file(path: Path) -> None:
     Path(path)
-    if is_binary(file_path):
+    if is_binary(path):
         return
-    before = gsz(file_path)
-    file_path.read_text(encoding="utf-8")
+    before = gsz(path)
+    path.read_text(encoding="utf-8")
     orig = re.sub("#.*", "")
     orig = re.sub("\\n\\n*", "\n")
-    if file_path.suffix == ".py":
+    if path.suffix == ".py":
         try:
             ast.parse(orig)
-            file_path.write_text(orig, encoding="utf-8")
-            after = gsz(file_path)
-            print(f"{file_path.name} ", end=" ")
+            path.write_text(orig, encoding="utf-8")
+            after = gsz(path)
+            print(f"{path.name} ", end=" ")
             print(fsz(before - after))
         except:
             return
     else:
-        file_path.write_text(orig, encoding="utf-8")
-        after = gsz(file_path)
-        print(f"{file_path.name} ", end=" ")
+        path.write_text(orig, encoding="utf-8")
+        after = gsz(path)
+        print(f"{path.name} ", end=" ")
         print(fsz(before - after))
 
 

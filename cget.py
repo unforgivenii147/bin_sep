@@ -9,18 +9,18 @@ import pycurl
 
 
 def download_urls_from_file(
-    filepath: str = "urls.txt", output_dir_str: str = "downloads"
+    path: str = "urls.txt", output_dir_str: str = "downloads"
 ) -> None:
     output_dir = Path(output_dir_str)
     output_dir.mkdir(exist_ok=True, parents=True)
     urls = []
     try:
-        with Path(filepath).open("r", encoding="utf-8") as f:
+        with Path(path).open("r", encoding="utf-8") as f:
             urls = [
                 line.strip() for line in f if line.strip() and not line.startswith("#")
             ]
     except FileNotFoundError:
-        print(f"❌ Error: {filepath} not found.")
+        print(f"❌ Error: {path} not found.")
         return
     print(f"📦 Downloading {len(urls)} URLs using pycurl...\n")
     for i, url in enumerate(urls, 1):

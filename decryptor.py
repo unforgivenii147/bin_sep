@@ -19,23 +19,23 @@ def random_key(length: int = 32) -> LiteralString:
     )
 
 
-def encrypt_file(file_path, key) -> None:
+def encrypt_file(path, key) -> None:
     from os import urandom
 
     backend = default_backend()
     iv = urandom(AES_BLOCK_SIZE)
     cipher = Cipher(algorithms.AES(key.encode()), modes.CBC(iv), backend=backend)
     encryptor = cipher.encryptor()
-    data = Path(file_path).read_bytes()
+    data = Path(path).read_bytes()
     padder = padding.PKCS7(128).padder()
     padded_data = padder.update(data) + padder.finalize()
     encrypted_data = encryptor.update(padded_data) + encryptor.finalize()
-    Path(file_path).write_bytes(iv + encrypted_data)
+    Path(path).write_bytes(iv + encrypted_data)
 
 
-def decrypt_file(file_path, key) -> None:
+def decrypt_file(path, key) -> None:
     backend = default_backend()
-    raw = Path(file_path).read_bytes()
+    raw = Path(path).read_bytes()
     iv = raw[:AES_BLOCK_SIZE]
     ciphertext = raw[AES_BLOCK_SIZE:]
     cipher = Cipher(algorithms.AES(key.encode()), modes.CBC(iv), backend=backend)
@@ -43,7 +43,7 @@ def decrypt_file(file_path, key) -> None:
     padded_data = decryptor.update(ciphertext) + decryptor.finalize()
     unpadder = padding.PKCS7(128).unpadder()
     data = unpadder.update(padded_data) + unpadder.finalize()
-    Path(file_path).write_bytes(data)
+    Path(path).write_bytes(data)
 
 
 def main() -> None:
@@ -65,10 +65,10 @@ def main() -> None:
     else:
         print("Error: Specify either --encrypt or --decrypt.")
         return
-    for file_path in Path.cwd().glob("*"):
-        if file_path.is_file() and file_path.name != Path(__file__).name:
-            print(f"Processing {file_path}...")
-            action(file_path, key)
+    for path in Path.cwd().glob("*"):
+        if path.is_file() and path.name != Path(__file__).name:
+            print(f"Processing {path}...")
+            action(path, key)
 
 
 if __name__ == "__main__":

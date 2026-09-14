@@ -58,20 +58,18 @@ def translate_line(
     return text
 
 
-def process_file(
-    file_path: Path, dry_run: bool = False, threshold: float = 0.3
-) -> dict:
+def process_file(path: Path, dry_run: bool = False, threshold: float = 0.3) -> dict:
     stats = {
-        "file": str(file_path),
+        "file": str(path),
         "total_lines": 0,
         "chinese_lines": 0,
         "translated_lines": 0,
         "errors": 0,
     }
     prefix = "[DRY RUN] " if dry_run else ""
-    logger.info("%sProcessing: %s", prefix, file_path)
+    logger.info("%sProcessing: %s", prefix, path)
     try:
-        content = file_path.read_text(encoding="utf-8", errors="ignore")
+        content = path.read_text(encoding="utf-8", errors="ignore")
         lines = content.splitlines(keepends=True)
         stats["total_lines"] = len(lines)
         translator = GoogleTranslator(source="auto", target="en")
@@ -97,14 +95,14 @@ def process_file(
             else:
                 new_lines.append(line)
         if not dry_run and found_chinese:
-            file_path.write_text("".join(new_lines), encoding="utf-8")
+            path.write_text("".join(new_lines), encoding="utf-8")
             logger.info("  ✓ Completed: %d lines translated", stats["translated_lines"])
         elif dry_run and found_chinese:
             logger.info("  ℹ Found %d lines with Chinese text", stats["chinese_lines"])
         elif not found_chinese:
             logger.info("  No Chinese text found, skipping.")
     except Exception as e:
-        logger.error("  ✗ Error processing %s: %s", file_path, e)
+        logger.error("  ✗ Error processing %s: %s", path, e)
         stats["errors"] += 1
     return stats
 

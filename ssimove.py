@@ -12,14 +12,14 @@ SIMILARITY_THRESHOLD = 60
 MIN_GROUP_SIZE = 2
 
 
-def calculate_fuzzy_hash(filepath: Path) -> str:
+def calculate_fuzzy_hash(path: Path) -> str:
     try:
-        return ssdeep.hash_from_file(str(filepath))
+        return ssdeep.hash_from_file(str(path))
     except ssdeep.Error as e:
-        print(f"Error calculating ssdeep hash for {filepath}: {e}")
+        print(f"Error calculating ssdeep hash for {path}: {e}")
         return ""
     except Exception as e:
-        print(f"Unexpected error for {filepath}: {e}")
+        print(f"Unexpected error for {path}: {e}")
         return ""
 
 
@@ -28,26 +28,26 @@ def find_similar_files(
 ) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
     file_hashes: dict[Path, str] = {}
-    for filepath in search_dir.rglob("*"):
-        if filepath.is_file() and not filepath.is_symlink():
-            hash_value = calculate_fuzzy_hash(filepath)
+    for path in search_dir.rglob("*"):
+        if path.is_file() and not path.is_symlink():
+            hash_value = calculate_fuzzy_hash(path)
             if hash_value:
-                file_hashes[filepath] = hash_value
+                file_hashes[path] = hash_value
     if not file_hashes:
         print("No files found or no hashes could be generated.")
         return
     similar_groups: dict[Path, list[Path]] = {}
     processed_files = set()
-    file_paths = list(file_hashes.keys())
-    num_files = len(file_paths)
+    paths = list(file_hashes.keys())
+    num_files = len(paths)
     for i in range(num_files):
-        current_file = file_paths[i]
+        current_file = paths[i]
         if current_file in processed_files:
             continue
         current_hash = file_hashes[current_file]
         current_group = [current_file]
         for j in range(i + 1, num_files):
-            other_file = file_paths[j]
+            other_file = paths[j]
             if other_file in processed_files:
                 continue
             other_hash = file_hashes[other_file]

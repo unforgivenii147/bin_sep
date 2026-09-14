@@ -26,17 +26,17 @@ IMAGE_EXTENSIONS = {
 
 def collect_images(root: Path):
     size_to_files = defaultdict(list)
-    for file_path in root.rglob("*"):
-        if not file_path.is_file():
+    for path in root.rglob("*"):
+        if not path.is_file():
             continue
-        if file_path.suffix.lower() not in IMAGE_EXTENSIONS:
+        if path.suffix.lower() not in IMAGE_EXTENSIONS:
             continue
         try:
-            with Image.open(file_path) as img:
+            with Image.open(path) as img:
                 width, height = img.size
-            size_to_files[width, height].append(file_path)
+            size_to_files[width, height].append(path)
         except Exception as e:
-            print(f"Warning: Skipping {file_path} - {e}")
+            print(f"Warning: Skipping {path} - {e}")
     return size_to_files
 
 

@@ -104,13 +104,13 @@ SKIP_DIRS = {
 }
 
 
-def is_text_file(file_path: Path) -> bool:
-    suffix = file_path.suffix.lower()
+def is_text_file(path: Path) -> bool:
+    suffix = path.suffix.lower()
     if suffix in BINARY_EXTENSIONS:
         return False
     if suffix in TEXT_EXTENSIONS:
         return True
-    name = file_path.name.lower()
+    name = path.name.lower()
     if name in {
         "makefile",
         "dockerfile",
@@ -126,32 +126,32 @@ def is_text_file(file_path: Path) -> bool:
         if name.startswith("."):
             return True
         try:
-            with open(file_path, "rb") as f:
+            with open(path, "rb") as f:
                 chunk = f.read(8192)
                 text_chars = sum(1 for b in chunk if 32 <= b < 127 or b in (9, 10, 13))
                 return text_chars / len(chunk) > 0.75 if chunk else False
         except OSError:
             return False
-    mime_type, _ = mimetypes.guess_type(str(file_path))
+    mime_type, _ = mimetypes.guess_type(str(path))
     if mime_type:
         return mime_type.startswith("text/")
     return False
 
 
-def collect_chars_from_file(file_path: Path) -> set[str]:
+def collect_chars_from_file(path: Path) -> set[str]:
     unique_chars = set()
     try:
-        with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+        with open(path, "r", encoding="utf-8", errors="ignore") as f:
             for chunk in iter(lambda: f.read(8192), ""):
                 unique_chars.update(chunk)
     except OSError as e:
-        print(f"Warning: Could not read {file_path}: {e}")
+        print(f"Warning: Could not read {path}: {e}")
     return unique_chars
 
 
 def process_file_task(args: tuple[Path, int]) -> tuple[set[str], int]:
-    file_path, file_index = args
-    chars = collect_chars_from_file(file_path)
+    path, file_index = args
+    chars = collect_chars_from_file(path)
     return (chars, file_index)
 
 

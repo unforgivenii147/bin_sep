@@ -7,11 +7,11 @@ import textwrap
 from pathlib import Path
 
 
-def wrap_file_content(file_path: Path, width: int) -> None:
+def wrap_file_content(path: Path, width: int) -> None:
     try:
-        content = file_path.read_text(encoding="utf-8")
+        content = path.read_text(encoding="utf-8")
     except FileNotFoundError:
-        print(f"Error: File '{file_path}' not found.", file=sys.stderr)
+        print(f"Error: File '{path}' not found.", file=sys.stderr)
         sys.exit(1)
     except Exception as e:
         print(f"Error reading file: {e}", file=sys.stderr)
@@ -36,8 +36,8 @@ def wrap_file_content(file_path: Path, width: int) -> None:
         if paragraph != paragraphs[-1]:
             wrapped_lines.append("")
     try:
-        file_path.write_text("\n".join(wrapped_lines) + "\n", encoding="utf-8")
-        print(f"Successfully wrapped '{file_path}' to {width} characters wide.")
+        path.write_text("\n".join(wrapped_lines) + "\n", encoding="utf-8")
+        print(f"Successfully wrapped '{path}' to {width} characters wide.")
     except Exception as e:
         print(f"Error writing file: {e}", file=sys.stderr)
         sys.exit(1)
@@ -45,9 +45,9 @@ def wrap_file_content(file_path: Path, width: int) -> None:
 
 def main():
     if len(sys.argv) != 2:
-        print(f"Usage: {sys.argv[0]} <file_path>", file=sys.stderr)
+        print(f"Usage: {sys.argv[0]} <path>", file=sys.stderr)
         sys.exit(1)
-    file_path = Path(sys.argv[1])
+    path = Path(sys.argv[1])
     try:
         terminal_width = shutil.get_terminal_size().columns
     except Exception:
@@ -56,7 +56,7 @@ def main():
             f"Warning: Could not determine terminal width. Using {terminal_width} columns."
         )
     terminal_width = max(terminal_width, 20)
-    wrap_file_content(file_path, terminal_width)
+    wrap_file_content(path, terminal_width)
 
 
 if __name__ == "__main__":

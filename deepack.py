@@ -67,16 +67,16 @@ def copy_package(
             shutil.rmtree(dest_path)
         dest_path.mkdir(parents=True)
 
-        for file_path in pkg_path.rglob("*"):
-            if file_path.suffix == ".pyc":
+        for path in pkg_path.rglob("*"):
+            if path.suffix == ".pyc":
                 continue
-            rel_path: Path = file_path.relative_to(pkg_path)
+            rel_path: Path = path.relative_to(pkg_path)
             dest_file: Path = dest_path / rel_path
-            if file_path.is_dir():
+            if path.is_dir():
                 dest_file.mkdir(parents=True, exist_ok=True)
             else:
                 dest_file.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(file_path, dest_file)
+                shutil.copy2(path, dest_file)
 
         return package_name, True, f"Copied to {dest_path}"
     except Exception as e:

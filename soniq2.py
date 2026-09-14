@@ -30,15 +30,15 @@ def _strip_line(line: str) -> str:
     return line.strip()
 
 
-def sort_and_uniq(file_path: str) -> None:
-    """Sort and de-duplicate lines in ``file_path`` in place.
+def sort_and_uniq(path: str) -> None:
+    """Sort and de-duplicate lines in ``path`` in place.
 
     Args:
-        file_path: Path to the file to process.
+        path: Path to the file to process.
     """
-    path = Path(file_path)
+    path = Path(path)
     if not path.exists():
-        logger.error("File '{}' not found.", file_path)
+        logger.error("File '{}' not found.", path)
         return
 
     try:
@@ -66,7 +66,7 @@ def sort_and_uniq(file_path: str) -> None:
                 for line in unique_sorted_lines:
                     tmp.write(line + "\n")
             temp_path.replace(path)
-            logger.info("Successfully updated '{}'.", file_path)
+            logger.info("Successfully updated '{}'.", path)
         except Exception:
             temp_path.unlink(missing_ok=True)
             raise

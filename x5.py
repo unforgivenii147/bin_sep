@@ -116,7 +116,7 @@ class CompressionResult:
     Data class to store compression/decompression results.
 
     Attributes:
-        file_path: Path to the processed file
+        path: Path to the processed file
         original_size: Size of the file before processing
         processed_size: Size of the file after processing
         success: Whether the operation succeeded
@@ -127,7 +127,7 @@ class CompressionResult:
         was_tarred: Whether the file was tarred before compression
     """
 
-    file_path: Path
+    path: Path
     original_size: int
     processed_size: int
     success: bool
@@ -253,7 +253,7 @@ def compress_file_streaming(
         else:
             original_deleted = False
         return CompressionResult(
-            file_path=input_path,
+            path=input_path,
             original_size=original_size,
             processed_size=compressed_size,
             success=True,
@@ -322,7 +322,7 @@ def decompress_file_streaming(
         else:
             original_deleted = False
         return CompressionResult(
-            file_path=input_path,
+            path=input_path,
             original_size=original_size,
             processed_size=decompressed_size,
             success=True,
@@ -425,26 +425,24 @@ def process_subdirs_with_tar(
 
 
 def should_compress_file(
-    file_path: Path, exclude_extensions: set[str], exclude_patterns: list[str]
+    path: Path, exclude_extensions: set[str], exclude_patterns: list[str]
 ) -> bool:
     """
     Check if a file should be compressed.
 
     Args:
-        file_path: Path to check
+        path: Path to check
         exclude_extensions: Set of extensions to exclude
         exclude_patterns: List of patterns to exclude
 
     Returns:
         True if the file should be compressed, False otherwise
     """
-    if file_path.is_symlink() or not file_path.is_file():
+    if path.is_symlink() or not path.is_file():
         return False
-    if file_path.suffix.lower() in exclude_extensions:
+    if path.suffix.lower() in exclude_extensions:
         return False
-    return not (
-        exclude_patterns and any(pat in str(file_path) for pat in exclude_patterns)
-    )
+    return not (exclude_patterns and any(pat in str(path) for pat in exclude_patterns))
 
 
 def find_files_to_compress(
@@ -521,8 +519,8 @@ def get_file_type_stats(files: list[Path]) -> dict:
         Dictionary mapping file extensions to counts
     """
     type_stats = {}
-    for file_path in files:
-        ext = file_path.suffix.lower() or "[no extension]"
+    for path in files:
+        ext = path.suffix.lower() or "[no extension]"
         type_stats[ext] = type_stats.get(ext, 0) + 1
     return dict(sorted(type_stats.items(), key=lambda x: x[1], reverse=True))
 
@@ -597,9 +595,9 @@ def print_results_rich(
         status = "🗑️ ✅" if result.original_deleted else "✅"
         file_type = "📦 tar" if result.was_tarred else "📄 file"
         try:
-            file_display = str(result.file_path.relative_to(directory))
+            file_display = str(result.path.relative_to(directory))
         except ValueError:
-            file_display = str(result.file_path)
+            file_display = str(result.path)
         table.add_row(
             file_display,
             fsz(result.original_size),
@@ -622,9 +620,9 @@ def print_results_rich(
         fail_table.add_column("Error", style="dim")
         for result in failed[:10]:
             try:
-                file_display = str(result.file_path.relative_to(directory))
+                file_display = str(result.path.relative_to(directory))
             except ValueError:
-                file_display = str(result.file_path)
+                file_display = str(result.path)
             fail_table.add_row(file_display, result.error or "Unknown error")
         if len(failed) > 10:
             fail_table.add_row(f"... and {len(failed) - 10} more failures", "")
@@ -732,9 +730,9 @@ def print_results_basic(
                 else 0
             )
         file_name = (
-            result.file_path.name[:37] + "..."
-            if len(result.file_path.name) > 40
-            else result.file_path.name
+            result.path.name[:37] + "..."
+            if len(result.path.name) > 40
+            else result.path.name
         )
         type_indicator = "[tar]" if result.was_tarred else ""
         print(
@@ -747,7 +745,7 @@ def print_results_basic(
     if failed:
         print(f"\n❌ Failed files ({len(failed)}):")
         for result in failed[:10]:
-            print(f"  • {result.file_path.name}: {result.error}")
+            print(f"  • {result.path.name}: {result.error}")
         if len(failed) > 10:
             print(f"  ... and {len(failed) - 10} more failures")
     print("\n" + "=" * 40)
@@ -786,17 +784,17 @@ def process_file_worker(args: tuple) -> CompressionResult:
     Worker function for parallel processing using mp.pool.apply_async.
 
     Args:
-        args: Tuple containing (file_path, operation, preset, threads, keep_original)
+        args: Tuple containing (path, operation, preset, threads, keep_original)
 
     Returns:
         CompressionResult object
     """
-    file_path, operation, preset, threads, keep_original = args
+    path, operation, preset, threads, keep_original = args
     try:
         if operation == "compress":
-            output_path = file_path.with_suffix(file_path.suffix + ".xz")
+            output_path = path.with_suffix(path.suffix + ".xz")
             return compress_file_streaming(
-                file_path,
+                path,
                 output_path,
                 preset,
                 threads,
@@ -804,14 +802,14 @@ def process_file_worker(args: tuple) -> CompressionResult:
                 keep_original,
             )
         else:  # decompress
-            output_path = file_path.with_suffix("")
+            output_path = path.with_suffix("")
             return decompress_file_streaming(
-                file_path, output_path, 1024 * 1024, keep_original
+                path, output_path, 1024 * 1024, keep_original
             )
     except Exception as e:
         return CompressionResult(
-            file_path=file_path,
-            original_size=file_path.stat().st_size if file_path.exists() else 0,
+            path=path,
+            original_size=path.stat().st_size if path.exists() else 0,
             processed_size=0,
             success=False,
             error=str(e),
@@ -951,8 +949,8 @@ def main() -> None:
             )
             if files:
                 print(f"📁 Found {len(files)} individual file(s) in root directory")
-                for file_path in files:
-                    print(f"  • {file_path.relative_to(directory)}")
+                for path in files:
+                    print(f"  • {path.relative_to(directory)}")
             else:
                 print("📁 No individual files in root directory")
             all_results = tar_results
@@ -1052,13 +1050,13 @@ def main() -> None:
                 # Create arguments for worker function
                 worker_args = [
                     (
-                        file_path,
+                        path,
                         "compress",
                         args.preset,
                         args.threads,
                         args.keep_originals,
                     )
-                    for file_path in files
+                    for path in files
                 ]
                 with mp.Pool(processes=workers) as pool:
                     async_results = [
@@ -1069,10 +1067,10 @@ def main() -> None:
                         result = async_result.get()
                         results.append(result)
             else:
-                for file_path in files:
+                for path in files:
                     result = process_file_worker(
                         (
-                            file_path,
+                            path,
                             "compress",
                             args.preset,
                             args.threads,
@@ -1085,8 +1083,8 @@ def main() -> None:
         if workers > 1 and len(files) > 1:
             # Create arguments for worker function
             worker_args = [
-                (file_path, operation, args.preset, args.threads, args.keep_originals)
-                for file_path in files
+                (path, operation, args.preset, args.threads, args.keep_originals)
+                for path in files
             ]
             with mp.Pool(processes=workers) as pool:
                 async_results = [
@@ -1102,12 +1100,12 @@ def main() -> None:
                         if result.success
                         else "❌"
                     )
-                    print(f"  [{i}/{len(files)}] {result.file_path.name} - {status}")
+                    print(f"  [{i}/{len(files)}] {result.path.name} - {status}")
         else:
-            for i, file_path in enumerate(files, 1):
+            for i, path in enumerate(files, 1):
                 result = process_file_worker(
                     (
-                        file_path,
+                        path,
                         operation,
                         args.preset,
                         args.threads,
@@ -1122,7 +1120,7 @@ def main() -> None:
                     if result.success
                     else "❌"
                 )
-                print(f"  [{i}/{len(files)}] {file_path.name} - {status}")
+                print(f"  [{i}/{len(files)}] {path.name} - {status}")
 
     if results:
         if RICH_AVAILABLE:

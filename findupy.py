@@ -55,10 +55,10 @@ def find_duplicate_files(directory: str):
     all_files = collect_all_files(directory)
     duplicates = defaultdict(list)
     print(f"📁 Scanning {len(all_files)} files...\n")
-    for file_path in tqdm(all_files, desc="Overall Progress", unit="file"):
-        file_hash = hash_file(file_path)
+    for path in tqdm(all_files, desc="Overall Progress", unit="file"):
+        file_hash = hash_file(path)
         if file_hash:
-            duplicates[file_hash].append(str(file_path))
+            duplicates[file_hash].append(str(path))
     return {h: paths for h, paths in duplicates.items() if len(paths) > 1}
 
 

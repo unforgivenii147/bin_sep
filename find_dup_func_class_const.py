@@ -10,11 +10,11 @@ from collections import defaultdict
 from pathlib import Path
 
 
-def parse_file_definitions(file_path: Path) -> dict:
+def parse_file_definitions(path: Path) -> dict:
     definitions = {}
     try:
-        source = file_path.read_text(encoding="utf-8")
-        tree = ast.parse(source, filename=str(file_path))
+        source = path.read_text(encoding="utf-8")
+        tree = ast.parse(source, filename=str(path))
     except Exception:
         return {}
     for node in tree.body:
@@ -33,15 +33,15 @@ def parse_file_definitions(file_path: Path) -> dict:
                 name = node.targets[0].id
                 node_key = ("constant", name, ast.unparse(node))
                 definitions[node_key] = {"name": name, "type": "constant", "node": node}
-    return {node_key: (str(file_path), data) for node_key, data in definitions.items()}
+    return {node_key: (str(path), data) for node_key, data in definitions.items()}
 
 
 def modify_affected_file(
-    file_path_str: str, obj_name: str, obj_type: str, raw_obj_code: str
+    path_str: str, obj_name: str, obj_type: str, raw_obj_code: str
 ) -> str:
-    file_path = Path(file_path_str)
-    source = file_path.read_text(encoding="utf-8")
-    tree = ast.parse(source, filename=str(file_path))
+    path = Path(path_str)
+    source = path.read_text(encoding="utf-8")
+    tree = ast.parse(source, filename=str(path))
     new_body = []
     removed = False
     for node in tree.body:
@@ -98,8 +98,8 @@ def main():
         futures = {executor.submit(parse_file_definitions, f): f for f in py_files}
         for future in concurrent.futures.as_completed(futures):
             file_defs = future.result()
-            for node_key, (file_path_str, data) in file_defs.items():
-                global_registry[node_key].append((file_path_str, data))
+            for node_key, (path_str, data) in file_defs.items():
+                global_registry[node_key].append((path_str, data))
     duplicates = {k: v for k, v in global_registry.items() if len(v) > 1}
     if not duplicates:
         print("🎉 Success! No repeated functions, classes, or constants were detected.")
@@ -137,13 +137,13 @@ def main():
         updated_count = 0
         for file_str, objects in files_to_update.items():
             try:
-                current_file_path = Path(file_str)
-                updated_source = current_file_path.read_text(encoding="utf-8")
+                current_path = Path(file_str)
+                updated_source = current_path.read_text(encoding="utf-8")
                 for obj_name, obj_type, raw_code in objects:
                     updated_source = modify_affected_file(
                         file_str, obj_name, obj_type, raw_code
                     )
-                current_file_path.write_text(updated_source, encoding="utf-8")
+                current_path.write_text(updated_source, encoding="utf-8")
                 print(f"✅ In-place code updated & verified: {file_str}")
                 updated_count += 1
             except Exception as e:

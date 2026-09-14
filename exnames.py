@@ -6,10 +6,10 @@ import sys
 from pathlib import Path
 
 
-def load_names(names_filepath):
+def load_names(names_path):
     names = set()
     try:
-        with Path(names_filepath).open("r", encoding="utf-8") as f:
+        with Path(names_path).open("r", encoding="utf-8") as f:
             for line in f:
                 name = line.strip()
                 if name:
@@ -30,7 +30,7 @@ def load_names(names_filepath):
                             )
                         )
     except FileNotFoundError:
-        print(f"Error: Names file not found at {names_filepath}")
+        print(f"Error: Names file not found at {names_path}")
         sys.exit(1)
     except Exception as e:
         print(f"Error loading names file: {e}")
@@ -44,8 +44,8 @@ def find_names_in_files(names_db_path: str = "names.txt") -> None:
         return
     found_names = {}
     cwd = Path.cwd()
-    for filepath in cwd.rglob("*"):
-        if filepath.is_file() and filepath.suffix in {
+    for path in cwd.rglob("*"):
+        if path.is_file() and path.suffix in {
             ".txt",
             ".md",
             ".log",
@@ -59,7 +59,7 @@ def find_names_in_files(names_db_path: str = "names.txt") -> None:
             ".yaml",
         }:
             try:
-                with Path(filepath).open("r", encoding="utf-8", errors="ignore") as f:
+                with Path(path).open("r", encoding="utf-8", errors="ignore") as f:
                     content = f.read()
                     for original_name, pattern in names_to_find:
                         for match in pattern.finditer(content):
@@ -75,13 +75,13 @@ def find_names_in_files(names_db_path: str = "names.txt") -> None:
                                 if original_name not in found_names:
                                     found_names[original_name] = []
                                 entry = {
-                                    "file": str(filepath.relative_to(cwd)),
+                                    "file": str(path.relative_to(cwd)),
                                     "match": matched_text,
                                 }
                                 if entry not in found_names[original_name]:
                                     found_names[original_name].append(entry)
             except Exception as e:
-                print(f"Could not read file {filepath}: {e}")
+                print(f"Could not read file {path}: {e}")
     if not found_names:
         print("No target names found in the specified files.")
         return

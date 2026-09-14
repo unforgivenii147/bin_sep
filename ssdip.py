@@ -13,19 +13,19 @@ def find_fuzzy_duplicates(threshold: int = 70) -> None:
     file_hashes = {}
     duplicates = defaultdict(list)
     print(f"Scanning for fuzzy duplicates in: {start_dir}")
-    for filepath in start_dir.rglob("*"):
-        if filepath.is_file() and not filepath.is_symlink():
+    for path in start_dir.rglob("*"):
+        if path.is_file() and not path.is_symlink():
             try:
                 read_size = 1024 * 1024
-                with Path(filepath).open("rb") as f:
+                with Path(path).open("rb") as f:
                     data = f.read(read_size)
                     if len(data) > 50:
                         fuzzy_hash = ssdeep.hash(data)
-                        file_hashes[filepath] = fuzzy_hash
+                        file_hashes[path] = fuzzy_hash
             except OSError as e:
-                print(f"Error reading file {filepath}: {e}", file=sys.stderr)
+                print(f"Error reading file {path}: {e}", file=sys.stderr)
             except Exception as e:
-                print(f"Unexpected error processing {filepath}: {e}", file=sys.stderr)
+                print(f"Unexpected error processing {path}: {e}", file=sys.stderr)
     print(f"Calculated fuzzy hashes for {len(file_hashes)} files.")
     processed_files = list(file_hashes.keys())
     for i, f1_path in enumerate(processed_files):

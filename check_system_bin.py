@@ -6,10 +6,10 @@ import shutil
 from pathlib import Path
 
 
-def calculate_hash(filepath: Path, chunk_size=8192):
+def calculate_hash(path: Path, chunk_size=8192):
     sha256 = hashlib.sha256()
     try:
-        with filepath.open("rb") as f:
+        with path.open("rb") as f:
             for chunk in iter(lambda: f.read(chunk_size), b""):
                 sha256.update(chunk)
         return sha256.hexdigest()
@@ -24,12 +24,12 @@ def get_system_bin_hashes():
         return {}
     hashes = {}
     print("📂 Scanning /system/bin files...")
-    for filepath in system_bin.iterdir():
+    for path in system_bin.iterdir():
         try:
-            if filepath.is_file() or filepath.is_symlink():
-                hash_value = calculate_hash(filepath)
+            if path.is_file() or path.is_symlink():
+                hash_value = calculate_hash(path)
                 if hash_value:
-                    hashes[hash_value] = filepath.name
+                    hashes[hash_value] = path.name
         except (PermissionError, OSError):
             continue
     print(f"✅ Scanned {len(hashes)} files in /system/bin\n")
@@ -43,17 +43,17 @@ def check_and_move_files(system_hashes):
     matches = []
     moved = []
     print("🔍 Scanning current directory...")
-    for filepath in current_dir.iterdir():
+    for path in current_dir.iterdir():
         try:
-            if filepath.is_file() and (not filepath.name.startswith(".")):
-                if filepath.resolve() == matches_dir.resolve():
+            if path.is_file() and (not path.name.startswith(".")):
+                if path.resolve() == matches_dir.resolve():
                     continue
-                hash_value = calculate_hash(filepath)
+                hash_value = calculate_hash(path)
                 if hash_value and hash_value in system_hashes:
                     system_filename = system_hashes[hash_value]
-                    matches.append((filepath.name, system_filename))
-                    if filepath.name == system_filename:
-                        dest_path = matches_dir / filepath.name
+                    matches.append((path.name, system_filename))
+                    if path.name == system_filename:
+                        dest_path = matches_dir / path.name
                         counter = 1
                         original_dest = dest_path
                         while dest_path.exists():
@@ -62,15 +62,15 @@ def check_and_move_files(system_hashes):
                                 / f"{original_dest.stem}_{counter}{original_dest.suffix}"
                             )
                             counter += 1
-                        shutil.move(filepath, dest_path)
-                        moved.append((filepath.name, dest_path.name))
-                        print(f"  📦 Moved: {filepath.name} -> {dest_path.name}")
+                        shutil.move(path, dest_path)
+                        moved.append((path.name, dest_path.name))
+                        print(f"  📦 Moved: {path.name} -> {dest_path.name}")
                     else:
                         print(
-                            f"  ⚠️  Hash matches but filename differs: {filepath.name} (system: {system_filename})"
+                            f"  ⚠️  Hash matches but filename differs: {path.name} (system: {system_filename})"
                         )
         except (PermissionError, OSError) as e:
-            print(f"  ⚠️  Error with {filepath.name}: {e}")
+            print(f"  ⚠️  Error with {path.name}: {e}")
             continue
     return (matches, moved)
 

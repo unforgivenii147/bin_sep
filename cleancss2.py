@@ -121,16 +121,16 @@ def collect_css_files(inputs: list[str]) -> list[Path]:
     return unique_files
 
 
-def process_file(file_path: Path) -> ProcessResult:
+def process_file(path: Path) -> ProcessResult:
     start_time = time.perf_counter()
     try:
         remover = CSSCommentRemover()
-        with open(file_path, "rb") as f:
+        with open(path, "rb") as f:
             content = f.read()
         file_size = len(content)
         if file_size == 0:
             return ProcessResult(
-                path=file_path,
+                path=path,
                 success=True,
                 comments_removed=0,
                 processing_time=time.perf_counter() - start_time,
@@ -138,17 +138,17 @@ def process_file(file_path: Path) -> ProcessResult:
             )
         processed_content, comments_removed = remover.remove_comments(content)
         if comments_removed > 0 and processed_content != content:
-            temp_path = file_path.with_suffix(file_path.suffix + ".tmp")
+            temp_path = path.with_suffix(path.suffix + ".tmp")
             try:
                 with open(temp_path, "wb") as f:
                     f.write(processed_content)
                     f.flush()
                     os.fsync(f.fileno())
-                original_mode = os.stat(file_path).st_mode
+                original_mode = os.stat(path).st_mode
                 os.chmod(temp_path, original_mode)
                 size = os.stat(temp_path).st_size
                 if size:
-                    temp_path.replace(file_path)
+                    temp_path.replace(path)
                 else:
                     print("result css is empty,skiping write")
             except Exception:
@@ -157,7 +157,7 @@ def process_file(file_path: Path) -> ProcessResult:
                 raise
         processing_time = time.perf_counter() - start_time
         return ProcessResult(
-            path=file_path,
+            path=path,
             success=True,
             comments_removed=comments_removed,
             processing_time=processing_time,
@@ -166,7 +166,7 @@ def process_file(file_path: Path) -> ProcessResult:
     except Exception as e:
         processing_time = time.perf_counter() - start_time
         return ProcessResult(
-            path=file_path,
+            path=path,
             success=False,
             error_message=str(e),
             processing_time=processing_time,
@@ -181,8 +181,8 @@ def process_files_parallel(
     completed = 0
     with mp.Pool(processes=num_workers) as pool:
         async_results = []
-        for file_path in files:
-            async_result = pool.apply_async(process_file, (file_path,))
+        for path in files:
+            async_result = pool.apply_async(process_file, (path,))
             async_results.append(async_result)
         for async_result in async_results:
             try:

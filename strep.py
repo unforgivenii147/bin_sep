@@ -30,9 +30,9 @@ def process_whl(whl_path: Path) -> None:
         for so_file in so_files:
             process_file(so_file)
         with ZipFile(whl_path, "w") as zf:
-            for file_path in tmpdir.rglob("*"):
-                if file_path.is_file():
-                    zf.write(file_path, file_path.relative_to(tmpdir))
+            for path in tmpdir.rglob("*"):
+                if path.is_file():
+                    zf.write(path, path.relative_to(tmpdir))
 
 
 def collect_files(cwd: Path, args: list[str]) -> list[Path]:

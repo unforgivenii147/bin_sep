@@ -56,29 +56,29 @@ def decompress_stream(input_path: Path, output_path: Path) -> bool:
         return False
 
 
-def compress_stream(input_stream: BinaryIO, output_file_path: Path) -> bool:
-    """Compress a binary stream into a Brotli file at ``output_file_path``.
+def compress_stream(input_stream: BinaryIO, output_path: Path) -> bool:
+    """Compress a binary stream into a Brotli file at ``output_path``.
 
     Args:
         input_stream: Readable binary stream providing the source data.
-        output_file_path: Destination path for the Brotli-compressed output.
+        output_path: Destination path for the Brotli-compressed output.
 
     Returns:
         ``True`` if compression succeeded, ``False`` otherwise.
     """
     compressor = brotli.Compressor(quality=BROTLI_QUALITY)
     try:
-        with open(output_file_path, "wb") as f_out:
+        with open(output_path, "wb") as f_out:
             while True:
                 chunk: bytes = input_stream.read(CHUNK_SIZE)
                 if not chunk:
                     break
                 f_out.write(compressor.process(chunk))
             f_out.write(compressor.finish())
-        logger.success(f"Compressed: {output_file_path.name}")
+        logger.success(f"Compressed: {output_path.name}")
         return True
     except Exception as e:
-        logger.error(f"Error compressing to {output_file_path.name}: {e}")
+        logger.error(f"Error compressing to {output_path.name}: {e}")
         return False
 
 
@@ -101,20 +101,20 @@ def process_directory(dir_path: Path) -> None:
         logger.error(f"Failed to archive directory {dir_path.name}: {e}")
 
 
-def process_file(file_path: Path) -> None:
+def process_file(path: Path) -> None:
     """Compress a single file to ``<name>.br`` and remove the original on success.
 
     Args:
-        file_path: File to compress.
+        path: File to compress.
     """
-    output_br: Path = file_path.with_name(f"{file_path.name}{BR_SUFFIX}")
+    output_br: Path = path.with_name(f"{path.name}{BR_SUFFIX}")
     try:
-        with open(file_path, "rb") as f_in:
+        with open(path, "rb") as f_in:
             if compress_stream(f_in, output_br):
-                file_path.unlink()
-                logger.info(f"Removed original file: {file_path.name}")
+                path.unlink()
+                logger.info(f"Removed original file: {path.name}")
     except Exception as e:
-        logger.error(f"Failed to compress file {file_path.name}: {e}")
+        logger.error(f"Failed to compress file {path.name}: {e}")
 
 
 def decompress_file(br_path: Path) -> None:

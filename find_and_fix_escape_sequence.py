@@ -10,23 +10,23 @@ import warnings
 from pathlib import Path
 
 
-def process_file(file_path: Path, auto_fix: bool = False) -> dict:
+def process_file(path: Path, auto_fix: bool = False) -> dict:
     result = {
-        "path": file_path,
+        "path": path,
         "has_issues": False,
         "fixed": False,
         "errors": [],
         "warnings": [],
     }
     try:
-        content_bytes = file_path.read_bytes()
+        content_bytes = path.read_bytes()
     except Exception as e:
         result["errors"].append(f"Could not read file: {e}")
         return result
     with warnings.catch_warnings(record=True) as caught_warnings:
         warnings.simplefilter("always", SyntaxWarning)
         try:
-            compile(content_bytes, str(file_path), "exec")
+            compile(content_bytes, str(path), "exec")
         except SyntaxError as se:
             if "invalid escape sequence" in str(se):
                 result["has_issues"] = True
@@ -44,7 +44,7 @@ def process_file(file_path: Path, auto_fix: bool = False) -> dict:
         try:
             modified_tokens = []
             is_modified = False
-            with file_path.open("rb") as f:
+            with path.open("rb") as f:
                 tokens = list(tokenize.tokenize(f.readline))
             for tok in tokens:
                 if tok.type == tokenize.STRING:
@@ -75,7 +75,7 @@ def process_file(file_path: Path, auto_fix: bool = False) -> dict:
                 modified_tokens.append(tok)
             if is_modified:
                 fixed_bytes = tokenize.untokenize(modified_tokens)
-                file_path.write_bytes(fixed_bytes)
+                path.write_bytes(fixed_bytes)
                 result["fixed"] = True
         except Exception as e:
             result["errors"].append(f"Failed to auto-fix: {e}")

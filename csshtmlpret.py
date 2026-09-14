@@ -250,54 +250,54 @@ def walk2list(
     ]
 
 
-def process_multiple_files(file_path) -> None:
-    file_path = Path(file_path)
-    print(f"Process {os.getpid()} is processing {file_path}.")
+def process_multiple_files(path) -> None:
+    path = Path(path)
+    print(f"Process {os.getpid()} is processing {path}.")
     if args.watch:
-        previous = int(file_path.stat().st_mtime)
-        print(f"Process {os.getpid()} is Watching {file_path}.")
+        previous = int(path.stat().st_mtime)
+        print(f"Process {os.getpid()} is Watching {path}.")
         while True:
-            actual = int(file_path.stat().st_mtime)
+            actual = int(path.stat().st_mtime)
             if previous == actual:
                 sleep(60)
             else:
                 previous = actual
-                print(f"Modification detected on {file_path}.")
-                if file_path.suffix.lower() in (".css", ".scss"):
-                    process_single_css_file(str(file_path))
+                print(f"Modification detected on {path}.")
+                if path.suffix.lower() in (".css", ".scss"):
+                    process_single_css_file(str(path))
                 else:
-                    process_single_html_file(str(file_path))
-    elif file_path.suffix.lower() in (".css", ".scss"):
-        process_single_css_file(str(file_path))
+                    process_single_html_file(str(path))
+    elif path.suffix.lower() in (".css", ".scss"):
+        process_single_css_file(str(path))
     else:
-        process_single_html_file(str(file_path))
+        process_single_html_file(str(path))
 
 
-def prefixer_extensioner(file_path: str) -> str:
-    path_obj = Path(file_path)
+def prefixer_extensioner(path: str) -> str:
+    path_obj = Path(path)
     extension = path_obj.suffix.lower()
     filename = path_obj.stem
     filename = args.prefix + filename if args.prefix else filename
     return str(path_obj.parent / (filename + extension))
 
 
-def process_single_css_file(css_file_path: str) -> str:
+def process_single_css_file(css_path: str) -> str:
     global args
-    original_css = Path(css_file_path).read_text(encoding="utf-8-sig")
+    original_css = Path(css_path).read_text(encoding="utf-8-sig")
     pretty_css = css_prettify(original_css, args.justify, args.extraline)
     if args.timestamp:
         taim = f"/* {datetime.now().replace(microsecond=0).isoformat(' ')} */ "
         pretty_css = taim + pretty_css
-    min_css_file_path = prefixer_extensioner(css_file_path)
-    Path(min_css_file_path).write_text(pretty_css, encoding="utf-8")
+    min_css_path = prefixer_extensioner(css_path)
+    Path(min_css_path).write_text(pretty_css, encoding="utf-8")
     return pretty_css
 
 
-def process_single_html_file(html_file_path: str) -> str:
-    with Path(html_file_path).open(encoding="utf-8-sig") as html_file:
+def process_single_html_file(html_path: str) -> str:
+    with Path(html_path).open(encoding="utf-8-sig") as html_file:
         pretty_html = html_prettify(html_file.read(), args.extraline)
-    html_file_path = prefixer_extensioner(html_file_path)
-    Path(html_file_path).write_text(pretty_html, encoding="utf-8")
+    html_path = prefixer_extensioner(html_path)
+    Path(html_path).write_text(pretty_html, encoding="utf-8")
     return pretty_html
 
 

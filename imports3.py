@@ -252,7 +252,7 @@ def get_stdlib_modules() -> set[str]:
     return stdlib | stdlib_modules
 
 
-def extract_imports_from_code(code: str, file_path: str = "") -> set[str]:
+def extract_imports_from_code(code: str, path: str = "") -> set[str]:
     imports = set()
     import_pattern = r"^\s*import\s+([a-zA-Z0-9_\.\*\s,]+)"
     from_pattern = r"^\s*from\s+([a-zA-Z0-9_\.]+)\s+import"
@@ -277,21 +277,21 @@ def extract_imports_from_code(code: str, file_path: str = "") -> set[str]:
     return imports
 
 
-def read_python_file(file_path: str) -> str:
+def read_python_file(path: str) -> str:
     try:
-        with open(file_path, encoding="utf-8", errors="ignore") as f:
+        with open(path, encoding="utf-8", errors="ignore") as f:
             return f.read()
     except Exception as e:
-        print(f"⚠️  Error reading {file_path}: {e}")
+        print(f"⚠️  Error reading {path}: {e}")
         return ""
 
 
-def is_python_file(file_path: str) -> bool:
-    if file_path.endswith(".py"):
+def is_python_file(path: str) -> bool:
+    if path.endswith(".py"):
         return True
-    if "." not in Path(file_path).name:
+    if "." not in Path(path).name:
         try:
-            with open(file_path, "rb") as f:
+            with open(path, "rb") as f:
                 first_line = f.readline()
                 return first_line.startswith(b"#!") and b"python" in first_line
         except:
@@ -340,22 +340,22 @@ def extract_from_tar(tar_path: str, compression: str | None = None) -> set[str]:
     return imports
 
 
-def process_file(file_path: str) -> set[str]:
+def process_file(path: str) -> set[str]:
     imports = set()
     try:
-        if file_path.endswith((".zip", ".whl")):
-            imports.update(extract_from_zip(file_path))
-        elif file_path.endswith(".tar.gz"):
-            imports.update(extract_from_tar(file_path, "gz"))
-        elif file_path.endswith(".tar.xz"):
-            imports.update(extract_from_tar(file_path, "xz"))
-        elif file_path.endswith(".tar.zst"):
-            imports.update(extract_from_tar(file_path, "zst"))
-        elif file_path.endswith(".tar"):
-            imports.update(extract_from_tar(file_path))
-        elif is_python_file(file_path):
-            content = read_python_file(file_path)
-            imports.update(extract_imports_from_code(content, file_path))
+        if path.endswith((".zip", ".whl")):
+            imports.update(extract_from_zip(path))
+        elif path.endswith(".tar.gz"):
+            imports.update(extract_from_tar(path, "gz"))
+        elif path.endswith(".tar.xz"):
+            imports.update(extract_from_tar(path, "xz"))
+        elif path.endswith(".tar.zst"):
+            imports.update(extract_from_tar(path, "zst"))
+        elif path.endswith(".tar"):
+            imports.update(extract_from_tar(path))
+        elif is_python_file(path):
+            content = read_python_file(path)
+            imports.update(extract_imports_from_code(content, path))
     except Exception:
         pass
     return imports
@@ -376,11 +376,11 @@ def collect_files(root_dir: str, exclude_dirs: list[str] | None = None) -> list[
     for root, dirs, filenames in os.walk(root_dir):
         dirs[:] = [d for d in dirs if d not in exclude_dirs]
         for filename in filenames:
-            file_path = os.path.join(root, filename)
-            if is_python_file(file_path) or filename.endswith(
+            path = os.path.join(root, filename)
+            if is_python_file(path) or filename.endswith(
                 (".zip", ".whl", ".tar.gz", ".tar.xz", ".tar.zst", ".tar")
             ):
-                files.append(file_path)
+                files.append(path)
     return files
 
 

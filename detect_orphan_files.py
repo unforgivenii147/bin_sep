@@ -25,12 +25,12 @@ def process_single_dist(
     try:
         dist_info_dir = Path(dist_path)
         if dist_files:
-            for file_path in dist_files:
-                full_path = Path(file_path)
+            for path in dist_files:
+                full_path = Path(path)
                 if full_path.is_absolute():
                     files.add(str(full_path.resolve()))
                 else:
-                    files.add(str((dist_info_dir.parent / file_path).resolve()))
+                    files.add(str((dist_info_dir.parent / path).resolve()))
         if dist_info_dir.exists():
             files.add(str(dist_info_dir.resolve()))
             dirs.add(str(dist_info_dir.resolve()))
@@ -43,11 +43,9 @@ def process_single_dist(
                         reader = csv.reader(f)
                         for row in reader:
                             if row:
-                                file_path = row[0]
-                                if not file_path.startswith(".."):
-                                    full_path = (
-                                        dist_info_dir.parent / file_path
-                                    ).resolve()
+                                path = row[0]
+                                if not path.startswith(".."):
+                                    full_path = (dist_info_dir.parent / path).resolve()
                                     files.add(str(full_path))
                 except:
                     pass
@@ -100,16 +98,16 @@ def scan_directory_worker(args: tuple[str, set[str], set[str]]) -> list[str]:
         except:
             pass
         for file in files:
-            file_path = str((root_path / file).resolve())
-            if file_path in package_files:
+            path = str((root_path / file).resolve())
+            if path in package_files:
                 continue
-            if should_skip_file(file_path):
+            if should_skip_file(path):
                 continue
-            orphan_files.append(file_path)
+            orphan_files.append(path)
     return orphan_files
 
 
-def should_skip_file(file_path: str) -> bool:
+def should_skip_file(path: str) -> bool:
     skip_patterns = [
         "__pycache__",
         ".pyc",
@@ -121,7 +119,7 @@ def should_skip_file(file_path: str) -> bool:
         "easy-install.pth",
         "site.py",
     ]
-    file_str = file_path.lower()
+    file_str = path.lower()
     for pattern in skip_patterns:
         if pattern in file_str:
             return True
@@ -193,15 +191,14 @@ class OrphanFileDetector:
             "Libraries": [],
             "Other": [],
         }
-        for file_path in orphan_files:
-            ext = file_path.suffix.lower()
-            name = file_path.name.lower()
+        for path in orphan_files:
+            ext = path.suffix.lower()
+            name = path.name.lower()
             if ext in [".py", ".pyw"] or (
-                file_path.is_dir()
-                and "__init__.py"
-                in [f.name for f in file_path.iterdir() if f.is_file()]
+                path.is_dir()
+                and "__init__.py" in [f.name for f in path.iterdir() if f.is_file()]
             ):
-                categories["Python packages/modules"].append(file_path)
+                categories["Python packages/modules"].append(path)
             elif ext in [
                 ".txt",
                 ".md",
@@ -214,15 +211,15 @@ class OrphanFileDetector:
                 ".yml",
                 ".toml",
             ]:
-                categories["Data files"].append(file_path)
+                categories["Data files"].append(path)
             elif ext in [".exe", ".bat", ".cmd", ".sh", ".bash"] or (
-                file_path.is_file() and os.access(file_path, os.X_OK)
+                path.is_file() and os.access(path, os.X_OK)
             ):
-                categories["Executables/scripts"].append(file_path)
+                categories["Executables/scripts"].append(path)
             elif ext in [".so", ".dll", ".dylib", ".a", ".lib"]:
-                categories["Libraries"].append(file_path)
+                categories["Libraries"].append(path)
             else:
-                categories["Other"].append(file_path)
+                categories["Other"].append(path)
         return categories
 
     def run(self, verbose: bool = False):
@@ -239,16 +236,16 @@ class OrphanFileDetector:
         for category, files in categories.items():
             if files:
                 logger.info(f"\n{category} ({len(files)}):")
-                for file_path in sorted(files):
+                for path in sorted(files):
                     if verbose:
-                        if file_path.is_file():
-                            size = file_path.stat().st_size
+                        if path.is_file():
+                            size = path.stat().st_size
                             size_str = self._format_size(size)
-                            logger.info(f"  {file_path} ({size_str})")
+                            logger.info(f"  {path} ({size_str})")
                         else:
-                            logger.info(f"  {file_path} (directory)")
+                            logger.info(f"  {path} (directory)")
                     else:
-                        logger.info(f"  {file_path}")
+                        logger.info(f"  {path}")
         logger.info("\n" + "-" * 40)
         logger.info("SUMMARY:")
         for category, files in categories.items():

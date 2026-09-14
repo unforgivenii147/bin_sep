@@ -209,17 +209,17 @@ def remove_image_lines_md(content: str) -> tuple[str, int]:
     return result, removed_count
 
 
-def process_file(file_path: Path) -> Optional[FileStats]:
+def process_file(path: Path) -> Optional[FileStats]:
     """Clean a single RST/Markdown file, returning stats if modified."""
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(path, "r", encoding="utf-8") as f:
             content: str = f.read()
         if not content.strip():
             return None
 
         lines_before: int = content.count("\n") + 1
         size_before: int = len(content.encode("utf-8"))
-        suffix: str = file_path.suffix.lower()
+        suffix: str = path.suffix.lower()
 
         new_content: str
         removed_refs: int
@@ -231,12 +231,12 @@ def process_file(file_path: Path) -> Optional[FileStats]:
             return None
 
         if removed_refs > 0:
-            with open(file_path, "w", encoding="utf-8") as f:
+            with open(path, "w", encoding="utf-8") as f:
                 f.write(new_content)
             lines_after: int = new_content.count("\n") + 1
             size_after: int = len(new_content.encode("utf-8"))
             return FileStats(
-                path=file_path,
+                path=path,
                 lines_before=lines_before,
                 lines_after=lines_after,
                 size_before=size_before,
@@ -245,7 +245,7 @@ def process_file(file_path: Path) -> Optional[FileStats]:
                 removed_refs=removed_refs,
             )
     except Exception as e:  # noqa: BLE001
-        logger.error(f"Error processing {file_path}: {e}")
+        logger.error(f"Error processing {path}: {e}")
         return None
     return None
 

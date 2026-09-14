@@ -18,8 +18,8 @@ def load_refactoring_maps():
     file_to_objects = collections.defaultdict(list)
     for item in data:
         obj_name = item["name"]
-        for file_path_str in item["files"]:
-            p = Path(file_path_str)
+        for path_str in item["files"]:
+            p = Path(path_str)
             file_to_objects[p.name].append(obj_name)
     return file_to_objects
 
@@ -50,25 +50,25 @@ class ASTStripper(ast.NodeTransformer):
         return self.generic_visit(node)
 
 
-def refactor_single_file(file_path: Path, objects_to_remove: list):
+def refactor_single_file(path: Path, objects_to_remove: list):
     try:
-        source_code = file_path.read_text(encoding="utf-8")
+        source_code = path.read_text(encoding="utf-8")
         tree = ast.parse(source_code)
     except Exception as e:
-        print(f"❌ Error parsing {file_path.name}: {e}")
+        print(f"❌ Error parsing {path.name}: {e}")
         return
     stripper = ASTStripper(objects_to_remove)
     modified_tree = stripper.visit(tree)
     ast.fix_missing_locations(modified_tree)
     if not stripper.removed_something:
-        print(f"➖ No matching structural nodes found inside {file_path.name}")
+        print(f"➖ No matching structural nodes found inside {path.name}")
         return
     import_names = ", ".join(sorted(objects_to_remove))
     import_statement = f"from dh import {import_names}\n"
     try:
         cleaned_source = astor.to_source(modified_tree)
     except Exception as e:
-        print(f"❌ Failed to stringify AST for {file_path.name}: {e}")
+        print(f"❌ Failed to stringify AST for {path.name}: {e}")
         return
     lines = cleaned_source.splitlines(keepends=True)
     insert_idx = 0
@@ -81,12 +81,12 @@ def refactor_single_file(file_path: Path, objects_to_remove: list):
         insert_idx += 1
     lines.insert(insert_idx, import_statement)
     try:
-        file_path.write_text("".join(lines), encoding="utf-8")
+        path.write_text("".join(lines), encoding="utf-8")
         print(
-            f"✅ Refactored {file_path.name}: Stripped {objects_to_remove} -> added 'dh' import"
+            f"✅ Refactored {path.name}: Stripped {objects_to_remove} -> added 'dh' import"
         )
     except Exception as e:
-        print(f"❌ Error writing updates back to {file_path.name}: {e}")
+        print(f"❌ Error writing updates back to {path.name}: {e}")
 
 
 def main():
@@ -107,8 +107,8 @@ def main():
         f"🚀 Found {len(tasks)} files to clean structural code from. Starting parallel processing..."
     )
     with ThreadPoolExecutor() as executor:
-        for file_path, objects in tasks:
-            executor.submit(refactor_single_file, file_path, objects)
+        for path, objects in tasks:
+            executor.submit(refactor_single_file, path, objects)
     print("🎉 Structural refactoring complete! All duplicate bodies stripped.")
 
 

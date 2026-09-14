@@ -12,19 +12,19 @@ BROTLI_QUALITY = 11
 CHUNK_SIZE = 1024 * 64
 
 
-def compress_stream(input_stream, output_file_path: Path):
+def compress_stream(input_stream, output_path: Path):
     compressor = brotli.Compressor(quality=BROTLI_QUALITY)
     try:
-        with open(output_file_path, "wb") as f_out:
+        with open(output_path, "wb") as f_out:
             while True:
                 chunk = input_stream.read(CHUNK_SIZE)
                 if not chunk:
                     break
                 f_out.write(compressor.process(chunk))
             f_out.write(compressor.finish())
-        print(f"✅ Compressed: {output_file_path.name}")
+        print(f"✅ Compressed: {output_path.name}")
     except Exception as e:
-        print(f"❌ Error compressing {output_file_path.name}: {e}")
+        print(f"❌ Error compressing {output_path.name}: {e}")
 
 
 def process_directory(dir_path: Path):
@@ -39,13 +39,13 @@ def process_directory(dir_path: Path):
         print(f"❌ Failed to archive directory {dir_path.name}: {e}")
 
 
-def process_file(file_path: Path):
-    output_br = file_path.with_name(f"{file_path.name}.br")
+def process_file(path: Path):
+    output_br = path.with_name(f"{path.name}.br")
     try:
-        with open(file_path, "rb") as f_in:
+        with open(path, "rb") as f_in:
             compress_stream(f_in, output_br)
     except Exception as e:
-        print(f"❌ Failed to open file {file_path.name}: {e}")
+        print(f"❌ Failed to open file {path.name}: {e}")
 
 
 def main():

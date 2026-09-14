@@ -24,9 +24,9 @@ def clean_records():
             record_file.write_text("\n".join(filtered) + ("\n" if filtered else ""))
 
 
-def copy_file(file_path_str, base_dir, dest_dir):
+def copy_file(path_str, base_dir, dest_dir):
     try:
-        src = Path(file_path_str)
+        src = Path(path_str)
         if not src.is_absolute():
             src = base_dir / src
         if src.exists() and src.is_file():
@@ -35,7 +35,7 @@ def copy_file(file_path_str, base_dir, dest_dir):
             dst.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(src, dst)
     except Exception as e:
-        logger.error(f"Error copying {file_path_str}: {e}")
+        logger.error(f"Error copying {path_str}: {e}")
 
 
 def main():
@@ -54,9 +54,9 @@ def main():
             if record_file.exists():
                 for line in record_file.read_text().splitlines():
                     if line.strip():
-                        file_path = line.split(",")[0]
-                        if file_path and not file_path.endswith(".pyc"):
-                            files_to_copy.append(file_path)
+                        path = line.split(",")[0]
+                        if path and not path.endswith(".pyc"):
+                            files_to_copy.append(path)
     pool = mp.Pool(4)
     results = []
     for f in files_to_copy:

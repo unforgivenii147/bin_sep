@@ -45,9 +45,9 @@ def detect_entry_point(project_dir, package_name):
     return entry_points
 
 
-def detect_main_function(file_path):
+def detect_main_function(path):
     try:
-        with open(file_path, encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             content = f.read()
         if (
             re.search(r"def main\(", content)

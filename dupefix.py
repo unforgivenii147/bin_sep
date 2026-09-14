@@ -9,20 +9,20 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import xxhash
 
 
-def get_file_hash(filepath):
+def get_file_hash(path):
     try:
-        if not filepath.exists():
-            return filepath, None
+        if not path.exists():
+            return path, None
         xxh = xxhash.xxh64()
-        with open(filepath, "rb") as f:
+        with open(path, "rb") as f:
             while True:
                 chunk = f.read(8192)
                 if not chunk:
                     break
                 xxh.update(chunk)
-        return filepath, xxh.hexdigest()
+        return path, xxh.hexdigest()
     except (OSError, PermissionError):
-        return filepath, None
+        return path, None
 
 
 def remove_duplicates(root_dir, dry_run=True):
@@ -43,9 +43,9 @@ def remove_duplicates(root_dir, dry_run=True):
         future_to_file = {executor.submit(get_file_hash, f): f for f in files_to_hash}
         for future in as_completed(future_to_file):
             try:
-                filepath, file_hash = future.result(timeout=30)
+                path, file_hash = future.result(timeout=30)
                 if file_hash:
-                    hash_map[file_hash].append(filepath)
+                    hash_map[file_hash].append(path)
             except Exception as e:
                 print(f"Error processing file: {e}")
     total_freed = 0

@@ -40,9 +40,9 @@ def main():
         if len(line) == 40 and " " not in line:
             current_commit_hash = line
         else:
-            file_path = line
-            if file_path not in deleted_files_map:
-                deleted_files_map[file_path] = current_commit_hash
+            path = line
+            if path not in deleted_files_map:
+                deleted_files_map[path] = current_commit_hash
     files_to_restore = []
     for path_str, deletion_commit in deleted_files_map.items():
         if not Path(path_str).exists():

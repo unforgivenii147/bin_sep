@@ -20,7 +20,7 @@ import zstandard as zstd
 
 CompressionResult = namedtuple(
     "CompressionResult",
-    ["algorithm", "success", "compressed_size", "ratio", "time", "filepath", "error"],
+    ["algorithm", "success", "compressed_size", "ratio", "time", "path", "error"],
 )
 
 
@@ -118,8 +118,8 @@ def benchmark_compression(
         elapsed_time = time.time() - start_time
         compressed_size = len(compressed)
         ratio = compressed_size / original_size if original_size > 0 else 0
-        filepath = Path(f"{base_name}{extension}")
-        with open(filepath, "wb") as f:
+        path = Path(f"{base_name}{extension}")
+        with open(path, "wb") as f:
             f.write(compressed)
         return CompressionResult(
             algorithm=algorithm_name,
@@ -127,7 +127,7 @@ def benchmark_compression(
             compressed_size=compressed_size,
             ratio=ratio,
             time=elapsed_time,
-            filepath=str(filepath),
+            path=str(path),
             error=None,
         )
     except Exception as e:
@@ -137,7 +137,7 @@ def benchmark_compression(
             compressed_size=0,
             ratio=0,
             time=0,
-            filepath=None,
+            path=None,
             error=str(e),
         )
 
@@ -178,17 +178,13 @@ def print_summary(results: list[CompressionResult], original_size: int):
 
 def cleanup_files(results: list[CompressionResult], keep_result: CompressionResult):
     for result in results:
-        if (
-            result.success
-            and result.filepath
-            and (result.filepath != keep_result.filepath)
-        ):
+        if result.success and result.path and (result.path != keep_result.path):
             try:
-                os.remove(result.filepath)
+                os.remove(result.path)
                 print(f"✗ Deleted: {result.algorithm}")
             except OSError as e:
                 print(f"⚠ Failed to delete {result.algorithm}: {e}")
-    print(f"\n✓ Keeping best: {keep_result.algorithm} ({keep_result.filepath})")
+    print(f"\n✓ Keeping best: {keep_result.algorithm} ({keep_result.path})")
 
 
 def main():

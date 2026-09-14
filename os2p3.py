@@ -29,8 +29,8 @@ OS_PATH_IMPORT_PATTERNS = [
 ]
 
 
-def refactor_file(file_path):
-    content = file_path.read_text(encoding="utf-8")
+def refactor_file(path):
+    content = path.read_text(encoding="utf-8")
     original_content = content
     for pattern in OS_PATH_IMPORT_PATTERNS:
         content = re.sub(pattern, "from pathlib import Path", content)
@@ -66,7 +66,7 @@ def refactor_file(file_path):
     if "from pathlib import Path" not in content and "import pathlib" not in content:
         content = "from pathlib import Path\n" + content
     if content != original_content:
-        file_path.write_text(content, encoding="utf-8")
+        path.write_text(content, encoding="utf-8")
         return True
     return False
 
@@ -74,9 +74,9 @@ def refactor_file(file_path):
 def refactor_directory(directory):
     python_files = directory.rglob("*.py")
     refactored_count = 0
-    for file_path in python_files:
-        if refactor_file(file_path):
-            print(f"Refactored: {file_path.relative_to(Path.cwd())}")
+    for path in python_files:
+        if refactor_file(path):
+            print(f"Refactored: {path.relative_to(Path.cwd())}")
             refactored_count += 1
     print(f"\nRefactored {refactored_count} files.")
 

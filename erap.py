@@ -22,18 +22,18 @@ def runcmd(cmd: list[str]) -> tuple[int, str]:
     return proc.returncode, combined
 
 
-def run_tool(tool: str, file_path: Path) -> tuple[str, str | None]:
+def run_tool(tool: str, path: Path) -> tuple[str, str | None]:
     try:
         if tool == "ty":
-            cmd = ["ty", "check", str(file_path)]
+            cmd = ["ty", "check", str(path)]
         elif tool == "pyright":
-            cmd = ["pyright", str(file_path)]
+            cmd = ["pyright", str(path)]
         elif tool == "pylint":
-            cmd = ["pylint", "-E", str(file_path)]
+            cmd = ["pylint", "-E", str(path)]
         elif tool == "pyrefly":
-            cmd = ["pyrefly", "check", str(file_path)]
+            cmd = ["pyrefly", "check", str(path)]
         elif tool == "mypy":
-            cmd = ["mypy", str(file_path)]
+            cmd = ["mypy", str(path)]
         else:
             return tool, None
         _returncode, output = runcmd(cmd)
@@ -44,8 +44,8 @@ def run_tool(tool: str, file_path: Path) -> tuple[str, str | None]:
         return tool, f"ERROR: {e!s}"
 
 
-def append_tool_outputs(file_path: Path, outputs: dict[str, str | None]) -> None:
-    with file_path.open("a", encoding="utf-8") as f:
+def append_tool_outputs(path: Path, outputs: dict[str, str | None]) -> None:
+    with path.open("a", encoding="utf-8") as f:
         f.write("\n\n")
         for tool, output in outputs.items():
             f.write(f"# ===== {tool} output =====\n")
@@ -57,10 +57,10 @@ def append_tool_outputs(file_path: Path, outputs: dict[str, str | None]) -> None
                 f.write("# (no issues)\n")
 
 
-def process_file(file_path: Path, tools: list[str]) -> str:
+def process_file(path: Path, tools: list[str]) -> str:
     outputs = {}
     for tool in tools:
-        tool_name, output = run_tool(tool, file_path)
+        tool_name, output = run_tool(tool, path)
         outputs[tool_name] = output
     if (
         tools == ["ty"]
@@ -70,9 +70,9 @@ def process_file(file_path: Path, tools: list[str]) -> str:
         "error[unresolved-import]: Cannot resolve imported module `dh`"
         in outputs["ty"].lower()
     ):
-        return f"✓ Skipped (ty: all checks passed): {file_path}"
-    append_tool_outputs(file_path, outputs)
-    return f"✓ Updated: {file_path}"
+        return f"✓ Skipped (ty: all checks passed): {path}"
+    append_tool_outputs(path, outputs)
+    return f"✓ Updated: {path}"
 
 
 def collect_pyfiles(paths: list[str]):
