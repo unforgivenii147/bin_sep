@@ -1,36 +1,58 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""
+Translate every .txt file under the given paths (or CWD) into English and write a
+side-by-side JSON per file. Text is split into small chunks, language-detected with
+langdetect, translated with deep-translator's GoogleTranslator, and the resulting
+translation records are dumped as ``{"lines": [...]}`` next to each source file.
+Uses a fixed multiprocessing.Pool of 8 workers; logging via loguru.
+"""
 
 import json
-import logging
 import sys
 import time
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from multiprocessing import Pool
+from multiprocessing.pool import AsyncResult
 from pathlib import Path
 from typing import Any, Final
 
 import langdetect
-from deep_translator import GoogleTranslator
+from deep_translator import GoogleTranslator  # type: ignore[import-untyped]
+from loguru import logger
 
-CHUNK_SIZE = 1024 * 1024
+CHUNK_SIZE: Final[int] = 4500
+MAX_WORKERS: Final[int] = 8
 SKIP_DIRS: Final[frozenset[str]] = frozenset(
     {"lazy", ".git", "__pycache__", ".mypy_cache", ".ruff_cache", ".pytest_cache"}
 )
-CHUNK_SIZE: Final[int] = 4500
-MAX_WORKERS: Final[int] = 3
-logging.basicConfig(level=logging.INFO, format="%(message)s")
-logger = logging.getLogger(__name__)
+
+Chunk = tuple[int, int, str]
+TranslationRecord = dict[str, Any]
 
 
-def chunk_file(path: Path, size: int = 32768) -> list[tuple[int, int, str]]:
-    chunks: list[tuple[int, int, str]] = []
+def chunk_file(file_path: Path, size: int = 32768) -> list[Chunk]:
+    """
+    Split a text file into line-range chunks whose combined length is at most
+    ``size`` characters (measured in characters of the source text).
+
+    Args:
+        file_path: Path to the text file to read.
+        size: Maximum character count per chunk.
+
+    Returns:
+        A list of ``(start_line, end_line, text)`` tuples. Returns an empty list
+        if the file cannot be read.
+    """
+    chunks: list[Chunk] = []
     current_chunk: list[str] = []
-    current_size = 0
-    start_line = 0
+    current_size: int = 0
+    start_line: int = 0
+
     try:
-        lines = path.read_text(encoding="utf-8").splitlines(keepends=True)
+        lines: list[str] = file_path.read_text(encoding="utf-8").splitlines(
+            keepends=True
+        )
         for i, line in enumerate(lines):
-            line_len = len(line)
+            line_len: int = len(line)
             if current_size + line_len > size and current_chunk:
                 chunks.append((start_line, i - 1, "".join(current_chunk)))
                 current_chunk = [line]
@@ -41,25 +63,45 @@ def chunk_file(path: Path, size: int = 32768) -> list[tuple[int, int, str]]:
                 current_size += line_len
         if current_chunk:
             chunks.append((start_line, len(lines) - 1, "".join(current_chunk)))
-    except Exception as e:
-        logger.error("Error chunking %s: %s", path, e)
+    except Exception as exc:
+        logger.error(f"Error chunking {file_path}: {exc}")
+
     return chunks
 
 
 def detect_language(text: str) -> str | None:
+    """
+    Best-effort language detection on the first 500 characters of ``text``.
+
+    Args:
+        text: Source text to inspect.
+
+    Returns:
+        The ISO language code, or ``None`` if detection failed.
+    """
     try:
         return langdetect.detect(text[:500])
     except Exception:
         return None
 
 
-def translate_chunk(
-    chunk_data: tuple[int, int, str], index: int
-) -> dict[str, Any] | None:
+def translate_chunk(chunk_data: Chunk, index: int) -> TranslationRecord | None:
+    """
+    Translate a single chunk into English, unless it is already English.
+
+    Args:
+        chunk_data: ``(start_line, end_line, text)`` tuple for the chunk.
+        index: Zero-based index of the chunk within its file; used to throttle
+            requests (subsequent chunks sleep briefly before translating).
+
+    Returns:
+        A record describing the translation, or ``None`` if translation failed.
+    """
     start_line, end_line, text = chunk_data
     if index > 0:
         time.sleep(1)
-    lang = detect_language(text)
+
+    lang: str | None = detect_language(text)
     if lang == "en":
         return {
             "chunk_id": f"{start_line}_{end_line}",
@@ -68,9 +110,10 @@ def translate_chunk(
             "translated": text,
             "skipped": True,
         }
+
     try:
-        translator = GoogleTranslator(source="auto", target="en")
-        translated = translator.translate(text)
+        translator: GoogleTranslator = GoogleTranslator(source="auto", target="en")
+        translated: str = translator.translate(text)
         return {
             "chunk_id": f"{start_line}_{end_line}",
             "start_line": start_line,
@@ -78,60 +121,88 @@ def translate_chunk(
             "translated": translated,
             "skipped": False,
         }
-    except Exception as e:
-        logger.error("Error translating chunk %d-%d: %s", start_line, end_line, e)
+    except Exception as exc:
+        logger.error(f"Error translating chunk {start_line}-{end_line}: {exc}")
         return None
 
 
-def process_file(path: Path) -> None:
-    logger.info("Processing: %s", path.name)
-    chunks = chunk_file(path)
-    logger.info("Total chunks: %d", len(chunks))
-    translations: list[dict[str, Any]] = []
-    with ProcessPoolExecutor(max_workers=MAX_WORKERS) as executor:
-        future_to_chunk = {
-            executor.submit(translate_chunk, chunk, idx): idx
+def process_file(file_path: Path) -> None:
+    """
+    Chunk, translate, and persist translations for a single text file.
+
+    Args:
+        file_path: Path to the source ``.txt`` file.
+    """
+    logger.info(f"Processing: {file_path.name}")
+    chunks: list[Chunk] = chunk_file(file_path)
+    logger.info(f"Total chunks: {len(chunks)}")
+
+    translations: list[TranslationRecord] = []
+
+    with Pool(processes=MAX_WORKERS) as pool:
+        async_results: list[AsyncResult[TranslationRecord | None]] = [
+            pool.apply_async(translate_chunk, (chunk, idx))
             for idx, chunk in enumerate(chunks)
-        }
-        completed = 0
-        for future in as_completed(future_to_chunk):
-            if result := future.result():
+        ]
+
+        completed: int = 0
+        for async_res in async_results:
+            result: TranslationRecord | None = async_res.get()
+            if result is not None:
                 translations.append(result)
             completed += 1
-            logger.info("Progress (%s): %d/%d", path.name, completed, len(chunks))
-    output_file = path.with_suffix(".json")
+            logger.info(f"Progress ({file_path.name}): {completed}/{len(chunks)}")
+
+    output_file: Path = file_path.with_suffix(".json")
     try:
-        output_data = {"lines": sorted(translations, key=lambda x: x["start_line"])}
+        output_data: dict[str, list[TranslationRecord]] = {
+            "lines": sorted(translations, key=lambda x: x["start_line"])
+        }
         output_file.write_text(
             json.dumps(output_data, ensure_ascii=False, indent=2), encoding="utf-8"
         )
-        logger.info("✓ JSON output saved to: %s", output_file.name)
-    except Exception as e:
-        logger.error("Error saving JSON output for %s: %s", path, e)
+        logger.info(f"✓ JSON output saved to: {output_file.name}")
+    except Exception as exc:
+        logger.error(f"Error saving JSON output for {file_path}: {exc}")
 
 
 def get_input_files(paths: list[str]) -> list[Path]:
+    """
+    Resolve the list of ``.txt`` files to process.
+
+    Args:
+        paths: Explicit file or directory paths. If empty, the current working
+            directory is searched recursively.
+
+    Returns:
+        A list of file paths, excluding any located under :data:`SKIP_DIRS`.
+    """
     files: list[Path] = []
-    search_paths = [Path(p) for p in paths] if paths else [Path.cwd()]
+    search_paths: list[Path] = [Path(p) for p in paths] if paths else [Path.cwd()]
+
     for path in search_paths:
         if path.is_file():
             files.append(path)
         elif path.is_dir():
             files.extend(path.rglob("*.txt"))
+
     return [f for f in files if not any(part in SKIP_DIRS for part in f.parts)]
 
 
 def main() -> None:
-    input_paths = sys.argv[1:]
-    files = get_input_files(input_paths)
+    """Entry point: gather input files and translate each one."""
+    input_paths: list[str] = sys.argv[1:]
+    files: list[Path] = get_input_files(input_paths)
+
     if not files:
         logger.info("No text files found to process.")
         return
-    for path in files:
+
+    for file_path in files:
         try:
-            process_file(path)
-        except Exception as e:
-            logger.error("Unexpected error processing %s: %s", path, e)
+            process_file(file_path)
+        except Exception as exc:
+            logger.error(f"Unexpected error processing {file_path}: {exc}")
 
 
 if __name__ == "__main__":
