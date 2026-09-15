@@ -7,7 +7,7 @@ import tempfile
 from pathlib import Path
 from zipfile import ZipFile
 
-from dh import fsz, runcmd
+from dh import fsz, runcmd, gsze
 from rich.console import Console
 from rich.progress import BarColumn, Progress, TaskProgressColumn, TextColumn
 
@@ -78,5 +78,6 @@ if __name__ == "__main__":
             progress.update(task, advance=1)
 
     console.print(
-        "[bold green]Done![/] Processed [bold yellow]{len(so_files)}[/] .so files."
+        f"[bold green]Done![/] Processed [bold yellow]{len(so_files)}[/] .so files."
     )
+    show_summary(so_files)

@@ -4,7 +4,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-from dh import get_files, gsz, mpf3, rrs, runcmd
+from dh import gsz, mpf3, rrs, runcmd, should_skip
+from fastwalk import walk_files
 
 
 def process_file(path: str | Path) -> None:
@@ -29,10 +30,18 @@ def process_file(path: str | Path) -> None:
         return
 
 
+def get_files(root_dir):
+    for path in walk_files(root_dir):
+        if should_skip(path):
+            continue
+        if path.is_file() and path.suffix in {".png", ".PNG"}:
+            yield path
+
+
 def main() -> None:
     cwd = Path.cwd()
     args = sys.argv[1:]
-    files = [Path(p) for p in args] if args else get_files(cwd, ext=[".png", ".PNG"])
+    files = [Path(p) for p in args] if args else get_files(cwd)
     mpf3(process_file, files)
 
 

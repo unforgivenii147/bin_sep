@@ -34,6 +34,7 @@ def get_files(path: str | Path, ext: list[str] | None = None) -> list[Path]:
                     or item.suffixes[-2:] == [".3", ".gz"]
                     or item.suffixes[-2:] == [".4", ".gz"]
                     or (item.suffixes[-2:] == [".5", ".gz"])
+                    or (item.suffixes[-2:] == [".6", ".gz"])
                     or (item.suffixes[-2:] == [".7", ".gz"])
                     or (item.suffixes[-2:] == [".8", ".gz"])
                     or (item.suffixes[-2:] == [".3am", ".gz"])
@@ -42,6 +43,7 @@ def get_files(path: str | Path, ext: list[str] | None = None) -> list[Path]:
                     or (item.suffixes[-2:] == [".3ncurses", ".gz"])
                     or (item.suffixes[-2:] == [".3readline", ".gz"])
                     or (item.suffixes[-2:] == [".3t", ".gz"])
+                    or (item.suffixes[-2:] == [".n", ".gz"])
                 )
             ):
                 files.append(item)
