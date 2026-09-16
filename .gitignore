@@ -1,2 +1,3 @@
 *           # Ignore everything
 !/*.py      # EXCEPT .py files at top level only
+!/*.yp
