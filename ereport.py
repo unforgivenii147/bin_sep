@@ -84,7 +84,9 @@ def main() -> None:
         print("No .py files found in current directory.")
         return
 
-    print(f"Found {len(py_files)} Python file(s). Generating reports in '{report_dir.name}/'...\n")
+    print(
+        f"Found {len(py_files)} Python file(s). Generating reports in '{report_dir.name}/'...\n"
+    )
     for py_file in py_files:
         analyze_file(py_file, report_dir)
 
