@@ -1,13 +1,15 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""pfind.py – Pfind utilities.
 
+This module provides functionality for pfind."""
+from __future__ import annotations
+from typing import Any, Iterator
 import sys
 import tarfile
 import tempfile
 import zipfile
 from multiprocessing import Pool, cpu_count
 from pathlib import Path
-
 try:
     import py7zr
 except ImportError:
@@ -21,68 +23,76 @@ try:
 except ImportError:
     zstandard = None
 
+def collect_items(root_dirs: Path | str, skip_patterns: Any | None=None) -> Any:
+    """collect_items – collect items.
 
-def collect_items(root_dirs, skip_patterns=None):
+Args:
+    root_dirs: Description of root_dirs.
+    skip_patterns: Description of skip_patterns."""
     if skip_patterns is None:
-        skip_patterns = {".git"}
+        skip_patterns = {'.git'}
     items = []
     for root_dir in root_dirs:
         root_path = Path(root_dir)
-        for path in root_path.rglob("*"):
-            if any(part in skip_patterns for part in path.parts):
+        for path in root_path.rglob('*'):
+            if any((part in skip_patterns for part in path.parts)):
                 continue
             if path.is_file():
                 items.append(path)
     return items
 
+def search_in_archive(archive_path: Path | str, pattern: str) -> Any:
+    """search_in_archive – search in archive.
 
-def search_in_archive(archive_path, pattern):
+Args:
+    archive_path: Description of archive_path.
+    pattern: Description of pattern."""
     results = []
     pattern_lower = pattern.lower()
     archive_rel = archive_path.relative_to(Path.cwd())
     try:
-        if archive_path.suffix in (".zip", ".whl"):
+        if archive_path.suffix in ('.zip', '.whl'):
             with zipfile.ZipFile(archive_path) as zf:
                 for name in zf.namelist():
                     if pattern_lower in name.lower():
                         results.append((str(archive_rel), name))
-        elif archive_path.name.endswith(".tar.gz"):
-            with tarfile.open(archive_path, "r:gz") as tf:
+        elif archive_path.name.endswith('.tar.gz'):
+            with tarfile.open(archive_path, 'r:gz') as tf:
                 for member in tf.getmembers():
                     if pattern_lower in member.name.lower():
                         results.append((str(archive_rel), member.name))
-        elif archive_path.name.endswith(".tar.bz2"):
-            with tarfile.open(archive_path, "r:bz2") as tf:
+        elif archive_path.name.endswith('.tar.bz2'):
+            with tarfile.open(archive_path, 'r:bz2') as tf:
                 for member in tf.getmembers():
                     if pattern_lower in member.name.lower():
                         results.append((str(archive_rel), member.name))
-        elif archive_path.name.endswith(".tar.xz"):
-            with tarfile.open(archive_path, "r:xz") as tf:
+        elif archive_path.name.endswith('.tar.xz'):
+            with tarfile.open(archive_path, 'r:xz') as tf:
                 for member in tf.getmembers():
                     if pattern_lower in member.name.lower():
                         results.append((str(archive_rel), member.name))
-        elif archive_path.name.endswith(".tar.7z") and py7zr:
-            with py7zr.SevenZipFile(archive_path, "r") as sf:
+        elif archive_path.name.endswith('.tar.7z') and py7zr:
+            with py7zr.SevenZipFile(archive_path, 'r') as sf:
                 for name in sf.getnames():
                     if pattern_lower in name.lower():
                         results.append((str(archive_rel), name))
-        elif archive_path.name.endswith(".tar.br") and brotli:
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".tar") as tmp:
-                with open(archive_path, "rb") as f:
+        elif archive_path.name.endswith('.tar.br') and brotli:
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.tar') as tmp:
+                with open(archive_path, 'rb') as f:
                     tmp.write(brotli.decompress(f.read()))
                 tmp_path = tmp.name
-            with tarfile.open(tmp_path, "r") as tf:
+            with tarfile.open(tmp_path, 'r') as tf:
                 for member in tf.getmembers():
                     if pattern_lower in member.name.lower():
                         results.append((str(archive_rel), member.name))
             Path(tmp_path).unlink()
-        elif archive_path.name.endswith(".tar.zst") and zstandard:
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".tar") as tmp:
+        elif archive_path.name.endswith('.tar.zst') and zstandard:
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.tar') as tmp:
                 dctx = zstandard.ZstdDecompressor()
-                with open(archive_path, "rb") as f:
+                with open(archive_path, 'rb') as f:
                     tmp.write(dctx.stream_reader(f).read())
                 tmp_path = tmp.name
-            with tarfile.open(tmp_path, "r") as tf:
+            with tarfile.open(tmp_path, 'r') as tf:
                 for member in tf.getmembers():
                     if pattern_lower in member.name.lower():
                         results.append((str(archive_rel), member.name))
@@ -91,34 +101,34 @@ def search_in_archive(archive_path, pattern):
         pass
     return results
 
+def search_file(path: Path | str, pattern: str) -> list[Any]:
+    """search_file – search file.
 
-def search_file(path, pattern):
+Args:
+    path: Description of path.
+    pattern: Description of pattern."""
     pattern_lower = pattern.lower()
     if pattern_lower in path.name.lower():
         return [(str(path.relative_to(Path.cwd())), None)]
     return []
 
+def process_path(args: str) -> Any:
+    """process_path – process path.
 
-def process_path(args):
+Args:
+    args: Description of args."""
     path, pattern = args
-    if any(
-        path.name.endswith(ext)
-        for ext in [
-            ".tar.gz",
-            ".tar.xz",
-            ".tar.bz2",
-            ".tar.7z",
-            ".tar.br",
-            ".tar.zst",
-            ".zip",
-            ".whl",
-        ]
-    ):
+    if any((path.name.endswith(ext) for ext in ['.tar.gz', '.tar.xz', '.tar.bz2', '.tar.7z', '.tar.br', '.tar.zst', '.zip', '.whl'])):
         return search_in_archive(path, pattern)
     return search_file(path, pattern)
 
+def search(pattern: str, root_dirs: Path | str | None=None, num_workers: int | None=None) -> Iterator[Any]:
+    """search – search.
 
-def search(pattern, root_dirs=None, num_workers=None):
+Args:
+    pattern: Description of pattern.
+    root_dirs: Description of root_dirs.
+    num_workers: Description of num_workers."""
     if root_dirs is None:
         root_dirs = [Path.cwd()]
     else:
@@ -131,19 +141,17 @@ def search(pattern, root_dirs=None, num_workers=None):
         for results in pool.imap_unordered(process_path, work_items, chunksize=100):
             yield from results
 
-
-def main():
+def main() -> None:
+    """main – main."""
     if len(sys.argv) < 2:
-        print("Usage: python script.py <pattern> [directories...]")
+        print('Usage: python script.py <pattern> [directories...]')
         sys.exit(1)
     pattern = sys.argv[1]
     root_dirs = sys.argv[2:] if len(sys.argv) > 2 else None
     for path, archive_member in search(pattern, root_dirs):
         if archive_member:
-            print(f"{path}:{archive_member}")
+            print(f'{path}:{archive_member}')
         else:
             print(path)
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     raise SystemExit(main())

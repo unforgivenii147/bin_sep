@@ -1,29 +1,56 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""summa.py – Summa utilities.
 
+This module provides functionality for summa."""
+from __future__ import annotations
 import re
 import sys
 from collections import defaultdict
 from pathlib import Path
-
 from nltk.corpus import stopwords
 from nltk.tokenize import sent_tokenize, word_tokenize
 
-
 class TextSummarizer:
-    def __init__(self, language: str = "english") -> None:
+    """TextSummarizer – TextSummarizer."""
+
+    def __init__(self, language: str='english') -> None:
+        """__init__ –   init  .
+
+Args:
+    language: Description of language."""
         self.language = language
         self.stop_words = set(stopwords.words(language))
 
     def _preprocess_text(self, text: str) -> str:
-        text = re.sub(r"\s+", " ", text).strip()
+        """_preprocess_text –  preprocess text.
+
+Args:
+    text: Description of text.
+
+Returns:
+    str: Description of return value."""
+        text = re.sub('\\s+', ' ', text).strip()
         return text
 
     def _tokenize_sentences(self, text: str) -> list[str]:
+        """_tokenize_sentences –  tokenize sentences.
+
+Args:
+    text: Description of text.
+
+Returns:
+    list[str]: Description of return value."""
         sentences = sent_tokenize(text)
         return [s.strip() for s in sentences if len(s.split()) > 2]
 
     def _calculate_word_frequencies(self, sentences: list[str]) -> dict[str, float]:
+        """_calculate_word_frequencies –  calculate word frequencies.
+
+Args:
+    sentences: Description of sentences.
+
+Returns:
+    dict[str, float]: Description of return value."""
         word_freq = defaultdict(int)
         total_words = 0
         for sentence in sentences:
@@ -37,9 +64,15 @@ class TextSummarizer:
                 word_freq[word] /= total_words
         return dict(word_freq)
 
-    def _score_sentences(
-        self, sentences: list[str], word_freq: dict[str, float]
-    ) -> dict[int, float]:
+    def _score_sentences(self, sentences: list[str], word_freq: dict[str, float]) -> dict[int, float]:
+        """_score_sentences –  score sentences.
+
+Args:
+    sentences: Description of sentences.
+    word_freq: Description of word_freq.
+
+Returns:
+    dict[int, float]: Description of return value."""
         sentence_scores = {}
         for idx, sentence in enumerate(sentences):
             words = word_tokenize(sentence.lower())
@@ -55,19 +88,31 @@ class TextSummarizer:
                 sentence_scores[idx] = 0
         return sentence_scores
 
-    def _select_top_sentences(
-        self, sentence_scores: dict[int, float], num_sentences: int
-    ) -> list[int]:
-        top_indices = sorted(
-            sentence_scores.keys(), key=lambda x: sentence_scores[x], reverse=True
-        )[:num_sentences]
+    def _select_top_sentences(self, sentence_scores: dict[int, float], num_sentences: int) -> list[int]:
+        """_select_top_sentences –  select top sentences.
+
+Args:
+    sentence_scores: Description of sentence_scores.
+    num_sentences: Description of num_sentences.
+
+Returns:
+    list[int]: Description of return value."""
+        top_indices = sorted(sentence_scores.keys(), key=lambda x: sentence_scores[x], reverse=True)[:num_sentences]
         return sorted(top_indices)
 
-    def summarize(self, text: str, ratio: float = 0.3) -> str:
+    def summarize(self, text: str, ratio: float=0.3) -> str:
+        """summarize – summarize.
+
+Args:
+    text: Description of text.
+    ratio: Description of ratio.
+
+Returns:
+    str: Description of return value."""
         if not text or not isinstance(text, str):
-            return ""
+            return ''
         if not 0 < ratio <= 1:
-            raise ValueError("Ratio must be between 0 and 1")
+            raise ValueError('Ratio must be between 0 and 1')
         text = self._preprocess_text(text)
         sentences = self._tokenize_sentences(text)
         if len(sentences) <= 1:
@@ -76,14 +121,22 @@ class TextSummarizer:
         word_freq = self._calculate_word_frequencies(sentences)
         sentence_scores = self._score_sentences(sentences, word_freq)
         selected_indices = self._select_top_sentences(sentence_scores, num_sentences)
-        summary = " ".join([sentences[i] for i in selected_indices])
+        summary = ' '.join([sentences[i] for i in selected_indices])
         return summary
 
-    def summarize_by_count(self, text: str, num_sentences: int = 3) -> str:
+    def summarize_by_count(self, text: str, num_sentences: int=3) -> str:
+        """summarize_by_count – summarize by count.
+
+Args:
+    text: Description of text.
+    num_sentences: Description of num_sentences.
+
+Returns:
+    str: Description of return value."""
         if not text or not isinstance(text, str):
-            return ""
+            return ''
         if num_sentences < 1:
-            raise ValueError("Number of sentences must be >= 1")
+            raise ValueError('Number of sentences must be >= 1')
         text = self._preprocess_text(text)
         sentences = self._tokenize_sentences(text)
         if len(sentences) <= num_sentences:
@@ -91,31 +144,36 @@ class TextSummarizer:
         word_freq = self._calculate_word_frequencies(sentences)
         sentence_scores = self._score_sentences(sentences, word_freq)
         selected_indices = self._select_top_sentences(sentence_scores, num_sentences)
-        summary = " ".join([sentences[i] for i in selected_indices])
+        summary = ' '.join([sentences[i] for i in selected_indices])
         return summary
 
     def get_scores(self, text: str) -> dict[str, float]:
+        """get_scores – get scores.
+
+Args:
+    text: Description of text.
+
+Returns:
+    dict[str, float]: Description of return value."""
         text = self._preprocess_text(text)
         sentences = self._tokenize_sentences(text)
         word_freq = self._calculate_word_frequencies(sentences)
         scores = self._score_sentences(sentences, word_freq)
         return {sentences[idx]: score for idx, score in scores.items()}
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     fn = Path(sys.argv[1])
-    data = fn.read_text(encoding="utf8")
-    summarizer = TextSummarizer(language="english")
-    print("=== Summarize by Ratio (30%) ===")
+    data = fn.read_text(encoding='utf8')
+    summarizer = TextSummarizer(language='english')
+    print('=== Summarize by Ratio (30%) ===')
     summary_ratio = summarizer.summarize(data, ratio=0.3)
     print(summary_ratio)
     print()
-    print("=== Summarize by Count (3 sentences) ===")
+    print('=== Summarize by Count (3 sentences) ===')
     summary_count = summarizer.summarize_by_count(data, num_sentences=3)
     print(summary_count)
     print()
-    print("=== Sentence Scores ===")
+    print('=== Sentence Scores ===')
     scores = summarizer.get_scores(data)
     for sentence, score in sorted(scores.items(), key=lambda x: x[1], reverse=True):
-        print(f"Score: {score:.4f} | {sentence[:60]}...")
+        print(f'Score: {score:.4f} | {sentence[:60]}...')
     print()

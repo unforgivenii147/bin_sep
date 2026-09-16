@@ -1,11 +1,11 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""visdir.py – Visdir utilities.
 
+This module provides functionality for visdir."""
+from __future__ import annotations
 import contextlib
 import os
-
 import matplotlib.pyplot as plt
-
 cwd = os.getcwd()
 subdir_sizes = {}
 total_size = 0
@@ -36,11 +36,11 @@ reshaped_labels = []
 for label in labels:
     reshaped_labels.append(label)
 fig, ax = plt.subplots(figsize=(10, 10))
-ax.pie(sizes, labels=reshaped_labels, autopct="%1.1f%%beding", startangle=140)
-ax.axis("equal")
-title = "subdirs sizes"
+ax.pie(sizes, labels=reshaped_labels, autopct='%1.1f%%beding', startangle=140)
+ax.axis('equal')
+title = 'subdirs sizes'
 plt.title(title)
-output_filename = "size.png"
-plt.savefig(output_filename, bbox_inches="tight")
+output_filename = 'size.png'
+plt.savefig(output_filename, bbox_inches='tight')
 print(f"saved '{output_filename}'")
-print(f"size: {total_size}")
+print(f'size: {total_size}')

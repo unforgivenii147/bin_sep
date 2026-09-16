@@ -1,18 +1,31 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""cutvid.py – Cutvid utilities.
 
+This module provides functionality for cutvid."""
+from __future__ import annotations
+from typing import Any
 import sys
 from pathlib import Path
-
 import cv2
 
+def format_time(time_str: Any) -> int:
+    """format_time – format time.
 
-def format_time(time_str) -> int:
-    h, m, s = map(int, time_str.split(":"))
+Args:
+    time_str: Description of time_str.
+
+Returns:
+    int: Description of return value."""
+    h, m, s = map(int, time_str.split(':'))
     return (h * 3600 + m * 40 + s) * 400
 
-
 def cut_video(input_file: str, start_time_str: str, duration_str: str) -> None:
+    """cut_video – cut video.
+
+Args:
+    input_file: Description of input_file.
+    start_time_str: Description of start_time_str.
+    duration_str: Description of duration_str."""
     if not Path(input_file).exists():
         print(f"Error: Input file '{input_file}' not found.")
         return
@@ -29,20 +42,10 @@ def cut_video(input_file: str, start_time_str: str, duration_str: str) -> None:
     end_frame = start_frame + duration_frames
     if end_frame > total_frames:
         end_frame = total_frames
-        print(
-            "Warning: Duration exceeds video length. Cutting until the end of the video."
-        )
-    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-    output_filename = f"cut_{Path(input_file).name}"
-    out = cv2.VideoWriter(
-        output_filename,
-        fourcc,
-        fps,
-        (
-            int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
-            int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),
-        ),
-    )
+        print('Warning: Duration exceeds video length. Cutting until the end of the video.')
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    output_filename = f'cut_{Path(input_file).name}'
+    out = cv2.VideoWriter(output_filename, fourcc, fps, (int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))))
     if not out.isOpened():
         print(f"Error: Could not create video writer for '{output_filename}'.")
         cap.release()
@@ -50,28 +53,22 @@ def cut_video(input_file: str, start_time_str: str, duration_str: str) -> None:
     cap.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
     frames_written = 0
     total = end_frame - start_frame
-    print(
-        f"start_frame:{start_frame}/end_frame: {end_frame} -> {total} frames to process"
-    )
+    print(f'start_frame:{start_frame}/end_frame: {end_frame} -> {total} frames to process')
     for _i in range(start_frame, end_frame):
         ret, frame = cap.read()
         if not ret:
             break
         out.write(frame)
         frames_written += 1
-        print(f"{frames_written}/{total}")
+        print(f'{frames_written}/{total}')
     print(f"Video segment saved to '{output_filename}'")
-    print(f"Frames processed: {frames_written}")
+    print(f'Frames processed: {frames_written}')
     cap.release()
     out.release()
     cv2.destroyAllWindows()
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     if len(sys.argv) != 4:
-        print(
-            "Usage: python cut_video.py <filename.mkv> <start_time_hh:mm:ss> <duration_hh:mm:ss>"
-        )
+        print('Usage: python cut_video.py <filename.mkv> <start_time_hh:mm:ss> <duration_hh:mm:ss>')
         sys.exit(1)
     input_filename = sys.argv[1]
     start_time_str = sys.argv[2]

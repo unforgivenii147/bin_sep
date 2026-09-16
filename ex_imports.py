@@ -1,47 +1,45 @@
 #!/data/data/com.termux/files/home/.local/bin/python
+"""ex_imports.py – Ex Imports utilities.
+
+This module provides functionality for ex imports."""
 from __future__ import annotations
-
+from typing import Any
 from pathlib import Path
-
 import tree_sitter_python as tsp
 from dh import get_files, mpf3, unique_path
 from tree_sitter import Language, Parser
-
-OUTPUT_DIR = Path.home() / "tmp" / "output"
+OUTPUT_DIR = Path.home() / 'tmp' / 'output'
 parser = Parser()
 parser.language = Language(tsp.language())
-VALID = {"import_statement", "import_from_statement"}
+VALID = {'import_statement', 'import_from_statement'}
 
+def process_file(path: Path | str) -> Any:
+    """process_file – process file.
 
-def process_file(path):
+Args:
+    path: Description of path."""
     path = Path(path)
     src = path.read_bytes()
     tree = parser.parse(src)
     root = tree.root_node
-    return [
-        src[node.start_byte : node.end_byte].decode()
-        for node in root.children
-        if node.type in VALID
-    ]
-
+    return [src[node.start_byte:node.end_byte].decode() for node in root.children if node.type in VALID]
 
 def main() -> None:
+    """main – main."""
     cwd = Path.cwd()
-    outfile = OUTPUT_DIR / f"{cwd.name}_importz.py"
+    outfile = OUTPUT_DIR / f'{cwd.name}_importz.py'
     if outfile.exists():
         outfile = unique_path(outfile)
     all_imports = []
-    files = get_files(cwd, ext=[".py"])
+    files = get_files(cwd, ext=['.py'])
     results = mpf3(process_file, files)
     for imports in results:
         if imports:
             for k in imports:
-                if not k.startswith("from .") and k not in all_imports:
+                if not k.startswith('from .') and k not in all_imports:
                     all_imports.append(k)
     all_imports = sorted(set(all_imports))
-    outfile.write_text("\n".join(all_imports), encoding="utf-8")
-    print("done.")
-
-
-if __name__ == "__main__":
+    outfile.write_text('\n'.join(all_imports), encoding='utf-8')
+    print('done.')
+if __name__ == '__main__':
     raise SystemExit(main())

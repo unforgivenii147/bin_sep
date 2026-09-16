@@ -1,76 +1,72 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""rm_flake8_plugins.py – Rm Flake8 Plugins utilities.
 
+This module provides functionality for rm flake8 plugins."""
+from __future__ import annotations
+from typing import Any
 import re
 import subprocess
 import sys
 from importlib import metadata
 
-
-def get_installed_flake8_plugins():
+def get_installed_flake8_plugins() -> Any:
+    """get_installed_flake8_plugins – get installed flake8 plugins."""
     plugins = []
     for dist in metadata.distributions():
         try:
             entry_points = dist.entry_points
-            flake8_entry_points = [
-                ep
-                for ep in entry_points
-                if ep.group in ("flake8.extension", "flake8.report")
-            ]
+            flake8_entry_points = [ep for ep in entry_points if ep.group in ('flake8.extension', 'flake8.report')]
             if flake8_entry_points:
-                plugins.append(dist.metadata["Name"])
+                plugins.append(dist.metadata['Name'])
                 continue
-            if re.match(r"^flake8-", dist.metadata["Name"], re.IGNORECASE):
-                plugins.append(dist.metadata["Name"])
+            if re.match('^flake8-', dist.metadata['Name'], re.IGNORECASE):
+                plugins.append(dist.metadata['Name'])
         except Exception as e:
             try:
-                if re.match(r"^flake8-", dist.metadata["Name"], re.IGNORECASE):
-                    plugins.append(dist.metadata["Name"])
+                if re.match('^flake8-', dist.metadata['Name'], re.IGNORECASE):
+                    plugins.append(dist.metadata['Name'])
             except:
                 pass
     return sorted(set(plugins))
 
+def uninstall_packages(packages: Any, dry_run: bool=False) -> None:
+    """uninstall_packages – uninstall packages.
 
-def uninstall_packages(packages, dry_run=False):
+Args:
+    packages: Description of packages.
+    dry_run: Description of dry_run."""
     if not packages:
-        print("No flake8 plugins found to uninstall.")
+        print('No flake8 plugins found to uninstall.')
         return
-    print(f"\nFound {len(packages)} flake8 plugin(s) to uninstall:")
+    print(f'\nFound {len(packages)} flake8 plugin(s) to uninstall:')
     for pkg in packages:
-        print(f"  - {pkg}")
+        print(f'  - {pkg}')
     if dry_run:
-        print("\nDry run mode - no packages will be uninstalled.")
+        print('\nDry run mode - no packages will be uninstalled.')
         return
-    response = input("\nDo you want to proceed with uninstallation? (yes/no): ")
-    if response.lower() not in ["yes", "y"]:
-        print("Uninstallation cancelled.")
+    response = input('\nDo you want to proceed with uninstallation? (yes/no): ')
+    if response.lower() not in ['yes', 'y']:
+        print('Uninstallation cancelled.')
         return
     for pkg in packages:
-        print(f"\nUninstalling {pkg}...")
+        print(f'\nUninstalling {pkg}...')
         try:
-            subprocess.check_call([sys.executable, "-m", "pip", "uninstall", "-y", pkg])
-            print(f"✓ Successfully uninstalled {pkg}")
+            subprocess.check_call([sys.executable, '-m', 'pip', 'uninstall', '-y', pkg])
+            print(f'✓ Successfully uninstalled {pkg}')
         except subprocess.CalledProcessError as e:
-            print(f"✗ Failed to uninstall {pkg}: {e}")
+            print(f'✗ Failed to uninstall {pkg}: {e}')
         except Exception as e:
-            print(f"✗ Error uninstalling {pkg}: {e}")
+            print(f'✗ Error uninstalling {pkg}: {e}')
 
-
-def main():
+def main() -> None:
+    """main – main."""
     import argparse
-
-    parser = argparse.ArgumentParser(description="Uninstall all flake8 plugins")
-    parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Show what would be uninstalled without actually uninstalling",
-    )
+    parser = argparse.ArgumentParser(description='Uninstall all flake8 plugins')
+    parser.add_argument('--dry-run', action='store_true', help='Show what would be uninstalled without actually uninstalling')
     args = parser.parse_args()
-    print("Scanning for flake8 plugins...")
+    print('Scanning for flake8 plugins...')
     plugins = get_installed_flake8_plugins()
-    plugins = [p for p in plugins if p.lower() != "flake8"]
+    plugins = [p for p in plugins if p.lower() != 'flake8']
     uninstall_packages(plugins, dry_run=args.dry_run)
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

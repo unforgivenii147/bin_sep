@@ -1,20 +1,24 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""clean_css.py – Clean Css utilities.
 
+This module provides functionality for clean css."""
+from __future__ import annotations
+from typing import Any
 import os
 import sys
 from collections.abc import Iterable, Iterator
 from multiprocessing import Pool
 from pathlib import Path
-
 import tree_sitter_css as tscss
 from tree_sitter import Language, Parser
-
 WORKERS = 8
-CSS_EXTENSION = ".css"
-
+CSS_EXTENSION = '.css'
 
 def make_parser() -> Parser:
+    """make_parser – make parser.
+
+Returns:
+    Parser: Description of return value."""
     try:
         language = Language(tscss.language())
     except TypeError:
@@ -26,29 +30,37 @@ def make_parser() -> Parser:
         parser.set_language(language)
     return parser
 
-
 def is_css_file(path: Path) -> bool:
+    """is_css_file – is css file.
+
+Args:
+    path: Description of path.
+
+Returns:
+    bool: Description of return value."""
     return path.is_file() and path.suffix.lower() == CSS_EXTENSION
 
-
 def iter_css_files(inputs: Iterable[str]) -> Iterator[Path]:
+    """iter_css_files – iter css files.
+
+Args:
+    inputs: Description of inputs.
+
+Returns:
+    Iterator[Path]: Description of return value."""
     seen: set[Path] = set()
     for raw_input in inputs:
         path = Path(raw_input)
         try:
             if path.is_symlink():
-                print(f"warning: skipping symlink: {path}", file=sys.stderr)
+                print(f'warning: skipping symlink: {path}', file=sys.stderr)
                 continue
             if path.is_file():
                 candidates: Iterable[Path] = (path,)
             elif path.is_dir():
-                candidates = (
-                    child
-                    for child in path.rglob("*")
-                    if not child.is_symlink() and is_css_file(child)
-                )
+                candidates = (child for child in path.rglob('*') if not child.is_symlink() and is_css_file(child))
             else:
-                print(f"warning: path not found: {path}", file=sys.stderr)
+                print(f'warning: path not found: {path}', file=sys.stderr)
                 continue
             for candidate in candidates:
                 if not is_css_file(candidate):
@@ -62,35 +74,48 @@ def iter_css_files(inputs: Iterable[str]) -> Iterator[Path]:
                 seen.add(identity)
                 yield candidate
         except OSError as exc:
-            print(f"warning: cannot scan {path}: {exc}", file=sys.stderr)
+            print(f'warning: cannot scan {path}: {exc}', file=sys.stderr)
 
+def collect_comment_ranges(node: Any, ranges: list[tuple[int, int]]) -> None:
+    """collect_comment_ranges – collect comment ranges.
 
-def collect_comment_ranges(node, ranges: list[tuple[int, int]]) -> None:
-    if node.type == "comment":
+Args:
+    node: Description of node.
+    ranges: Description of ranges."""
+    if node.type == 'comment':
         ranges.append((node.start_byte, node.end_byte))
         return
     for child in node.children:
         collect_comment_ranges(child, ranges)
 
-
 def remove_comment_ranges(source: bytes, ranges: list[tuple[int, int]]) -> bytes:
+    """remove_comment_ranges – remove comment ranges.
+
+Args:
+    source: Description of source.
+    ranges: Description of ranges.
+
+Returns:
+    bytes: Description of return value."""
     output = bytearray()
     previous_end = 0
     for start, end in ranges:
         output.extend(source[previous_end:start])
-        output.extend(
-            byte for byte in source[start:end] if byte in (ord("\n"), ord("\r"))
-        )
+        output.extend((byte for byte in source[start:end] if byte in (ord('\n'), ord('\r'))))
         previous_end = end
     output.extend(source[previous_end:])
     return bytes(output)
 
-
 def write_in_place(path: Path, content: bytes) -> None:
+    """write_in_place – write in place.
+
+Args:
+    path: Description of path.
+    content: Description of content."""
     original_stat = path.stat()
-    temporary = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    temporary = path.with_name(f'.{path.name}.{os.getpid()}.tmp')
     try:
-        with temporary.open("wb") as file:
+        with temporary.open('wb') as file:
             file.write(content)
             file.flush()
             os.fsync(file.fileno())
@@ -103,8 +128,14 @@ def write_in_place(path: Path, content: bytes) -> None:
             pass
         raise
 
-
 def process_file(path_text: str) -> tuple[str, int, str | None]:
+    """process_file – process file.
+
+Args:
+    path_text: Description of path_text.
+
+Returns:
+    tuple[str, int, str | None]: Description of return value."""
     path = Path(path_text)
     try:
         source = path.read_bytes()
@@ -113,20 +144,23 @@ def process_file(path_text: str) -> tuple[str, int, str | None]:
         comment_ranges: list[tuple[int, int]] = []
         collect_comment_ranges(tree.root_node, comment_ranges)
         if not comment_ranges:
-            return str(path), 0, None
+            return (str(path), 0, None)
         updated = remove_comment_ranges(source, comment_ranges)
         if updated != source:
             write_in_place(path, updated)
-        return str(path), len(comment_ranges), None
+        return (str(path), len(comment_ranges), None)
     except (OSError, TypeError, ValueError) as exc:
-        return str(path), 0, str(exc)
-
+        return (str(path), 0, str(exc))
 
 def main() -> int:
-    input_paths = sys.argv[1:] or ["."]
+    """main – main.
+
+Returns:
+    int: Description of return value."""
+    input_paths = sys.argv[1:] or ['.']
     files = list(iter_css_files(input_paths))
     if not files:
-        print("No CSS files found.", file=sys.stderr)
+        print('No CSS files found.', file=sys.stderr)
         return 0
     changed_files = 0
     total_comments_removed = 0
@@ -137,19 +171,13 @@ def main() -> int:
             path, removed_count, error = job.get()
             if error is not None:
                 failures += 1
-                print(f"error: {path}: {error}", file=sys.stderr)
+                print(f'error: {path}: {error}', file=sys.stderr)
                 continue
             if removed_count:
                 changed_files += 1
                 total_comments_removed += removed_count
-                print(f"{path}: removed {removed_count} comment(s)")
-    print(
-        f"\nFiles scanned: {len(files)}"
-        f"\nChanged files: {changed_files}"
-        f"\nComments removed: {total_comments_removed}"
-    )
+                print(f'{path}: removed {removed_count} comment(s)')
+    print(f'\nFiles scanned: {len(files)}\nChanged files: {changed_files}\nComments removed: {total_comments_removed}')
     return 1 if failures else 0
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     raise SystemExit(main())

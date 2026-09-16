@@ -1,26 +1,34 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""auto_enhance.py – Auto Enhance utilities.
 
+This module provides functionality for auto enhance."""
+from __future__ import annotations
+from typing import Any
 import argparse
 import sys
 from pathlib import Path
-
 import cv2
 import numpy as np
 
+def enhance_image(image_path: Path, verbose: bool=False, progress: tuple | None=None) -> bool:
+    """enhance_image – enhance image.
 
-def enhance_image(
-    image_path: Path, verbose: bool = False, progress: tuple | None = None
-) -> bool:
+Args:
+    image_path: Description of image_path.
+    verbose: Description of verbose.
+    progress: Description of progress.
+
+Returns:
+    bool: Description of return value."""
     try:
         if progress:
             current, total = progress
-            print(f"[{current}/{total}] {image_path.name}")
+            print(f'[{current}/{total}] {image_path.name}')
         elif verbose:
-            print(f"[PROCESSING] {image_path.name}...")
+            print(f'[PROCESSING] {image_path.name}...')
         img = cv2.imread(str(image_path))
         if img is None:
-            print(f"[ERROR] Could not read: {image_path}")
+            print(f'[ERROR] Could not read: {image_path}')
             return False
         denoised = cv2.fastNlMeansDenoisingColored(img, None, 3, 3, 7, 21)
         del img
@@ -46,111 +54,95 @@ def enhance_image(
         del vibrant_img, gaussian_blur
         cv2.imwrite(str(image_path), final_enhanced)
         del final_enhanced
-        if verbose and not progress:
-            print(f"[SUCCESS] Enhanced and replaced: {image_path.name}")
+        if verbose and (not progress):
+            print(f'[SUCCESS] Enhanced and replaced: {image_path.name}')
         return True
     except Exception as e:
-        print(f"[FAILED] Error processing {image_path.name}: {e}")
+        print(f'[FAILED] Error processing {image_path.name}: {e}')
         return False
 
+def collect_images(input_paths: Path | str) -> list:
+    """collect_images – collect images.
 
-def collect_images(input_paths) -> list:
-    valid_extensions = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tiff"}
+Args:
+    input_paths: Description of input_paths.
+
+Returns:
+    list: Description of return value."""
+    valid_extensions = {'.jpg', '.jpeg', '.png', '.webp', '.bmp', '.tiff'}
     images_to_process = []
     if not input_paths:
-        print(
-            "[INFO] No inputs provided. Scanning current directory '.' recursively..."
-        )
-        input_paths = [Path(".")]
+        print("[INFO] No inputs provided. Scanning current directory '.' recursively...")
+        input_paths = [Path('.')]
     for path_str in input_paths:
         path = Path(path_str)
         if path.is_file() and path.suffix.lower() in valid_extensions:
             images_to_process.append(path)
         elif path.is_dir():
-            for file in path.rglob("*"):
+            for file in path.rglob('*'):
                 if file.is_file() and file.suffix.lower() in valid_extensions:
                     images_to_process.append(file)
         else:
-            print(f"[WARNING] Skipping invalid path or unsupported format: {path_str}")
+            print(f'[WARNING] Skipping invalid path or unsupported format: {path_str}')
     return list(set(images_to_process))
 
+def process_sequential(tasks: Any, verbose: bool) -> Any:
+    """process_sequential – process sequential.
 
-def process_sequential(tasks, verbose):
+Args:
+    tasks: Description of tasks.
+    verbose: Description of verbose."""
     results = []
     for i, (img, _) in enumerate(tasks, 1):
         result = enhance_image(img, verbose, (i, len(tasks)))
         results.append(result)
     return results
 
+def process_parallel(tasks: Any, num_cores: int) -> Any:
+    """process_parallel – process parallel.
 
-def process_parallel(tasks, num_cores):
+Args:
+    tasks: Description of tasks.
+    num_cores: Description of num_cores."""
     import multiprocessing as mp
-
     total = len(tasks)
-    print(f"[SYSTEM] Utilizing {num_cores} parallel CPU threads.")
+    print(f'[SYSTEM] Utilizing {num_cores} parallel CPU threads.')
     parallel_tasks = []
     for i, (img, _verbose) in enumerate(tasks, 1):
-        print(f"[{i}/{total}] {img.name}")
+        print(f'[{i}/{total}] {img.name}')
         parallel_tasks.append((img, False))
     with mp.Pool(processes=num_cores) as pool:
         results = pool.starmap(enhance_image, parallel_tasks)
     return results
 
-
-def main():
-    parser = argparse.ArgumentParser(
-        description="Google Photos Style Auto-Enhancer (In-place replacement)",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-    )
-    parser.add_argument(
-        "inputs",
-        nargs="*",
-        help="Files or folders to process. Defaults to recursive '.' if empty.",
-    )
-    parser.add_argument(
-        "-v",
-        "--verbose",
-        action="store_true",
-        help="Print details for every image processed.",
-    )
-    parser.add_argument(
-        "--parallel",
-        action="store_true",
-        help="Enable multiprocessing (sequential is default).",
-    )
-    parser.add_argument(
-        "-j",
-        "--jobs",
-        type=int,
-        default=None,
-        help="Number of parallel jobs. Default is CPU count.",
-    )
+def main() -> None:
+    """main – main."""
+    parser = argparse.ArgumentParser(description='Google Photos Style Auto-Enhancer (In-place replacement)', formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument('inputs', nargs='*', help="Files or folders to process. Defaults to recursive '.' if empty.")
+    parser.add_argument('-v', '--verbose', action='store_true', help='Print details for every image processed.')
+    parser.add_argument('--parallel', action='store_true', help='Enable multiprocessing (sequential is default).')
+    parser.add_argument('-j', '--jobs', type=int, default=None, help='Number of parallel jobs. Default is CPU count.')
     args = parser.parse_args()
     image_pool = collect_images(args.inputs)
     total_images = len(image_pool)
     if total_images == 0:
-        print("[INFO] No supported images found to enhance. Exiting.")
+        print('[INFO] No supported images found to enhance. Exiting.')
         sys.exit(0)
-    print(f"\n[START] Found {total_images} target images.")
-    print("[WARNING] Images will be ENHANCED IN-PLACE (originals will be overwritten)!")
+    print(f'\n[START] Found {total_images} target images.')
+    print('[WARNING] Images will be ENHANCED IN-PLACE (originals will be overwritten)!')
     tasks = [(img, args.verbose) for img in image_pool]
     if args.parallel:
         try:
             import multiprocessing as mp
-
             num_cores = args.jobs if args.jobs else mp.cpu_count()
             results = process_parallel(tasks, num_cores)
         except ImportError:
-            print(
-                "[WARNING] multiprocessing not available. Falling back to sequential."
-            )
+            print('[WARNING] multiprocessing not available. Falling back to sequential.')
             results = process_sequential(tasks, args.verbose)
     else:
-        print("[SYSTEM] Processing sequentially (default mode)...")
+        print('[SYSTEM] Processing sequentially (default mode)...')
         results = process_sequential(tasks, args.verbose)
-    successful_runs = sum(1 for r in results if r)
-    print("[FINISHED] Done")
-
-
-if __name__ == "__main__":
+    successful_runs = sum((1 for r in results if r))
+    print('[FINISHED] Done')
+if __name__ == '__main__':
     raise SystemExit(main())

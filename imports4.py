@@ -1,4 +1,9 @@
 #!/data/data/com.termux/files/home/.local/bin/python
+"""imports4.py – Imports4 utilities.
+
+This module provides functionality for imports4."""
+from __future__ import annotations
+from typing import Any, Iterator
 import argparse
 import ast
 import json
@@ -7,133 +12,90 @@ import re
 import subprocess
 import sys
 from pathlib import Path
-
 from dh import PKG_MAPPING, STDLIB
+SKIP_DIRS = {'__pycache__', 'venv', '.venv', 'env', '.env', '.git', '.hg', '.svn', 'node_modules', 'build', 'dist', '.eggs', '.tox', '.mypy_cache', '.pytest_cache', '.ruff_cache', 'site-packages'}
+SKIP_FILES = {'setup.py', 'conftest.py', '__init__.py'}
+PKG_BLOCKLIST = {'pip', 'setuptools', 'wheel', 'distribute', 'easy_install', 'apt', 'apt_pkg', 'gi', 'dbus', '__future__', '__main__', '__init__', 'a', 'an', 'the', 'each', 'every', 'known', 'various', 'statements', 'in', 'of', 'and', 'or', 'is', 'it', 'that', 'are'}
+_IDENT_RE = re.compile('^[A-Za-z_][A-Za-z0-9_]*$')
 
-SKIP_DIRS = {
-    "__pycache__",
-    "venv",
-    ".venv",
-    "env",
-    ".env",
-    ".git",
-    ".hg",
-    ".svn",
-    "node_modules",
-    "build",
-    "dist",
-    ".eggs",
-    ".tox",
-    ".mypy_cache",
-    ".pytest_cache",
-    ".ruff_cache",
-    "site-packages",
-}
-SKIP_FILES = {"setup.py", "conftest.py", "__init__.py"}
-PKG_BLOCKLIST = {
-    "pip",
-    "setuptools",
-    "wheel",
-    "distribute",
-    "easy_install",
-    "apt",
-    "apt_pkg",
-    "gi",
-    "dbus",
-    "__future__",
-    "__main__",
-    "__init__",
-    "a",
-    "an",
-    "the",
-    "each",
-    "every",
-    "known",
-    "various",
-    "statements",
-    "in",
-    "of",
-    "and",
-    "or",
-    "is",
-    "it",
-    "that",
-    "are",
-}
-_IDENT_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+def normalize(name: str) -> Any:
+    """normalize – normalize.
 
+Args:
+    name: Description of name."""
+    return name.lower().replace('_', '-')
 
-def normalize(name):
-    return name.lower().replace("_", "-")
+def is_valid_module_name(name: str) -> bool:
+    """is_valid_module_name – is valid module name.
 
-
-def is_valid_module_name(name):
+Args:
+    name: Description of name."""
     if not name or not _IDENT_RE.match(name):
         return False
-    return not (name.startswith("__") and name.endswith("__"))
-
-
+    return not (name.startswith('__') and name.endswith('__'))
 PKG_MAP_NORM = {normalize(k): v for k, v in PKG_MAPPING.items()}
-STDLIB_NORM = {normalize(m) for m in STDLIB} | {"__future__"}
+STDLIB_NORM = {normalize(m) for m in STDLIB} | {'__future__'}
 BLOCKLIST_NORM = {normalize(m) for m in PKG_BLOCKLIST}
 
+def load_pypi_packages(path: str='/sdcard/data/pip.txt') -> Any:
+    """load_pypi_packages – load pypi packages.
 
-def load_pypi_packages(path="/sdcard/data/pip.txt"):
+Args:
+    path: Description of path."""
     pypi = set()
-    with open(path, "r", encoding="utf-8") as f:
+    with open(path, 'r', encoding='utf-8') as f:
         for line in f:
             name = line.strip()
-            if not name or name.startswith("#"):
+            if not name or name.startswith('#'):
                 continue
             pypi.add(normalize(name))
     return pypi
 
+def get_installed_packages(pip_version: str='pip') -> Any:
+    """get_installed_packages – get installed packages.
 
-def get_installed_packages(pip_version="pip"):
+Args:
+    pip_version: Description of pip_version."""
     installed_with_versions = []
     installed = set()
     try:
-        stdout, _ = subprocess.Popen(
-            [pip_version, "freeze"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-        ).communicate()
+        stdout, _ = subprocess.Popen([pip_version, 'freeze'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT).communicate()
     except FileNotFoundError:
         print(f"[!] '{pip_version}' not found, skipping installed-package check")
-        return installed_with_versions, installed
+        return (installed_with_versions, installed)
     for raw in stdout.splitlines():
-        line = raw.decode("utf-8").strip()
-        if not line or line.startswith(("#", "-e")):
+        line = raw.decode('utf-8').strip()
+        if not line or line.startswith(('#', '-e')):
             continue
         installed_with_versions.append(line)
-        name = line.split("==")[0].split("@")[0].strip()
+        name = line.split('==')[0].split('@')[0].strip()
         installed.add(normalize(name))
-    return installed_with_versions, installed
+    return (installed_with_versions, installed)
 
+def get_local_modules(directory: Path | str) -> Any:
+    """get_local_modules – get local modules.
 
-def get_local_modules(directory):
+Args:
+    directory: Description of directory."""
     local = set()
     root = Path(directory).resolve()
     for dirpath, dirnames, filenames in os.walk(root):
         dirpath = Path(dirpath)
-        dirnames[:] = [
-            d
-            for d in dirnames
-            if d not in SKIP_DIRS
-            and not d.endswith(".egg-info")
-            and not d.startswith(".")
-        ]
-        if "__init__.py" in filenames:
+        dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS and (not d.endswith('.egg-info')) and (not d.startswith('.'))]
+        if '__init__.py' in filenames:
             local.add(normalize(dirpath.name))
         for fn in filenames:
-            if fn.endswith(".py") and fn not in SKIP_FILES:
+            if fn.endswith('.py') and fn not in SKIP_FILES:
                 local.add(normalize(fn[:-3]))
-    if root.name and root.name not in {".", "/", ""}:
+    if root.name and root.name not in {'.', '/', ''}:
         local.add(normalize(root.name))
     return local
 
+def extract_imports_from_source(source: Path | str) -> Iterator[Any]:
+    """extract_imports_from_source – extract imports from source.
 
-def extract_imports_from_source(source):
+Args:
+    source: Description of source."""
     try:
         tree = ast.parse(source)
     except (SyntaxError, ValueError):
@@ -141,72 +103,77 @@ def extract_imports_from_source(source):
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             for alias in node.names:
-                yield alias.name.split(".")[0]
+                yield alias.name.split('.')[0]
         elif isinstance(node, ast.ImportFrom):
             if node.level and node.level > 0:
                 continue
             if node.module:
-                yield node.module.split(".")[0]
+                yield node.module.split('.')[0]
 
+def get_project_imports(directory: Path | str=os.curdir) -> Any:
+    """get_project_imports – get project imports.
 
-def get_project_imports(directory=os.curdir):
+Args:
+    directory: Description of directory."""
     modules = []
     seen = set()
     for root, dirnames, files in os.walk(directory):
-        dirnames[:] = [
-            d for d in dirnames if d not in SKIP_DIRS and not d.endswith(".egg-info")
-        ]
+        dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS and (not d.endswith('.egg-info'))]
         for name in files:
             full = os.path.join(root, name)
-            if name.endswith(".py"):
+            if name.endswith('.py'):
                 try:
-                    source = Path(full).read_text(encoding="utf-8", errors="ignore")
+                    source = Path(full).read_text(encoding='utf-8', errors='ignore')
                 except OSError:
                     continue
                 for mod in extract_imports_from_source(source):
                     if mod not in seen:
                         seen.add(mod)
                         modules.append(mod)
-                        print(f"found {mod} in {name}")
-            elif name.endswith(".ipynb"):
+                        print(f'found {mod} in {name}')
+            elif name.endswith('.ipynb'):
                 try:
-                    contents = json.loads(
-                        Path(full).absolute().read_text(encoding="utf-8")
-                    )
+                    contents = json.loads(Path(full).absolute().read_text(encoding='utf-8'))
                 except (OSError, json.JSONDecodeError):
                     continue
-                for cell in contents.get("cells", []):
-                    if cell.get("cell_type") != "code":
+                for cell in contents.get('cells', []):
+                    if cell.get('cell_type') != 'code':
                         continue
-                    src = "".join(cell.get("source", []))
+                    src = ''.join(cell.get('source', []))
                     for mod in extract_imports_from_source(src):
                         if mod not in seen:
                             seen.add(mod)
                             modules.append(mod)
-                            print(f"found {mod} in {name}")
+                            print(f'found {mod} in {name}')
     return modules
 
+def resolve_package_name(import_name: str) -> Any:
+    """resolve_package_name – resolve package name.
 
-def resolve_package_name(import_name):
+Args:
+    import_name: Description of import_name."""
     norm = normalize(import_name)
     mapped = PKG_MAP_NORM.get(norm)
     if mapped and normalize(mapped) != norm:
-        return mapped, True
-    return import_name, False
+        return (mapped, True)
+    return (import_name, False)
 
+def init(args: str) -> None:
+    """init – init.
 
-def init(args):
-    pypi_index = load_pypi_packages(args["pypi_list"])
-    print("[i] Loaded {} packages from {}".format(len(pypi_index), args["pypi_list"]))
-    print(f"[i] Loaded {len(PKG_MAP_NORM)} import->package mappings")
-    target = args["path"] if args["path"] else os.curdir
+Args:
+    args: Description of args."""
+    pypi_index = load_pypi_packages(args['pypi_list'])
+    print('[i] Loaded {} packages from {}'.format(len(pypi_index), args['pypi_list']))
+    print(f'[i] Loaded {len(PKG_MAP_NORM)} import->package mappings')
+    target = args['path'] if args['path'] else os.curdir
     local_modules = get_local_modules(target)
-    print(f"[i] Detected {len(local_modules)} local modules/packages")
+    print(f'[i] Detected {len(local_modules)} local modules/packages')
     modules = get_project_imports(target)
-    print(f"[i] Found {len(modules)} unique imports in source")
-    pip_cmd = args["version"] if args["version"] else "pip3"
+    print(f'[i] Found {len(modules)} unique imports in source')
+    pip_cmd = args['version'] if args['version'] else 'pip3'
     _, installed = get_installed_packages(pip_cmd)
-    print(f"[i] {len(installed)} packages installed locally")
+    print(f'[i] {len(installed)} packages installed locally')
     output_text = []
     skipped_stdlib = []
     skipped_installed = []
@@ -236,7 +203,7 @@ def init(args):
         if pkg_norm in pypi_index:
             if was_mapped:
                 mapped_count += 1
-                print(f"[→] {mod} -> {pkg_name}")
+                print(f'[→] {mod} -> {pkg_name}')
                 output_text.append(pkg_name)
             else:
                 output_text.append(mod)
@@ -244,60 +211,42 @@ def init(args):
             output_text.append(mod)
         else:
             missing.append(mod)
-    print(f"\n[i] Skipped {len(skipped_stdlib)} stdlib modules")
-    print(f"[i] Skipped {len(skipped_local)} local modules")
-    print(f"[i] Skipped {len(skipped_installed)} already-installed modules")
-    print(f"[i] Skipped {len(skipped_invalid)} invalid/blocklisted names")
+    print(f'\n[i] Skipped {len(skipped_stdlib)} stdlib modules')
+    print(f'[i] Skipped {len(skipped_local)} local modules')
+    print(f'[i] Skipped {len(skipped_installed)} already-installed modules')
+    print(f'[i] Skipped {len(skipped_invalid)} invalid/blocklisted names')
     if skipped_invalid:
-        preview = ", ".join(sorted(set(skipped_invalid))[:15])
+        preview = ', '.join(sorted(set(skipped_invalid))[:15])
         if len(set(skipped_invalid)) > 15:
-            preview += " ..."
-        print(f"    {preview}")
-    print(f"[i] Resolved {mapped_count} renamed packages")
+            preview += ' ...'
+        print(f'    {preview}')
+    print(f'[i] Resolved {mapped_count} renamed packages')
     if missing:
-        print(
-            "[i] Skipped {} unknown modules: {}".format(
-                len(missing), ", ".join(sorted(missing))
-            )
-        )
+        print('[i] Skipped {} unknown modules: {}'.format(len(missing), ', '.join(sorted(missing))))
     unique = sorted(set(output_text))
-    if args.get("dry_run"):
-        print(f"\n[dry-run] Would write {len(unique)} packages to requirements.txt:")
+    if args.get('dry_run'):
+        print(f'\n[dry-run] Would write {len(unique)} packages to requirements.txt:')
         for pkg in unique:
-            print("  " + pkg)
+            print('  ' + pkg)
         return
-    out_dir = args["path"] if args["path"] else os.curdir
-    out_file = os.path.join(out_dir, "requirements.txt")
-    with open(out_file, "w", encoding="utf-8") as f:
+    out_dir = args['path'] if args['path'] else os.curdir
+    out_file = os.path.join(out_dir, 'requirements.txt')
+    with open(out_file, 'w', encoding='utf-8') as f:
         if unique:
-            f.write("\n".join(unique) + "\n")
-    print(f"\n[✓] Wrote {len(unique)} packages to {out_file}")
+            f.write('\n'.join(unique) + '\n')
+    print(f'\n[✓] Wrote {len(unique)} packages to {out_file}')
 
-
-def main():
-    ap = argparse.ArgumentParser(description="Offline requirements.txt generator")
-    ap.add_argument(
-        "-v", "--version", type=str, help="Pip command to use (default: pip3)"
-    )
-    ap.add_argument("-p", "--path", type=str, help="Path to target project directory")
-    ap.add_argument(
-        "-l",
-        "--pypi-list",
-        type=str,
-        default="/sdcard/data/pip.txt",
-        help="Path to offline PyPI package list (default: /sdcard/data/pip.txt)",
-    )
-    ap.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Print result without writing requirements.txt",
-    )
+def main() -> None:
+    """main – main."""
+    ap = argparse.ArgumentParser(description='Offline requirements.txt generator')
+    ap.add_argument('-v', '--version', type=str, help='Pip command to use (default: pip3)')
+    ap.add_argument('-p', '--path', type=str, help='Path to target project directory')
+    ap.add_argument('-l', '--pypi-list', type=str, default='/sdcard/data/pip.txt', help='Path to offline PyPI package list (default: /sdcard/data/pip.txt)')
+    ap.add_argument('--dry-run', action='store_true', help='Print result without writing requirements.txt')
     args = vars(ap.parse_args())
     try:
         init(args)
     except KeyboardInterrupt:
         sys.exit(0)
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

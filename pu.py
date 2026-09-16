@@ -1,80 +1,85 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""pu.py – Pu utilities.
 
+This module provides functionality for pu."""
+from __future__ import annotations
+from typing import Any
 import subprocess
 import sys
 from pathlib import Path
-
 from pip._internal.cli.main import main as pip_main
 from rapidfuzz import fuzz
 
-
 def uninstall(packages: list[str]) -> int:
-    args = ["uninstall", *packages]
+    """uninstall – uninstall.
+
+Args:
+    packages: Description of packages.
+
+Returns:
+    int: Description of return value."""
+    args = ['uninstall', *packages]
     return pip_main(args)
-
-
-PIP_LIST_FILE = "/sdcard/data/pip.list"
-
+PIP_LIST_FILE = '/sdcard/data/pip.list'
 
 def create_pip_list_again() -> list[str]:
+    """create_pip_list_again – create pip list again.
+
+Returns:
+    list[str]: Description of return value."""
     installed = get_ipkgs()
-    content = "\n".join(installed)
-    Path(PIP_LIST_FILE).write_text(content, encoding="utf-8")
+    content = '\n'.join(installed)
+    Path(PIP_LIST_FILE).write_text(content, encoding='utf-8')
     return installed
 
-
 def load_installed_packages() -> list[str]:
+    """load_installed_packages – load installed packages.
+
+Returns:
+    list[str]: Description of return value."""
     path = Path(PIP_LIST_FILE)
     ONE_DAY = 60 * 40 * 24
     age = get_file_age(path)
     print(age)
     if age / ONE_DAY > 1.0 or not path.exists():
         return create_pip_list_again()
-    return [
-        line.strip()
-        for line in path.read_text(encoding="utf-8").splitlines()
-        if line.strip()
-    ]
+    return [line.strip() for line in path.read_text(encoding='utf-8').splitlines() if line.strip()]
 
+def find_dist_info(prefix: str) -> Any:
+    """find_dist_info – find dist info.
 
-def find_dist_info(prefix):
+Args:
+    prefix: Description of prefix."""
     import site
-
     matches = []
     for sp in site.getsitepackages():
         sp_path = Path(sp)
-        for d in sp_path.glob(f"{prefix}*.dist-info"):
+        for d in sp_path.glob(f'{prefix}*.dist-info'):
             matches.append(d)
     for sp in (site.getusersitepackages(),):
         sp_path = Path(sp)
-        for d in sp_path.glob(f"{prefix}*.dist-info"):
+        for d in sp_path.glob(f'{prefix}*.dist-info'):
             matches.append(d)
     return matches
 
+def uninstall_packages(pkg_name: str) -> None:
+    """uninstall_packages – uninstall packages.
 
-def uninstall_packages(pkg_name) -> None:
+Args:
+    pkg_name: Description of pkg_name."""
     try:
-        subprocess.run(
-            [sys.executable, "-m", "pip", "uninstall", "-y", pkg_name], check=True
-        )
-        print(f"Uninstalled {pkg_name}")
+        subprocess.run([sys.executable, '-m', 'pip', 'uninstall', '-y', pkg_name], check=True)
+        print(f'Uninstalled {pkg_name}')
     except subprocess.CalledProcessError:
-        print(f"Skipped {pkg_name} (not installed or error)")
-
-
-if __name__ == "__main__":
+        print(f'Skipped {pkg_name} (not installed or error)')
+if __name__ == '__main__':
     if len(sys.argv) < 2:
-        print(f"Usage: {sys.argv[0]} <package_prefix>")
+        print(f'Usage: {sys.argv[0]} <package_prefix>')
         sys.exit(1)
     prefix = sys.argv[1].lower()
     installed = load_installed_packages()
-    to_uninstall = [
-        pkg.lower()
-        for pkg in installed
-        if prefix in pkg.lower() or fuzz.partial_ratio(prefix, pkg.lower()) > 95
-    ]
+    to_uninstall = [pkg.lower() for pkg in installed if prefix in pkg.lower() or fuzz.partial_ratio(prefix, pkg.lower()) > 95]
     if not to_uninstall:
-        print("no match found")
+        print('no match found')
         sys.exit(0)
     uninstall(to_uninstall)

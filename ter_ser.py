@@ -1,34 +1,43 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""ter_ser.py – Ter Ser utilities.
 
+This module provides functionality for ter ser."""
+from __future__ import annotations
 import sys
 from pathlib import Path
-
 from dh import get_files, gsz, mpf3, rrs, runcmd
-
-EXT = [".js", ".jsx", ".jsm", ".jsc"]
-
+EXT = ['.js', '.jsx', '.jsm', '.jsc']
 
 def safe_run(path: Path) -> bool:
-    cmd = ["terser", "--compress", "--mangle", "--", str(path)]
+    """safe_run – safe run.
+
+Args:
+    path: Description of path.
+
+Returns:
+    bool: Description of return value."""
+    cmd = ['terser', '--compress', '--mangle', '--', str(path)]
     res, txt, err = runcmd(cmd, show_output=False)
     if res != 0:
-        print(f"Error running terser: {err}", file=sys.stderr)
+        print(f'Error running terser: {err}', file=sys.stderr)
         return False
-    path.write_text(txt, encoding="utf8")
+    path.write_text(txt, encoding='utf8')
     return True
 
+def process_file(path: Path | str) -> None:
+    """process_file – process file.
 
-def process_file(path):
+Args:
+    path: Description of path."""
     path = Path(path)
-    if path.name.endswith(".min.js"):
+    if path.name.endswith('.min.js'):
         return
-    if "site-packages" in path.parts and "notebook" in path.parts:
+    if 'site-packages' in path.parts and 'notebook' in path.parts:
         return
     before = gsz(path)
     if not path.exists() or not before:
         return
-    lines = path.read_text(encoding="utf-8").splitlines()
+    lines = path.read_text(encoding='utf-8').splitlines()
     if len(lines) == 1:
         del lines, before
         return
@@ -37,8 +46,8 @@ def process_file(path):
         rrs(path, before, after)
     return
 
-
-def main():
+def main() -> None:
+    """main – main."""
     cwd = Path.cwd()
     args = sys.argv[1:]
     files = []
@@ -55,7 +64,5 @@ def main():
         process_file(files[0])
         sys.exit(0)
     mpf3(process_file, files)
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     raise SystemExit(main())

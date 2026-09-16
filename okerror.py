@@ -1,20 +1,27 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""okerror.py – Okerror utilities.
 
+This module provides functionality for okerror."""
+from __future__ import annotations
 import shutil
 import subprocess
 from pathlib import Path
-
-ERROR_DIR = Path("error")
-OK_DIR = Path("ok")
-
+ERROR_DIR = Path('error')
+OK_DIR = Path('ok')
 
 def ensure_dirs() -> None:
+    """ensure_dirs – ensure dirs."""
     ERROR_DIR.mkdir(exist_ok=True)
     OK_DIR.mkdir(exist_ok=True)
 
-
 def unique_destination(dest: Path) -> Path:
+    """unique_destination – unique destination.
+
+Args:
+    dest: Description of dest.
+
+Returns:
+    Path: Description of return value."""
     if not dest.exists():
         return dest
     stem = dest.stem
@@ -22,31 +29,35 @@ def unique_destination(dest: Path) -> Path:
     parent = dest.parent
     counter = 1
     while True:
-        new_dest = parent / f"{stem}_{counter}{suffix}"
+        new_dest = parent / f'{stem}_{counter}{suffix}'
         if not new_dest.exists():
             return new_dest
         counter += 1
 
-
 def black_check(path: Path) -> bool:
-    result = subprocess.run(["black", "--check", str(path)], capture_output=True)
+    """black_check – black check.
+
+Args:
+    path: Description of path.
+
+Returns:
+    bool: Description of return value."""
+    result = subprocess.run(['black', '--check', str(path)], capture_output=True)
     return result.returncode == 0
 
-
 def main() -> None:
+    """main – main."""
     ensure_dirs()
-    for py_file in Path().glob("*.py"):
+    for py_file in Path().glob('*.py'):
         if py_file.name == Path(__file__).name:
             continue
-        print(f"Checking {py_file}...")
+        print(f'Checking {py_file}...')
         if black_check(py_file):
             dest = unique_destination(OK_DIR / py_file.name)
-            print(f"  ✓ OK → {dest}")
+            print(f'  ✓ OK → {dest}')
         else:
             dest = unique_destination(ERROR_DIR / py_file.name)
-            print(f"  ✗ ERROR → {dest}")
+            print(f'  ✗ ERROR → {dest}')
         shutil.move(str(py_file), str(dest))
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     raise SystemExit(main())

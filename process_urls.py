@@ -1,55 +1,73 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""process_urls.py – Process Urls utilities.
 
+This module provides functionality for process urls."""
+from __future__ import annotations
 import re
 import sys
 from pathlib import Path
 from urllib.parse import urlparse
 
-
 def normalize_url(u: str) -> str:
+    """normalize_url – normalize url.
+
+Args:
+    u: Description of u.
+
+Returns:
+    str: Description of return value."""
     u = u.strip()
     if not u:
-        return ""
-    if not re.match(r"^https?://", u, re.IGNORECASE):
-        u = "https://" + u
+        return ''
+    if not re.match('^https?://', u, re.IGNORECASE):
+        u = 'https://' + u
     try:
         p = urlparse(u)
-        scheme = p.scheme or "https"
-        host = (p.netloc or "").lower()
-        path = p.path or "/"
-        if path != "/" and path.endswith("/"):
+        scheme = p.scheme or 'https'
+        host = (p.netloc or '').lower()
+        path = p.path or '/'
+        if path != '/' and path.endswith('/'):
             path = path[:-1]
-        return f"{scheme}://{host}{path}"
+        return f'{scheme}://{host}{path}'
     except ValueError:
-        print(f"Warning: Could not parse URL: {u}", file=sys.stderr)
-        return ""
-
+        print(f'Warning: Could not parse URL: {u}', file=sys.stderr)
+        return ''
 
 def get_canonical_root(normalized_url: str) -> str:
+    """get_canonical_root – get canonical root.
+
+Args:
+    normalized_url: Description of normalized_url.
+
+Returns:
+    str: Description of return value."""
     try:
         p = urlparse(normalized_url)
         host = p.netloc.lower()
-        path_segments = [s for s in p.path.split("/") if s]
-        if host in ("github.com", "www.github.com"):
+        path_segments = [s for s in p.path.split('/') if s]
+        if host in ('github.com', 'www.github.com'):
             if len(path_segments) >= 2:
-                return f"https://github.com/{path_segments[0]}/{path_segments[1]}"
+                return f'https://github.com/{path_segments[0]}/{path_segments[1]}'
             else:
-                return "https://github.com/"
+                return 'https://github.com/'
         else:
             if not host:
                 return normalized_url
             if not path_segments:
-                return f"https://{host}/"
-            return f"https://{host}/{path_segments[0]}"
+                return f'https://{host}/'
+            return f'https://{host}/{path_segments[0]}'
     except ValueError:
-        print(
-            f"Warning: Could not parse URL for root: {normalized_url}", file=sys.stderr
-        )
+        print(f'Warning: Could not parse URL for root: {normalized_url}', file=sys.stderr)
         return normalized_url
 
-
 def prune_subaddresses(urls: list[str]) -> list[str]:
+    """prune_subaddresses – prune subaddresses.
+
+Args:
+    urls: Description of urls.
+
+Returns:
+    list[str]: Description of return value."""
     if not urls:
         return []
     normalized_urls_map = {}
@@ -67,20 +85,20 @@ def prune_subaddresses(urls: list[str]) -> list[str]:
     for cand_url in candidates:
         cand_parsed = urlparse(cand_url)
         cand_host = cand_parsed.netloc.lower()
-        cand_path = cand_parsed.path.rstrip("/")
+        cand_path = cand_parsed.path.rstrip('/')
         if not cand_path:
-            cand_path = "/"
+            cand_path = '/'
         else:
-            cand_path += "/"
+            cand_path += '/'
         is_sub_address = False
         for kept_url in final_urls:
             kept_parsed = urlparse(kept_url)
             kept_host = kept_parsed.netloc.lower()
-            kept_path = kept_parsed.path.rstrip("/")
+            kept_path = kept_parsed.path.rstrip('/')
             if not kept_path:
-                kept_path = "/"
+                kept_path = '/'
             else:
-                kept_path += "/"
+                kept_path += '/'
             if cand_host == kept_host and cand_path.startswith(kept_path):
                 is_sub_address = True
                 break
@@ -89,26 +107,22 @@ def prune_subaddresses(urls: list[str]) -> list[str]:
     final_urls.sort()
     return final_urls
 
-
 def main() -> None:
+    """main – main."""
     if len(sys.argv) < 2:
-        print("Usage: python script_name.py <input_file>")
+        print('Usage: python script_name.py <input_file>')
         sys.exit(1)
     input_path = Path(sys.argv[1])
     if not input_path.exists():
         print(f"Error: Input file '{input_path}' not found.")
         sys.exit(1)
     try:
-        lines = input_path.read_text(encoding="utf-8").splitlines()
+        lines = input_path.read_text(encoding='utf-8').splitlines()
         pruned_urls = prune_subaddresses(lines)
-        input_path.write_text("\n".join(pruned_urls) + "\n", encoding="utf-8")
-        print(
-            f"Successfully pruned URLs in '{input_path}'. {len(lines) - len(pruned_urls)} URLs removed."
-        )
+        input_path.write_text('\n'.join(pruned_urls) + '\n', encoding='utf-8')
+        print(f"Successfully pruned URLs in '{input_path}'. {len(lines) - len(pruned_urls)} URLs removed.")
     except Exception as e:
-        print(f"An error occurred: {e}", file=sys.stderr)
+        print(f'An error occurred: {e}', file=sys.stderr)
         sys.exit(1)
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     raise SystemExit(main())

@@ -1,33 +1,31 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""findupy.py – Findupy utilities.
 
+This module provides functionality for findupy."""
+from __future__ import annotations
+from typing import Any
 import hashlib
 import json
 import os
 from collections import defaultdict
 from pathlib import Path
-
 from tqdm import tqdm
-
 SKIPPED_PATHS = []
 
+def hash_file(path: Path, chunk_size: int=8192) -> str:
+    """hash_file – hash file.
 
-def hash_file(path: Path, chunk_size: int = 8192) -> str:
+Args:
+    path: Description of path.
+    chunk_size: Description of chunk_size.
+
+Returns:
+    str: Description of return value."""
     sha = hashlib.sha256()
     try:
         get_size = path.stat().st_size
-        with (
-            Path(path).open("rb") as f,
-            tqdm(
-                total=get_size,
-                unit="B",
-                unit_scale=True,
-                unit_divisor=1024,
-                desc=f"Hashing {path.name}",
-                leave=False,
-            ) as pbar,
-        ):
-            for chunk in iter(lambda: f.read(chunk_size), b""):
+        with Path(path).open('rb') as f, tqdm(total=get_size, unit='B', unit_scale=True, unit_divisor=1024, desc=f'Hashing {path.name}', leave=False) as pbar:
+            for chunk in iter(lambda: f.read(chunk_size), b''):
                 sha.update(chunk)
                 pbar.update(len(chunk))
     except PermissionError:
@@ -38,8 +36,11 @@ def hash_file(path: Path, chunk_size: int = 8192) -> str:
         return None
     return sha.hexdigest()
 
+def collect_all_files(directory: Path) -> Any:
+    """collect_all_files – collect all files.
 
-def collect_all_files(directory: Path):
+Args:
+    directory: Description of directory."""
     all_files = []
     for root, _dirs, files in os.walk(directory, onerror=lambda e: None):
         for f in files:
@@ -47,53 +48,61 @@ def collect_all_files(directory: Path):
             all_files.append(full_path)
     return all_files
 
+def find_duplicate_files(directory: str) -> list[Path]:
+    """find_duplicate_files – find duplicate files.
 
-def find_duplicate_files(directory: str):
+Args:
+    directory: Description of directory."""
     directory = Path(directory)
     if not directory.exists():
         raise ValueError(msg)
     all_files = collect_all_files(directory)
     duplicates = defaultdict(list)
-    print(f"📁 Scanning {len(all_files)} files...\n")
-    for path in tqdm(all_files, desc="Overall Progress", unit="file"):
+    print(f'📁 Scanning {len(all_files)} files...\n')
+    for path in tqdm(all_files, desc='Overall Progress', unit='file'):
         file_hash = hash_file(path)
         if file_hash:
             duplicates[file_hash].append(str(path))
     return {h: paths for h, paths in duplicates.items() if len(paths) > 1}
 
-
 def print_duplicates(dups: dict) -> None:
+    """print_duplicates – print duplicates.
+
+Args:
+    dups: Description of dups."""
     if not dups:
-        print("🎉 No duplicates found!")
+        print('🎉 No duplicates found!')
         return
-    print("\n🔍 Duplicate Files Found:\n")
+    print('\n🔍 Duplicate Files Found:\n')
     for i, (h, paths) in enumerate(dups.items(), start=1):
-        print(f"Group {i} (hash={h[:12]}...):")
+        print(f'Group {i} (hash={h[:12]}...):')
         for p in paths:
-            print(f"   • {p}")
-        print("-" * 40)
+            print(f'   • {p}')
+        print('-' * 40)
 
+def export_to_json(dups: dict, output_path: str='duplicates.json') -> None:
+    """export_to_json – export to json.
 
-def export_to_json(dups: dict, output_path="duplicates.json") -> None:
-    with Path(output_path).open("w", encoding="utf-8") as f:
+Args:
+    dups: Description of dups.
+    output_path: Description of output_path."""
+    with Path(output_path).open('w', encoding='utf-8') as f:
         json.dump(dups, f, indent=2)
-    print(f"📦 Results exported to {output_path}")
-
+    print(f'📦 Results exported to {output_path}')
 
 def print_skipped_paths() -> None:
+    """print_skipped_paths – print skipped paths."""
     if not SKIPPED_PATHS:
         return
-    print("\n⚠️  Skipped (permission denied):")
+    print('\n⚠️  Skipped (permission denied):')
     for p in SKIPPED_PATHS:
-        print(f"   • {p}")
-
-
-if __name__ == "__main__":
-    folder = input("Enter folder path to scan: ").strip()
+        print(f'   • {p}')
+if __name__ == '__main__':
+    folder = input('Enter folder path to scan: ').strip()
     duplicates = find_duplicate_files(folder)
     print_duplicates(duplicates)
     print_skipped_paths()
     if duplicates:
-        save = input("Export results to JSON? (y/n): ").lower().strip()
-        if save == "y":
+        save = input('Export results to JSON? (y/n): ').lower().strip()
+        if save == 'y':
             export_to_json(duplicates)

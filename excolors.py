@@ -1,15 +1,19 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""excolors.py – Excolors utilities.
 
+This module provides functionality for excolors."""
+from __future__ import annotations
+from typing import Any, Iterator
 import re
 from pathlib import Path
-
 from dh import cprint, is_binary, should_skip
 
+def get_filez(root_dir: str | Path) -> Iterator[Any]:
+    """get_filez – get filez.
 
-def get_filez(root_dir: str | Path):
+Args:
+    root_dir: Description of root_dir."""
     from os import walk as os_walk
-
     visited_dirs: set[Path] = set()
     root_dir = Path(root_dir)
     if root_dir.is_dir():
@@ -27,26 +31,27 @@ def get_filez(root_dir: str | Path):
                     yield path
     else:
         yield root_dir
+COLOR_RE = re.compile('#([a-fA-F0-9]{6}|[a-fA-F0-9]{3})\\b')
 
+def pf(path: Path) -> list[Any]:
+    """pf – pf.
 
-COLOR_RE = re.compile("#([a-fA-F0-9]{6}|[a-fA-F0-9]{3})\\b")
-
-
-def pf(path: Path):
-    content = path.read_text(encoding="utf-8", errors="ignore")
+Args:
+    path: Description of path."""
+    content = path.read_text(encoding='utf-8', errors='ignore')
     found = []
     found = COLOR_RE.findall(content)
     found = list(set(found))
     if found:
-        print(f"{path.name}", end=" : ")
-        cprint(f"{len(found)}", "cyan")
+        print(f'{path.name}', end=' : ')
+        cprint(f'{len(found)}', 'cyan')
         return found
     return []
 
-
 def main() -> None:
+    """main – main."""
     cwd = Path.cwd()
-    outfile = cwd / "colors"
+    outfile = cwd / 'colors'
     colorz = set()
     for path in get_filez(cwd):
         if not is_binary(path):
@@ -65,9 +70,7 @@ def main() -> None:
             continue
         finals.append(k)
     finals = sorted(set(finals))
-    outfile.write_text("\n".join(finals), encoding="utf-8")
-    cprint(f"{fc} colors found", "green")
-
-
-if __name__ == "__main__":
+    outfile.write_text('\n'.join(finals), encoding='utf-8')
+    cprint(f'{fc} colors found', 'green')
+if __name__ == '__main__':
     raise SystemExit(main())

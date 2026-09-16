@@ -1,46 +1,53 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""brmc.py – Brmc utilities.
 
+This module provides functionality for brmc."""
+from __future__ import annotations
 import argparse
 import ast
 import multiprocessing as mp
 from pathlib import Path
-
 from dh import get_pyfiles
 
-
 def _first_statement_is_docstring(tree: ast.Module) -> bool:
+    """_first_statement_is_docstring –  first statement is docstring.
+
+Args:
+    tree: Description of tree.
+
+Returns:
+    bool: Description of return value."""
     if not tree.body:
         return False
     node = tree.body[0]
-    return (
-        isinstance(node, ast.Expr)
-        and isinstance(getattr(node, "value", None), ast.Constant)
-        and isinstance(node.value.value, str)
-    )
-
+    return isinstance(node, ast.Expr) and isinstance(getattr(node, 'value', None), ast.Constant) and isinstance(node.value.value, str)
 
 def _remove_docstrings_from_source(source: str) -> tuple[str, int]:
+    """_remove_docstrings_from_source –  remove docstrings from source.
+
+Args:
+    source: Description of source.
+
+Returns:
+    tuple[str, int]: Description of return value."""
     try:
         tree = ast.parse(source)
     except SyntaxError:
-        return source, 0
+        return (source, 0)
     to_remove: list[tuple[int, int, int, int]] = []
     preserve_module = _first_statement_is_docstring(tree)
     for node in ast.walk(tree):
         if not isinstance(node, ast.Expr):
             continue
-        val = getattr(node, "value", None)
+        val = getattr(node, 'value', None)
         if not isinstance(val, ast.Constant) or not isinstance(val.value, str):
             continue
-        if preserve_module and tree.body and node is tree.body[0]:
+        if preserve_module and tree.body and (node is tree.body[0]):
             continue
-        if hasattr(node, "lineno") and hasattr(node, "end_lineno"):
-            to_remove.append(
-                (node.lineno, node.col_offset, node.end_lineno, node.end_col_offset)
-            )
+        if hasattr(node, 'lineno') and hasattr(node, 'end_lineno'):
+            to_remove.append((node.lineno, node.col_offset, node.end_lineno, node.end_col_offset))
     if not to_remove:
-        return source, 0
+        return (source, 0)
     lines = source.splitlines(keepends=True)
     to_remove.sort(key=lambda r: (r[0], r[1]), reverse=True)
     for sline, scol, eline, ecol in to_remove:
@@ -50,44 +57,64 @@ def _remove_docstrings_from_source(source: str) -> tuple[str, int]:
             continue
         if sidx == eidx:
             line = lines[sidx]
-            lines[sidx] = line[:scol] + "" + line[ecol:]
+            lines[sidx] = line[:scol] + '' + line[ecol:]
         else:
             first = lines[sidx]
             last = lines[eidx]
             lines[sidx] = first[:scol]
             lines[eidx] = last[ecol:]
             for mid in range(sidx + 1, eidx):
-                lines[mid] = ""
-    new_source = "".join(lines)
-    return new_source, len(to_remove)
-
+                lines[mid] = ''
+    new_source = ''.join(lines)
+    return (new_source, len(to_remove))
 
 def _validate_syntax(source: str) -> bool:
+    """_validate_syntax –  validate syntax.
+
+Args:
+    source: Description of source.
+
+Returns:
+    bool: Description of return value."""
     try:
         ast.parse(source)
         return True
     except SyntaxError:
         return False
 
+def _collect_py_files(paths: list[Path], *, recursive: bool=True) -> list[Path]:
+    """_collect_py_files –  collect py files.
 
-def _collect_py_files(paths: list[Path], *, recursive: bool = True) -> list[Path]:
+Args:
+    paths: Description of paths.
+    recursive: Description of recursive.
+
+Returns:
+    list[Path]: Description of return value."""
     py_files: list[Path] = []
     for target in paths:
         if target.is_file():
-            if target.suffix == ".py":
+            if target.suffix == '.py':
                 py_files.append(target)
         elif target.is_dir():
-            pattern = "**/*.py" if recursive else "*.py"
+            pattern = '**/*.py' if recursive else '*.py'
             py_files.extend(target.glob(pattern))
     return sorted({p.resolve() for p in py_files})
 
-
 def process_file(path: Path, cwd: Path) -> tuple[str, int] | None:
+    """process_file – process file.
+
+Args:
+    path: Description of path.
+    cwd: Description of cwd.
+
+Returns:
+    tuple[str, int] | None: Description of return value."""
     rel = str(path.relative_to(cwd))
     try:
-        source = path.read_text(encoding="utf-8")
+        source = path.read_text(encoding='utf-8')
     except UnicodeDecodeError:
-        source = path.read_text(encoding="latin-1")
+        source = path.read_text(encoding='latin-1')
     except Exception:
         return None
     new_source, doc_count = _remove_docstrings_from_source(source)
@@ -96,21 +123,15 @@ def process_file(path: Path, cwd: Path) -> tuple[str, int] | None:
     if not _validate_syntax(new_source):
         return None
     try:
-        path.write_text(new_source, encoding="utf-8")
+        path.write_text(new_source, encoding='utf-8')
     except Exception:
         return None
-    return rel, doc_count
-
+    return (rel, doc_count)
 
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Strip docstrings from Python files (preserves module docstrings)."
-    )
-    parser.add_argument(
-        "targets",
-        nargs="*",
-        help="Files or directories to process (default: current directory, recursive).",
-    )
+    """main – main."""
+    parser = argparse.ArgumentParser(description='Strip docstrings from Python files (preserves module docstrings).')
+    parser.add_argument('targets', nargs='*', help='Files or directories to process (default: current directory, recursive).')
     args = parser.parse_args()
     cwd = Path.cwd()
     if args.targets:
@@ -131,8 +152,6 @@ def main() -> None:
     for rel, doc_count in sorted(changed, key=lambda x: x[0]):
         print(rel)
         if doc_count > 0:
-            print(f"  docstrings removed: {doc_count}")
-
-
-if __name__ == "__main__":
+            print(f'  docstrings removed: {doc_count}')
+if __name__ == '__main__':
     raise SystemExit(main())

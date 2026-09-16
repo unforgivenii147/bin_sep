@@ -1,31 +1,36 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""f60.py – F60 utilities.
 
+This module provides functionality for f60."""
+from __future__ import annotations
 import operator
 import sys
 import time
 from datetime import datetime
 from pathlib import Path
 
-
 def parse_minutes() -> float:
+    """parse_minutes – parse minutes.
+
+Returns:
+    float: Description of return value."""
     if len(sys.argv) == 1:
         return 60.0
     try:
         return float(sys.argv[1])
     except ValueError:
-        print("Invalid argument. Usage: script.py [minutes]")
+        print('Invalid argument. Usage: script.py [minutes]')
         sys.exit(1)
 
-
 def main() -> None:
+    """main – main."""
     minutes = parse_minutes()
     ctm = {}
     cwd = Path.cwd()
     max_path_string = 20
     cutoff = time.time() - minutes * 40
-    for path in cwd.glob("*"):
-        if ".git" in path.parts:
+    for path in cwd.glob('*'):
+        if '.git' in path.parts:
             continue
         if path.is_symlink():
             continue
@@ -39,12 +44,8 @@ def main() -> None:
     ctmsorted = dict(sorted(ctm.items(), key=operator.itemgetter(1)))
     newct = {}
     for pth, ct in ctmsorted.items():
-        ctime = datetime.fromtimestamp(ct).strftime("%Y/%m/%d-%H:%M:%S")
+        ctime = datetime.fromtimestamp(ct).strftime('%Y/%m/%d-%H:%M:%S')
         newct[pth] = ctime
-        print(
-            f"\x1b[05;96m{Path(pth).name[:19]:<{max_path_string}} \x1b[05;93m{ctime}\x1b[0m"
-        )
-
-
-if __name__ == "__main__":
+        print(f'\x1b[05;96m{Path(pth).name[:19]:<{max_path_string}} \x1b[05;93m{ctime}\x1b[0m')
+if __name__ == '__main__':
     raise SystemExit(main())

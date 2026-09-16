@@ -1,20 +1,24 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""vid2txt.py – Vid2Txt utilities.
 
+This module provides functionality for vid2txt."""
+from __future__ import annotations
 import sys
 from multiprocessing import Process, Queue, cpu_count
 from pathlib import Path
-
 import cv2
 import pytesseract
 from dh import cprint
 from PIL import Image
-
 video = sys.argv[1]
-txtfile = Path(video).with_suffix(".txt")
-
+txtfile = Path(video).with_suffix('.txt')
 
 def ocr_worker(q_in: Queue, q_out: Queue) -> None:
+    """ocr_worker – ocr worker.
+
+Args:
+    q_in: Description of q_in.
+    q_out: Description of q_out."""
     while True:
         item = q_in.get()
         if item is None:
@@ -23,24 +27,20 @@ def ocr_worker(q_in: Queue, q_out: Queue) -> None:
         frame = cv2.resize(frame, None, fx=1.5, fy=1.5, interpolation=cv2.INTER_CUBIC)
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         gray = 255 - gray
-        text = pytesseract.image_to_string(
-            Image.fromarray(gray), lang="eng", config="--oem 3 --psm 6"
-        )
+        text = pytesseract.image_to_string(Image.fromarray(gray), lang='eng', config='--oem 3 --psm 6')
         if text and len(text.strip()) > 5:
-            cprint(f"frame {frame_id} --> {text}", "cyan")
-            txtfile.open("a", encoding="utf-8").write(text + "\n")
+            cprint(f'frame {frame_id} --> {text}', 'cyan')
+            txtfile.open('a', encoding='utf-8').write(text + '\n')
         else:
-            cprint(f"frame {frame_id} --> no text", "blue")
+            cprint(f'frame {frame_id} --> no text', 'blue')
         q_out.put((frame_id, text))
 
-
 def main() -> None:
+    """main – main."""
     cap = cv2.VideoCapture(video)
     q_in = Queue(maxsize=cpu_count())
     q_out = Queue()
-    workers = [
-        Process(target=ocr_worker, args=(q_in, q_out)) for _ in range(cpu_count())
-    ]
+    workers = [Process(target=ocr_worker, args=(q_in, q_out)) for _ in range(cpu_count())]
     for w in workers:
         w.start()
     frame_id = 0
@@ -61,7 +61,5 @@ def main() -> None:
     cap.release()
     for w in workers:
         w.join()
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     raise SystemExit(main())

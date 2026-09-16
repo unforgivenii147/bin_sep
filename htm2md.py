@@ -1,29 +1,36 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""htm2md.py – Htm2Md utilities.
 
+This module provides functionality for htm2md."""
+from __future__ import annotations
 import sys
 from pathlib import Path
-
 from dh import get_files, mpf3, runcmd
 
+def process_file(path: Path | str) -> tuple[Path, bool]:
+    """process_file – process file.
 
-def process_file(path) -> tuple[Path, bool]:
+Args:
+    path: Description of path.
+
+Returns:
+    tuple[Path, bool]: Description of return value."""
     path = Path(path)
-    if path.suffix.lower() in {".html", ".htm"}:
-        md_file = path.with_suffix(".md")
+    if path.suffix.lower() in {'.html', '.htm'}:
+        md_file = path.with_suffix('.md')
     else:
         return (path, False)
     try:
-        _, txt, _ = runcmd(["rhtml2md", str(path)], show_output=False)
-        md_file.write_text(txt, encoding="utf-8")
-        print(f"✓ Converted: {path.name} -> {md_file.name}")
+        _, txt, _ = runcmd(['rhtml2md', str(path)], show_output=False)
+        md_file.write_text(txt, encoding='utf-8')
+        print(f'✓ Converted: {path.name} -> {md_file.name}')
         return (md_file, True)
     except Exception as e:
-        print(f"✗ Unexpected error converting {path}: {e}", file=sys.stderr)
+        print(f'✗ Unexpected error converting {path}: {e}', file=sys.stderr)
         return (path, False)
 
-
 def main() -> None:
+    """main – main."""
     cwd = Path.cwd()
     args = sys.argv[1:]
     files = []
@@ -37,7 +44,5 @@ def main() -> None:
     else:
         files = get_files(cwd)
     mpf3(process_file, files)
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     raise SystemExit(main())

@@ -1,11 +1,17 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""pyfinfo.py – Pyfinfo utilities.
 
+This module provides functionality for pyfinfo."""
+from __future__ import annotations
+from typing import Any, Iterator
 import os
 from collections import Counter, defaultdict
 
+def walk_file_stems(root: str='.') -> Iterator[Any]:
+    """walk_file_stems – walk file stems.
 
-def walk_file_stems(root: str = "."):
+Args:
+    root: Description of root."""
     stack = [root]
     while stack:
         top = stack.pop()
@@ -13,7 +19,7 @@ def walk_file_stems(root: str = "."):
             with os.scandir(top) as it:
                 for entry in it:
                     if entry.is_dir(follow_symlinks=False):
-                        if entry.name != ".git":
+                        if entry.name != '.git':
                             stack.append(entry.path)
                     elif entry.is_file(follow_symlinks=False):
                         stem = os.path.splitext(entry.name)[0]
@@ -21,8 +27,16 @@ def walk_file_stems(root: str = "."):
         except (PermissionError, OSError):
             pass
 
-
 def levenshtein_bounded(a: str, b: str, max_dist: int) -> int:
+    """levenshtein_bounded – levenshtein bounded.
+
+Args:
+    a: Description of a.
+    b: Description of b.
+    max_dist: Description of max_dist.
+
+Returns:
+    int: Description of return value."""
     n, m = (len(a), len(b))
     if abs(n - m) > max_dist:
         return max_dist + 1
@@ -44,7 +58,7 @@ def levenshtein_bounded(a: str, b: str, max_dist: int) -> int:
             delete = current_row[j - 1] + 1
             substitute = previous_row[j - 1] + (a[i - 1] != b[j - 1])
             current_row[j] = min(insert, delete, substitute)
-        row_min = min(current_row[low : high + 1])
+        row_min = min(current_row[low:high + 1])
         if low == 0:
             row_min = min(row_min, current_row[0])
         if row_min > max_dist:
@@ -52,8 +66,12 @@ def levenshtein_bounded(a: str, b: str, max_dist: int) -> int:
         previous_row = current_row
     return previous_row[m] if previous_row[m] <= max_dist else max_dist + 1
 
+def group_similar(names: list[str], threshold: float=0.8) -> Any:
+    """group_similar – group similar.
 
-def group_similar(names: list[str], threshold: float = 0.8):
+Args:
+    names: Description of names.
+    threshold: Description of threshold."""
     n = len(names)
     used = [False] * n
     length_buckets = defaultdict(list)
@@ -83,21 +101,19 @@ def group_similar(names: list[str], threshold: float = 0.8):
             groups.append(group)
     return groups
 
-
 def main() -> None:
+    """main – main."""
     cwd = os.getcwd()
     counter = Counter(walk_file_stems(cwd))
     for name, count in counter.most_common(100):
         if count > 2:
-            print(f"{name}: {count}")
-    print("\n=== Similar Filename Groups ===")
+            print(f'{name}: {count}')
+    print('\n=== Similar Filename Groups ===')
     groups = group_similar(list(counter.keys()), threshold=0.8)
     if not groups:
-        print("No similar groups found.")
+        print('No similar groups found.')
     else:
         for i, group in enumerate(groups, 1):
             print(f"Group {i}: {', '.join(group)}")
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     raise SystemExit(main())

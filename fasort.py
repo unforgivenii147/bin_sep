@@ -1,83 +1,19 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""fasort.py – Fasort utilities.
 
+This module provides functionality for fasort."""
+from __future__ import annotations
+from typing import Any
+from pathlib import Path
 import sys
 
+def persian_sort_key(word: str) -> Any:
+    """persian_sort_key – persian sort key.
 
-def persian_sort_key(word):
-    persian_order = {
-        "آ": "ا",
-        "ا": "ا",
-        "ب": "ب",
-        "پ": "پ",
-        "ت": "ت",
-        "ث": "ث",
-        "ج": "ج",
-        "چ": "چ",
-        "ح": "ح",
-        "خ": "خ",
-        "د": "د",
-        "ذ": "ذ",
-        "ر": "ر",
-        "ز": "ز",
-        "ژ": "ژ",
-        "س": "س",
-        "ش": "ش",
-        "ص": "ص",
-        "ض": "ض",
-        "ط": "ط",
-        "ظ": "ظ",
-        "ع": "ع",
-        "غ": "غ",
-        "ف": "ف",
-        "ق": "ق",
-        "ک": "ک",
-        "گ": "گ",
-        "ل": "ل",
-        "م": "م",
-        "ن": "ن",
-        "و": "و",
-        "ه": "ه",
-        "ة": "ه",
-        "ی": "ی",
-        "ي": "ی",
-        "ئ": "ی",
-        " ": " ",
-    }
-    custom_order = [
-        "ا",
-        "ب",
-        "پ",
-        "ت",
-        "ث",
-        "ج",
-        "چ",
-        "ح",
-        "خ",
-        "د",
-        "ذ",
-        "ر",
-        "ز",
-        "ژ",
-        "س",
-        "ش",
-        "ص",
-        "ض",
-        "ط",
-        "ظ",
-        "ع",
-        "غ",
-        "ف",
-        "ق",
-        "ک",
-        "گ",
-        "ل",
-        "م",
-        "ن",
-        "و",
-        "ه",
-        "ی",
-    ]
+Args:
+    word: Description of word."""
+    persian_order = {'آ': 'ا', 'ا': 'ا', 'ب': 'ب', 'پ': 'پ', 'ت': 'ت', 'ث': 'ث', 'ج': 'ج', 'چ': 'چ', 'ح': 'ح', 'خ': 'خ', 'د': 'د', 'ذ': 'ذ', 'ر': 'ر', 'ز': 'ز', 'ژ': 'ژ', 'س': 'س', 'ش': 'ش', 'ص': 'ص', 'ض': 'ض', 'ط': 'ط', 'ظ': 'ظ', 'ع': 'ع', 'غ': 'غ', 'ف': 'ف', 'ق': 'ق', 'ک': 'ک', 'گ': 'گ', 'ل': 'ل', 'م': 'م', 'ن': 'ن', 'و': 'و', 'ه': 'ه', 'ة': 'ه', 'ی': 'ی', 'ي': 'ی', 'ئ': 'ی', ' ': ' '}
+    custom_order = ['ا', 'ب', 'پ', 'ت', 'ث', 'ج', 'چ', 'ح', 'خ', 'د', 'ذ', 'ر', 'ز', 'ژ', 'س', 'ش', 'ص', 'ض', 'ط', 'ظ', 'ع', 'غ', 'ف', 'ق', 'ک', 'گ', 'ل', 'م', 'ن', 'و', 'ه', 'ی']
     char_rank = {char: i for i, char in enumerate(custom_order)}
     sort_key = []
     for char in word:
@@ -86,27 +22,28 @@ def persian_sort_key(word):
         sort_key.append(rank)
     return tuple(sort_key)
 
+def sort_persian_dict(path: Path | str) -> None:
+    """sort_persian_dict – sort persian dict.
 
-def sort_persian_dict(path):
+Args:
+    path: Description of path."""
     try:
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, 'r', encoding='utf-8') as f:
             lines = f.readlines()
-        words = [line.rstrip("\n\r") for line in lines]
+        words = [line.rstrip('\n\r') for line in lines]
         sorted_words = sorted(words, key=lambda w: (persian_sort_key(w), w))
-        with open(path, "w", encoding="utf-8") as f:
-            f.writelines(word + "\n" for word in sorted_words)
+        with open(path, 'w', encoding='utf-8') as f:
+            f.writelines((word + '\n' for word in sorted_words))
         print(f"Successfully sorted {len(sorted_words)} words in '{path}'")
     except FileNotFoundError:
         print(f"Error: File '{path}' not found.")
         sys.exit(1)
     except Exception as e:
-        print(f"Error: {e}")
+        print(f'Error: {e}')
         sys.exit(1)
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     if len(sys.argv) != 2:
-        print("Usage: python persian_sort.py <filename>")
+        print('Usage: python persian_sort.py <filename>')
         sys.exit(1)
     path = sys.argv[1]
     sort_persian_dict(path)

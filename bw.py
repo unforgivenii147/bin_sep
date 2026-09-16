@@ -1,17 +1,24 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""bw.py – Bw utilities.
 
+This module provides functionality for bw."""
+from __future__ import annotations
 import sys
 from pathlib import Path
-
 from PIL import Image
 
+def analyze_image(path: Path, dark_threshold: int=50, ratio_threshold: float=0.6) -> tuple[str, float]:
+    """analyze_image – analyze image.
 
-def analyze_image(
-    path: Path, dark_threshold=50, ratio_threshold=0.6
-) -> tuple[str, float]:
+Args:
+    path: Description of path.
+    dark_threshold: Description of dark_threshold.
+    ratio_threshold: Description of ratio_threshold.
+
+Returns:
+    tuple[str, float]: Description of return value."""
     with Image.open(path) as img:
-        img = img.convert("RGB")
+        img = img.convert('RGB')
         pixels = img.getdata()
         total = len(pixels)
         dark_count = 0
@@ -21,17 +28,15 @@ def analyze_image(
                 dark_count += 1
         dark_ratio = dark_count / total
         if dark_ratio > ratio_threshold:
-            return "Mostly Dark", dark_ratio
+            return ('Mostly Dark', dark_ratio)
         if dark_ratio < 1 - ratio_threshold:
-            return "Mostly Bright", dark_ratio
-        return "Mixed", dark_ratio
-
-
-if __name__ == "__main__":
+            return ('Mostly Bright', dark_ratio)
+        return ('Mixed', dark_ratio)
+if __name__ == '__main__':
     if len(sys.argv) < 2:
-        print("Usage: script.py <image>")
+        print('Usage: script.py <image>')
         sys.exit(1)
     img_path = Path(sys.argv[1])
     result, ratio = analyze_image(img_path)
-    print(f"{img_path.name}: {result}")
-    print(f"Dark pixel ratio: {ratio:.2f}%")
+    print(f'{img_path.name}: {result}')
+    print(f'Dark pixel ratio: {ratio:.2f}%')

@@ -1,69 +1,88 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""pdown2.py – Pdown2 utilities.
 
+This module provides functionality for pdown2."""
+from __future__ import annotations
 import concurrent.futures
 import json
 import pathlib
 import urllib.error
 import urllib.request
 
+def get_pypi_json(package: str, timeout: int=10) -> dict | None:
+    """get_pypi_json – get pypi json.
 
-def get_pypi_json(package: str, timeout: int = 10) -> dict | None:
-    url = f"https://pypi.org/pypi/{package}/json"
+Args:
+    package: Description of package.
+    timeout: Description of timeout.
+
+Returns:
+    dict | None: Description of return value."""
+    url = f'https://pypi.org/pypi/{package}/json'
     try:
         with urllib.request.urlopen(url, timeout=timeout) as response:
             return json.loads(response.read())
     except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError) as e:
-        print(f"  ❌ Error fetching {package}: {e}")
+        print(f'  ❌ Error fetching {package}: {e}')
         return None
 
+def find_wheel_url(package_data: dict, python_version: str='3.12') -> tuple[str, int] | None:
+    """find_wheel_url – find wheel url.
 
-def find_wheel_url(
-    package_data: dict, python_version: str = "3.12"
-) -> tuple[str, int] | None:
-    releases = package_data.get("releases", {})
+Args:
+    package_data: Description of package_data.
+    python_version: Description of python_version.
+
+Returns:
+    tuple[str, int] | None: Description of return value."""
+    releases = package_data.get('releases', {})
     if not releases:
         return None
     latest_version = max(releases.keys())
     files = releases[latest_version]
     wheels = []
     for file in files:
-        if not file.get("packagetype") == "bdist_wheel":
+        if not file.get('packagetype') == 'bdist_wheel':
             continue
-        filename = file["filename"].lower()
-        pv = file.get("python_version", "").lower()
+        filename = file['filename'].lower()
+        pv = file.get('python_version', '').lower()
         score = 0
         if f"cp{python_version.replace('.', '')}" in filename:
             score += 100
-        if pv == f"=={python_version}":
+        if pv == f'=={python_version}':
             score += 100
-        if pv.startswith(f">={python_version}"):
+        if pv.startswith(f'>={python_version}'):
             score += 90
-        if "py3" in filename and "none" in filename:
+        if 'py3' in filename and 'none' in filename:
             score += 80
-        if "abi3" in filename:
+        if 'abi3' in filename:
             score += 70
-        if pv.startswith(">=3."):
+        if pv.startswith('>=3.'):
             score += 60
         if score > 0:
             wheels.append((score, file))
     if not wheels:
         return None
     _, best_wheel = max(wheels, key=lambda x: x[0])
-    return best_wheel["url"], best_wheel["size"]
+    return (best_wheel['url'], best_wheel['size'])
 
+def download_file(url: str, destination: pathlib.Path, expected_size: int, chunk_size: int=8192) -> tuple[bool, str]:
+    """download_file – download file.
 
-def download_file(
-    url: str, destination: pathlib.Path, expected_size: int, chunk_size: int = 8192
-) -> tuple[bool, str]:
-    print(
-        f"  📥 Downloading {destination.name} ({expected_size / 1024 / 1024:.2f} MB)..."
-    )
+Args:
+    url: Description of url.
+    destination: Description of destination.
+    expected_size: Description of expected_size.
+    chunk_size: Description of chunk_size.
+
+Returns:
+    tuple[bool, str]: Description of return value."""
+    print(f'  📥 Downloading {destination.name} ({expected_size / 1024 / 1024:.2f} MB)...')
     try:
         with urllib.request.urlopen(url) as response:
-            total_size = int(response.headers.get("content-length", expected_size))
+            total_size = int(response.headers.get('content-length', expected_size))
             downloaded = 0
-            with open(destination, "wb") as f:
+            with open(destination, 'wb') as f:
                 while True:
                     chunk = response.read(chunk_size)
                     if not chunk:
@@ -71,81 +90,59 @@ def download_file(
                     f.write(chunk)
                     downloaded += len(chunk)
                     percent = downloaded / total_size * 40
-                    print(
-                        f"    ⬇ {downloaded / 1024 / 1024:.2f} MB / {total_size / 1024 / 1024:.2f} MB ({percent:.1f}%)",
-                        end="\r",
-                    )
-            print(
-                f"    ✅ Downloaded {destination.name} ({downloaded / 1024 / 1024:.2f} MB)"
-            )
-            return True, ""
+                    print(f'    ⬇ {downloaded / 1024 / 1024:.2f} MB / {total_size / 1024 / 1024:.2f} MB ({percent:.1f}%)', end='\r')
+            print(f'    ✅ Downloaded {destination.name} ({downloaded / 1024 / 1024:.2f} MB)')
+            return (True, '')
     except Exception as e:
-        return False, f"Failed: {e!s}"
+        return (False, f'Failed: {e!s}')
 
+def download_package(package: str, wheels_dir: pathlib.Path, python_version: str='3.12') -> tuple[str, bool, str]:
+    """download_package – download package.
 
-def download_package(
-    package: str, wheels_dir: pathlib.Path, python_version: str = "3.12"
-) -> tuple[str, bool, str]:
-    print(f"🔍 Fetching info for: {package}")
+Args:
+    package: Description of package.
+    wheels_dir: Description of wheels_dir.
+    python_version: Description of python_version.
+
+Returns:
+    tuple[str, bool, str]: Description of return value."""
+    print(f'🔍 Fetching info for: {package}')
     package_data = get_pypi_json(package)
     if not package_data:
-        return package, False, "Failed to fetch package info from PyPI"
+        return (package, False, 'Failed to fetch package info from PyPI')
     wheel_info = find_wheel_url(package_data, python_version)
     if not wheel_info:
-        return (
-            package,
-            False,
-            "No compatible wheel found for Python " + python_version,
-        )
+        return (package, False, 'No compatible wheel found for Python ' + python_version)
     url, size = wheel_info
-    filename = url.split("/")[-1]
+    filename = url.split('/')[-1]
     destination = wheels_dir / filename
-    print(f"  📊 Package: {package}")
-    print(f"  🔗 URL: {url}")
-    print(f"  💾 Size: {size / 1024 / 1024:.2f} MB")
+    print(f'  📊 Package: {package}')
+    print(f'  🔗 URL: {url}')
+    print(f'  💾 Size: {size / 1024 / 1024:.2f} MB')
     success, message = download_file(url, destination, size)
-    return package, success, message
+    return (package, success, message)
 
-
-def main():
+def main() -> None:
+    """main – main."""
     import argparse
-
-    parser = argparse.ArgumentParser(
-        description="Download Python packages from PyPI as wheels"
-    )
-    parser.add_argument("packages", nargs="+", help="Package name(s) to download")
-    parser.add_argument(
-        "--python", default="3.12", help="Python version (default: 3.12)"
-    )
-    parser.add_argument(
-        "--workers", type=int, default=4, help="Number of download workers (default: 4)"
-    )
-    parser.add_argument(
-        "--output",
-        type=pathlib.Path,
-        default=pathlib.Path("wheels"),
-        help="Output directory (default: wheels)",
-    )
+    parser = argparse.ArgumentParser(description='Download Python packages from PyPI as wheels')
+    parser.add_argument('packages', nargs='+', help='Package name(s) to download')
+    parser.add_argument('--python', default='3.12', help='Python version (default: 3.12)')
+    parser.add_argument('--workers', type=int, default=4, help='Number of download workers (default: 4)')
+    parser.add_argument('--output', type=pathlib.Path, default=pathlib.Path('wheels'), help='Output directory (default: wheels)')
     args = parser.parse_args()
     wheels_dir = args.output.resolve()
     wheels_dir.mkdir(parents=True, exist_ok=True)
-    print(f"📁 Saving wheels to: {wheels_dir}\n")
+    print(f'📁 Saving wheels to: {wheels_dir}\n')
     with concurrent.futures.ThreadPoolExecutor(max_workers=args.workers) as executor:
-        futures = {
-            executor.submit(download_package, pkg, wheels_dir, args.python): pkg
-            for pkg in args.packages
-        }
+        futures = {executor.submit(download_package, pkg, wheels_dir, args.python): pkg for pkg in args.packages}
         success_count = 0
         for future in concurrent.futures.as_completed(futures):
             package, success, message = future.result()
             if success:
                 success_count += 1
             else:
-                print(f"  ⚠️  {package}: {message}")
-    print(
-        f"\n✅ Downloaded {success_count}/{len(args.packages)} packages successfully."
-    )
-
-
-if __name__ == "__main__":
+                print(f'  ⚠️  {package}: {message}')
+    print(f'\n✅ Downloaded {success_count}/{len(args.packages)} packages successfully.')
+if __name__ == '__main__':
     raise SystemExit(main())

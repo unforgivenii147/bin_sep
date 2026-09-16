@@ -1,49 +1,49 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""html_tag_balancer.py – Html Tag Balancer utilities.
 
+This module provides functionality for html tag balancer."""
+from __future__ import annotations
+from typing import Any
 import argparse
 import contextlib
 import sys
 from html.parser import HTMLParser
 from pathlib import Path
-
-VOID_ELEMENTS = frozenset(
-    {
-        "area",
-        "base",
-        "br",
-        "col",
-        "embed",
-        "hr",
-        "img",
-        "input",
-        "link",
-        "meta",
-        "param",
-        "source",
-        "track",
-        "wbr",
-    }
-)
-
+VOID_ELEMENTS = frozenset({'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr'})
 
 class TagBalanceChecker(HTMLParser):
+    """TagBalanceChecker – TagBalanceChecker."""
+
     def __init__(self) -> None:
+        """__init__ –   init  ."""
         super().__init__()
         self.stack = []
         self.errors = []
-        self.raw_source = ""
+        self.raw_source = ''
         self.fix_needed = False
 
     def set_source(self, source: str) -> None:
+        """set_source – set source.
+
+Args:
+    source: Description of source."""
         self.raw_source = source
 
-    def handle_starttag(self, tag, attrs) -> None:
+    def handle_starttag(self, tag: Any, attrs: Any) -> None:
+        """handle_starttag – handle starttag.
+
+Args:
+    tag: Description of tag.
+    attrs: Description of attrs."""
         if tag.lower() in VOID_ELEMENTS:
             return
         self.stack.append((tag.lower(), self.getpos()))
 
-    def handle_endtag(self, tag) -> None:
+    def handle_endtag(self, tag: Any) -> None:
+        """handle_endtag – handle endtag.
+
+Args:
+    tag: Description of tag."""
         tag = tag.lower()
         if not self.stack or self.stack[-1][0] != tag:
             try:
@@ -53,45 +53,56 @@ class TagBalanceChecker(HTMLParser):
                 if idx >= 0:
                     self.stack.pop(idx)
                 else:
-                    self.errors.append(("unexpected_closing", tag, self.getpos()))
+                    self.errors.append(('unexpected_closing', tag, self.getpos()))
                     self.fix_needed = True
             except Exception:
-                self.errors.append(("unexpected_closing", tag, self.getpos()))
+                self.errors.append(('unexpected_closing', tag, self.getpos()))
                 self.fix_needed = True
         else:
             self.stack.pop()
 
-    def handle_startendtag(self, tag, attrs) -> None:
+    def handle_startendtag(self, tag: Any, attrs: Any) -> None:
+        """handle_startendtag – handle startendtag.
+
+Args:
+    tag: Description of tag.
+    attrs: Description of attrs."""
         pass
 
-
 def check_html_file(path: Path) -> tuple[bool, list[str]]:
+    """check_html_file – check html file.
+
+Args:
+    path: Description of path.
+
+Returns:
+    tuple[bool, list[str]]: Description of return value."""
     try:
-        source = path.read_text(encoding="utf-8", errors="replace")
+        source = path.read_text(encoding='utf-8', errors='replace')
     except Exception as e:
-        return False, [f"⚠️  Could not read file: {e}"]
+        return (False, [f'⚠️  Could not read file: {e}'])
     parser = TagBalanceChecker()
     parser.set_source(source)
     try:
         parser.feed(source)
     except Exception as e:
-        return False, [f"⚠️  Parsing error: {e}"]
-    missing_closings = [
-        f"Missing </{tag}> (opened at line {pos[0]}, col {pos[1]})"
-        for tag, pos in parser.stack
-    ]
-    unexpected_closings = [
-        f"Unexpected </{tag}> at line {pos[0]}, col {pos[1]}"
-        for _, tag, pos in parser.errors
-    ]
+        return (False, [f'⚠️  Parsing error: {e}'])
+    missing_closings = [f'Missing </{tag}> (opened at line {pos[0]}, col {pos[1]})' for tag, pos in parser.stack]
+    unexpected_closings = [f'Unexpected </{tag}> at line {pos[0]}, col {pos[1]}' for _, tag, pos in parser.errors]
     issues = missing_closings + unexpected_closings
     is_balanced = len(issues) == 0
-    return is_balanced, issues
-
+    return (is_balanced, issues)
 
 def fix_html_file(path: Path) -> bool:
+    """fix_html_file – fix html file.
+
+Args:
+    path: Description of path.
+
+Returns:
+    bool: Description of return value."""
     try:
-        source = path.read_text(encoding="utf-8", errors="replace")
+        source = path.read_text(encoding='utf-8', errors='replace')
     except Exception as e:
         print(f"❌ Cannot read '{path}': {e}", file=sys.stderr)
         return False
@@ -106,13 +117,24 @@ def fix_html_file(path: Path) -> bool:
         line, col = pos
 
     class TagScanner(HTMLParser):
-        def __init__(self, source) -> None:
+        """TagScanner – TagScanner."""
+
+        def __init__(self, source: Path | str) -> None:
+            """__init__ –   init  .
+
+Args:
+    source: Description of source."""
             super().__init__()
             self.source = source
             self.chars = list(source)
             self.tokens = []
 
-        def get_char_pos(self, line, col):
+        def get_char_pos(self, line: str, col: int) -> Any:
+            """get_char_pos – get char pos.
+
+Args:
+    line: Description of line.
+    col: Description of col."""
             lines = self.source.splitlines(keepends=True)
             idx = 0
             for i in range(line - 1):
@@ -120,36 +142,48 @@ def fix_html_file(path: Path) -> bool:
                     idx += len(lines[i])
             return idx + col
 
-        def handle_starttag(self, tag, attrs) -> None:
+        def handle_starttag(self, tag: Any, attrs: Any) -> None:
+            """handle_starttag – handle starttag.
+
+Args:
+    tag: Description of tag.
+    attrs: Description of attrs."""
             if tag.lower() not in VOID_ELEMENTS:
                 pos = self.getpos()
                 start = self.get_char_pos(*pos)
-                end = self.source.find(">", start)
+                end = self.source.find('>', start)
                 if end != -1:
-                    self.tokens.append(("start", tag, start, end + 1))
+                    self.tokens.append(('start', tag, start, end + 1))
                 else:
-                    self.tokens.append(("start", tag, start, start + len(f"<{tag}")))
+                    self.tokens.append(('start', tag, start, start + len(f'<{tag}')))
 
-        def handle_endtag(self, tag) -> None:
+        def handle_endtag(self, tag: Any) -> None:
+            """handle_endtag – handle endtag.
+
+Args:
+    tag: Description of tag."""
             pos = self.getpos()
-            tag_str = f"</{tag}>"
+            tag_str = f'</{tag}>'
             start = self.source.find(tag_str, self.get_char_pos(*pos))
             if start == -1:
                 import re
-
-                m = re.search(f"</\\s*{tag}\\s*>", self.source, re.IGNORECASE)
+                m = re.search(f'</\\s*{tag}\\s*>', self.source, re.IGNORECASE)
                 if m:
                     start = m.start()
             if start != -1:
-                self.tokens.append(("end", tag, start, start + len(tag_str)))
+                self.tokens.append(('end', tag, start, start + len(tag_str)))
 
-        def handle_startendtag(self, tag, attrs) -> None:
+        def handle_startendtag(self, tag: Any, attrs: Any) -> None:
+            """handle_startendtag – handle startendtag.
+
+Args:
+    tag: Description of tag.
+    attrs: Description of attrs."""
             pos = self.getpos()
             start = self.get_char_pos(*pos)
-            end = self.source.find(">", start)
+            end = self.source.find('>', start)
             if end != -1:
-                self.tokens.append(("startend", tag, start, end + 1))
-
+                self.tokens.append(('startend', tag, start, end + 1))
     scanner = TagScanner(source)
     with contextlib.suppress(Exception):
         scanner.feed(source)
@@ -158,11 +192,11 @@ def fix_html_file(path: Path) -> bool:
         line, col = pos
         base_idx = 0
         for _ in range(line - 1):
-            idx = source.find("\n", base_idx)
+            idx = source.find('\n', base_idx)
             if idx == -1:
                 break
             base_idx = idx + 1
-        target = f"</{tag}>"
+        target = f'</{tag}>'
         search_start = max(0, base_idx + col - 5)
         idx = source.find(target, search_start)
         if idx != -1:
@@ -176,7 +210,7 @@ def fix_html_file(path: Path) -> bool:
     merged = []
     for r in ranges_to_remove:
         if merged and r[0] <= merged[-1][1]:
-            merged[-1] = merged[-1][0], max(merged[-1][1], r[1])
+            merged[-1] = (merged[-1][0], max(merged[-1][1], r[1]))
         else:
             merged.append(r)
     new_source = source
@@ -186,64 +220,54 @@ def fix_html_file(path: Path) -> bool:
     missing_tags = [tag for tag, _ in parser.stack]
     missing_tags.reverse()
     insert_pos = len(new_source)
-    for end_tag in ("</body>", "</html>"):
+    for end_tag in ('</body>', '</html>'):
         idx = new_source.rfind(end_tag)
         if idx != -1:
-            idx_end = new_source.find(">", idx)
+            idx_end = new_source.find('>', idx)
             insert_pos = idx_end + 1 if idx_end != -1 else idx + len(end_tag)
             break
     if missing_tags:
-        closing_html = "".join(f"</{tag}>" for tag in missing_tags)
+        closing_html = ''.join((f'</{tag}>' for tag in missing_tags))
         new_source = new_source[:insert_pos] + closing_html + new_source[insert_pos:]
     try:
-        path.write_text(new_source, encoding="utf-8")
+        path.write_text(new_source, encoding='utf-8')
         return True
     except Exception as e:
         print(f"❌ Cannot write '{path}': {e}", file=sys.stderr)
         return False
 
-
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Check and optionally fix HTML tag balance in files recursively.",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-    )
-    parser.add_argument(
-        "-a",
-        "--autofix",
-        action="store_true",
-        help="Fix files in-place (append missing closing tags, remove unexpected ones)",
-    )
+    """main – main."""
+    parser = argparse.ArgumentParser(description='Check and optionally fix HTML tag balance in files recursively.', formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument('-a', '--autofix', action='store_true', help='Fix files in-place (append missing closing tags, remove unexpected ones)')
     args = parser.parse_args()
     cwd = Path()
-    html_files = list(cwd.rglob("*.html")) + list(cwd.rglob("*.htm"))
+    html_files = list(cwd.rglob('*.html')) + list(cwd.rglob('*.htm'))
     html_files = sorted(set(html_files))
     if not html_files:
-        print("ℹ️  No HTML files found in current directory (recursively).")
+        print('ℹ️  No HTML files found in current directory (recursively).')
         return
-    print(f"🔍 Found {len(html_files)} HTML file(s). Checking...")
+    print(f'🔍 Found {len(html_files)} HTML file(s). Checking...')
     fixed_count = 0
     problem_count = 0
     for path in html_files:
         is_balanced, issues = check_html_file(path)
         if is_balanced:
-            print(f"✅ {path} — OK")
+            print(f'✅ {path} — OK')
         else:
             problem_count += 1
-            print(f"❌ {path} — {len(issues)} issue(s):")
+            print(f'❌ {path} — {len(issues)} issue(s):')
             for issue in issues:
-                print(f"   • {issue}")
+                print(f'   • {issue}')
             if args.autofix:
                 if fix_html_file(path):
-                    print("   🔧 Fixed in-place.")
+                    print('   🔧 Fixed in-place.')
                     fixed_count += 1
                 else:
-                    print("   ⚠️  Fix failed.")
+                    print('   ⚠️  Fix failed.')
     print()
-    print(f"Summary: {len(html_files) - problem_count} OK, {problem_count} with issues")
+    print(f'Summary: {len(html_files) - problem_count} OK, {problem_count} with issues')
     if args.autofix:
-        print(f"   → Fixed {fixed_count} file(s) in-place.")
-
-
-if __name__ == "__main__":
+        print(f'   → Fixed {fixed_count} file(s) in-place.')
+if __name__ == '__main__':
     raise SystemExit(main())

@@ -1,13 +1,22 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""piu.py – Piu utilities.
 
+This module provides functionality for piu."""
+from __future__ import annotations
+from typing import Any
 import sys
 from pathlib import Path
-
 from pip._internal.cli.main import main as pip_main
 
-
 def levenshtein_distance(a: str, b: str) -> int:
+    """levenshtein_distance – levenshtein distance.
+
+Args:
+    a: Description of a.
+    b: Description of b.
+
+Returns:
+    int: Description of return value."""
     if a == b:
         return 0
     if not a:
@@ -15,7 +24,7 @@ def levenshtein_distance(a: str, b: str) -> int:
     if not b:
         return len(a)
     if len(a) < len(b):
-        a, b = b, a
+        a, b = (b, a)
     previous = list(range(len(b) + 1))
     for i, ca in enumerate(a, 1):
         current = [i]
@@ -27,50 +36,74 @@ def levenshtein_distance(a: str, b: str) -> int:
         previous = current
     return previous[-1]
 
-
 def levenshtein_similarity(a: str, b: str) -> float:
-    if not a and not b:
+    """levenshtein_similarity – levenshtein similarity.
+
+Args:
+    a: Description of a.
+    b: Description of b.
+
+Returns:
+    float: Description of return value."""
+    if not a and (not b):
         return 1.0
     dist = levenshtein_distance(a, b)
     return 1.0 - dist / max(len(a), len(b), 1)
 
-
 def partial_ratio(a: str, b: str) -> float:
-    if not a and not b:
+    """partial_ratio – partial ratio.
+
+Args:
+    a: Description of a.
+    b: Description of b.
+
+Returns:
+    float: Description of return value."""
+    if not a and (not b):
         return 1.0
     if not a or not b:
         return 0.0
     if len(a) > len(b):
-        a, b = b, a
+        a, b = (b, a)
     best = 0.0
     la = len(a)
     for i in range(len(b) - la + 1):
-        sub = b[i : i + la]
+        sub = b[i:i + la]
         sim = levenshtein_similarity(a, sub)
         if sim > best:
             best = sim
             if best == 1.0:
                 break
     return best * 40
-
-
 WHL_DIR = Path.cwd()
-WILDCARD = "-w" in sys.argv
-
+WILDCARD = '-w' in sys.argv
 
 def install(packages: list[str]) -> int:
-    args = ["install", "--user", "--no-compile", "--no-deps", *packages]
+    """install – install.
+
+Args:
+    packages: Description of packages.
+
+Returns:
+    int: Description of return value."""
+    args = ['install', '--user', '--no-compile', '--no-deps', *packages]
     return pip_main(args)
 
+def pkg_name(txt: str) -> Any:
+    """pkg_name – pkg name.
 
-def pkg_name(txt: str):
-    indx = txt.index("-")
-    slash = txt.rfind("/")
-    return txt[slash + 1 : indx]
-
+Args:
+    txt: Description of txt."""
+    indx = txt.index('-')
+    slash = txt.rfind('/')
+    return txt[slash + 1:indx]
 
 def install_by_wildcard(pkg: str) -> None:
-    whl = {pkg_name(str(p)): str(p) for p in WHL_DIR.glob("*.whl")}
+    """install_by_wildcard – install by wildcard.
+
+Args:
+    pkg: Description of pkg."""
+    whl = {pkg_name(str(p)): str(p) for p in WHL_DIR.glob('*.whl')}
     wheel_files = []
     for k, v in whl.items():
         pr = partial_ratio(pkg, k)
@@ -83,14 +116,17 @@ def install_by_wildcard(pkg: str) -> None:
         res = install(wheel_files)
         if not res:
             for f in wheel_files:
-                print(f"  - {Path(f).name}")
+                print(f'  - {Path(f).name}')
                 Path(f).unlink()
     except:
         return
 
-
 def install_whl(pkg: str) -> None:
-    whl = {pkg_name(str(p)): str(p) for p in WHL_DIR.glob("*.whl")}
+    """install_whl – install whl.
+
+Args:
+    pkg: Description of pkg."""
+    whl = {pkg_name(str(p)): str(p) for p in WHL_DIR.glob('*.whl')}
     wheel_files = []
     for k, v in whl.items():
         if pkg in k:
@@ -102,22 +138,23 @@ def install_whl(pkg: str) -> None:
         res = install(wheel_files)
         if not res:
             for f in wheel_files:
-                print(f"  - {Path(f).name}")
+                print(f'  - {Path(f).name}')
                 Path(f).unlink()
     except:
         return
 
+def installwhl(pkgs: Any) -> None:
+    """installwhl – installwhl.
 
-def installwhl(pkgs):
+Args:
+    pkgs: Description of pkgs."""
     install(pkgs)
     for pkg in pkgs:
         p = Path(pkg)
         if p.exists():
             p.unlink()
-            print(f"{p.name} removed")
-
-
-if __name__ == "__main__":
+            print(f'{p.name} removed')
+if __name__ == '__main__':
     args = sys.argv[1:]
     for k in args:
         installwhl(k)

@@ -1,54 +1,43 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""sort_pyfile.py – Sort Pyfile utilities.
 
+This module provides functionality for sort pyfile."""
+from __future__ import annotations
 import ast
 import sys
 from pathlib import Path
 
-
 def sort_python_script(path: Path) -> None:
+    """sort_python_script – sort python script.
+
+Args:
+    path: Description of path."""
     try:
-        source_code = path.read_text(encoding="utf-8")
+        source_code = path.read_text(encoding='utf-8')
     except Exception as e:
-        print(f"Error reading {path}: {e}")
+        print(f'Error reading {path}: {e}')
         return
-    lines = source_code.split("\n")
-    shebang = ""
-    module_docstring = ""
+    lines = source_code.split('\n')
+    shebang = ''
+    module_docstring = ''
     code_start = 0
-    if lines and lines[0].startswith("#!"):
+    if lines and lines[0].startswith('#!'):
         shebang = lines[0]
         code_start = 1
-    remaining_code = "\n".join(lines[code_start:])
+    remaining_code = '\n'.join(lines[code_start:])
     try:
         tree = ast.parse(remaining_code)
     except SyntaxError as e:
-        print(f"Error parsing Python code in {path}: {e}")
+        print(f'Error parsing Python code in {path}: {e}')
         return
-    if (
-        tree.body
-        and isinstance(tree.body[0], ast.Expr)
-        and isinstance(tree.body[0].value, ast.Constant)
-    ) and isinstance(tree.body[0].value.value, str):
+    if (tree.body and isinstance(tree.body[0], ast.Expr) and isinstance(tree.body[0].value, ast.Constant)) and isinstance(tree.body[0].value.value, str):
         docstring_node = tree.body[0]
-        module_docstring = ast.get_source_segment(remaining_code, docstring_node) or ""
+        module_docstring = ast.get_source_segment(remaining_code, docstring_node) or ''
         tree.body.pop(0)
     main_block = None
     other_nodes = []
     for node in tree.body:
-        if (
-            isinstance(node, ast.If)
-            and isinstance(node.test, ast.Compare)
-            and (
-                isinstance(node.test.left, ast.Name)
-                and node.test.left.id == "__name__"
-                and len(node.test.ops) == 1
-                and isinstance(node.test.ops[0], ast.Eq)
-                and len(node.test.comparators) == 1
-                and isinstance(node.test.comparators[0], ast.Constant)
-                and node.test.comparators[0].value == "__main__"
-            )
-        ):
+        if isinstance(node, ast.If) and isinstance(node.test, ast.Compare) and (isinstance(node.test.left, ast.Name) and node.test.left.id == '__name__' and (len(node.test.ops) == 1) and isinstance(node.test.ops[0], ast.Eq) and (len(node.test.comparators) == 1) and isinstance(node.test.comparators[0], ast.Constant) and (node.test.comparators[0].value == '__main__')):
             main_block = node
             continue
         other_nodes.append(node)
@@ -61,10 +50,7 @@ def sort_python_script(path: Path) -> None:
         if isinstance(node, (ast.Import, ast.ImportFrom)):
             imports.append(node)
         elif isinstance(node, ast.Assign):
-            is_constant = all(
-                isinstance(target, ast.Name) and target.id.isupper()
-                for target in node.targets
-            )
+            is_constant = all((isinstance(target, ast.Name) and target.id.isupper() for target in node.targets))
             if is_constant:
                 constants.append(node)
             else:
@@ -75,7 +61,7 @@ def sort_python_script(path: Path) -> None:
             functions.append(node)
         else:
             misc.append(node)
-    constants.sort(key=lambda n: n.targets[0].id if n.targets else "")
+    constants.sort(key=lambda n: n.targets[0].id if n.targets else '')
     classes.sort(key=lambda n: n.name)
     functions.sort(key=lambda n: n.name)
     sorted_lines = []
@@ -89,24 +75,22 @@ def sort_python_script(path: Path) -> None:
             if segment:
                 sorted_lines.append(segment)
             else:
-                print(f"Warning: Could not preserve source for {node}")
+                print(f'Warning: Could not preserve source for {node}')
     if main_block:
         segment = ast.get_source_segment(remaining_code, main_block)
         if segment:
             sorted_lines.append(segment)
-    sorted_code = "\n".join(sorted_lines)
+    sorted_code = '\n'.join(sorted_lines)
     try:
-        tmp_path = path.with_name(path.stem + "_sorted" + path.suffix)
-        with tmp_path.open("w", encoding="utf-8") as f:
+        tmp_path = path.with_name(path.stem + '_sorted' + path.suffix)
+        with tmp_path.open('w', encoding='utf-8') as f:
             f.write(sorted_code)
-        print(f"Successfully sorted and saved: {tmp_path}")
+        print(f'Successfully sorted and saved: {tmp_path}')
     except Exception as e:
-        print(f"Error writing to {path}: {e}")
-
-
-if __name__ == "__main__":
+        print(f'Error writing to {path}: {e}')
+if __name__ == '__main__':
     if len(sys.argv) != 2:
-        print("Usage: python sort_script.py <path_to_python_script>")
+        print('Usage: python sort_script.py <path_to_python_script>')
         sys.exit(1)
     script_path = Path(sys.argv[1])
     sort_python_script(script_path)

@@ -1,40 +1,31 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""spell_fnames.py – Spell Fnames utilities.
 
+This module provides functionality for spell fnames."""
+from __future__ import annotations
+from typing import Any
 import argparse
 import re
 import sys
 from pathlib import Path
-
 import hunspell
+DICT_PATHS = [('/data/data/com.termux/files/usr/share/hunspell/en_US.dic', '/data/data/com.termux/files/usr/share/hunspell/en_US.aff'), ('/data/data/com.termux/files/home/.local/share/hunspell/fa_IR.dic', '/data/data/com.termux/files/home/.local/share/hunspell/fa_IR.aff')]
+WORD_SPLIT_RE = re.compile('[^A-Za-z]+')
+CAMEL_SPLIT_RE = re.compile('(?<=[a-z])(?=[A-Z])')
 
-DICT_PATHS = [
-    (
-        "/data/data/com.termux/files/usr/share/hunspell/en_US.dic",
-        "/data/data/com.termux/files/usr/share/hunspell/en_US.aff",
-    ),
-    (
-        "/data/data/com.termux/files/home/.local/share/hunspell/fa_IR.dic",
-        "/data/data/com.termux/files/home/.local/share/hunspell/fa_IR.aff",
-    ),
-]
-WORD_SPLIT_RE = re.compile(r"[^A-Za-z]+")
-CAMEL_SPLIT_RE = re.compile(r"(?<=[a-z])(?=[A-Z])")
-
-
-def load_spellchecker():
+def load_spellchecker() -> Any:
+    """load_spellchecker – load spellchecker."""
     for dic, aff in DICT_PATHS:
         if Path(dic).exists() and Path(aff).exists():
             return hunspell.HunSpell(dic, aff)
-    print(
-        "Error: could not find a hunspell dictionary (en_US.dic/.aff). "
-        "Install one, e.g.: sudo apt-get install hunspell-en-us",
-        file=sys.stderr,
-    )
+    print('Error: could not find a hunspell dictionary (en_US.dic/.aff). Install one, e.g.: sudo apt-get install hunspell-en-us', file=sys.stderr)
     sys.exit(1)
 
+def split_words(stem: str) -> Any:
+    """split_words – split words.
 
-def split_words(stem: str):
+Args:
+    stem: Description of stem."""
     words = []
     for chunk in WORD_SPLIT_RE.split(stem):
         if not chunk:
@@ -44,8 +35,12 @@ def split_words(stem: str):
                 words.append(sub)
     return words
 
+def find_misspelled(words: list[Any], checker: Any) -> Any:
+    """find_misspelled – find misspelled.
 
-def find_misspelled(words, checker):
+Args:
+    words: Description of words.
+    checker: Description of checker."""
     misspelled = []
     for w in words:
         if len(w) <= 2 or w.isdigit():
@@ -54,8 +49,13 @@ def find_misspelled(words, checker):
             misspelled.append(w)
     return misspelled
 
+def suggest_fix(stem: str, misspelled_words: Any, checker: Any) -> Any:
+    """suggest_fix – suggest fix.
 
-def suggest_fix(stem: str, misspelled_words, checker):
+Args:
+    stem: Description of stem.
+    misspelled_words: Description of misspelled_words.
+    checker: Description of checker."""
     new_stem = stem
     for w in misspelled_words:
         suggestions = checker.suggest(w)
@@ -68,10 +68,15 @@ def suggest_fix(stem: str, misspelled_words, checker):
             new_stem = re.sub(re.escape(w), best, new_stem, count=1)
     return new_stem
 
+def scan(root: Path, checker: Any, autofix: bool) -> None:
+    """scan – scan.
 
-def scan(root: Path, checker, autofix: bool):
+Args:
+    root: Description of root.
+    checker: Description of checker.
+    autofix: Description of autofix."""
     found_any = False
-    for path in sorted(root.rglob("*")):
+    for path in sorted(root.rglob('*')):
         if not path.is_file():
             continue
         stem = path.stem
@@ -79,47 +84,30 @@ def scan(root: Path, checker, autofix: bool):
         misspelled = find_misspelled(words, checker)
         if misspelled:
             found_any = True
-            print(f"{path.name}")
+            print(f'{path.name}')
             if autofix:
                 new_stem = suggest_fix(stem, misspelled, checker)
                 if new_stem != stem:
                     new_path = path.with_name(new_stem + path.suffix)
                     if new_path.exists():
-                        print(
-                            f"  [skip] target already exists: {new_path.name}",
-                            file=sys.stderr,
-                        )
+                        print(f'  [skip] target already exists: {new_path.name}', file=sys.stderr)
                     else:
                         path.rename(new_path)
-                        print(f"  -> renamed to: {new_path.name}")
+                        print(f'  -> renamed to: {new_path.name}')
     if not found_any:
-        print("No misspelled filenames found.")
+        print('No misspelled filenames found.')
 
-
-def main():
-    parser = argparse.ArgumentParser(
-        description="Detect misspelled words in filenames recursively."
-    )
-    parser.add_argument(
-        "path",
-        nargs="?",
-        default=".",
-        help="Root directory to scan (default: current directory)",
-    )
-    parser.add_argument(
-        "-a",
-        "--autofix",
-        action="store_true",
-        help="Automatically rename files using best spelling suggestions",
-    )
+def main() -> None:
+    """main – main."""
+    parser = argparse.ArgumentParser(description='Detect misspelled words in filenames recursively.')
+    parser.add_argument('path', nargs='?', default='.', help='Root directory to scan (default: current directory)')
+    parser.add_argument('-a', '--autofix', action='store_true', help='Automatically rename files using best spelling suggestions')
     args = parser.parse_args()
     root = Path(args.path).resolve()
     if not root.is_dir():
-        print(f"Error: {root} is not a directory", file=sys.stderr)
+        print(f'Error: {root} is not a directory', file=sys.stderr)
         sys.exit(1)
     checker = load_spellchecker()
     scan(root, checker, args.autofix)
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

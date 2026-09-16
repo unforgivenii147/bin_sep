@@ -1,12 +1,20 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""mergejson.py – Mergejson utilities.
 
+This module provides functionality for mergejson."""
+from __future__ import annotations
+from typing import Any
+from pathlib import Path
 import argparse
 import json
 import sys
 
+def deep_merge(dict1: Any, dict2: Any) -> Any:
+    """deep_merge – deep merge.
 
-def deep_merge(dict1, dict2):
+Args:
+    dict1: Description of dict1.
+    dict2: Description of dict2."""
     if dict1 is None:
         return dict2
     if dict2 is None:
@@ -19,12 +27,16 @@ def deep_merge(dict1, dict2):
             merged[key] = value
     return merged
 
+def merge_json_files(input_files: Path | str, output_file: Path | str) -> None:
+    """merge_json_files – merge json files.
 
-def merge_json_files(input_files, output_file):
+Args:
+    input_files: Description of input_files.
+    output_file: Description of output_file."""
     merged_data = None
     for path in input_files:
         try:
-            with open(path, "r", encoding="utf-8") as f:
+            with open(path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
         except FileNotFoundError:
             print(f"Error: File '{path}' not found.")
@@ -36,39 +48,28 @@ def merge_json_files(input_files, output_file):
             merged_data = data
             continue
         if type(merged_data) != type(data):
-            print(
-                f"Error: Type mismatch. '{input_files[0]}' is a {type(merged_data).__name__}, "
-                f"but '{path}' is a {type(data).__name__}. Cannot merge."
-            )
+            print(f"Error: Type mismatch. '{input_files[0]}' is a {type(merged_data).__name__}, but '{path}' is a {type(data).__name__}. Cannot merge.")
             sys.exit(1)
         if isinstance(merged_data, list):
             merged_data.extend(data)
         elif isinstance(merged_data, dict):
             merged_data = deep_merge(merged_data, data)
         else:
-            print(f"Error: Unsupported top-level JSON type: {type(data).__name__}")
+            print(f'Error: Unsupported top-level JSON type: {type(data).__name__}')
             sys.exit(1)
     try:
-        with open(output_file, "w", encoding="utf-8") as f:
+        with open(output_file, 'w', encoding='utf-8') as f:
             json.dump(merged_data, f, indent=4, ensure_ascii=False)
         print(f"Successfully merged {len(input_files)} files into '{output_file}'.")
     except OSError as e:
-        print(f"Error writing to output file: {e}")
+        print(f'Error writing to output file: {e}')
         sys.exit(1)
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Merge two or more JSON files into one."
-    )
-    parser.add_argument(
-        "inputs", nargs="+", help="Paths to the input JSON files (minimum 2)"
-    )
-    parser.add_argument(
-        "-o", "--output", required=True, help="Path for the merged output JSON file"
-    )
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Merge two or more JSON files into one.')
+    parser.add_argument('inputs', nargs='+', help='Paths to the input JSON files (minimum 2)')
+    parser.add_argument('-o', '--output', required=True, help='Path for the merged output JSON file')
     args = parser.parse_args()
     if len(args.inputs) < 2:
-        print("Error: Please provide at least two input files to merge.")
+        print('Error: Please provide at least two input files to merge.')
         sys.exit(1)
     merge_json_files(args.inputs, args.output)

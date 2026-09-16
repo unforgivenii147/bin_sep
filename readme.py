@@ -1,14 +1,18 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""readme.py – Readme utilities.
 
+This module provides functionality for readme."""
+from __future__ import annotations
 import pydoc
 import sys
 from pathlib import Path
-
-README_CANDIDATES = ["README.md", "README.rst", "README.txt", "README"]
-
+README_CANDIDATES = ['README.md', 'README.rst', 'README.txt', 'README']
 
 def find_readme() -> Path | None:
+    """find_readme – find readme.
+
+Returns:
+    Path | None: Description of return value."""
     files = {p.name.lower(): p for p in Path().iterdir() if p.is_file()}
     for name in README_CANDIDATES:
         p = files.get(name.lower())
@@ -16,18 +20,16 @@ def find_readme() -> Path | None:
             return p
     return None
 
-
 def main() -> None:
+    """main – main."""
     readme = find_readme()
     if not readme:
-        print("No README file found in current directory.", file=sys.stderr)
+        print('No README file found in current directory.', file=sys.stderr)
         sys.exit(1)
     try:
-        text = readme.read_text(encoding="utf-8")
+        text = readme.read_text(encoding='utf-8')
     except UnicodeDecodeError:
-        text = readme.read_text(errors="replace")
+        text = readme.read_text(errors='replace')
     pydoc.pager(text)
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     raise SystemExit(main())

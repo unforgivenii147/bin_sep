@@ -1,68 +1,64 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""have_script.py – Have Script utilities.
 
+This module provides functionality for have script."""
+from __future__ import annotations
+from typing import Any
+from pathlib import Path
 import argparse
 import os
 import sys
 import zipfile
 
+def find_whl_files(directory: Path | str) -> list[Path]:
+    """find_whl_files – find whl files.
 
-def find_whl_files(directory):
+Args:
+    directory: Description of directory."""
     whl_files = []
     for root, _dirs, files in os.walk(directory):
         for file in files:
-            if file.endswith(".whl"):
+            if file.endswith('.whl'):
                 whl_files.append(os.path.join(root, file))
     return whl_files
 
+def check_entry_points(whl_path: Path | str) -> bool:
+    """check_entry_points – check entry points.
 
-def check_entry_points(whl_path):
+Args:
+    whl_path: Description of whl_path."""
     try:
-        with zipfile.ZipFile(whl_path, "r") as whl:
+        with zipfile.ZipFile(whl_path, 'r') as whl:
             for file_info in whl.filelist:
-                if file_info.filename.endswith("entry_points.txt"):
+                if file_info.filename.endswith('entry_points.txt'):
                     dist_info_dir = os.path.dirname(file_info.filename)
-                    return True, dist_info_dir
-            return False, None
+                    return (True, dist_info_dir)
+            return (False, None)
     except zipfile.BadZipFile:
-        return False, None
+        return (False, None)
     except Exception as e:
-        print(f"Error reading {whl_path}: {e}", file=sys.stderr)
-        return False, None
+        print(f'Error reading {whl_path}: {e}', file=sys.stderr)
+        return (False, None)
 
+def get_whl_info(whl_path: Path | str) -> Any:
+    """get_whl_info – get whl info.
 
-def get_whl_info(whl_path):
+Args:
+    whl_path: Description of whl_path."""
     basename = os.path.basename(whl_path)
-    parts = basename.split("-")
+    parts = basename.split('-')
     if len(parts) >= 3:
         name = parts[0]
         version = parts[1]
-        return name, version
-    return basename, "unknown"
+        return (name, version)
+    return (basename, 'unknown')
 
-
-def main():
-    parser = argparse.ArgumentParser(
-        description="Find .whl files that contain entry_points.txt"
-    )
-    parser.add_argument(
-        "directory",
-        nargs="?",
-        default=".",
-        help="Directory to search for .whl files (default: current directory)",
-    )
-    parser.add_argument(
-        "-v",
-        "--verbose",
-        action="store_true",
-        help="Show verbose output with all files checked",
-    )
-    parser.add_argument(
-        "-q",
-        "--quiet",
-        action="store_true",
-        help="Only show files with entry_points.txt",
-    )
+def main() -> None:
+    """main – main."""
+    parser = argparse.ArgumentParser(description='Find .whl files that contain entry_points.txt')
+    parser.add_argument('directory', nargs='?', default='.', help='Directory to search for .whl files (default: current directory)')
+    parser.add_argument('-v', '--verbose', action='store_true', help='Show verbose output with all files checked')
+    parser.add_argument('-q', '--quiet', action='store_true', help='Only show files with entry_points.txt')
     args = parser.parse_args()
     directory = args.directory
     if not os.path.exists(directory):
@@ -89,39 +85,37 @@ def main():
         else:
             errors.append(whl_path)
     if has_entry_points:
-        print("-" * 40)
-        print(f"✅ Found {len(has_entry_points)} wheel(s) with entry_points.txt:")
-        print("-" * 40)
+        print('-' * 40)
+        print(f'✅ Found {len(has_entry_points)} wheel(s) with entry_points.txt:')
+        print('-' * 40)
         for whl_path, name, version, dist_info in has_entry_points:
-            print(f"\n📦 {name} ({version})")
-            print(f"   File: {whl_path}")
-            print(f"   Dist-info: {dist_info}")
+            print(f'\n📦 {name} ({version})')
+            print(f'   File: {whl_path}')
+            print(f'   Dist-info: {dist_info}')
     else:
-        print("❌ No wheels found with entry_points.txt")
+        print('❌ No wheels found with entry_points.txt')
     if not args.quiet and no_entry_points:
-        print("\n" + "=" * 40)
-        print(f"📋 {len(no_entry_points)} wheel(s) WITHOUT entry_points.txt:")
-        print("-" * 40)
+        print('\n' + '=' * 40)
+        print(f'📋 {len(no_entry_points)} wheel(s) WITHOUT entry_points.txt:')
+        print('-' * 40)
         if args.verbose:
             for whl_path, name, version in no_entry_points:
-                print(f"   {name} ({version}): {whl_path}")
+                print(f'   {name} ({version}): {whl_path}')
         else:
-            print("   (Use -v to see full list)")
+            print('   (Use -v to see full list)')
     if errors:
-        print("\n" + "=" * 40)
-        print(f"⚠️  {len(errors)} wheel(s) could not be read:")
-        print("-" * 40)
+        print('\n' + '=' * 40)
+        print(f'⚠️  {len(errors)} wheel(s) could not be read:')
+        print('-' * 40)
         for whl_path in errors:
-            print(f"   {whl_path}")
-    print("\n" + "=" * 40)
-    print("SUMMARY")
-    print("-" * 40)
-    print(f"Total wheels checked:  {len(whl_files)}")
-    print(f"With entry_points.txt: {len(has_entry_points)}")
-    print(f"Without:               {len(no_entry_points)}")
+            print(f'   {whl_path}')
+    print('\n' + '=' * 40)
+    print('SUMMARY')
+    print('-' * 40)
+    print(f'Total wheels checked:  {len(whl_files)}')
+    print(f'With entry_points.txt: {len(has_entry_points)}')
+    print(f'Without:               {len(no_entry_points)}')
     if errors:
-        print(f"Errors:                {len(errors)}")
-
-
-if __name__ == "__main__":
+        print(f'Errors:                {len(errors)}')
+if __name__ == '__main__':
     raise SystemExit(main())

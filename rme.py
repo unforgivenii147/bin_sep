@@ -1,44 +1,46 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""rme.py – Rme utilities.
 
+This module provides functionality for rme."""
+from __future__ import annotations
 import argparse
 import sys
 from pathlib import Path
-
 from rich.console import Console
 from rich.markdown import Markdown
-
 try:
     from readchar import key as RKEY, readkey
-
     HAVE_READCHAR = True
 except Exception:
     HAVE_READCHAR = False
 
-
 def read_markdown(path: str | Path) -> str:
+    """read_markdown – read markdown.
+
+Args:
+    path: Description of path.
+
+Returns:
+    str: Description of return value."""
     path = Path(path)
     if not path.is_file():
-        raise FileNotFoundError(f"File not found: {path}")
-    return path.read_text(encoding="utf-8")
-
+        raise FileNotFoundError(f'File not found: {path}')
+    return path.read_text(encoding='utf-8')
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        prog="mdview",
-        description="View a Markdown file in the terminal, page by page.",
-    )
-    parser.add_argument(
-        "file",
-        nargs="?",
-        default="README.md",
-        type=str,
-        help="Path to a Markdown file (default: README.md)",
-    )
+    """build_parser – build parser.
+
+Returns:
+    argparse.ArgumentParser: Description of return value."""
+    parser = argparse.ArgumentParser(prog='mdview', description='View a Markdown file in the terminal, page by page.')
+    parser.add_argument('file', nargs='?', default='README.md', type=str, help='Path to a Markdown file (default: README.md)')
     return parser
 
-
 def main() -> int:
+    """main – main.
+
+Returns:
+    int: Description of return value."""
     parser = build_parser()
     args = parser.parse_args()
     console = Console()
@@ -46,18 +48,16 @@ def main() -> int:
     try:
         markdown_text = read_markdown(args.file)
     except FileNotFoundError as error:
-        err_console.print(f"[red]Error:[/red] {error}")
+        err_console.print(f'[red]Error:[/red] {error}')
         return 1
     except PermissionError:
-        err_console.print(f"[red]Error:[/red] Permission denied: {args.file}")
+        err_console.print(f'[red]Error:[/red] Permission denied: {args.file}')
         return 1
     except UnicodeDecodeError:
-        err_console.print(
-            f"[red]Error:[/red] {args.file} is not a valid UTF-8 text file."
-        )
+        err_console.print(f'[red]Error:[/red] {args.file} is not a valid UTF-8 text file.')
         return 1
     except OSError as error:
-        err_console.print(f"[red]Error:[/red] {error}")
+        err_console.print(f'[red]Error:[/red] {error}')
         return 1
     md = Markdown(markdown_text)
     with console.capture() as capture:
@@ -65,7 +65,7 @@ def main() -> int:
     rendered = capture.get()
     lines = rendered.splitlines()
     if not lines:
-        console.print("[dim](empty file)[/dim]")
+        console.print('[dim](empty file)[/dim]')
         return 0
     height = max(console.size.height - 2, 1)
     page_count = max((len(lines) + height - 1) // height, 1)
@@ -75,7 +75,7 @@ def main() -> int:
         start = current_page * height
         end = start + height
         for line in lines[start:end]:
-            sys.stdout.write(line + "\n")
+            sys.stdout.write(line + '\n')
         sys.stdout.flush()
         try:
             if HAVE_READCHAR:
@@ -84,20 +84,18 @@ def main() -> int:
                     if current_page < page_count - 1:
                         current_page += 1
                     else:
-                        console.print("[dim](already at last page)[/dim]")
+                        console.print('[dim](already at last page)[/dim]')
                 elif k in (RKEY.PAGE_UP, RKEY.LEFT, RKEY.UP):
                     if current_page > 0:
                         current_page -= 1
                     else:
-                        console.print("[dim](already at first page)[/dim]")
-                elif k in ("q", "Q"):
+                        console.print('[dim](already at first page)[/dim]')
+                elif k in ('q', 'Q'):
                     break
                 else:
                     continue
         except (EOFError, KeyboardInterrupt):
             break
     return 0
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     sys.exit(main())

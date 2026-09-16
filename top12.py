@@ -1,12 +1,17 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""top12.py – Top12 utilities.
 
+This module provides functionality for top12."""
+from __future__ import annotations
 import heapq
 import os
 from pathlib import Path
 
+def get_top_10_largest_files_optimized(directory: str='.') -> list[Path]:
+    """get_top_10_largest_files_optimized – get top 10 largest files optimized.
 
-def get_top_10_largest_files_optimized(directory: str = "."):
+Args:
+    directory: Description of directory."""
     top_10 = []
     for root, _dirs, files in os.walk(directory):
         for file in files:
@@ -21,9 +26,7 @@ def get_top_10_largest_files_optimized(directory: str = "."):
                 except OSError:
                     pass
     return sorted(top_10, reverse=True)
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     top_10 = get_top_10_largest_files_optimized()
     for size, path in top_10:
-        print(f"{size} bytes - {path}")
+        print(f'{size} bytes - {path}')

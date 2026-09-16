@@ -21,8 +21,7 @@ from dh import cprint, fsz, gsz
 class PathlibTransformer(ast.NodeTransformer):
     """AST transformer that converts os/os.path calls to pathlib equivalents."""
 
-    PATHLIB_MAPPINGS: dict[str, tuple[Any, str]] = {
-        "exists": ("exists", "bool"),
+    PATHLIB_MAPPINGS: dict[str, tuple[Any, str]] = {"exists": ("exists", "bool"),
         "isfile": ("is_file", "bool"),
         "isdir": ("is_dir", "bool"),
         "islink": ("is_symlink", "bool"),
@@ -47,11 +46,9 @@ class PathlibTransformer(ast.NodeTransformer):
         "samefile": ("samefile", "bool"),
         "sameopenfile": (None, "bool"),
         "expanduser": ("expanduser", "Path"),
-        "expandvars": ("expandvars", "Path"),
-    }
+        "expandvars": ("expandvars", "Path"),}
 
-    OS_MAPPINGS: dict[str, tuple[Any, str]] = {
-        "remove": ("unlink", "None"),
+    OS_MAPPINGS: dict[str, tuple[Any, str]] = {"remove": ("unlink", "None"),
         "unlink": ("unlink", "None"),
         "rmdir": ("rmdir", "None"),
         "rmtree": (None, "None"),
@@ -79,8 +76,7 @@ class PathlibTransformer(ast.NodeTransformer):
         "getppid": (None, "int"),
         "environ": (None, "dict"),
         "getenv": (None, "str"),
-        "putenv": (None, "None"),
-    }
+        "putenv": (None, "None"),}
 
     def __init__(self, path: Path) -> None:
         """Initialize the transformer with a file path.
@@ -744,9 +740,7 @@ class PathlibTransformer(ast.NodeTransformer):
         if not node.args:
             return node
         path_arg = node.args[0]
-        walk_code = f"(\n            (str(root), [d.name for d in root.iterdir() if d.is_dir()], \n             [f.name for f in root.iterdir() if f.is_file()])\n            for root in Path({
-            ast.unparse(path_arg)
-        }).rglob('*') if root.is_dir()\n        )"
+        walk_code = f"(\n            (str(root), [d.name for d in root.iterdir() if d.is_dir()], \n             [f.name for f in root.iterdir() if f.is_file()])\n            for root in Path({ast.unparse(path_arg)}).rglob('*') if root.is_dir()\n        )"
         self.warnings.append(
             "os.walk converted to simplified generator - verify correctness"
         )

@@ -1,15 +1,22 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""pddd.py – Pddd utilities.
 
+This module provides functionality for pddd."""
+from __future__ import annotations
 from operator import itemgetter
 from pathlib import Path
-
 from dh import fsz
 
-
 def get_dir_size(path: Path) -> int:
+    """get_dir_size – get dir size.
+
+Args:
+    path: Description of path.
+
+Returns:
+    int: Description of return value."""
     total = 0
-    for path in path.rglob("*"):
+    for path in path.rglob('*'):
         if path.is_file() and (not path.is_symlink()):
             try:
                 total += path.stat().st_size
@@ -17,8 +24,11 @@ def get_dir_size(path: Path) -> int:
                 continue
     return total
 
-
 def du_sort_python(path: Path) -> None:
+    """du_sort_python – du sort python.
+
+Args:
+    path: Description of path."""
     results = []
     total = 0
     for entry in path.iterdir():
@@ -32,17 +42,15 @@ def du_sort_python(path: Path) -> None:
         path = Path(path)
         if path.is_dir():
             if size_bytes > 1024 * 1024:
-                print(f"\x1b[5;94m{path.name:25}\x1b[0m  \x1b[5;96m {sz}\x1b[0m")
+                print(f'\x1b[5;94m{path.name:25}\x1b[0m  \x1b[5;96m {sz}\x1b[0m')
             else:
-                print(f"\x1b[5;94m{path.name:25}\x1b[0m  {sz}")
+                print(f'\x1b[5;94m{path.name:25}\x1b[0m  {sz}')
         if path.is_file():
             if size_bytes > 1024 * 1024:
-                print(f"\x1b[5;92m{path.name:25}\x1b[0m  \x1b[5;96m {sz}\x1b[0m")
+                print(f'\x1b[5;92m{path.name:25}\x1b[0m  \x1b[5;96m {sz}\x1b[0m')
             else:
-                print(f"\x1b[5;92m{path.name:25}\x1b[0m  {sz}")
-    print(f"total size : \x1b[5;94m{fsz(total)}\x1b[0m")
-
-
-if __name__ == "__main__":
+                print(f'\x1b[5;92m{path.name:25}\x1b[0m  {sz}')
+    print(f'total size : \x1b[5;94m{fsz(total)}\x1b[0m')
+if __name__ == '__main__':
     cwd = Path.cwd()
     du_sort_python(cwd)

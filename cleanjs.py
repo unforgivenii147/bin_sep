@@ -1,26 +1,33 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""cleanjs.py – Cleanjs utilities.
 
+This module provides functionality for cleanjs."""
+from __future__ import annotations
+from typing import Any
 import sys
 from collections.abc import Iterable
 from multiprocessing import Pool
 from pathlib import Path
-
 import tree_sitter_javascript as tsjavascript
 from tree_sitter import Language, Parser
-
 WORKERS = 8
-JS_EXTENSIONS = frozenset({".js", ".mjs", ".cjs", ".jsx"})
-
+JS_EXTENSIONS = frozenset({'.js', '.mjs', '.cjs', '.jsx'})
 
 def javascript_language() -> Language:
+    """javascript_language – javascript language.
+
+Returns:
+    Language: Description of return value."""
     try:
         return Language(tsjavascript.language())
     except TypeError:
         return tsjavascript.language()
 
-
 def make_parser() -> Parser:
+    """make_parser – make parser.
+
+Returns:
+    Parser: Description of return value."""
     parser = Parser()
     language = javascript_language()
     try:
@@ -29,12 +36,24 @@ def make_parser() -> Parser:
         parser.set_language(language)
     return parser
 
-
 def is_javascript_file(path: Path) -> bool:
+    """is_javascript_file – is javascript file.
+
+Args:
+    path: Description of path.
+
+Returns:
+    bool: Description of return value."""
     return path.is_file() and path.suffix.lower() in JS_EXTENSIONS
 
-
 def iter_javascript_files(inputs: Iterable[str]) -> Iterable[Path]:
+    """iter_javascript_files – iter javascript files.
+
+Args:
+    inputs: Description of inputs.
+
+Returns:
+    Iterable[Path]: Description of return value."""
     seen: set[Path] = set()
     for raw_path in inputs:
         path = Path(raw_path)
@@ -42,15 +61,9 @@ def iter_javascript_files(inputs: Iterable[str]) -> Iterable[Path]:
             if path.is_file():
                 candidates = (path,)
             elif path.is_dir():
-                candidates = (
-                    child
-                    for child in path.rglob("*")
-                    if not child.is_symlink() and is_javascript_file(child)
-                )
+                candidates = (child for child in path.rglob('*') if not child.is_symlink() and is_javascript_file(child))
             else:
-                print(
-                    f"warning: not found or unsupported path: {path}", file=sys.stderr
-                )
+                print(f'warning: not found or unsupported path: {path}', file=sys.stderr)
                 continue
             for candidate in candidates:
                 if not is_javascript_file(candidate):
@@ -63,18 +76,29 @@ def iter_javascript_files(inputs: Iterable[str]) -> Iterable[Path]:
                     seen.add(resolved)
                     yield candidate
         except OSError as exc:
-            print(f"warning: cannot scan {path}: {exc}", file=sys.stderr)
+            print(f'warning: cannot scan {path}: {exc}', file=sys.stderr)
 
+def collect_comment_ranges(node: Any, ranges: list[tuple[int, int]]) -> None:
+    """collect_comment_ranges – collect comment ranges.
 
-def collect_comment_ranges(node, ranges: list[tuple[int, int]]) -> None:
-    if node.type == "comment":
+Args:
+    node: Description of node.
+    ranges: Description of ranges."""
+    if node.type == 'comment':
         ranges.append((node.start_byte, node.end_byte))
         return
     for child in node.children:
         collect_comment_ranges(child, ranges)
 
-
 def remove_comment_ranges(source: bytes, ranges: list[tuple[int, int]]) -> bytes:
+    """remove_comment_ranges – remove comment ranges.
+
+Args:
+    source: Description of source.
+    ranges: Description of ranges.
+
+Returns:
+    bytes: Description of return value."""
     if not ranges:
         return source
     output = bytearray()
@@ -82,13 +106,19 @@ def remove_comment_ranges(source: bytes, ranges: list[tuple[int, int]]) -> bytes
     for start, end in ranges:
         output.extend(source[previous_end:start])
         comment = source[start:end]
-        output.extend(byte for byte in comment if byte in (ord("\n"), ord("\r")))
+        output.extend((byte for byte in comment if byte in (ord('\n'), ord('\r'))))
         previous_end = end
     output.extend(source[previous_end:])
     return bytes(output)
 
-
 def process_file(path_string: str) -> tuple[str, int, str | None]:
+    """process_file – process file.
+
+Args:
+    path_string: Description of path_string.
+
+Returns:
+    tuple[str, int, str | None]: Description of return value."""
     path = Path(path_string)
     try:
         source = path.read_bytes()
@@ -97,21 +127,24 @@ def process_file(path_string: str) -> tuple[str, int, str | None]:
         ranges: list[tuple[int, int]] = []
         collect_comment_ranges(tree.root_node, ranges)
         if not ranges:
-            return str(path), 0, None
+            return (str(path), 0, None)
         updated = remove_comment_ranges(source, ranges)
         if updated != source:
-            with path.open("wb") as file:
+            with path.open('wb') as file:
                 file.write(updated)
-        return str(path), len(ranges), None
+        return (str(path), len(ranges), None)
     except (OSError, UnicodeError, ValueError) as exc:
-        return str(path), 0, str(exc)
-
+        return (str(path), 0, str(exc))
 
 def main() -> int:
-    inputs = sys.argv[1:] or ["."]
+    """main – main.
+
+Returns:
+    int: Description of return value."""
+    inputs = sys.argv[1:] or ['.']
     files = list(iter_javascript_files(inputs))
     if not files:
-        print("No JavaScript files found.", file=sys.stderr)
+        print('No JavaScript files found.', file=sys.stderr)
         return 0
     changed_files = 0
     total_comments = 0
@@ -123,19 +156,13 @@ def main() -> int:
             path, removed, error = result.get()
             if error is not None:
                 failures += 1
-                print(f"error: {path}: {error}", file=sys.stderr)
+                print(f'error: {path}: {error}', file=sys.stderr)
                 continue
             if removed:
                 changed_files += 1
                 total_comments += removed
-                print(f"{path}: removed {removed} comment(s)")
-    print(
-        f"\nChanged files: {changed_files}"
-        f"\nComments removed: {total_comments}"
-        f"\nFiles scanned: {len(files)}"
-    )
+                print(f'{path}: removed {removed} comment(s)')
+    print(f'\nChanged files: {changed_files}\nComments removed: {total_comments}\nFiles scanned: {len(files)}')
     return 1 if failures else 0
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     raise SystemExit(main())

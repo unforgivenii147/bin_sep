@@ -1,24 +1,27 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""xordup.py – Xordup utilities.
 
+This module provides functionality for xordup."""
+from __future__ import annotations
+from typing import Any
 import sys
 from pathlib import Path
-
 from dh import cprint, mpf
 from xorhash import get_xorhash
+REMOVE = '-y' in sys.argv
 
-REMOVE = "-y" in sys.argv
+def find_dups_optimized(root: Path) -> Any:
+    """find_dups_optimized – find dups optimized.
 
-
-def find_dups_optimized(root: Path):
+Args:
+    root: Description of root."""
     from os import walk as os_walk
-
     file_hashes = {}
     paths_to_process = []
     for r, _, files in os_walk(root):
         for file in files:
             path = Path(r) / file
-            if ".git" in path.parts or not path.stat().st_size:
+            if '.git' in path.parts or not path.stat().st_size:
                 continue
             if not path.is_symlink() and path.is_file() and path.exists():
                 paths_to_process.append(path)
@@ -30,20 +33,18 @@ def find_dups_optimized(root: Path):
         if hash_result is not None:
             file_hashes.setdefault(hash_result, []).append(path)
     return {h: paths for h, paths in file_hashes.items() if len(paths) > 1}
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     cwd = Path.cwd()
     dupes = find_dups_optimized(cwd)
     if not dupes:
-        print("No dups")
+        print('No dups')
         sys.exit(1)
     for h, paths in dupes.items():
-        cprint(f"dups with hash: {h}")
+        cprint(f'dups with hash: {h}')
         for p in paths:
-            print(" - ", p)
+            print(' - ', p)
     if REMOVE:
         for paths in dupes.values():
             for p in paths[1:]:
                 Path(p).unlink()
-    print(f"Found {len(dupes)} group(s) of dups")
+    print(f'Found {len(dupes)} group(s) of dups')

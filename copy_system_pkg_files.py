@@ -1,31 +1,29 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""copy_system_pkg_files.py – Copy System Pkg Files utilities.
 
+This module provides functionality for copy system pkg files."""
+from __future__ import annotations
 import shutil
 import subprocess
 import sys
 from pathlib import Path
 
-
 def get_package_files(pkgname: str) -> list[str]:
+    """get_package_files – get package files.
+
+Args:
+    pkgname: Description of pkgname.
+
+Returns:
+    list[str]: Description of return value."""
     try:
-        result = subprocess.run(
-            ["dpkg", "-L", pkgname],
-            capture_output=True,
-            text=True,
-            check=True,
-        )
+        result = subprocess.run(['dpkg', '-L', pkgname], capture_output=True, text=True, check=True)
         lines = result.stdout.strip().splitlines()
         return lines
     except (subprocess.CalledProcessError, FileNotFoundError):
         pass
     try:
-        result = subprocess.run(
-            ["rpm", "-ql", pkgname],
-            capture_output=True,
-            text=True,
-            check=True,
-        )
+        result = subprocess.run(['rpm', '-ql', pkgname], capture_output=True, text=True, check=True)
         lines = result.stdout.strip().splitlines()
         return lines
     except (subprocess.CalledProcessError, FileNotFoundError):
@@ -33,9 +31,12 @@ def get_package_files(pkgname: str) -> list[str]:
     print(f"Error: could not find package '{pkgname}' via dpkg or rpm.")
     sys.exit(1)
 
-
 def copy_pkg_files(pkgname: str) -> None:
-    dest_root = Path.home() / "tmp" / "deb" / pkgname
+    """copy_pkg_files – copy pkg files.
+
+Args:
+    pkgname: Description of pkgname."""
+    dest_root = Path.home() / 'tmp' / 'deb' / pkgname
     dest_root.mkdir(parents=True, exist_ok=True)
     paths = get_package_files(pkgname)
     copied_count = 0
@@ -54,19 +55,17 @@ def copy_pkg_files(pkgname: str) -> None:
         except (PermissionError, OSError) as e:
             print(f"Warning: could not copy '{src}': {e}")
             skipped_count += 1
-    print(f"\nDone. Package: {pkgname}")
-    print(f"Destination:   {dest_root}")
-    print(f"Copied files:  {copied_count}")
-    print(f"Skipped:       {skipped_count} (missing or non-file entries)")
-
+    print(f'\nDone. Package: {pkgname}')
+    print(f'Destination:   {dest_root}')
+    print(f'Copied files:  {copied_count}')
+    print(f'Skipped:       {skipped_count} (missing or non-file entries)')
 
 def main() -> None:
+    """main – main."""
     if len(sys.argv) != 2:
-        print("Usage: python copy_pkg_files.py <pkgname>")
+        print('Usage: python copy_pkg_files.py <pkgname>')
         sys.exit(1)
     pkgname = sys.argv[1]
     copy_pkg_files(pkgname)
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

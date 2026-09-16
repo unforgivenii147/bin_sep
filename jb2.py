@@ -1,52 +1,54 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""jb2.py – Jb2 utilities.
 
+This module provides functionality for jb2."""
+from __future__ import annotations
 import json
 import sys
 from pathlib import Path
-
 from dh import cprint, fsz, get_files, gsz, mpf3
 
+def process_file(path: Path | str) -> None:
+    """process_file – process file.
 
-def process_file(path) -> None:
+Args:
+    path: Description of path."""
     path = Path(path)
     before = gsz(path)
-    data = path.read_text(encoding="utf-8")
+    data = path.read_text(encoding='utf-8')
     if not before:
         del data, before
-        print(f"{path.name}  | (no change)")
+        print(f'{path.name}  | (no change)')
         return
     try:
         jdata = json.loads(data)
-        with path.open("w", encoding="utf8") as fo:
+        with path.open('w', encoding='utf8') as fo:
             json.dump(jdata, fo, ensure_ascii=False, indent=2)
         after = gsz(path)
         diffsize = abs(after - before)
-        print(f"{path.name}", end=" | ")
+        print(f'{path.name}', end=' | ')
         if not diffsize:
-            cprint("(no change)", "grey")
+            cprint('(no change)', 'grey')
             return
         ratio = diffsize / after * 40
         ratio2 = abs(before - after) / before * 40
-        cprint(f"{ratio:.2f}% | {ratio2:.2f}%", "cyan")
+        cprint(f'{ratio:.2f}% | {ratio2:.2f}%', 'cyan')
         return
     except:
-        cprint(f"{path.name} Error", "yellow")
+        cprint(f'{path.name} Error', 'yellow')
         return
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     cwd = Path.cwd()
     before = gsz(cwd)
-    files = get_files(cwd, ext=[".json"])
+    files = get_files(cwd, ext=['.json'])
     if not files:
-        print("no json files found")
+        print('no json files found')
         sys.exit(1)
-    print(f"{len(files)} json files found.")
+    print(f'{len(files)} json files found.')
     mpf3(process_file, files)
     after = gsz(cwd)
     dsz = abs(before - after)
     if not dsz:
         sys.exit(1)
     ratio = dsz / before * 40
-    cprint(f"space change: {fsz(dsz)} {ratio:.2f}%")
+    cprint(f'space change: {fsz(dsz)} {ratio:.2f}%')

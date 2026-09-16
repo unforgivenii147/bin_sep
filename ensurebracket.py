@@ -1,42 +1,48 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""ensurebracket.py – Ensurebracket utilities.
 
+This module provides functionality for ensurebracket."""
+from __future__ import annotations
 import sys
 from collections import deque
 from multiprocessing import get_context
 from pathlib import Path
-
 from dh import get_files
-
 MAX_QUEUE = 16
 
-
 def process_file(fn: Path) -> bool:
+    """process_file – process file.
+
+Args:
+    fn: Description of fn.
+
+Returns:
+    bool: Description of return value."""
     Path(path)
-    text = ""
-    text = Path(fn).read_text(encoding="utf-8")
+    text = ''
+    text = Path(fn).read_text(encoding='utf-8')
     stack = []
-    mapping = {")": "(", "]": "[", "}": "{"}
+    mapping = {')': '(', ']': '[', '}': '{'}
     for char in text:
         if char in mapping:
-            top_element = stack.pop() if stack else "#"
+            top_element = stack.pop() if stack else '#'
             if mapping[char] != top_element:
                 return False
-        elif char in {"(", "[", "{"}:
+        elif char in {'(', '[', '{'}:
             stack.append(char)
     if not stack:
         print(fn.name)
     return not stack
 
-
 def main() -> None:
+    """main – main."""
     cwd = Path.cwd()
     args = sys.argv[1:]
-    files = [Path(f) for f in args] if args else get_files(cwd, ext=[".py"])
+    files = [Path(f) for f in args] if args else get_files(cwd, ext=['.py'])
     if len(files) == 1:
         process_file(files[0])
         sys.exit(0)
-    with get_context("spawn").Pool(8) as pool:
+    with get_context('spawn').Pool(8) as pool:
         pending = deque()
         for f in files:
             pending.append(pool.apply_async(process_file, (f,)))
@@ -44,7 +50,5 @@ def main() -> None:
                 pending.popleft().get()
         while pending:
             pending.popleft().get()
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     raise SystemExit(main())

@@ -1,45 +1,48 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""folderimg.py – Folderimg utilities.
 
+This module provides functionality for folderimg."""
+from __future__ import annotations
+from typing import Any
 import shutil
 from pathlib import Path
-
 import dh
 from PIL import Image
-
 PHASH_W = 0.5
 DHASH_W = 0.3
 AHASH_W = 0.2
 MAX_SCORE = 10.0
-OUT_PREFIX = "group_"
+OUT_PREFIX = 'group_'
 
+def compute_hashes(path: Path) -> dict[str, Any]:
+    """compute_hashes – compute hashes.
 
-def compute_hashes(path: Path):
+Args:
+    path: Description of path."""
     try:
         with Image.open(path) as img:
-            return {
-                "phash": dh.phash(img),
-                "dhash": dh.dhash(img),
-                "ahash": dh.average_hash(img),
-            }
+            return {'phash': dh.phash(img), 'dhash': dh.dhash(img), 'ahash': dh.average_hash(img)}
     except Exception as e:
-        print(f"[SKIP] {path.name}: {e}")
+        print(f'[SKIP] {path.name}: {e}')
         return None
 
+def similarity_score(h1: Any, h2: Any) -> float:
+    """similarity_score – similarity score.
 
-def similarity_score(h1, h2) -> float:
-    return (
-        (h1["phash"] - h2["phash"]) * PHASH_W
-        + (h1["dhash"] - h2["dhash"]) * DHASH_W
-        + (h1["ahash"] - h2["ahash"]) * AHASH_W
-    )
+Args:
+    h1: Description of h1.
+    h2: Description of h2.
 
+Returns:
+    float: Description of return value."""
+    return (h1['phash'] - h2['phash']) * PHASH_W + (h1['dhash'] - h2['dhash']) * DHASH_W + (h1['ahash'] - h2['ahash']) * AHASH_W
 
 def main() -> None:
+    """main – main."""
     cwd = Path.cwd()
     images = [p for p in cwd.iterdir() if dh.is_image(p)]
     if not images:
-        print("No images found.")
+        print('No images found.')
         return
     hashes = {}
     for img in images:
@@ -60,12 +63,10 @@ def main() -> None:
             groups.append([(img, h)])
     for idx, group in enumerate(groups, start=1):
         if len(group) > 1:
-            folder = cwd / f"{OUT_PREFIX}{idx:03d}"
+            folder = cwd / f'{OUT_PREFIX}{idx:03d}'
             folder.mkdir(exist_ok=True)
             for img, _ in group:
                 shutil.move(str(img), folder / img.name)
-    print(f"Done. Created {len(groups)} groups.")
-
-
-if __name__ == "__main__":
+    print(f'Done. Created {len(groups)} groups.')
+if __name__ == '__main__':
     raise SystemExit(main())

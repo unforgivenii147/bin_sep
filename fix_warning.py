@@ -1,45 +1,61 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""fix_warning.py – Fix Warning utilities.
 
+This module provides functionality for fix warning."""
+from __future__ import annotations
+from typing import Any
 import io
 import re
 import sys
 import tokenize
 from pathlib import Path
-
-INVALID_ESCAPE_RE = re.compile(r"\\(?![\\\'\"abfnrtv0-7xuUNN])")
-
+INVALID_ESCAPE_RE = re.compile('\\\\(?![\\\\\\\'\\"abfnrtv0-7xuUNN])')
 
 def has_invalid_escape(s: str) -> bool:
+    """has_invalid_escape – has invalid escape.
+
+Args:
+    s: Description of s.
+
+Returns:
+    bool: Description of return value."""
     return bool(INVALID_ESCAPE_RE.search(s))
 
-
 def make_raw_string(source: str) -> str:
-    m = re.match(
-        r"^([rubfRUBF]*)?(?P<quote>\"\"\"|\'\'\'|\"|\')(?P<body>.*)(?P=quote)$",
-        source,
-        re.DOTALL,
-    )
+    """make_raw_string – make raw string.
+
+Args:
+    source: Description of source.
+
+Returns:
+    str: Description of return value."""
+    m = re.match('^([rubfRUBF]*)?(?P<quote>\\"\\"\\"|\\\'\\\'\\\'|\\"|\\\')(?P<body>.*)(?P=quote)$', source, re.DOTALL)
     if not m:
         return source
-    prefix = m.group(1) or ""
-    quote = m.group("quote")
-    body = m.group("body")
-    if "r" in prefix.lower():
+    prefix = m.group(1) or ''
+    quote = m.group('quote')
+    body = m.group('body')
+    if 'r' in prefix.lower():
         return source
-    if body.endswith("\\") and not body.endswith("\\\\"):
+    if body.endswith('\\') and (not body.endswith('\\\\')):
         return source
-    if quote == '"' and '"' in body and '"""' not in source:
+    if quote == '"' and '"' in body and ('"""' not in source):
         return source
-    if quote == "'" and "'" in body and "'''" not in source:
+    if quote == "'" and "'" in body and ("'''" not in source):
         return source
-    new_prefix = prefix + ("r" if "r" not in prefix.lower() else "")
-    return f"{new_prefix}{quote}{body}{quote}"
-
+    new_prefix = prefix + ('r' if 'r' not in prefix.lower() else '')
+    return f'{new_prefix}{quote}{body}{quote}'
 
 def fix_file(path: Path) -> bool:
+    """fix_file – fix file.
+
+Args:
+    path: Description of path.
+
+Returns:
+    bool: Description of return value."""
     try:
-        text = path.read_text(encoding="utf-8")
+        text = path.read_text(encoding='utf-8')
     except Exception:
         return False
     changed = False
@@ -57,28 +73,29 @@ def fix_file(path: Path) -> bool:
         out_tokens.append(tok)
     if changed:
         new_text = tokenize.untokenize(out_tokens)
-        path.write_text(new_text, encoding="utf-8")
+        path.write_text(new_text, encoding='utf-8')
     return changed
 
+def scan_and_fix(cwd: str) -> Any:
+    """scan_and_fix – scan and fix.
 
-def scan_and_fix(cwd: str):
+Args:
+    cwd: Description of cwd."""
     root = Path(cwd)
     fixed_files = []
-    for path in root.rglob("*.py"):
+    for path in root.rglob('*.py'):
         if fix_file(path):
             fixed_files.append(str(path))
     return fixed_files
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     if len(sys.argv) < 2:
-        print("Usage: python fix_invalid_escapes.py <directory>")
+        print('Usage: python fix_invalid_escapes.py <directory>')
         sys.exit(1)
     directory = sys.argv[1]
     fixed = scan_and_fix(directory)
     if fixed:
-        print("Fixed files:")
+        print('Fixed files:')
         for f in fixed:
-            print(" -", f)
+            print(' -', f)
     else:
-        print("No files needed fixing.")
+        print('No files needed fixing.')

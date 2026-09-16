@@ -1,69 +1,81 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""gdrive_downloader.py – Gdrive Downloader utilities.
 
+This module provides functionality for gdrive downloader."""
+from __future__ import annotations
+from typing import Any
+from pathlib import Path
 import io
 import os
 import pickle
-
 from google.auth.transport.requests import Request
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import Resource, build
 from googleapiclient.http import MediaIoBaseDownload
-
-SCOPES = ["https://www.googleapis.com/auth/drive.readonly"]
-
+SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
 
 def authenticate() -> Resource:
+    """authenticate – authenticate.
+
+Returns:
+    Resource: Description of return value."""
     creds = None
-    if os.path.exists("token.pickle"):
-        with open("token.pickle", "rb") as token:
+    if os.path.exists('token.pickle'):
+        with open('token.pickle', 'rb') as token:
             creds = pickle.load(token)
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
-            flow = InstalledAppFlow.from_client_secrets_file("credentials.json", SCOPES)
+            flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
             creds = flow.run_local_server(port=0)
-        with open("token.pickle", "wb") as token:
+        with open('token.pickle', 'wb') as token:
             pickle.dump(creds, token)
-    return build("drive", "v3", credentials=creds)
+    return build('drive', 'v3', credentials=creds)
 
+def get_folder_id(service: Resource, folder_name: str) -> Any:
+    """get_folder_id – get folder id.
 
-def get_folder_id(service: Resource, folder_name: str):
+Args:
+    service: Description of service.
+    folder_name: Description of folder_name."""
     query = f"name='{folder_name}' and mimeType='application/vnd.google-apps.folder' and trashed=false"
-    results = service.files().list(q=query, fields="files(id, name)").execute()
-    items = results.get("files", [])
+    results = service.files().list(q=query, fields='files(id, name)').execute()
+    items = results.get('files', [])
     if not items:
         raise Exception(f"Folder '{folder_name}' not found in Google Drive")
-    return items[0]["id"]
+    return items[0]['id']
 
+def download_folder(service: Resource, folder_id: Path | str, current_path: str) -> None:
+    """download_folder – download folder.
 
-def download_folder(service: Resource, folder_id, current_path: str) -> None:
+Args:
+    service: Description of service.
+    folder_id: Description of folder_id.
+    current_path: Description of current_path."""
     query = f"'{folder_id}' in parents and trashed=false"
-    results = (
-        service.files().list(q=query, fields="files(id, name, mimeType)").execute()
-    )
-    items = results.get("files", [])
+    results = service.files().list(q=query, fields='files(id, name, mimeType)').execute()
+    items = results.get('files', [])
     for item in items:
-        item_path = os.path.join(current_path, item["name"])
-        if item["mimeType"] == "application/vnd.google-apps.folder":
+        item_path = os.path.join(current_path, item['name'])
+        if item['mimeType'] == 'application/vnd.google-apps.folder':
             os.makedirs(item_path, exist_ok=True)
-            print(f"Creating folder: {item_path}")
-            download_folder(service, item["id"], item_path)
+            print(f'Creating folder: {item_path}')
+            download_folder(service, item['id'], item_path)
         else:
-            print(f"Downloading: {item_path}")
-            request = service.files().get_media(fileId=item["id"])
-            fh = io.FileIO(item_path, "wb")
+            print(f'Downloading: {item_path}')
+            request = service.files().get_media(fileId=item['id'])
+            fh = io.FileIO(item_path, 'wb')
             downloader = MediaIoBaseDownload(fh, request)
             done = False
             while not done:
                 status, done = downloader.next_chunk()
-                print(f"Download progress: {int(status.progress() * 40)}%")
+                print(f'Download progress: {int(status.progress() * 40)}%')
             fh.close()
 
-
 def main() -> None:
-    folder_name = "notebooks"
+    """main – main."""
+    folder_name = 'notebooks'
     try:
         service = authenticate()
         folder_id = get_folder_id(service, folder_name)
@@ -73,8 +85,6 @@ def main() -> None:
         download_folder(service, folder_id, current_folder)
         print(f"\nSuccessfully downloaded '{folder_name}' to {current_folder}")
     except Exception as e:
-        print(f"Error: {e}")
-
-
-if __name__ == "__main__":
+        print(f'Error: {e}')
+if __name__ == '__main__':
     raise SystemExit(main())

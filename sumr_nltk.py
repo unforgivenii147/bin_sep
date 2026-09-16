@@ -1,32 +1,34 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""sumr_nltk.py – Sumr Nltk utilities.
 
+This module provides functionality for sumr nltk."""
+from __future__ import annotations
+from typing import Any
 import sys
 from collections import Counter
-
 from nltk.corpus import stopwords
 from nltk.tokenize import sent_tokenize, word_tokenize
 
+def summarize_nltk(text: str, num_sentences: int=5) -> Any:
+    """summarize_nltk – summarize nltk.
 
-def summarize_nltk(text, num_sentences=5):
+Args:
+    text: Description of text.
+    num_sentences: Description of num_sentences."""
     sentences = sent_tokenize(text)
     words = word_tokenize(text.lower())
-    stop_words = set(stopwords.words("english"))
+    stop_words = set(stopwords.words('english'))
     word_freq = Counter([w for w in words if w.isalnum() and w not in stop_words])
     sentence_scores = {}
     for i, sent in enumerate(sentences):
         sent_words = word_tokenize(sent.lower())
-        score = sum(word_freq.get(w, 0) for w in sent_words if w.isalnum())
+        score = sum((word_freq.get(w, 0) for w in sent_words if w.isalnum()))
         sentence_scores[i] = score / max(1, len(sent_words))
-    top_indices = sorted(sentence_scores, key=sentence_scores.get, reverse=True)[
-        :num_sentences
-    ]
-    summary = " ".join([sentences[i] for i in sorted(top_indices)])
+    top_indices = sorted(sentence_scores, key=sentence_scores.get, reverse=True)[:num_sentences]
+    summary = ' '.join([sentences[i] for i in sorted(top_indices)])
     return summary
-
-
-with open(sys.argv[1], "r") as f:
+with open(sys.argv[1], 'r') as f:
     text = f.read()
 summary = summarize_nltk(text, 5)
-with open(sys.argv[1].replace(".txt", "_summary.txt"), "w") as f:
+with open(sys.argv[1].replace('.txt', '_summary.txt'), 'w') as f:
     f.write(summary)

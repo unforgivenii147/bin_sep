@@ -1,45 +1,48 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""foldext.py – Foldext utilities.
 
+This module provides functionality for foldext."""
+from __future__ import annotations
+from typing import Any
 import contextlib
 import shutil
 from pathlib import Path
-
 from dh import gsz
 
+def folderize_by_extension(cwd: Path) -> Any:
+    """folderize_by_extension – folderize by extension.
 
-def folderize_by_extension(cwd: Path):
+Args:
+    cwd: Description of cwd."""
     root_path = Path(cwd)
     extension_stats = {}
-    for path in root_path.rglob("*"):
-        if ".git" in path.parts:
+    for path in root_path.rglob('*'):
+        if '.git' in path.parts:
             continue
         if path.is_file():
-            ext = path.suffix.lower()[1:] if path.suffix else "no_extension"
+            ext = path.suffix.lower()[1:] if path.suffix else 'no_extension'
             size = path.stat().st_size
             if ext not in extension_stats:
-                extension_stats[ext] = {"count": 0, "total_size": 0, "files": []}
-            extension_stats[ext]["count"] += 1
-            extension_stats[ext]["total_size"] += size
-            extension_stats[ext]["files"].append(path)
+                extension_stats[ext] = {'count': 0, 'total_size': 0, 'files': []}
+            extension_stats[ext]['count'] += 1
+            extension_stats[ext]['total_size'] += size
+            extension_stats[ext]['files'].append(path)
     created_dirs = set()
     for ext, stats in extension_stats.items():
         target_dir = root_path / ext
         target_dir.mkdir(exist_ok=True)
         created_dirs.add(ext)
-        for path in stats["files"]:
+        for path in stats['files']:
             if path.parent == target_dir:
                 continue
             target_path = target_dir / path.name
             counter = 1
             while target_path.exists():
-                target_path = target_dir / f"{path.stem}_{counter}{path.suffix}"
+                target_path = target_dir / f'{path.stem}_{counter}{path.suffix}'
                 counter += 1
             with contextlib.suppress(BaseException):
                 shutil.move(str(path), str(target_path))
-    for dir_path in sorted(
-        root_path.glob("**/*"), key=lambda p: len(p.parts), reverse=True
-    ):
+    for dir_path in sorted(root_path.glob('**/*'), key=lambda p: len(p.parts), reverse=True):
         if dir_path.is_dir() and dir_path != root_path:
             with contextlib.suppress(OSError):
                 dir_path.rmdir()
@@ -47,20 +50,16 @@ def folderize_by_extension(cwd: Path):
     total_size = 0
     for ext in sorted(extension_stats.keys()):
         stats = extension_stats[ext]
-        total_files += stats["count"]
-        total_size += stats["total_size"]
-        ext_display = ext if ext else "no_extension"
-        size_str = gsz(stats["total_size"])
-        print(
-            f"{ext_display:<15} : {stats['count']:4} file{'s' if stats['count'] != 1 else ' '}  {size_str:>8}"
-        )
-    print("-" * 40)
+        total_files += stats['count']
+        total_size += stats['total_size']
+        ext_display = ext if ext else 'no_extension'
+        size_str = gsz(stats['total_size'])
+        print(f"{ext_display:<15} : {stats['count']:4} file{('s' if stats['count'] != 1 else ' ')}  {size_str:>8}")
+    print('-' * 40)
     print(f"{'TOTAL':<15} : {total_files:4} files  {gsz(total_size):>8}")
-    print("=" * 40)
-    return created_dirs, extension_stats
-
-
-if __name__ == "__main__":
+    print('=' * 40)
+    return (created_dirs, extension_stats)
+if __name__ == '__main__':
     target_dir = Path.cwd()
     created_dirs, stats = folderize_by_extension(target_dir)
-    print(f"\nCreated {len(created_dirs)} extension folders.")
+    print(f'\nCreated {len(created_dirs)} extension folders.')

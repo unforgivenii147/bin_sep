@@ -1,25 +1,28 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""cytonizer.py – Cytonizer utilities.
 
+This module provides functionality for cytonizer."""
+from __future__ import annotations
 import os
 import sys
 from os import chdir as os_chdir
 from pathlib import Path
-
 from dh import get_files, mpf3
-
 START_DIR = Path.cwd()
 NUM_PROCESSES = 4
 
+def process_file(path: Path | str) -> None:
+    """process_file – process file.
 
-def process_file(path) -> None:
+Args:
+    path: Description of path."""
     path = Path(path)
     pardir = path.parent
     os_chdir(pardir)
-    os.system(f"cythonize {path.name}")
-
+    os.system(f'cythonize {path.name}')
 
 def main() -> None:
+    """main – main."""
     cwd = Path.cwd()
     args = sys.argv[1:]
     files = []
@@ -29,11 +32,9 @@ def main() -> None:
             if p.is_file():
                 files.append(p)
             elif p.is_dir():
-                files.extend(get_files(p, ext=[".pyx"]))
+                files.extend(get_files(p, ext=['.pyx']))
     else:
-        files = get_files(cwd, ext=[".pyx"])
+        files = get_files(cwd, ext=['.pyx'])
     _ = mpf3(process_file, files)
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     raise SystemExit(main())

@@ -1,46 +1,56 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""armc.py – Armc utilities.
 
+This module provides functionality for armc."""
+from __future__ import annotations
 import argparse
 import ast
 import multiprocessing as mp
 import sys
 from pathlib import Path
-from typing import NamedTuple
-
+from typing import NamedTuple, Any
 import tree_sitter_python as tspython
 from loguru import logger
 from tree_sitter import Language, Parser
-
 logger.remove()
-logger.add(
-    sys.stderr,
-    format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level:7}</level> | <level>{message}</level>",
-    level="INFO",
-)
+logger.add(sys.stderr, format='<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level:7}</level> | <level>{message}</level>', level='INFO')
 PY_LANGUAGE = Language(tspython.language())
 
-
 class ProcessResult(NamedTuple):
+    """ProcessResult – ProcessResult."""
     path: Path
     removed_count: int
     unremoved_count: int
     modified: bool
     error: str | None = None
 
+def is_shebang(byte_content: bytes, node: Any) -> bool:
+    """is_shebang – is shebang.
 
-def is_shebang(byte_content: bytes, node) -> bool:
-    return node.start_point[0] == 0 and byte_content.startswith(b"#!")
+Args:
+    byte_content: Description of byte_content.
+    node: Description of node.
 
+Returns:
+    bool: Description of return value."""
+    return node.start_point[0] == 0 and byte_content.startswith(b'#!')
 
 def remove_comments_from_code(source_bytes: bytes) -> tuple[bytes, int]:
+    """remove_comments_from_code – remove comments from code.
+
+Args:
+    source_bytes: Description of source_bytes.
+
+Returns:
+    tuple[bytes, int]: Description of return value."""
     parser = Parser(PY_LANGUAGE)
     tree = parser.parse(source_bytes)
     comment_nodes = []
     cursor = tree.walk()
 
-    def visit_node():
-        if cursor.node.type == "comment":
+    def visit_node() -> None:
+        """visit_node – visit node."""
+        if cursor.node.type == 'comment':
             if not is_shebang(source_bytes, cursor.node):
                 comment_nodes.append(cursor.node)
             return
@@ -50,26 +60,32 @@ def remove_comments_from_code(source_bytes: bytes) -> tuple[bytes, int]:
                 if not cursor.goto_next_sibling():
                     break
             cursor.goto_parent()
-
     visit_node()
     if not comment_nodes:
-        return source_bytes, 0
+        return (source_bytes, 0)
     comment_nodes.sort(key=lambda n: n.start_byte, reverse=True)
     buffer = bytearray(source_bytes)
     for node in comment_nodes:
-        del buffer[node.start_byte : node.end_byte]
-    return bytes(buffer), len(comment_nodes)
-
+        del buffer[node.start_byte:node.end_byte]
+    return (bytes(buffer), len(comment_nodes))
 
 def check_remaining_comments(source_bytes: bytes) -> int:
+    """check_remaining_comments – check remaining comments.
+
+Args:
+    source_bytes: Description of source_bytes.
+
+Returns:
+    int: Description of return value."""
     parser = Parser(PY_LANGUAGE)
     tree = parser.parse(source_bytes)
     remaining = 0
     cursor = tree.walk()
 
-    def count_comments():
+    def count_comments() -> None:
+        """count_comments – count comments."""
         nonlocal remaining
-        if cursor.node.type == "comment":
+        if cursor.node.type == 'comment':
             if not is_shebang(source_bytes, cursor.node):
                 remaining += 1
             return
@@ -79,12 +95,17 @@ def check_remaining_comments(source_bytes: bytes) -> int:
                 if not cursor.goto_next_sibling():
                     break
             cursor.goto_parent()
-
     count_comments()
     return remaining
 
-
 def process_single_file(path: Path) -> ProcessResult:
+    """process_single_file – process single file.
+
+Args:
+    path: Description of path.
+
+Returns:
+    ProcessResult: Description of return value."""
     try:
         source_bytes = path.read_bytes()
         cleaned_bytes, removed_count = remove_comments_from_code(source_bytes)
@@ -93,50 +114,44 @@ def process_single_file(path: Path) -> ProcessResult:
         try:
             ast.parse(cleaned_bytes, filename=str(path))
         except SyntaxError as e:
-            return ProcessResult(
-                path,
-                0,
-                0,
-                False,
-                error=f"AST validation failed after stripping comments: {e}",
-            )
+            return ProcessResult(path, 0, 0, False, error=f'AST validation failed after stripping comments: {e}')
         unremoved_count = check_remaining_comments(cleaned_bytes)
         path.write_bytes(cleaned_bytes)
         return ProcessResult(path, removed_count, unremoved_count, True)
     except Exception as exc:
         return ProcessResult(path, 0, 0, False, error=str(exc))
 
-
 def collect_python_files(inputs: list[str]) -> list[Path]:
+    """collect_python_files – collect python files.
+
+Args:
+    inputs: Description of inputs.
+
+Returns:
+    list[Path]: Description of return value."""
     files: set[Path] = set()
     if not inputs:
-        inputs = ["."]
+        inputs = ['.']
     for item in inputs:
         p = Path(item).resolve()
-        if p.is_file() and p.suffix == ".py":
+        if p.is_file() and p.suffix == '.py':
             files.add(p)
         elif p.is_dir():
-            files.update(f for f in p.rglob("*.py") if f.is_file())
+            files.update((f for f in p.rglob('*.py') if f.is_file()))
         else:
-            logger.warning(f"Skipping invalid target or non-Python path: {item}")
+            logger.warning(f'Skipping invalid target or non-Python path: {item}')
     return list(files)
 
-
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Recursively strip comments from Python files in-place using Tree-sitter."
-    )
-    parser.add_argument(
-        "paths",
-        nargs="*",
-        help="Files or directories to scan (defaults to recursively checking current directory).",
-    )
+    """main – main."""
+    parser = argparse.ArgumentParser(description='Recursively strip comments from Python files in-place using Tree-sitter.')
+    parser.add_argument('paths', nargs='*', help='Files or directories to scan (defaults to recursively checking current directory).')
     args = parser.parse_args()
     targets = collect_python_files(args.paths)
     if not targets:
-        print("No Python files found to process.")
+        print('No Python files found to process.')
         return
-    print(f"Dispatched {len(targets)} target files to 8 multiprocessing workers...")
+    print(f'Dispatched {len(targets)} target files to 8 multiprocessing workers...')
     async_results = []
     with mp.Pool(processes=8) as pool:
         for path in targets:
@@ -149,21 +164,17 @@ def main() -> None:
     for async_res in async_results:
         res: ProcessResult = async_res.get()
         if res.error:
-            logger.error(f"Error processing {res.path}: {res.error}")
+            logger.error(f'Error processing {res.path}: {res.error}')
             continue
         if res.modified:
             total_modified += 1
             total_removed += res.removed_count
-            print(f"Modified: {res.path} | Removed comments: {res.removed_count}")
+            print(f'Modified: {res.path} | Removed comments: {res.removed_count}')
             if res.unremoved_count > 0:
-                logger.warning(
-                    f"Lingering comments detected in {res.path}: {res.unremoved_count} remain."
-                )
-    print("--- Execution Summary ---")
-    print(f"Total files scanned:  {len(targets)}")
-    print(f"Files modified:        {total_modified}")
-    print(f"Comments stripped:     {total_removed}")
-
-
-if __name__ == "__main__":
+                logger.warning(f'Lingering comments detected in {res.path}: {res.unremoved_count} remain.')
+    print('--- Execution Summary ---')
+    print(f'Total files scanned:  {len(targets)}')
+    print(f'Files modified:        {total_modified}')
+    print(f'Comments stripped:     {total_removed}')
+if __name__ == '__main__':
     main()

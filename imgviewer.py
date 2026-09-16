@@ -1,13 +1,20 @@
 #!/data/data/com.termux/files/home/.local/bin/python
+"""imgviewer.py – Imgviewer utilities.
+
+This module provides functionality for imgviewer."""
 from __future__ import annotations
-
+from typing import Any
 import sys
-
 import numpy as np
 from PIL import Image
 
+def get_ansi_color_code(r: Any, g: Any, b: Any) -> Any:
+    """get_ansi_color_code – get ansi color code.
 
-def get_ansi_color_code(r, g, b):
+Args:
+    r: Description of r.
+    g: Description of g.
+    b: Description of b."""
     if r == g and g == b:
         if r < 8:
             return 16
@@ -16,16 +23,27 @@ def get_ansi_color_code(r, g, b):
         return round((r - 8) / 247 * 24) + 232
     return 16 + 36 * round(r / 255 * 5) + 6 * round(g / 255 * 5) + round(b / 255 * 5)
 
+def get_color(r: Any, g: Any, b: Any) -> str:
+    """get_color – get color.
 
-def get_color(r, g, b) -> str:
-    return f"\x1b[48;5;{int(get_ansi_color_code(r, g, b))}m \x1b[0m"
+Args:
+    r: Description of r.
+    g: Description of g.
+    b: Description of b.
 
+Returns:
+    str: Description of return value."""
+    return f'\x1b[48;5;{int(get_ansi_color_code(r, g, b))}m \x1b[0m'
 
 def show_image(img_path: str) -> None:
+    """show_image – show image.
+
+Args:
+    img_path: Description of img_path."""
     try:
         img = Image.open(img_path)
     except FileNotFoundError:
-        sys.exit("Image not found.")
+        sys.exit('Image not found.')
     h = 100
     w = int(img.width / img.height * h) * 2
     img = img.resize((w, h), Image.Resampling.LANCZOS)
@@ -33,9 +51,7 @@ def show_image(img_path: str) -> None:
     for x in range(h):
         for y in range(w):
             pix = img_arr[x][y]
-            print(get_color(pix[0], pix[1], pix[2]), end="")
+            print(get_color(pix[0], pix[1], pix[2]), end='')
         print()
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     show_image(sys.argv[1])

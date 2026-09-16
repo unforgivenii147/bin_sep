@@ -1,6 +1,8 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""rmco.py – Rmco utilities.
 
+This module provides functionality for rmco."""
+from __future__ import annotations
 import argparse
 import ast
 import concurrent.futures
@@ -10,36 +12,37 @@ import sys
 import tokenize
 from pathlib import Path
 from typing import NamedTuple
-
 try:
     import astor
 except Exception:
-    print(
-        "This script requires the 'astor' package. Install with: pip install astor",
-        file=sys.stderr,
-    )
+    print("This script requires the 'astor' package. Install with: pip install astor", file=sys.stderr)
     sys.exit(2)
 
-
 class RemovalStats(NamedTuple):
+    """RemovalStats – RemovalStats."""
     docstrings_removed: int
     comments_removed: int
 
-
 class DocstringStripper(ast.NodeTransformer):
-    def __init__(self):
+    """DocstringStripper – DocstringStripper."""
+
+    def __init__(self) -> None:
+        """__init__ –   init  ."""
         self.docstrings_removed = 0
 
     def _strip_docstring(self, node: ast.AST) -> ast.AST:
-        body = getattr(node, "body", None)
+        """_strip_docstring –  strip docstring.
+
+Args:
+    node: Description of node.
+
+Returns:
+    ast.AST: Description of return value."""
+        body = getattr(node, 'body', None)
         if not body:
             return node
         first = body[0]
-        if (
-            isinstance(first, ast.Expr)
-            and isinstance(getattr(first, "value", None), ast.Constant)
-            and isinstance(first.value.value, str)
-        ):
+        if isinstance(first, ast.Expr) and isinstance(getattr(first, 'value', None), ast.Constant) and isinstance(first.value.value, str):
             body.pop(0)
             self.docstrings_removed += 1
             if not body:
@@ -47,48 +50,88 @@ class DocstringStripper(ast.NodeTransformer):
         return node
 
     def visit_Module(self, node: ast.Module) -> ast.AST:
+        """visit_Module – visit Module.
+
+Args:
+    node: Description of node.
+
+Returns:
+    ast.AST: Description of return value."""
         self.generic_visit(node)
         return self._strip_docstring(node)
 
     def visit_FunctionDef(self, node: ast.FunctionDef) -> ast.AST:
+        """visit_FunctionDef – visit FunctionDef.
+
+Args:
+    node: Description of node.
+
+Returns:
+    ast.AST: Description of return value."""
         self.generic_visit(node)
         return self._strip_docstring(node)
 
     def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> ast.AST:
+        """visit_AsyncFunctionDef – visit AsyncFunctionDef.
+
+Args:
+    node: Description of node.
+
+Returns:
+    ast.AST: Description of return value."""
         self.generic_visit(node)
         return self._strip_docstring(node)
 
     def visit_ClassDef(self, node: ast.ClassDef) -> ast.AST:
+        """visit_ClassDef – visit ClassDef.
+
+Args:
+    node: Description of node.
+
+Returns:
+    ast.AST: Description of return value."""
         self.generic_visit(node)
         return self._strip_docstring(node)
 
-
 def extract_prefix_comments_and_shebang(source: str) -> tuple[str, str]:
+    """extract_prefix_comments_and_shebang – extract prefix comments and shebang.
+
+Args:
+    source: Description of source.
+
+Returns:
+    tuple[str, str]: Description of return value."""
     lines = source.splitlines(keepends=True)
     prefix_lines: list[str] = []
     i = 0
     for i, line in enumerate(lines):
         stripped = line.strip()
-        if i == 0 and line.startswith("#!"):
+        if i == 0 and line.startswith('#!'):
             prefix_lines.append(line)
             continue
-        if stripped == "":
+        if stripped == '':
             if prefix_lines:
                 prefix_lines.append(line)
             continue
-        if stripped.startswith("#"):
+        if stripped.startswith('#'):
             low = stripped.lower()
-            if any(x in low for x in ("coding", "encoding", "type:", "fmt:")):
+            if any((x in low for x in ('coding', 'encoding', 'type:', 'fmt:'))):
                 prefix_lines.append(line)
                 continue
             break
         break
-    prefix = "".join(prefix_lines)
-    remainder = "".join(lines[i:]) if i < len(lines) else ""
+    prefix = ''.join(prefix_lines)
+    remainder = ''.join(lines[i:]) if i < len(lines) else ''
     return (prefix, remainder)
 
-
 def collect_and_strip_comments(source: str) -> tuple[str, dict[int, list[str]], int]:
+    """collect_and_strip_comments – collect and strip comments.
+
+Args:
+    source: Description of source.
+
+Returns:
+    tuple[str, dict[int, list[str]], int]: Description of return value."""
     lines = source.splitlines(keepends=True)
     preserved_comments: dict[int, list[str]] = {}
     comments_to_remove: dict[int, set] = {}
@@ -101,7 +144,7 @@ def collect_and_strip_comments(source: str) -> tuple[str, dict[int, list[str]], 
                 low = tok_string.lower()
                 row = tok.start[0]
                 col = tok.start[1]
-                if any(x in low for x in ("type:", "fmt:", "noqa")):
+                if any((x in low for x in ('type:', 'fmt:', 'noqa'))):
                     preserved_comments.setdefault(row, []).append(tok_string)
                 else:
                     line_before_comment = lines[row - 1][:col].rstrip()
@@ -112,14 +155,20 @@ def collect_and_strip_comments(source: str) -> tuple[str, dict[int, list[str]], 
         pass
     return (preserved_comments, comments_removed)
 
-
 def process_file(path: Path) -> tuple[str, bool, str | None, RemovalStats]:
+    """process_file – process file.
+
+Args:
+    path: Description of path.
+
+Returns:
+    tuple[str, bool, str | None, RemovalStats]: Description of return value."""
     try:
         with tokenize.open(path) as f:
             original = f.read()
             encoding = f.encoding
     except Exception as exc:
-        return (str(path), False, f"read-error: {exc}", RemovalStats(0, 0))
+        return (str(path), False, f'read-error: {exc}', RemovalStats(0, 0))
     if not original.strip():
         return (str(path), False, None, RemovalStats(0, 0))
     prefix, _code_part = extract_prefix_comments_and_shebang(original)
@@ -127,40 +176,40 @@ def process_file(path: Path) -> tuple[str, bool, str | None, RemovalStats]:
     try:
         tree = ast.parse(original)
     except SyntaxError as exc:
-        return (str(path), False, f"syntax-error-original: {exc}", RemovalStats(0, 0))
+        return (str(path), False, f'syntax-error-original: {exc}', RemovalStats(0, 0))
     stripper = DocstringStripper()
     new_tree = stripper.visit(tree)
     ast.fix_missing_locations(new_tree)
     try:
         new_source = astor.to_source(new_tree)
     except Exception as exc:
-        return (str(path), False, f"unparse-failed: {exc}", RemovalStats(0, 0))
+        return (str(path), False, f'unparse-failed: {exc}', RemovalStats(0, 0))
     combined = prefix + new_source
     combined = reattach_inline_comments(combined, preserved_inline_comments)
-    combined = combined.rstrip("\n") + "\n"
+    combined = combined.rstrip('\n') + '\n'
     try:
         ast.parse(combined)
     except SyntaxError as exc:
-        return (
-            str(path),
-            False,
-            f"syntax-error-transformed: {exc}",
-            RemovalStats(0, 0),
-        )
+        return (str(path), False, f'syntax-error-transformed: {exc}', RemovalStats(0, 0))
     if combined == original:
         return (str(path), False, None, RemovalStats(0, 0))
     try:
-        with open(path, "w", encoding=encoding, newline="\n") as f:
+        with open(path, 'w', encoding=encoding, newline='\n') as f:
             f.write(combined)
     except Exception as exc:
-        return (str(path), False, f"write-error: {exc}", RemovalStats(0, 0))
+        return (str(path), False, f'write-error: {exc}', RemovalStats(0, 0))
     stats = RemovalStats(stripper.docstrings_removed, comments_removed)
     return (str(path), True, None, stats)
 
+def reattach_inline_comments(new_source: str, preserved_comments: dict[int, list[str]]) -> str:
+    """reattach_inline_comments – reattach inline comments.
 
-def reattach_inline_comments(
-    new_source: str, preserved_comments: dict[int, list[str]]
-) -> str:
+Args:
+    new_source: Description of new_source.
+    preserved_comments: Description of preserved_comments.
+
+Returns:
+    str: Description of return value."""
     if not preserved_comments:
         return new_source
     new_lines = new_source.splitlines()
@@ -173,7 +222,7 @@ def reattach_inline_comments(
                 line = new_lines[target_idx]
                 if comment not in line:
                     if line.rstrip():
-                        new_lines[target_idx] = line + "  " + comment
+                        new_lines[target_idx] = line + '  ' + comment
                     else:
                         new_lines[target_idx] = comment
                 attached.add((orig_line_no, comment))
@@ -181,51 +230,50 @@ def reattach_inline_comments(
         for comment in preserved_comments[orig_line_no]:
             if (orig_line_no, comment) not in attached:
                 new_lines.append(comment)
-    result = "\n".join(new_lines)
-    if new_source.endswith("\n") and (not result.endswith("\n")):
-        result += "\n"
+    result = '\n'.join(new_lines)
+    if new_source.endswith('\n') and (not result.endswith('\n')):
+        result += '\n'
     return result
 
-
 def should_skip_path(p: Path) -> bool:
+    """should_skip_path – should skip path.
+
+Args:
+    p: Description of p.
+
+Returns:
+    bool: Description of return value."""
     parts = {part.lower() for part in p.parts}
-    skip_indicators = {
-        ".git",
-        "__pycache__",
-        ".venv",
-        "venv",
-        "node_modules",
-        ".tox",
-        "build",
-        "dist",
-    }
+    skip_indicators = {'.git', '__pycache__', '.venv', 'venv', 'node_modules', '.tox', 'build', 'dist'}
     return bool(parts & skip_indicators)
 
-
 def collect_py_files(paths: list[Path]) -> list[Path]:
+    """collect_py_files – collect py files.
+
+Args:
+    paths: Description of paths.
+
+Returns:
+    list[Path]: Description of return value."""
     files: list[Path] = []
     for path in paths:
         if path.is_file():
-            if path.suffix == ".py" and (not path.is_symlink()):
+            if path.suffix == '.py' and (not path.is_symlink()):
                 files.append(path)
         elif path.is_dir():
-            for p in path.rglob("*.py"):
+            for p in path.rglob('*.py'):
                 if should_skip_path(p) or p.is_symlink():
                     continue
                 files.append(p)
     return list(set(files))
 
-
 def main() -> int:
-    parser = argparse.ArgumentParser(
-        description="Strip docstrings and comments from Python files", prog="strip-py"
-    )
-    parser.add_argument(
-        "paths",
-        nargs="*",
-        type=Path,
-        help="Files or directories to process (default: current directory)",
-    )
+    """main – main.
+
+Returns:
+    int: Description of return value."""
+    parser = argparse.ArgumentParser(description='Strip docstrings and comments from Python files', prog='strip-py')
+    parser.add_argument('paths', nargs='*', type=Path, help='Files or directories to process (default: current directory)')
     args = parser.parse_args()
     if not args.paths:
         paths = [Path.cwd()]
@@ -233,9 +281,9 @@ def main() -> int:
         paths = args.paths
     files = collect_py_files(paths)
     if not files:
-        print("No .py files found.")
+        print('No .py files found.')
         return 0
-    print(f"Processing {len(files)} file(s)...\n")
+    print(f'Processing {len(files)} file(s)...\n')
     changed: list[tuple[str, RemovalStats]] = []
     errors: list[tuple[str, str]] = []
     workers = max(1, min(32, multiprocessing.cpu_count()))
@@ -250,30 +298,24 @@ def main() -> int:
                     changed.append((path_str, stats))
             except Exception as exc:
                 p = futures[fut]
-                errors.append((str(p), f"worker-exception: {exc}"))
+                errors.append((str(p), f'worker-exception: {exc}'))
     if changed:
         total_docstrings = 0
         total_comments = 0
-        print("Modified files:")
+        print('Modified files:')
         for p in sorted(changed, key=lambda x: x[0]):
             path_str, stats = p
             total_docstrings += stats.docstrings_removed
             total_comments += stats.comments_removed
-            print(
-                f"  {Path(path_str).name}: {stats.docstrings_removed} docstring(s), {stats.comments_removed} comment(s)"
-            )
-        print(
-            f"\nTotals: {total_docstrings} docstring(s), {total_comments} comment(s) removed\n"
-        )
+            print(f'  {Path(path_str).name}: {stats.docstrings_removed} docstring(s), {stats.comments_removed} comment(s)')
+        print(f'\nTotals: {total_docstrings} docstring(s), {total_comments} comment(s) removed\n')
     if errors:
-        print("Errors:", file=sys.stderr)
+        print('Errors:', file=sys.stderr)
         for p, e in sorted(errors):
-            print(f"  {p}: {e}", file=sys.stderr)
+            print(f'  {p}: {e}', file=sys.stderr)
         return 2
     if not changed:
-        print("No changes made.")
+        print('No changes made.')
     return 0
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     raise SystemExit(main())

@@ -1,6 +1,8 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""dedupfunc.py – Dedupfunc utilities.
 
+This module provides functionality for dedupfunc."""
+from __future__ import annotations
 import argparse
 import ast
 import re
@@ -8,11 +10,17 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
-
 class FunctionInfo:
-    def __init__(
-        self, name: str, body: str, lineno: int, node: ast.FunctionDef
-    ) -> None:
+    """FunctionInfo – FunctionInfo."""
+
+    def __init__(self, name: str, body: str, lineno: int, node: ast.FunctionDef) -> None:
+        """__init__ –   init  .
+
+Args:
+    name: Description of name.
+    body: Description of body.
+    lineno: Description of lineno.
+    node: Description of node."""
         self.name = name
         self.body = self._normalize_body(body)
         self.original_body = body
@@ -21,70 +29,113 @@ class FunctionInfo:
 
     @staticmethod
     def _normalize_body(body: str) -> str:
-        lines = []
-        for line in body.split("\n"):
-            line_without_comments = re.sub(r"(?<![\"\'])#.*$", "", line)
-            lines.append(line_without_comments)
-        body = "\n".join(lines)
-        lines = [line.strip() for line in body.split("\n") if line.strip()]
-        return "\n".join(lines)
+        """_normalize_body –  normalize body.
 
+Args:
+    body: Description of body.
+
+Returns:
+    str: Description of return value."""
+        lines = []
+        for line in body.split('\n'):
+            line_without_comments = re.sub('(?<![\\"\\\'])#.*$', '', line)
+            lines.append(line_without_comments)
+        body = '\n'.join(lines)
+        lines = [line.strip() for line in body.split('\n') if line.strip()]
+        return '\n'.join(lines)
 
 class DuplicateFunctionFinder(ast.NodeVisitor):
+    """DuplicateFunctionFinder – DuplicateFunctionFinder."""
+
     def __init__(self) -> None:
+        """__init__ –   init  ."""
         self.functions: list[FunctionInfo] = []
         self.source_lines: list[str] = []
 
     def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
+        """visit_FunctionDef – visit FunctionDef.
+
+Args:
+    node: Description of node."""
         body_start = node.body[0].lineno - 1
         body_end = node.body[-1].end_lineno
         body_lines = self.source_lines[body_start:body_end]
-        body_code = "\n".join(body_lines)
-        func_info = FunctionInfo(
-            name=node.name, body=body_code, lineno=node.lineno, node=node
-        )
+        body_code = '\n'.join(body_lines)
+        func_info = FunctionInfo(name=node.name, body=body_code, lineno=node.lineno, node=node)
         self.functions.append(func_info)
         self.generic_visit(node)
 
     def analyze_file(self, path: str) -> dict[str, list[FunctionInfo]]:
-        with open(path, encoding="utf-8") as f:
+        """analyze_file – analyze file.
+
+Args:
+    path: Description of path.
+
+Returns:
+    dict[str, list[FunctionInfo]]: Description of return value."""
+        with open(path, encoding='utf-8') as f:
             content = f.read()
             self.source_lines = content.splitlines()
         try:
             tree = ast.parse(content)
             self.visit(tree)
         except SyntaxError as e:
-            print(f"Syntax error in file: {e}")
+            print(f'Syntax error in file: {e}')
             return {}
         groups = defaultdict(list)
         for func in self.functions:
             groups[func.body].append(func)
         return {body: funcs for body, funcs in groups.items() if len(funcs) > 1}
 
-
 class DuplicateFunctionRemover:
+    """DuplicateFunctionRemover – DuplicateFunctionRemover."""
+
     def __init__(self, path: str) -> None:
+        """__init__ –   init  .
+
+Args:
+    path: Description of path."""
         self.path = Path(path)
         self.content = None
         self.lines = None
 
     def _get_function_lines(self, func_info: FunctionInfo) -> tuple[int, int]:
+        """_get_function_lines –  get function lines.
+
+Args:
+    func_info: Description of func_info.
+
+Returns:
+    tuple[int, int]: Description of return value."""
         node = func_info.node
-        end_line = node.end_lineno if hasattr(node, "end_lineno") else node.lineno
+        end_line = node.end_lineno if hasattr(node, 'end_lineno') else node.lineno
         if node.decorator_list:
             start_line = node.decorator_list[0].lineno
         else:
             start_line = node.lineno
-        return start_line, end_line
+        return (start_line, end_line)
 
     def _extract_function_code(self, func_info: FunctionInfo) -> str:
-        start_line, end_line = self._get_function_lines(func_info)
-        return "\n".join(self.lines[start_line - 1 : end_line])
+        """_extract_function_code –  extract function code.
 
-    def remove_duplicates(
-        self, groups: dict[str, list[FunctionInfo]], keep_choice: dict[str, int]
-    ) -> bool:
-        with open(self.path, encoding="utf-8") as f:
+Args:
+    func_info: Description of func_info.
+
+Returns:
+    str: Description of return value."""
+        start_line, end_line = self._get_function_lines(func_info)
+        return '\n'.join(self.lines[start_line - 1:end_line])
+
+    def remove_duplicates(self, groups: dict[str, list[FunctionInfo]], keep_choice: dict[str, int]) -> bool:
+        """remove_duplicates – remove duplicates.
+
+Args:
+    groups: Description of groups.
+    keep_choice: Description of keep_choice.
+
+Returns:
+    bool: Description of return value."""
+        with open(self.path, encoding='utf-8') as f:
             self.content = f.read()
             self.lines = self.content.splitlines()
         lines_to_remove = set()
@@ -102,89 +153,91 @@ class DuplicateFunctionRemover:
             if i not in lines_to_remove:
                 new_lines.append(line)
         try:
-            with open(self.path, "w", encoding="utf-8") as f:
-                f.write("\n".join(new_lines))
+            with open(self.path, 'w', encoding='utf-8') as f:
+                f.write('\n'.join(new_lines))
             return True
         except Exception as e:
-            print(f"Error writing to file: {e}")
+            print(f'Error writing to file: {e}')
             return False
 
     def backup_file(self) -> str:
-        backup_path = self.path.with_suffix(self.path.suffix + ".backup")
-        with (
-            open(self.path, encoding="utf-8") as src,
-            open(backup_path, "w", encoding="utf-8") as dst,
-        ):
+        """backup_file – backup file.
+
+Returns:
+    str: Description of return value."""
+        backup_path = self.path.with_suffix(self.path.suffix + '.backup')
+        with open(self.path, encoding='utf-8') as src, open(backup_path, 'w', encoding='utf-8') as dst:
             dst.write(src.read())
         return str(backup_path)
 
-
 def display_duplicates(groups: dict[str, list[FunctionInfo]]) -> bool:
+    """display_duplicates – display duplicates.
+
+Args:
+    groups: Description of groups.
+
+Returns:
+    bool: Description of return value."""
     if not groups:
-        print("No duplicate functions found!")
+        print('No duplicate functions found!')
         return False
-    print("\n" + "=" * 40)
-    print("DUPLICATE FUNCTIONS FOUND")
-    print("-" * 40)
+    print('\n' + '=' * 40)
+    print('DUPLICATE FUNCTIONS FOUND')
+    print('-' * 40)
     for idx, (body, funcs) in enumerate(groups.items(), 1):
-        print(f"\nGroup {idx}:")
-        print(f"  Body hash: {hash(body)}")
-        print(f"  {len(funcs)} functions with identical body:")
+        print(f'\nGroup {idx}:')
+        print(f'  Body hash: {hash(body)}')
+        print(f'  {len(funcs)} functions with identical body:')
         for i, func in enumerate(funcs, 1):
             print(f"    {i}. '{func.name}' (line {func.lineno})")
-        body_preview = body[:150] + "..." if len(body) > 150 else body
-        print(f"\n  Body preview:\n{body_preview}")
-        print("-" * 40)
+        body_preview = body[:150] + '...' if len(body) > 150 else body
+        print(f'\n  Body preview:\n{body_preview}')
+        print('-' * 40)
     return True
 
-
 def get_user_choices(groups: dict[str, list[FunctionInfo]]) -> dict[str, int]:
+    """get_user_choices – get user choices.
+
+Args:
+    groups: Description of groups.
+
+Returns:
+    dict[str, int]: Description of return value."""
     choices = {}
     for body, funcs in groups.items():
-        print(f"\nGroup with {len(funcs)} duplicate functions:")
+        print(f'\nGroup with {len(funcs)} duplicate functions:')
         for i, func in enumerate(funcs):
             print(f"  [{i}] Keep '{func.name}' (line {func.lineno})")
         while True:
             try:
-                choice = input(f"Which function to keep? [0-{len(funcs) - 1}]: ")
+                choice = input(f'Which function to keep? [0-{len(funcs) - 1}]: ')
                 choice_num = int(choice)
                 if 0 <= choice_num < len(funcs):
                     choices[body] = choice_num
                     break
                 else:
-                    print(f"Please enter a number between 0 and {len(funcs) - 1}")
+                    print(f'Please enter a number between 0 and {len(funcs) - 1}')
             except ValueError:
-                print("Please enter a valid number")
+                print('Please enter a valid number')
     return choices
 
-
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Find and optionally remove duplicate functions in Python files"
-    )
-    parser.add_argument("file", help="Python file to analyze")
-    parser.add_argument(
-        "-r",
-        "--remove",
-        action="store_true",
-        help="Remove duplicate functions with user confirmation",
-    )
-    parser.add_argument(
-        "--backup",
-        action="store_true",
-        help="Create a backup before removing (implies -r)",
-    )
+    """main – main."""
+    parser = argparse.ArgumentParser(description='Find and optionally remove duplicate functions in Python files')
+    parser.add_argument('file', help='Python file to analyze')
+    parser.add_argument('-r', '--remove', action='store_true', help='Remove duplicate functions with user confirmation')
+    parser.add_argument('--backup', action='store_true', help='Create a backup before removing (implies -r)')
     args = parser.parse_args()
     path = args.file
     if not Path(path).exists():
         print(f"Error: File '{path}' not found")
         sys.exit(1)
-    if not path.endswith(".py"):
+    if not path.endswith('.py'):
         print(f"Warning: File '{path}' does not have .py extension")
-        response = input("Continue anyway? (y/N): ")
-        if response.lower() != "y":
+        response = input('Continue anyway? (y/N): ')
+        if response.lower() != 'y':
             sys.exit(0)
-    print(f"Analyzing {path}...")
+    print(f'Analyzing {path}...')
     finder = DuplicateFunctionFinder()
     duplicates = finder.analyze_file(path)
     if not display_duplicates(duplicates):
@@ -193,25 +246,23 @@ def main() -> None:
         remover = DuplicateFunctionRemover(path)
         if args.backup:
             backup_path = remover.backup_file()
-            print(f"\nBackup created at: {backup_path}")
-        print("\n" + "=" * 40)
-        print("SELECT FUNCTIONS TO KEEP")
-        print("-" * 40)
+            print(f'\nBackup created at: {backup_path}')
+        print('\n' + '=' * 40)
+        print('SELECT FUNCTIONS TO KEEP')
+        print('-' * 40)
         choices = get_user_choices(duplicates)
-        print("\n" + "=" * 40)
-        confirm = input("Proceed with removing duplicate functions? (y/N): ")
-        if confirm.lower() == "y":
+        print('\n' + '=' * 40)
+        confirm = input('Proceed with removing duplicate functions? (y/N): ')
+        if confirm.lower() == 'y':
             if remover.remove_duplicates(duplicates, choices):
-                print("✓ Duplicate functions removed successfully!")
+                print('✓ Duplicate functions removed successfully!')
             else:
-                print("✗ Failed to remove duplicates")
+                print('✗ Failed to remove duplicates')
                 sys.exit(1)
         else:
-            print("Operation cancelled")
+            print('Operation cancelled')
             sys.exit(0)
     else:
-        print("\nUse -r or --remove to remove duplicates with user confirmation")
-
-
-if __name__ == "__main__":
+        print('\nUse -r or --remove to remove duplicates with user confirmation')
+if __name__ == '__main__':
     raise SystemExit(main())

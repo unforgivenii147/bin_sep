@@ -1,42 +1,29 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""tfn.py – Tfn utilities.
 
+This module provides functionality for tfn."""
+from __future__ import annotations
+from typing import Any
 import argparse
 from pathlib import Path
-
 from dh import FONTEXT, unique_path
 from fontTools.ttLib import TTFont
+STYLE_MAPPING = {'normal': 'Regular', 'regular': 'Regular', 'bold': 'Bold', 'italic': 'Italic', 'bold italic': 'BoldItalic', 'bolditalic': 'BoldItalic', 'semibold': 'SemiBold', 'light': 'Light', 'thin': 'Thin', 'black': 'Black', 'medium': 'Medium', 'ultra light': 'UltraLight', 'extra bold': 'ExtraBold', 'condensed': 'Condensed', 'extended': 'Extended', 'narrow': 'Narrow'}
 
-STYLE_MAPPING = {
-    "normal": "Regular",
-    "regular": "Regular",
-    "bold": "Bold",
-    "italic": "Italic",
-    "bold italic": "BoldItalic",
-    "bolditalic": "BoldItalic",
-    "semibold": "SemiBold",
-    "light": "Light",
-    "thin": "Thin",
-    "black": "Black",
-    "medium": "Medium",
-    "ultra light": "UltraLight",
-    "extra bold": "ExtraBold",
-    "condensed": "Condensed",
-    "extended": "Extended",
-    "narrow": "Narrow",
-}
+def get_font_name_and_style(font_path: Path | str) -> Any:
+    """get_font_name_and_style – get font name and style.
 
-
-def get_font_name_and_style(font_path):
+Args:
+    font_path: Description of font_path."""
     font_path.suffix.lower()
     try:
         font = TTFont(font_path)
-        name_table = font.get("name")
+        name_table = font.get('name')
         if not name_table:
             return (None, None)
         family_name = subfamily_name = None
         for record in name_table.names:
-            name_str = record.string.decode("utf-16-be", errors="ignore").strip()
+            name_str = record.string.decode('utf-16-be', errors='ignore').strip()
             if not name_str:
                 continue
             if record.nameID == 1:
@@ -44,45 +31,56 @@ def get_font_name_and_style(font_path):
             elif record.nameID == 2:
                 subfamily_name = name_str
         font.close()
-        style = "Regular"
+        style = 'Regular'
         if subfamily_name:
             subfamily_lower = subfamily_name.lower().strip()
             for key, value in STYLE_MAPPING.items():
                 if key in subfamily_lower:
                     style = value
                     break
-            if style == "Regular" and subfamily_name.lower() != "regular":
+            if style == 'Regular' and subfamily_name.lower() != 'regular':
                 style = subfamily_name
         return (family_name, style)
     except Exception as e:
-        print(f"  Warning: Could not read {font_path.name}: {e}")
+        print(f'  Warning: Could not read {font_path.name}: {e}')
         return (None, None)
 
+def sanitize_filename(name: str) -> str:
+    """sanitize_filename – sanitize filename.
 
-def sanitize_filename(name) -> str:
+Args:
+    name: Description of name.
+
+Returns:
+    str: Description of return value."""
     if not name:
-        return "Unknown"
-    sanitized = "".join(c if c.isalnum() or c in ("-", "_", " ") else "_" for c in name)
-    sanitized = sanitized.replace(" ", "_").strip("_")
-    while "__" in sanitized:
-        sanitized = sanitized.replace("__", "_")
+        return 'Unknown'
+    sanitized = ''.join((c if c.isalnum() or c in ('-', '_', ' ') else '_' for c in name))
+    sanitized = sanitized.replace(' ', '_').strip('_')
+    while '__' in sanitized:
+        sanitized = sanitized.replace('__', '_')
     return sanitized
 
+def rename_font_file(font_path: Path, apply: bool=False) -> tuple[str | None, str | None]:
+    """rename_font_file – rename font file.
 
-def rename_font_file(
-    font_path: Path, apply: bool = False
-) -> tuple[str | None, str | None]:
+Args:
+    font_path: Description of font_path.
+    apply: Description of apply.
+
+Returns:
+    tuple[str | None, str | None]: Description of return value."""
     family_name, style = get_font_name_and_style(font_path)
     if not family_name:
-        print(f"  Skipping {font_path.name}: Could not extract font family name")
+        print(f'  Skipping {font_path.name}: Could not extract font family name')
         return (None, None)
     family_name = sanitize_filename(family_name)
     style = sanitize_filename(style)
     ext = font_path.suffix
-    new_name = f"{family_name}-{style}{ext}"
+    new_name = f'{family_name}-{style}{ext}'
     new_path = font_path.parent / new_name
     if font_path == new_path:
-        print(f"  {font_path.name} -> already has correct name")
+        print(f'  {font_path.name} -> already has correct name')
         return (None, None)
     if new_path.exists():
         new_path = unique_path(new_path)
@@ -92,15 +90,21 @@ def rename_font_file(
             font_path.rename(new_path)
             return (font_path.name, new_name)
         except Exception as e:
-            print(f"  Error renaming {font_path.name}: {e}")
+            print(f'  Error renaming {font_path.name}: {e}')
             return (None, None)
     else:
         return (font_path.name, new_name)
 
+def process_directory(directory: Path, recursive: bool=True, apply: bool=False) -> int:
+    """process_directory – process directory.
 
-def process_directory(
-    directory: Path, recursive: bool = True, apply: bool = False
-) -> int:
+Args:
+    directory: Description of directory.
+    recursive: Description of recursive.
+    apply: Description of apply.
+
+Returns:
+    int: Description of return value."""
     directory = Path(directory)
     renamed_count = 0
     for item in directory.iterdir():
@@ -108,50 +112,30 @@ def process_directory(
             original_name, new_name = rename_font_file(item, apply)
             if original_name and new_name:
                 if apply:
-                    print(f"  {original_name} -> {new_name}")
+                    print(f'  {original_name} -> {new_name}')
                 else:
-                    print(f"  [DRY-RUN] {original_name} -> {new_name}")
+                    print(f'  [DRY-RUN] {original_name} -> {new_name}')
                 renamed_count += 1
         elif item.is_dir() and recursive:
             renamed_count += process_directory(item, recursive, apply)
     return renamed_count
 
-
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Rename font files based on their internal metadata",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Examples:
-  %(prog)s
-  %(prog)s -a
-  %(prog)s --apply
-        """,
-    )
-    parser.add_argument(
-        "-a",
-        "--apply",
-        action="store_true",
-        help="Apply the renames (default is dry-run)",
-    )
-    parser.add_argument(
-        "--no-recursive", action="store_true", help="Don't process subdirectories"
-    )
+    """main – main."""
+    parser = argparse.ArgumentParser(description='Rename font files based on their internal metadata', formatter_class=argparse.RawDescriptionHelpFormatter, epilog='\nExamples:\n  %(prog)s\n  %(prog)s -a\n  %(prog)s --apply\n        ')
+    parser.add_argument('-a', '--apply', action='store_true', help='Apply the renames (default is dry-run)')
+    parser.add_argument('--no-recursive', action='store_true', help="Don't process subdirectories")
     args = parser.parse_args()
     cwd = Path.cwd()
     if args.apply:
-        print("Applying renames...")
+        print('Applying renames...')
     else:
-        print("Dry-run mode (no changes will be made). Use -a to apply.\n")
-    renamed_count = process_directory(
-        cwd, recursive=not args.no_recursive, apply=args.apply
-    )
+        print('Dry-run mode (no changes will be made). Use -a to apply.\n')
+    renamed_count = process_directory(cwd, recursive=not args.no_recursive, apply=args.apply)
     if args.apply:
-        print(f"\n{renamed_count} font file(s) renamed.")
+        print(f'\n{renamed_count} font file(s) renamed.')
     else:
-        print(f"\n{renamed_count} font file(s) would be renamed.")
-        print("Use -a or --apply to apply these changes.")
-
-
-if __name__ == "__main__":
+        print(f'\n{renamed_count} font file(s) would be renamed.')
+        print('Use -a or --apply to apply these changes.')
+if __name__ == '__main__':
     raise SystemExit(main())

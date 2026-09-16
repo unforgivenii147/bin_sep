@@ -1,28 +1,35 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""encryptor.py – Encryptor utilities.
 
+This module provides functionality for encryptor."""
+from __future__ import annotations
 import argparse
 import random
 import string
 from pathlib import Path
-
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from fastwalk import walk_files
-
 AES_BLOCK_SIZE = 128
 
+def random_key(length: int=32) -> str:
+    """random_key – random key.
 
-def random_key(length: int = 32) -> str:
-    return "".join(
-        random.choice(string.ascii_letters + string.digits) for _ in range(length)
-    )
+Args:
+    length: Description of length.
 
+Returns:
+    str: Description of return value."""
+    return ''.join((random.choice(string.ascii_letters + string.digits) for _ in range(length)))
 
 def encrypt_file(path: Path, key: str) -> None:
-    from os import urandom
+    """encrypt_file – encrypt file.
 
+Args:
+    path: Description of path.
+    key: Description of key."""
+    from os import urandom
     backend = default_backend()
     iv = urandom(16)
     cipher = Cipher(algorithms.AES(key.encode()), modes.CBC(iv), backend=backend)
@@ -33,8 +40,12 @@ def encrypt_file(path: Path, key: str) -> None:
     encrypted_data = encryptor.update(padded_data) + encryptor.finalize()
     path.write_bytes(iv + encrypted_data)
 
-
 def decrypt_file(path: Path, key: str) -> None:
+    """decrypt_file – decrypt file.
+
+Args:
+    path: Description of path.
+    key: Description of key."""
     backend = default_backend()
     raw = path.read_bytes()
     iv = raw[:16]
@@ -46,20 +57,20 @@ def decrypt_file(path: Path, key: str) -> None:
     data = unpadder.update(padded_data) + unpadder.finalize()
     path.write_bytes(data)
 
-
 def main() -> None:
+    """main – main."""
     parser = argparse.ArgumentParser()
-    parser.add_argument("--encrypt", action="store_true")
-    parser.add_argument("--decrypt", action="store_true")
-    parser.add_argument("--key", help="Encryption/decryption key")
+    parser.add_argument('--encrypt', action='store_true')
+    parser.add_argument('--decrypt', action='store_true')
+    parser.add_argument('--key', help='Encryption/decryption key')
     args = parser.parse_args()
-    msg = "Please specify --encrypt or --decrypt with --key if decrypting"
+    msg = 'Please specify --encrypt or --decrypt with --key if decrypting'
     if args.encrypt:
         key = random_key()
-        print(f"Encryption key: {key}")
+        print(f'Encryption key: {key}')
         action = encrypt_file
-        with Path("key").open("a", encoding="utf-8") as f:
-            f.write("\n")
+        with Path('key').open('a', encoding='utf-8') as f:
+            f.write('\n')
             f.write(key)
     elif args.decrypt:
         if not args.key:
@@ -68,11 +79,9 @@ def main() -> None:
         action = decrypt_file
     else:
         raise SystemExit(msg)
-    for path_str in walk_files("."):
+    for path_str in walk_files('.'):
         path = Path(path_str)
-        if path.is_file() and path.name != "key":
+        if path.is_file() and path.name != 'key':
             action(path, key)
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     raise SystemExit(main())

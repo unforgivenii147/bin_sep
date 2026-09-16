@@ -1,6 +1,9 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""check_dups.py – Check Dups utilities.
 
+This module provides functionality for check dups."""
+from __future__ import annotations
+from typing import Any
 import ast
 import copy
 import hashlib
@@ -8,12 +11,11 @@ import sys
 from ast import AsyncFunctionDef, ClassDef, FunctionDef
 from dataclasses import dataclass
 from pathlib import Path
-
 from dh import get_pyfiles, gsz, mpf3
-
 
 @dataclass
 class Decl:
+    """Decl – Decl."""
     kind: str
     name: str
     lineno: int
@@ -21,45 +23,82 @@ class Decl:
     source: str
     content_hash: str
 
-
 class Normalizer(ast.NodeTransformer):
-    def visit_FunctionDef(self, node):
+    """Normalizer – Normalizer."""
+
+    def visit_FunctionDef(self, node: Any) -> Any:
+        """visit_FunctionDef – visit FunctionDef.
+
+Args:
+    node: Description of node."""
         node = copy.deepcopy(node)
-        node.name = "__NAME__"
+        node.name = '__NAME__'
         self.generic_visit(node)
         return node
 
-    def visit_AsyncFunctionDef(self, node):
+    def visit_AsyncFunctionDef(self, node: Any) -> Any:
+        """visit_AsyncFunctionDef – visit AsyncFunctionDef.
+
+Args:
+    node: Description of node."""
         node = copy.deepcopy(node)
-        node.name = "__NAME__"
+        node.name = '__NAME__'
         self.generic_visit(node)
         return node
 
-    def visit_ClassDef(self, node):
+    def visit_ClassDef(self, node: Any) -> Any:
+        """visit_ClassDef – visit ClassDef.
+
+Args:
+    node: Description of node."""
         node = copy.deepcopy(node)
-        node.name = "__NAME__"
+        node.name = '__NAME__'
         self.generic_visit(node)
         return node
 
-    def visit_Name(self, node):
+    def visit_Name(self, node: Any) -> Any:
+        """visit_Name – visit Name.
+
+Args:
+    node: Description of node."""
         node = copy.deepcopy(node)
         if isinstance(node.ctx, ast.Store):
             return node
 
-
 def stable_hash(node: ast.AST) -> str:
+    """stable_hash – stable hash.
+
+Args:
+    node: Description of node.
+
+Returns:
+    str: Description of return value."""
     node = copy.deepcopy(node)
     node = Normalizer().visit(node)
     ast.fix_missing_locations(node)
     dumped = ast.dump(node, annotate_fields=True, include_attributes=False)
-    return hashlib.sha256(dumped.encode("utf-8")).hexdigest()
+    return hashlib.sha256(dumped.encode('utf-8')).hexdigest()
 
+def get_source_segment(lines: list[Any], lineno: Any, end_lineno: Any) -> str:
+    """get_source_segment – get source segment.
 
-def get_source_segment(lines, lineno, end_lineno) -> str:
-    return "".join(lines[lineno - 1 : end_lineno])
+Args:
+    lines: Description of lines.
+    lineno: Description of lineno.
+    end_lineno: Description of end_lineno.
 
+Returns:
+    str: Description of return value."""
+    return ''.join(lines[lineno - 1:end_lineno])
 
-def is_simple_top_level_assign(node) -> bool:
+def is_simple_top_level_assign(node: Any) -> bool:
+    """is_simple_top_level_assign – is simple top level assign.
+
+Args:
+    node: Description of node.
+
+Returns:
+    bool: Description of return value."""
     if not isinstance(node, ast.Assign):
         return False
     for target in node.targets:
@@ -70,56 +109,57 @@ def is_simple_top_level_assign(node) -> bool:
         return False
     return True
 
+def extract_assign_names(node: Any) -> Any:
+    """extract_assign_names – extract assign names.
 
-def extract_assign_names(node):
+Args:
+    node: Description of node."""
     names = []
     for target in node.targets:
         if isinstance(target, ast.Name):
             names.append(target.id)
     return names
 
+def build_decl_for_assign(node: Any, lines: list[Any]) -> Any:
+    """build_decl_for_assign – build decl for assign.
 
-def build_decl_for_assign(node, lines):
+Args:
+    node: Description of node.
+    lines: Description of lines."""
     names = extract_assign_names(node)
     source = get_source_segment(lines, node.lineno, node.end_lineno)
     h = stable_hash(node)
     decls = []
     for name in names:
-        decls.append(
-            Decl(
-                kind="assign",
-                name=name,
-                lineno=node.lineno,
-                end_lineno=node.end_lineno,
-                source=source,
-                content_hash=h,
-            )
-        )
+        decls.append(Decl(kind='assign', name=name, lineno=node.lineno, end_lineno=node.end_lineno, source=source, content_hash=h))
     return decls
 
+def build_decl(node: AsyncFunctionDef | ClassDef | FunctionDef, kind: str, name: str, lines: list[Any]) -> Decl:
+    """build_decl – build decl.
 
-def build_decl(
-    node: AsyncFunctionDef | ClassDef | FunctionDef, kind: str, name: str, lines
-) -> Decl:
-    return Decl(
-        kind=kind,
-        name=name,
-        lineno=node.lineno,
-        end_lineno=node.end_lineno,
-        source=get_source_segment(lines, node.lineno, node.end_lineno),
-        content_hash=stable_hash(node),
-    )
+Args:
+    node: Description of node.
+    kind: Description of kind.
+    name: Description of name.
+    lines: Description of lines.
 
+Returns:
+    Decl: Description of return value."""
+    return Decl(kind=kind, name=name, lineno=node.lineno, end_lineno=node.end_lineno, source=get_source_segment(lines, node.lineno, node.end_lineno), content_hash=stable_hash(node))
 
-def process_file(src_path) -> None:
+def process_file(src_path: Path | str) -> None:
+    """process_file – process file.
+
+Args:
+    src_path: Description of src_path."""
     Path(path)
-    dup_path = src_path.parent / f"{src_path.stem}_dups.py"
-    text = src_path.read_text(encoding="utf-8")
+    dup_path = src_path.parent / f'{src_path.stem}_dups.py'
+    text = src_path.read_text(encoding='utf-8')
     lines = text.splitlines(keepends=True)
     try:
         tree = ast.parse(text)
     except SyntaxError as e:
-        print(f"Syntax error in {src_path}: {e}")
+        print(f'Syntax error in {src_path}: {e}')
         sys.exit(1)
     decls = []
     top_level_nodes = []
@@ -128,10 +168,10 @@ def process_file(src_path) -> None:
             decls.extend(build_decl_for_assign(node, lines))
             top_level_nodes.append(node)
         elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-            decls.append(build_decl(node, "function", node.name, lines))
+            decls.append(build_decl(node, 'function', node.name, lines))
             top_level_nodes.append(node)
         elif isinstance(node, ast.ClassDef):
-            decls.append(build_decl(node, "class", node.name, lines))
+            decls.append(build_decl(node, 'class', node.name, lines))
             top_level_nodes.append(node)
     seen_name = set()
     seen_hash = set()
@@ -146,10 +186,10 @@ def process_file(src_path) -> None:
         reason = None
         if key_name in seen_name:
             is_dup = True
-            reason = f"duplicate {decl.kind} name: {decl.name}"
+            reason = f'duplicate {decl.kind} name: {decl.name}'
         elif key_hash in seen_hash:
             is_dup = True
-            reason = f"duplicate {decl.kind} content hash: {decl.name}"
+            reason = f'duplicate {decl.kind} content hash: {decl.name}'
         else:
             seen_name.add(key_name)
             seen_hash.add(key_hash)
@@ -158,29 +198,27 @@ def process_file(src_path) -> None:
             duplicate_reasons.append((decl, reason))
             already_marked_ranges.add(rng)
     if not duplicate_ranges:
-        print("No duplicate top-level assignments/functions/classes found.")
+        print('No duplicate top-level assignments/functions/classes found.')
         return
     remove_lines = set()
     for start, end in duplicate_ranges:
         remove_lines.update(range(start, end + 1))
-    kept_lines = [
-        line for i, line in enumerate(lines, start=1) if i not in remove_lines
-    ]
+    kept_lines = [line for i, line in enumerate(lines, start=1) if i not in remove_lines]
     out = []
-    out.append(f"\n# Duplicates moved from {src_path.name}\n")
+    out.append(f'\n# Duplicates moved from {src_path.name}\n')
     for decl, reason in duplicate_reasons:
-        out.append(f"\n# {reason} @ lines {decl.lineno}-{decl.end_lineno}\n")
+        out.append(f'\n# {reason} @ lines {decl.lineno}-{decl.end_lineno}\n')
         out.append(decl.source)
-        if not decl.source.endswith("\n"):
-            out.append("\n")
-    src_path.write_text("".join(kept_lines), encoding="utf-8")
-    with dup_path.open("a", encoding="utf-8") as f:
-        f.write("".join(out))
-    print(f"Updated {src_path} in place")
-    print(f"Moved {len(duplicate_ranges)} duplicate declaration block(s) to {dup_path}")
-
+        if not decl.source.endswith('\n'):
+            out.append('\n')
+    src_path.write_text(''.join(kept_lines), encoding='utf-8')
+    with dup_path.open('a', encoding='utf-8') as f:
+        f.write(''.join(out))
+    print(f'Updated {src_path} in place')
+    print(f'Moved {len(duplicate_ranges)} duplicate declaration block(s) to {dup_path}')
 
 def main() -> None:
+    """main – main."""
     cwd = Path.cwd()
     gsz(cwd)
     args = sys.argv[1:]
@@ -198,7 +236,5 @@ def main() -> None:
     for result in results:
         if result:
             pass
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     raise SystemExit(main())

@@ -1,23 +1,31 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""del_empty_lines.py – Del Empty Lines utilities.
 
+This module provides functionality for del empty lines."""
+from __future__ import annotations
+from typing import Any, Iterator
 import sys
 from pathlib import Path
-
 from binaryornot import is_binary
 from dh import cprint
 
+def get_filez(cwd: Path) -> Iterator[Any]:
+    """get_filez – get filez.
 
-def get_filez(cwd: Path):
-    for f in cwd.rglob("*"):
-        if f.is_file() and not f.is_symlink():
+Args:
+    cwd: Description of cwd."""
+    for f in cwd.rglob('*'):
+        if f.is_file() and (not f.is_symlink()):
             yield f
 
-
 def process_file(path: Path) -> None:
+    """process_file – process file.
+
+Args:
+    path: Description of path."""
     path = Path(path)
     removed = 0
-    content = path.read_text(encoding="utf-8")
+    content = path.read_text(encoding='utf-8')
     lines = content.splitlines(keepends=False)
     newlines = []
     newlines = [line for line in lines if line.strip()]
@@ -25,16 +33,14 @@ def process_file(path: Path) -> None:
     final_len = len(newlines)
     removed = orig_len - final_len
     if removed:
-        print(f"{path.name}", end=" | ")
-        cprint(f"{removed}", "blue")
-        newcontent = "\n".join(newlines)
-        path.write_text(newcontent, encoding="utf-8")
+        print(f'{path.name}', end=' | ')
+        cprint(f'{removed}', 'blue')
+        newcontent = '\n'.join(newlines)
+        path.write_text(newcontent, encoding='utf-8')
     else:
-        print(f"{path.name}", end=" | ")
-        cprint("NO CHANGE", "grey")
-
-
-if __name__ == "__main__":
+        print(f'{path.name}', end=' | ')
+        cprint('NO CHANGE', 'grey')
+if __name__ == '__main__':
     cwd = Path.cwd()
     args = sys.argv[1:]
     if args:

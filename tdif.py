@@ -1,19 +1,27 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""tdif.py – Tdif utilities.
 
+This module provides functionality for tdif."""
+from __future__ import annotations
 import argparse
 import difflib
 from pathlib import Path
 from typing import ClassVar
-
 from textual.app import App, ComposeResult
 from textual.color import Color
 from textual.containers import Horizontal, ScrollableContainer
 from textual.widgets import Footer, Header, Label, Static
 
-
 class DiffLine(Static):
-    def __init__(self, text: str, line_type: str, line_num: int | None = None) -> None:
+    """DiffLine – DiffLine."""
+
+    def __init__(self, text: str, line_type: str, line_num: int | None=None) -> None:
+        """__init__ –   init  .
+
+Args:
+    text: Description of text.
+    line_type: Description of line_type.
+    line_num: Description of line_num."""
         self.raw_text = text
         self.line_type = line_type
         self.line_num = line_num
@@ -22,148 +30,140 @@ class DiffLine(Static):
         self._apply_styling()
 
     def _create_display_text(self) -> str:
-        prefix = f"{self.line_num:4d}" if self.line_num is not None else "    "
-        safe_text = self.raw_text.replace("[", "[]")
-        if self.line_type == " ":
-            return f"{prefix}  {safe_text}"
-        if self.line_type == "-":
-            return f"{prefix} - {safe_text}"
-        if self.line_type == "+":
-            return f"{prefix} + {safe_text}"
-        if self.line_type == "?":
-            return f"{prefix} ? {safe_text}"
-        return f"{prefix}   {safe_text}"
+        """_create_display_text –  create display text.
+
+Returns:
+    str: Description of return value."""
+        prefix = f'{self.line_num:4d}' if self.line_num is not None else '    '
+        safe_text = self.raw_text.replace('[', '[]')
+        if self.line_type == ' ':
+            return f'{prefix}  {safe_text}'
+        if self.line_type == '-':
+            return f'{prefix} - {safe_text}'
+        if self.line_type == '+':
+            return f'{prefix} + {safe_text}'
+        if self.line_type == '?':
+            return f'{prefix} ? {safe_text}'
+        return f'{prefix}   {safe_text}'
 
     def _apply_styling(self) -> None:
-        if self.line_type == " ":
+        """_apply_styling –  apply styling."""
+        if self.line_type == ' ':
             self.styles.background = Color(30, 30, 30)
             self.styles.color = Color(200, 200, 200)
-        elif self.line_type == "-":
+        elif self.line_type == '-':
             self.styles.background = Color(80, 30, 30)
             self.styles.color = Color(255, 150, 150)
-        elif self.line_type == "+":
+        elif self.line_type == '+':
             self.styles.background = Color(30, 80, 30)
             self.styles.color = Color(150, 255, 150)
-        elif self.line_type == "?":
+        elif self.line_type == '?':
             self.styles.background = Color(60, 60, 30)
             self.styles.color = Color(255, 255, 150)
 
-
 class DiffPanel(ScrollableContainer):
+    """DiffPanel – DiffPanel."""
+
     def __init__(self, title: str, lines: list[tuple[str, str, int]]) -> None:
+        """__init__ –   init  .
+
+Args:
+    title: Description of title.
+    lines: Description of lines."""
         super().__init__()
         self.panel_title = title
         self.lines = lines
 
     def compose(self) -> ComposeResult:
-        yield Label(f"[bold]{self.panel_title}[/bold]", classes="panel-title")
+        """compose – compose.
+
+Returns:
+    ComposeResult: Description of return value."""
+        yield Label(f'[bold]{self.panel_title}[/bold]', classes='panel-title')
         for text, line_type, line_num in self.lines:
             yield DiffLine(text, line_type, line_num)
 
     def on_mount(self) -> None:
+        """on_mount – on mount."""
         self.can_focus = True
         self.can_focus_children = True
 
-
 class DiffViewerApp(App):
-    CSS = """
-    Screen {
-        background: $surface;
-    }
-    .panel-title {
-        padding: 1;
-        text-align: center;
-        background: $primary;
-        color: $text;
-        text-style: bold;
-        width: 100%;
-    }
-    DiffPanel {
-        border: solid $primary;
-        height: 100%;
-        width: 50%;
-        overflow-y: auto;
-    }
-    DiffPanel:focus {
-        border: double $secondary;
-    }
-    DiffLine {
-        padding: 0 1;
-        width: 100%;
-        height: 1;
-    }
-    Horizontal {
-        height: 1fr;
-    }
-    Header {
-        background: $primary-lighten-1;
-    }
-    Footer {
-        background: $primary-darken-1;
-    }
-    """
-    BINDINGS: ClassVar = [
-        ("q", "quit", "Quit"),
-        ("f1", "toggle_panel", "Focus Next Panel"),
-        ("ctrl+c", "quit", "Quit"),
-        ("/", "search", "Search"),
-        ("n", "next_search", "Next Result"),
-    ]
+    """DiffViewerApp – DiffViewerApp."""
+    CSS = '\n    Screen {\n        background: $surface;\n    }\n    .panel-title {\n        padding: 1;\n        text-align: center;\n        background: $primary;\n        color: $text;\n        text-style: bold;\n        width: 100%;\n    }\n    DiffPanel {\n        border: solid $primary;\n        height: 100%;\n        width: 50%;\n        overflow-y: auto;\n    }\n    DiffPanel:focus {\n        border: double $secondary;\n    }\n    DiffLine {\n        padding: 0 1;\n        width: 100%;\n        height: 1;\n    }\n    Horizontal {\n        height: 1fr;\n    }\n    Header {\n        background: $primary-lighten-1;\n    }\n    Footer {\n        background: $primary-darken-1;\n    }\n    '
+    BINDINGS: ClassVar = [('q', 'quit', 'Quit'), ('f1', 'toggle_panel', 'Focus Next Panel'), ('ctrl+c', 'quit', 'Quit'), ('/', 'search', 'Search'), ('n', 'next_search', 'Next Result')]
 
     def __init__(self, file1: str, file2: str) -> None:
+        """__init__ –   init  .
+
+Args:
+    file1: Description of file1.
+    file2: Description of file2."""
         super().__init__()
         self.file1 = Path(file1)
         self.file2 = Path(file2)
         self.left_lines = []
         self.right_lines = []
-        self.search_term = ""
+        self.search_term = ''
         self.search_results = []
 
     def read_file(self, path: Path) -> list[str]:
+        """read_file – read file.
+
+Args:
+    path: Description of path.
+
+Returns:
+    list[str]: Description of return value."""
         try:
-            with Path(path).open(encoding="utf-8") as f:
+            with Path(path).open(encoding='utf-8') as f:
                 return f.readlines()
         except UnicodeDecodeError:
             try:
-                with Path(path).open(encoding="latin-1") as f:
+                with Path(path).open(encoding='latin-1') as f:
                     return f.readlines()
             except Exception as e:
-                self.notify(f"Error reading {path}: {e}", severity="error")
+                self.notify(f'Error reading {path}: {e}', severity='error')
                 return []
         except Exception as e:
-            self.notify(f"Error reading {path}: {e}", severity="error")
+            self.notify(f'Error reading {path}: {e}', severity='error')
             return []
 
     def compute_diff(self) -> None:
+        """compute_diff – compute diff."""
         lines1 = self.read_file(self.file1)
         lines2 = self.read_file(self.file2)
-        lines1 = [line.rstrip("\n") for line in lines1]
-        lines2 = [line.rstrip("\n") for line in lines2]
+        lines1 = [line.rstrip('\n') for line in lines1]
+        lines2 = [line.rstrip('\n') for line in lines2]
         differ = difflib.Differ()
         diff = list(differ.compare(lines1, lines2))
         left_line_num = 0
         right_line_num = 0
         for line in diff:
-            line_type = line[0] if line else " "
-            content = line[2:] if len(line) > 2 else ""
-            if line_type == " ":
+            line_type = line[0] if line else ' '
+            content = line[2:] if len(line) > 2 else ''
+            if line_type == ' ':
                 left_line_num += 1
                 right_line_num += 1
                 self.left_lines.append((content, line_type, left_line_num))
                 self.right_lines.append((content, line_type, right_line_num))
-            elif line_type == "-":
+            elif line_type == '-':
                 left_line_num += 1
                 self.left_lines.append((content, line_type, left_line_num))
-                self.right_lines.append(("", " ", None))
-            elif line_type == "+":
+                self.right_lines.append(('', ' ', None))
+            elif line_type == '+':
                 right_line_num += 1
-                self.left_lines.append(("", " ", None))
+                self.left_lines.append(('', ' ', None))
                 self.right_lines.append((content, line_type, right_line_num))
-            elif line_type == "?":
+            elif line_type == '?':
                 self.left_lines.append((content, line_type, None))
                 self.right_lines.append((content, line_type, None))
 
     def compose(self) -> ComposeResult:
+        """compose – compose.
+
+Returns:
+    ComposeResult: Description of return value."""
         yield Header()
         self.compute_diff()
         with Horizontal():
@@ -174,11 +174,13 @@ class DiffViewerApp(App):
         yield Footer()
 
     def on_mount(self) -> None:
+        """on_mount – on mount."""
         panels = self.query(DiffPanel)
         if panels:
             panels.first().focus()
 
     def action_toggle_panel(self) -> None:
+        """action_toggle_panel – action toggle panel."""
         current = self.focused
         if current and isinstance(current, DiffPanel):
             panels = list(self.query(DiffPanel))
@@ -193,16 +195,20 @@ class DiffViewerApp(App):
                 panels.first().focus()
 
     def action_search(self) -> None:
+        """action_search – action search."""
+
         def on_input(submitted_text: str) -> None:
+            """on_input – on input.
+
+Args:
+    submitted_text: Description of submitted_text."""
             if submitted_text:
                 self.search_term = submitted_text
                 self.highlight_search_results()
-
-        self.push_screen(
-            "input", on_input, title="Search", instructions="Enter text to search for:"
-        )
+        self.push_screen('input', on_input, title='Search', instructions='Enter text to search for:')
 
     def highlight_search_results(self) -> None:
+        """highlight_search_results – highlight search results."""
         if not self.search_term:
             return
         for line in self.query(DiffLine):
@@ -212,21 +218,17 @@ class DiffViewerApp(App):
                 line.styles.background = Color(70, 70, 150)
 
     def action_next_search(self) -> None:
-        self.notify("Next search result (feature not fully implemented)")
-
+        """action_next_search – action next search."""
+        self.notify('Next search result (feature not fully implemented)')
 
 def main() -> int:
-    parser = argparse.ArgumentParser(
-        description="Compare two files and show their differences",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Examples:
-  %(prog)s file1.txt file2.txt
-  %(prog)s --help
-        """,
-    )
-    parser.add_argument("file1", help="First file to compare")
-    parser.add_argument("file2", help="Second file to compare")
+    """main – main.
+
+Returns:
+    int: Description of return value."""
+    parser = argparse.ArgumentParser(description='Compare two files and show their differences', formatter_class=argparse.RawDescriptionHelpFormatter, epilog='\nExamples:\n  %(prog)s file1.txt file2.txt\n  %(prog)s --help\n        ')
+    parser.add_argument('file1', help='First file to compare')
+    parser.add_argument('file2', help='Second file to compare')
     args = parser.parse_args()
     file1 = Path(args.file1)
     file2 = Path(args.file2)
@@ -239,7 +241,5 @@ Examples:
     app = DiffViewerApp(str(file1), str(file2))
     app.run()
     return 0
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     raise SystemExit(main())

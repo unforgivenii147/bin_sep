@@ -1,27 +1,38 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""img2txt.py – Img2Txt utilities.
 
+This module provides functionality for img2txt."""
+from __future__ import annotations
+from typing import Any
 import sys
 from collections import deque
 from collections.abc import Callable
 from pathlib import Path
-
 from PIL import Image
 from pytesseract import image_to_string
 
+def mpf3(process_function: Callable, files: list[Path], **kwargs: Any) -> Any:
+    """mpf3 – mpf3.
 
-def mpf3(process_function: Callable, files: list[Path], **kwargs):
+Args:
+    process_function: Description of process_function.
+    files: Description of files.
+    **kwargs: Description of **kwargs."""
     from joblib import Parallel, delayed
-
     file_strings = [str(f) for f in files]
-    return Parallel(n_jobs=2)(
-        delayed(process_function)(file_str, **kwargs) for file_str in file_strings
-    )
+    return Parallel(n_jobs=2)((delayed(process_function)(file_str, **kwargs) for file_str in file_strings))
 
+def get_files(path: str | Path, ext: list[str] | None=None) -> list[Path]:
+    """get_files – get files.
 
-def get_files(path: str | Path, ext: list[str] | None = None) -> list[Path]:
+Args:
+    path: Description of path.
+    ext: Description of ext.
+
+Returns:
+    list[Path]: Description of return value."""
     path = Path(path)
-    skip_dirs = {".git", "__pycache__", "node_modules"}
+    skip_dirs = {'.git', '__pycache__', 'node_modules'}
     queue = deque([path])
     files = []
     while queue:
@@ -38,58 +49,65 @@ def get_files(path: str | Path, ext: list[str] | None = None) -> list[Path]:
             continue
     return files
 
-
 def extract_text(image_path: Path) -> str:
+    """extract_text – extract text.
+
+Args:
+    image_path: Description of image_path.
+
+Returns:
+    str: Description of return value."""
     try:
         with Image.open(image_path) as img:
-            if img.mode not in ("L", "RGB"):
-                img = img.convert("RGB")
-            result = image_to_string(img, lang="eng", config="--oem 1 --psm 6")
-        print("-" * 40)
-        print(result.strip() or "[No text detected]")
+            if img.mode not in ('L', 'RGB'):
+                img = img.convert('RGB')
+            result = image_to_string(img, lang='eng', config='--oem 1 --psm 6')
+        print('-' * 40)
+        print(result.strip() or '[No text detected]')
         return result.strip()
     except Exception as e:
-        print(f"Error processing {image_path.name}: {e}")
-        return ""
-
+        print(f'Error processing {image_path.name}: {e}')
+        return ''
 
 def process_file(path: Path) -> None:
+    """process_file – process file.
+
+Args:
+    path: Description of path."""
     path = Path(path)
-    txtfile = path.with_suffix(".txt")
+    txtfile = path.with_suffix('.txt')
     if txtfile.exists():
-        print(f"✓ {path.name} already processed")
+        print(f'✓ {path.name} already processed')
         return
-    print(f"→ Processing {path.name}")
+    print(f'→ Processing {path.name}')
     text = extract_text(path)
     if text and len(text) > 5:
         try:
-            txtfile.write_text(text, encoding="utf-8")
-            print(f"✓ Saved {txtfile.name}")
+            txtfile.write_text(text, encoding='utf-8')
+            print(f'✓ Saved {txtfile.name}')
         except Exception as e:
-            print(f"✗ Failed to write {txtfile.name}: {e}")
+            print(f'✗ Failed to write {txtfile.name}: {e}')
     else:
-        print(f"⚠ No significant text in {path.name}")
-
+        print(f'⚠ No significant text in {path.name}')
 
 def main() -> None:
+    """main – main."""
     cwd = Path.cwd()
     args = sys.argv[1:]
     if args:
         files = [Path(p) for p in args if Path(p).is_file()]
     else:
-        print("Scanning directory for images...")
-        files = get_files(cwd, ext=[".jpg", ".jpeg", ".png", ".tiff", ".bmp", ".webp"])
+        print('Scanning directory for images...')
+        files = get_files(cwd, ext=['.jpg', '.jpeg', '.png', '.tiff', '.bmp', '.webp'])
     if not files:
-        print("No image files found.")
+        print('No image files found.')
         return
-    print(f"Found {len(files)} image(s). Starting OCR...\n")
+    print(f'Found {len(files)} image(s). Starting OCR...\n')
     max_workers = 2
     if len(files) == 1:
         process_file(files[0])
     else:
-        print(f"Using {max_workers} worker(s) for memory safety...")
+        print(f'Using {max_workers} worker(s) for memory safety...')
         mpf3(process_file, files)
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     raise SystemExit(main())

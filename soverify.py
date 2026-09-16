@@ -1,116 +1,142 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""soverify.py – Soverify utilities.
 
+This module provides functionality for soverify."""
+from __future__ import annotations
 import ctypes
 import subprocess
 import sys
 from pathlib import Path
-
 from dh import cprint, get_files
 from loguru import logger
-
 logger.remove()
-logger.add("/data/data/com.termux/files/home/tmp/apps/soverify.log")
-
+logger.add('/data/data/com.termux/files/home/tmp/apps/soverify.log')
 
 class CtypesVerifier:
-    def __init__(self, verbose: bool = False) -> None:
+    """CtypesVerifier – CtypesVerifier."""
+
+    def __init__(self, verbose: bool=False) -> None:
+        """__init__ –   init  .
+
+Args:
+    verbose: Description of verbose."""
         self.verbose = verbose
         self.platform = sys.platform
 
-    def log(self, message: str, level: str = "DEBUG") -> None:
+    def log(self, message: str, level: str='DEBUG') -> None:
+        """log – log.
+
+Args:
+    message: Description of message.
+    level: Description of level."""
         if self.verbose:
-            getattr(logger, level.lower())(f"[CTYPES] {message}")
+            getattr(logger, level.lower())(f'[CTYPES] {message}')
 
     def verify_so_file(self, path: Path) -> tuple[bool, str]:
+        """verify_so_file – verify so file.
+
+Args:
+    path: Description of path.
+
+Returns:
+    tuple[bool, str]: Description of return value."""
         if not path.exists():
-            return (False, "File does not exist")
+            return (False, 'File does not exist')
         if not path.is_file():
-            return (False, "Not a regular file")
+            return (False, 'Not a regular file')
         try:
             ctypes.CDLL(str(path), use_errno=True)
             err = ctypes.get_errno()
             if err:
-                self.log(f"Warning: errno set to {err} for {path.name}")
-            return (True, "ok")
+                self.log(f'Warning: errno set to {err} for {path.name}')
+            return (True, 'ok')
         except OSError as e:
-            error_msg = f"OSError: {e}"
-            self.log(f"Failed to load {path.name}: {error_msg}", "ERROR")
+            error_msg = f'OSError: {e}'
+            self.log(f'Failed to load {path.name}: {error_msg}', 'ERROR')
             return (False, error_msg)
         except Exception as e:
-            error_msg = f"{type(e).__name__}: {e}"
-            self.log(f"Failed to load {path.name}: {error_msg}", "ERROR")
+            error_msg = f'{type(e).__name__}: {e}'
+            self.log(f'Failed to load {path.name}: {error_msg}', 'ERROR')
             return (False, error_msg)
 
     def verify_with_symbols(self, path: Path) -> tuple[bool, dict]:
+        """verify_with_symbols – verify with symbols.
+
+Args:
+    path: Description of path.
+
+Returns:
+    tuple[bool, dict]: Description of return value."""
         can_load, msg = self.verify_so_file(path)
-        symbol_info = {
-            "can_load": can_load,
-            "message": msg,
-            "has_symbols": False,
-            "symbol_count": 0,
-        }
+        symbol_info = {'can_load': can_load, 'message': msg, 'has_symbols': False, 'symbol_count': 0}
         if not can_load:
             return (False, symbol_info)
         try:
-            result = subprocess.run(
-                ["nm", str(path)], capture_output=True, timeout=10, text=True
-            )
+            result = subprocess.run(['nm', str(path)], capture_output=True, timeout=10, text=True)
             if result.returncode == 0:
-                lines = [line for line in result.stdout.split("\n") if line.strip()]
-                symbol_info["symbol_count"] = len(lines)
-                symbol_info["has_symbols"] = len(lines) > 0
-                self.log(f"Found {len(lines)} symbols in {path.name}")
+                lines = [line for line in result.stdout.split('\n') if line.strip()]
+                symbol_info['symbol_count'] = len(lines)
+                symbol_info['has_symbols'] = len(lines) > 0
+                self.log(f'Found {len(lines)} symbols in {path.name}')
         except FileNotFoundError:
-            self.log(
-                "'nm' command not found. Install binutils for symbol analysis",
-                "WARNING",
-            )
+            self.log("'nm' command not found. Install binutils for symbol analysis", 'WARNING')
         except subprocess.TimeoutExpired:
-            self.log(f"Symbol extraction timed out for {path.name}", "WARNING")
+            self.log(f'Symbol extraction timed out for {path.name}', 'WARNING')
         except Exception as e:
-            self.log(f"Could not extract symbols from {path.name}: {e}", "ERROR")
+            self.log(f'Could not extract symbols from {path.name}: {e}', 'ERROR')
         return (can_load, symbol_info)
 
-
 def verify_single_file(path: Path) -> bool | None:
+    """verify_single_file – verify single file.
+
+Args:
+    path: Description of path.
+
+Returns:
+    bool | None: Description of return value."""
     try:
         verifier = CtypesVerifier()
         success, message = verifier.verify_so_file(path)
         if success:
-            logger.debug(f"✓ {path.name}: Valid")
+            logger.debug(f'✓ {path.name}: Valid')
             return True
         else:
-            logger.error(f"✗ {path.name}: {message}")
-            cprint(f"  ✗ {path}: {message}", "red")
+            logger.error(f'✗ {path.name}: {message}')
+            cprint(f'  ✗ {path}: {message}', 'red')
             return False
     except Exception as e:
-        logger.error(f"✗ {path.name}: Unexpected error - {e}")
-        cprint(f"  ✗ {path}: Unexpected error - {e}", "red")
+        logger.error(f'✗ {path.name}: Unexpected error - {e}')
+        cprint(f'  ✗ {path}: Unexpected error - {e}', 'red')
         return False
 
-
 def collect_files(args: list[str]) -> list[Path]:
+    """collect_files – collect files.
+
+Args:
+    args: Description of args.
+
+Returns:
+    list[Path]: Description of return value."""
     if not args:
-        return get_files(Path.cwd(), ext=[".so"])
+        return get_files(Path.cwd(), ext=['.so'])
     files = []
     for arg in args:
         path = Path(arg)
         if path.is_file():
             files.append(path)
         elif path.is_dir():
-            files.extend(get_files(path, ext=[".so"]))
+            files.extend(get_files(path, ext=['.so']))
         else:
-            cprint(f"Warning: {path} does not exist", "yellow")
+            cprint(f'Warning: {path} does not exist', 'yellow')
     return files
 
-
 def main() -> None:
+    """main – main."""
     files = collect_files(sys.argv[1:])
     if not files:
-        cprint("No .so files found to verify", "yellow")
+        cprint('No .so files found to verify', 'yellow')
         return
-    print(f"\nVerifying {len(files)} shared object file(s)...\n")
+    print(f'\nVerifying {len(files)} shared object file(s)...\n')
     valid_count = 0
     error_count = 0
     error_files = []
@@ -122,35 +148,31 @@ def main() -> None:
             error_count += 1
             error_files.append(path)
     print(f"\n{'=' * 40}")
-    print("VERIFICATION SUMMARY")
+    print('VERIFICATION SUMMARY')
     print(f"{'=' * 40}")
-    print(f"Total files checked: {len(files)}")
-    print(f"✓ Valid files:       {valid_count}")
-    print(f"✗ Files with errors: {error_count}")
+    print(f'Total files checked: {len(files)}')
+    print(f'✓ Valid files:       {valid_count}')
+    print(f'✗ Files with errors: {error_count}')
     if error_files:
         print(f"\n{'=' * 40}")
-        print("FILES WITH ERRORS:")
+        print('FILES WITH ERRORS:')
         print(f"{'=' * 40}")
         for path in error_files:
-            print(f"  ✗ {path}")
-    print(
-        f"Verification complete: {valid_count} valid, {error_count} errors out of {len(files)} files"
-    )
+            print(f'  ✗ {path}')
+    print(f'Verification complete: {valid_count} valid, {error_count} errors out of {len(files)} files')
     if error_count > 0:
         sys.exit(1)
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     gil_state = ctypes.pythonapi.PyGILState_Ensure()
     try:
         raise SystemExit(main())
     except KeyboardInterrupt:
-        cprint("\nVerification interrupted by user", "yellow")
+        cprint('\nVerification interrupted by user', 'yellow')
         sys.exit(130)
     except Exception as e:
-        logger.error(f"Fatal error: {e}")
-        cprint(f"Fatal error: {e}", "red")
+        logger.error(f'Fatal error: {e}')
+        cprint(f'Fatal error: {e}', 'red')
         sys.exit(1)
     finally:
         ctypes.pythonapi.PyGILState_Release(gil_state)
-    Path("/sdcard/soverify.log").unlink()
+    Path('/sdcard/soverify.log').unlink()

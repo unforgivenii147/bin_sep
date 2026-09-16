@@ -1,156 +1,152 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""diduper.py – Diduper utilities.
 
+This module provides functionality for diduper."""
+from __future__ import annotations
 import hashlib
 from dataclasses import dataclass
 from pathlib import Path
-
 import tree_sitte_python as tsp
 from tree_sitter import Language, Node, Parser
-
-OUTPUT_FILE = "utils.py"
+OUTPUT_FILE = 'utils.py'
 SKIP_FILES = {OUTPUT_FILE, Path(__file__).name}
-
 
 @dataclass(frozen=True)
 class Item:
+    """Item – Item."""
     kind: str
     name: str
     source: str
     path: str
     hash: str
 
-
 def sha256_text(text: str) -> str:
-    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+    """sha256_text – sha256 text.
 
+Args:
+    text: Description of text.
+
+Returns:
+    str: Description of return value."""
+    return hashlib.sha256(text.encode('utf-8')).hexdigest()
 
 def get_python_parser() -> Parser:
+    """get_python_parser – get python parser.
+
+Returns:
+    Parser: Description of return value."""
     parser = Parser()
     lang = Language(tsp.language())
     parser.language = lang
     return parser
 
-
 def node_text(source_bytes: bytes, node: Node) -> str:
-    return source_bytes[node.start_byte : node.end_byte].decode(
-        "utf-8", errors="replace"
-    )
+    """node_text – node text.
 
+Args:
+    source_bytes: Description of source_bytes.
+    node: Description of node.
+
+Returns:
+    str: Description of return value."""
+    return source_bytes[node.start_byte:node.end_byte].decode('utf-8', errors='replace')
 
 def is_const_name(name: str) -> bool:
+    """is_const_name – is const name.
+
+Args:
+    name: Description of name.
+
+Returns:
+    bool: Description of return value."""
     return name.isupper()
 
-
 def extract_items_from_file(path: Path, parser: Parser) -> list[Item]:
+    """extract_items_from_file – extract items from file.
+
+Args:
+    path: Description of path.
+    parser: Description of parser.
+
+Returns:
+    list[Item]: Description of return value."""
     try:
-        source = path.read_text(encoding="utf-8")
+        source = path.read_text(encoding='utf-8')
     except (UnicodeDecodeError, OSError):
         return []
-    src_bytes = source.encode("utf-8", errors="replace")
+    src_bytes = source.encode('utf-8', errors='replace')
     tree = parser.parse(src_bytes)
     root = tree.root_node
     items: list[Item] = []
     for child in root.children:
-        if child.type == "function_definition":
-            name_node = child.child_by_field_name("name")
+        if child.type == 'function_definition':
+            name_node = child.child_by_field_name('name')
             if name_node is None:
                 continue
             name = node_text(src_bytes, name_node)
             code = node_text(src_bytes, child)
-            items.append(
-                Item(
-                    kind="function",
-                    name=name,
-                    source=code,
-                    path=str(path),
-                    hash=sha256_text(code),
-                )
-            )
-        elif child.type == "class_definition":
-            name_node = child.child_by_field_name("name")
+            items.append(Item(kind='function', name=name, source=code, path=str(path), hash=sha256_text(code)))
+        elif child.type == 'class_definition':
+            name_node = child.child_by_field_name('name')
             if name_node is None:
                 continue
             name = node_text(src_bytes, name_node)
             code = node_text(src_bytes, child)
-            items.append(
-                Item(
-                    kind="class",
-                    name=name,
-                    source=code,
-                    path=str(path),
-                    hash=sha256_text(code),
-                )
-            )
-        elif child.type == "expression_statement":
+            items.append(Item(kind='class', name=name, source=code, path=str(path), hash=sha256_text(code)))
+        elif child.type == 'expression_statement':
             expr = child.children[0] if child.children else None
             if expr is None:
                 continue
-            if expr.type == "assignment":
+            if expr.type == 'assignment':
                 if len(expr.children) < 3:
                     continue
                 lhs = expr.children[0]
                 expr.children[-1]
-                if lhs.type != "identifier":
+                if lhs.type != 'identifier':
                     continue
                 name = node_text(src_bytes, lhs)
                 if not is_const_name(name):
                     continue
                 code = node_text(src_bytes, child)
-                items.append(
-                    Item(
-                        kind="const",
-                        name=name,
-                        source=code,
-                        path=str(path),
-                        hash=sha256_text(code),
-                    )
-                )
-            elif expr.type == "assignment_expression":
+                items.append(Item(kind='const', name=name, source=code, path=str(path), hash=sha256_text(code)))
+            elif expr.type == 'assignment_expression':
                 pass
-        elif child.type == "assignment":
+        elif child.type == 'assignment':
             if len(child.children) < 3:
                 continue
             lhs = child.children[0]
-            if lhs.type != "identifier":
+            if lhs.type != 'identifier':
                 continue
             name = node_text(src_bytes, lhs)
             if not is_const_name(name):
                 continue
             code = node_text(src_bytes, child)
-            items.append(
-                Item(
-                    kind="const",
-                    name=name,
-                    source=code,
-                    path=str(path),
-                    hash=sha256_text(code),
-                )
-            )
+            items.append(Item(kind='const', name=name, source=code, path=str(path), hash=sha256_text(code)))
     return items
 
-
 def write_utils_file(duplicates: dict[str, Item], output_path: Path) -> None:
+    """write_utils_file – write utils file.
+
+Args:
+    duplicates: Description of duplicates.
+    output_path: Description of output_path."""
     blocks = []
     seen_hashes = set()
     for h, item in duplicates.items():
         if h in seen_hashes:
             continue
         seen_hashes.add(h)
-        blocks.append(f"""# Duplicate {item.kind}: {item.name}
-{item.source}
-""")
-    content = """# Auto-generated by find_duplicates_ts.py
-""" + "\n".join(blocks)
-    output_path.write_text(content, encoding="utf-8")
-
+        blocks.append(f'# Duplicate {item.kind}: {item.name}\n{item.source}\n')
+    content = '# Auto-generated by find_duplicates_ts.py\n' + '\n'.join(blocks)
+    output_path.write_text(content, encoding='utf-8')
 
 def main() -> None:
+    """main – main."""
     parser = get_python_parser()
     all_items: dict[str, Item] = {}
     duplicates: dict[str, Item] = {}
     base_dir = Path.cwd()
-    for path in base_dir.rglob("*.py"):
+    for path in base_dir.rglob('*.py'):
         if path.name in SKIP_FILES:
             continue
         items = extract_items_from_file(path, parser)
@@ -162,11 +158,9 @@ def main() -> None:
     output_path = base_dir / OUTPUT_FILE
     if duplicates:
         write_utils_file(duplicates, output_path)
-        print(f"Found {len(duplicates)} duplicate items.")
-        print(f"Wrote representative copies to: {output_path}")
+        print(f'Found {len(duplicates)} duplicate items.')
+        print(f'Wrote representative copies to: {output_path}')
     else:
-        print("No duplicates found.")
-
-
-if __name__ == "__main__":
+        print('No duplicates found.')
+if __name__ == '__main__':
     raise SystemExit(main())

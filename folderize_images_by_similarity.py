@@ -1,95 +1,117 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""folderize_images_by_similarity.py – Folderize Images By Similarity utilities.
 
+This module provides functionality for folderize images by similarity."""
+from __future__ import annotations
 import shutil
 from multiprocessing import Pool, cpu_count
 from pathlib import Path
-
 import cv2
 import numpy as np
 from tqdm import tqdm
 
-
 class ImageSimilarityOrganizer:
-    def __init__(
-        self, root_dir: str, similarity_threshold: float = 0.95, hash_size: int = 8
-    ):
+    """ImageSimilarityOrganizer – ImageSimilarityOrganizer."""
+
+    def __init__(self, root_dir: str, similarity_threshold: float=0.95, hash_size: int=8) -> None:
+        """__init__ –   init  .
+
+Args:
+    root_dir: Description of root_dir.
+    similarity_threshold: Description of similarity_threshold.
+    hash_size: Description of hash_size."""
         self.root_dir = Path(root_dir)
         self.similarity_threshold = similarity_threshold
         self.hash_size = hash_size
-        self.supported_formats = {".jpg", ".jpeg", ".png", ".bmp", ".tiff", ".gif"}
-        print(f"[INIT] Root directory: {self.root_dir}")
-        print(f"[INIT] Similarity threshold: {similarity_threshold}")
-        print(f"[INIT] Hash size: {hash_size}x{hash_size}")
+        self.supported_formats = {'.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.gif'}
+        print(f'[INIT] Root directory: {self.root_dir}')
+        print(f'[INIT] Similarity threshold: {similarity_threshold}')
+        print(f'[INIT] Hash size: {hash_size}x{hash_size}')
 
     def get_all_images(self) -> list[Path]:
-        print("\n[SCAN] Scanning for image files...")
+        """get_all_images – get all images.
+
+Returns:
+    list[Path]: Description of return value."""
+        print('\n[SCAN] Scanning for image files...')
         image_files = []
         for fmt in self.supported_formats:
-            image_files.extend(self.root_dir.rglob(f"*{fmt}"))
-            image_files.extend(self.root_dir.rglob(f"*{fmt.upper()}"))
+            image_files.extend(self.root_dir.rglob(f'*{fmt}'))
+            image_files.extend(self.root_dir.rglob(f'*{fmt.upper()}'))
         image_files = list(set(image_files))
-        print(f"[SCAN] Found {len(image_files)} image(s)")
+        print(f'[SCAN] Found {len(image_files)} image(s)')
         return sorted(image_files)
 
     @staticmethod
-    def compute_perceptual_hash(
-        image_path: Path, hash_size: int = 8
-    ) -> tuple[Path, np.ndarray]:
+    def compute_perceptual_hash(image_path: Path, hash_size: int=8) -> tuple[Path, np.ndarray]:
+        """compute_perceptual_hash – compute perceptual hash.
+
+Args:
+    image_path: Description of image_path.
+    hash_size: Description of hash_size.
+
+Returns:
+    tuple[Path, np.ndarray]: Description of return value."""
         try:
             img = cv2.imread(str(image_path), cv2.IMREAD_GRAYSCALE)
             if img is None:
-                return image_path, None
+                return (image_path, None)
             img_resized = cv2.resize(img, (hash_size, hash_size))
             avg = img_resized.mean()
             hash_array = (img_resized > avg).flatten().astype(int)
-            return image_path, hash_array
+            return (image_path, hash_array)
         except Exception as e:
-            print(f"[ERROR] Failed to hash {image_path}: {e!s}")
-            return image_path, None
+            print(f'[ERROR] Failed to hash {image_path}: {e!s}')
+            return (image_path, None)
 
     def compute_hashes(self, image_paths: list[Path]) -> dict[Path, np.ndarray]:
-        print(f"\n[HASH] Computing perceptual hashes using {cpu_count()} processes...")
+        """compute_hashes – compute hashes.
+
+Args:
+    image_paths: Description of image_paths.
+
+Returns:
+    dict[Path, np.ndarray]: Description of return value."""
+        print(f'\n[HASH] Computing perceptual hashes using {cpu_count()} processes...')
         hashes = {}
         with Pool(processes=cpu_count()) as pool:
             from functools import partial
-
-            compute_func = partial(
-                self.compute_perceptual_hash, hash_size=self.hash_size
-            )
-            results = list(
-                tqdm(
-                    pool.imap_unordered(compute_func, image_paths),
-                    total=len(image_paths),
-                    desc="Hashing images",
-                    unit="img",
-                )
-            )
+            compute_func = partial(self.compute_perceptual_hash, hash_size=self.hash_size)
+            results = list(tqdm(pool.imap_unordered(compute_func, image_paths), total=len(image_paths), desc='Hashing images', unit='img'))
         for image_path, hash_array in results:
             if hash_array is not None:
                 hashes[image_path] = hash_array
-        print(f"[HASH] Successfully hashed {len(hashes)} image(s)")
+        print(f'[HASH] Successfully hashed {len(hashes)} image(s)')
         return hashes
 
     @staticmethod
     def hamming_distance(hash1: np.ndarray, hash2: np.ndarray) -> int:
+        """hamming_distance – hamming distance.
+
+Args:
+    hash1: Description of hash1.
+    hash2: Description of hash2.
+
+Returns:
+    int: Description of return value."""
         return np.sum(hash1 != hash2)
 
-    def find_similar_images(
-        self, hashes: dict[Path, np.ndarray]
-    ) -> dict[int, list[Path]]:
-        print(
-            f"\n[GROUP] Grouping similar images (threshold: {self.similarity_threshold})..."
-        )
+    def find_similar_images(self, hashes: dict[Path, np.ndarray]) -> dict[int, list[Path]]:
+        """find_similar_images – find similar images.
+
+Args:
+    hashes: Description of hashes.
+
+Returns:
+    dict[int, list[Path]]: Description of return value."""
+        print(f'\n[GROUP] Grouping similar images (threshold: {self.similarity_threshold})...')
         image_list = list(hashes.keys())
         groups = {}
         group_id = 0
         assigned = set()
         max_distance = int((1 - self.similarity_threshold) * len(hashes[image_list[0]]))
-        print(f"[GROUP] Max allowed hamming distance: {max_distance}")
-        for i, img_path in enumerate(
-            tqdm(image_list, desc="Grouping images", unit="img")
-        ):
+        print(f'[GROUP] Max allowed hamming distance: {max_distance}')
+        for i, img_path in enumerate(tqdm(image_list, desc='Grouping images', unit='img')):
             if img_path in assigned:
                 continue
             groups[group_id] = [img_path]
@@ -103,17 +125,19 @@ class ImageSimilarityOrganizer:
                     groups[group_id].append(other_path)
                     assigned.add(other_path)
             group_id += 1
-        print(f"[GROUP] Created {len(groups)} group(s)")
+        print(f'[GROUP] Created {len(groups)} group(s)')
         return groups
 
     def organize_images(self, groups: dict[int, list[Path]]) -> None:
-        print("\n[ORGANIZE] Creating folders and organizing images...")
-        for group_id, image_paths in tqdm(
-            groups.items(), desc="Organizing", unit="group"
-        ):
+        """organize_images – organize images.
+
+Args:
+    groups: Description of groups."""
+        print('\n[ORGANIZE] Creating folders and organizing images...')
+        for group_id, image_paths in tqdm(groups.items(), desc='Organizing', unit='group'):
             if len(image_paths) == 1:
                 continue
-            group_folder = self.root_dir / f"similar_group_{group_id:04d}"
+            group_folder = self.root_dir / f'similar_group_{group_id:04d}'
             group_folder.mkdir(exist_ok=True)
             for img_path in image_paths:
                 try:
@@ -122,36 +146,33 @@ class ImageSimilarityOrganizer:
                     while dest_path.exists():
                         stem = img_path.stem
                         suffix = img_path.suffix
-                        dest_path = group_folder / f"{stem}_{counter}{suffix}"
+                        dest_path = group_folder / f'{stem}_{counter}{suffix}'
                         counter += 1
                     shutil.move(str(img_path), str(dest_path))
                 except Exception as e:
-                    print(f"[ERROR] Failed to move {img_path}: {e!s}")
-        print(f"[ORGANIZE] Done! Check {self.root_dir} for organized groups")
+                    print(f'[ERROR] Failed to move {img_path}: {e!s}')
+        print(f'[ORGANIZE] Done! Check {self.root_dir} for organized groups')
 
     def run(self) -> None:
-        print("-" * 40)
-        print("IMAGE SIMILARITY ORGANIZER")
-        print("-" * 40)
+        """run – run."""
+        print('-' * 40)
+        print('IMAGE SIMILARITY ORGANIZER')
+        print('-' * 40)
         image_paths = self.get_all_images()
         if not image_paths:
-            print("[WARN] No images found!")
+            print('[WARN] No images found!')
             return
         hashes = self.compute_hashes(image_paths)
         if not hashes:
-            print("[ERROR] Could not hash any images!")
+            print('[ERROR] Could not hash any images!')
             return
         groups = self.find_similar_images(hashes)
         self.organize_images(groups)
-        print("\n" + "=" * 40)
-        print("PROCESS COMPLETE")
-        print("-" * 40)
-
-
-if __name__ == "__main__":
+        print('\n' + '=' * 40)
+        print('PROCESS COMPLETE')
+        print('-' * 40)
+if __name__ == '__main__':
     ROOT_DIRECTORY = Path.cwd()
     SIMILARITY_THRESHOLD = 0.9
-    organizer = ImageSimilarityOrganizer(
-        root_dir=ROOT_DIRECTORY, similarity_threshold=SIMILARITY_THRESHOLD, hash_size=16
-    )
+    organizer = ImageSimilarityOrganizer(root_dir=ROOT_DIRECTORY, similarity_threshold=SIMILARITY_THRESHOLD, hash_size=16)
     organizer.run()

@@ -1,19 +1,26 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""remc.py – Remc utilities.
 
+This module provides functionality for remc."""
+from __future__ import annotations
 import ast
 import re
 import sys
 from ast import Module
 from collections import deque
 from pathlib import Path
-
 from dh import cprint, fsz, get_files, gsz
 
-
 def rm_doc(content: str) -> tuple[str, int]:
+    """rm_doc – rm doc.
+
+Args:
+    content: Description of content.
+
+Returns:
+    tuple[str, int]: Description of return value."""
     removed_count = 0
-    lines = content.split("\n")
+    lines = content.split('\n')
     result_lines = []
     i = 0
     while i < len(lines):
@@ -25,20 +32,20 @@ def rm_doc(content: str) -> tuple[str, int]:
                 first = line.find(delimiter)
                 second = line.find(delimiter, first + 3)
                 before = line[:first].rstrip()
-                if before.endswith(":") or before.strip() == "":
-                    result_lines.append(line[:first] + line[second + 3 :])
+                if before.endswith(':') or before.strip() == '':
+                    result_lines.append(line[:first] + line[second + 3:])
                     removed_count += 1
                     i += 1
                     continue
-            before = line[: line.find(delimiter)].rstrip()
-            if before.endswith(":") or before.strip() == "" or "=" not in before:
+            before = line[:line.find(delimiter)].rstrip()
+            if before.endswith(':') or before.strip() == '' or '=' not in before:
                 removed_count += 1
                 if before:
                     result_lines.append(before)
                 j = i + 1
                 while j < len(lines):
                     if delimiter in lines[j]:
-                        after = lines[j][lines[j].find(delimiter) + 3 :].strip()
+                        after = lines[j][lines[j].find(delimiter) + 3:].strip()
                         if after:
                             result_lines.append(after)
                         i = j + 1
@@ -52,77 +59,87 @@ def rm_doc(content: str) -> tuple[str, int]:
         else:
             result_lines.append(line)
             i += 1
-    return ("\n".join(result_lines), removed_count)
-
+    return ('\n'.join(result_lines), removed_count)
 
 def rm_ast(content: str) -> tuple[str, int]:
+    """rm_ast – rm ast.
+
+Args:
+    content: Description of content.
+
+Returns:
+    tuple[str, int]: Description of return value."""
     try:
         tree = ast.parse(content)
     except SyntaxError:
         return rm_doc(content)
-    lines = content.split("\n")
+    lines = content.split('\n')
     ranges = find_docstring_ranges(tree)
     for start, end in sorted(ranges, reverse=True):
-        del lines[start - 1 : end]
-    return ("\n".join(lines), len(ranges))
-
+        del lines[start - 1:end]
+    return ('\n'.join(lines), len(ranges))
 
 def find_docstring_ranges(node: Module) -> list[tuple[int, int]]:
+    """find_docstring_ranges – find docstring ranges.
+
+Args:
+    node: Description of node.
+
+Returns:
+    list[tuple[int, int]]: Description of return value."""
     ranges: list[tuple[int, int]] = []
     for child in ast.walk(node):
-        if (
-            isinstance(
-                child, (ast.Module, ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)
-            )
-            and child.body
-            and isinstance(child.body[0], ast.Expr)
-        ):
+        if isinstance(child, (ast.Module, ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) and child.body and isinstance(child.body[0], ast.Expr):
             value = child.body[0].value
-            if (
-                isinstance(value, ast.Constant)
-                and isinstance(value.value, str)
-                and child.body[0].lineno
-                and child.body[0].end_lineno
-            ):
+            if isinstance(value, ast.Constant) and isinstance(value.value, str) and child.body[0].lineno and child.body[0].end_lineno:
                 ranges.append((child.body[0].lineno, child.body[0].end_lineno))
     return ranges
 
-
 def remove_blank_lines(content: str) -> str:
-    content = re.sub(r"\n\n+", "\n", content)
-    return "\n".join(line.rstrip() for line in content.split("\n"))
+    """remove_blank_lines – remove blank lines.
 
+Args:
+    content: Description of content.
+
+Returns:
+    str: Description of return value."""
+    content = re.sub('\\n\\n+', '\n', content)
+    return '\n'.join((line.rstrip() for line in content.split('\n')))
 
 def process_file(path: Path) -> None:
+    """process_file – process file.
+
+Args:
+    path: Description of path."""
     Path(path)
     try:
-        original = path.read_text(encoding="utf-8")
+        original = path.read_text(encoding='utf-8')
         try:
             modified, removed = rm_ast(original)
         except:
             modified, removed = rm_doc(original)
         modified = remove_blank_lines(modified)
         if removed:
-            print(f"✓ {path.name} : ", end="")
-            cprint(f"{removed}", "cyan")
+            print(f'✓ {path.name} : ', end='')
+            cprint(f'{removed}', 'cyan')
             try:
                 tree = ast.parse(modified)
-                path.write_text(modified, encoding="utf-8")
+                path.write_text(modified, encoding='utf-8')
                 del tree
                 return
             except:
-                cprint(f"{path.name} ast parse error", "cyan")
+                cprint(f'{path.name} ast parse error', 'cyan')
                 return
     except Exception as exc:
-        print(f"✗ Error processing {path}: {exc}")
+        print(f'✗ Error processing {path}: {exc}')
         return
 
-
 def main() -> None:
+    """main – main."""
     cwd = Path.cwd()
     before = gsz(cwd)
     args = sys.argv[1:]
-    files = [Path(f) for f in args] if args else get_files(cwd, ext=[".py"])
+    files = [Path(f) for f in args] if args else get_files(cwd, ext=['.py'])
     with Pool(8) as pool:
         pending = deque()
         for f in files:
@@ -132,10 +149,8 @@ def main() -> None:
         while pending:
             pending.popleft().get()
     diff_size = before - gsz(cwd)
-    print(f"space saved : {fsz(diff_size)}")
-
-
-if __name__ == "__main__":
+    print(f'space saved : {fsz(diff_size)}')
+if __name__ == '__main__':
     raise SystemExit(main())
 DOC_TH1 = '"""'
 DOC_TH2 = "'''"

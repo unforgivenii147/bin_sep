@@ -1,49 +1,65 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""fixpath.py – Fixpath utilities.
 
+This module provides functionality for fixpath."""
+from __future__ import annotations
+from typing import Any
 import glob
 import os
 import re
 
-
 def fix_pattern_and_save(path: str) -> bool:
+    """fix_pattern_and_save – fix pattern and save.
+
+Args:
+    path: Description of path.
+
+Returns:
+    bool: Description of return value."""
     try:
-        with open(path, encoding="utf-8") as f:
+        with open(path, encoding='utf-8') as f:
             original_content = f.read()
     except Exception as e:
-        print(f"✗ Error reading {path}: {e}")
+        print(f'✗ Error reading {path}: {e}')
         return False
-    pattern = "(def process_file\\([^)]*\\):)\\n(\\s+)([^\\n]+)\\n(\\s+)(path = Path\\(path\\))"
+    pattern = '(def process_file\\([^)]*\\):)\\n(\\s+)([^\\n]+)\\n(\\s+)(path = Path\\(path\\))'
 
-    def replace_func(match) -> str:
+    def replace_func(match: Any) -> str:
+        """replace_func – replace func.
+
+Args:
+    match: Description of match.
+
+Returns:
+    str: Description of return value."""
         func_def = match.group(1)
         indent = match.group(2)
         first_stmt = match.group(3)
         path_stmt = match.group(5)
-        return f"{func_def}\n{indent}{path_stmt}\n{indent}{first_stmt}"
-
+        return f'{func_def}\n{indent}{path_stmt}\n{indent}{first_stmt}'
     fixed_content = re.sub(pattern, replace_func, original_content)
     if fixed_content != original_content:
         try:
-            with open(path, "w", encoding="utf-8") as f:
+            with open(path, 'w', encoding='utf-8') as f:
                 f.write(fixed_content)
-            print(f"✓ Fixed: {path}")
+            print(f'✓ Fixed: {path}')
             return True
         except Exception as e:
-            print(f"✗ Error writing {path}: {e}")
+            print(f'✗ Error writing {path}: {e}')
             return False
     return False
 
+def fix_all_python_files(directory_path: str='.') -> None:
+    """fix_all_python_files – fix all python files.
 
-def fix_all_python_files(directory_path: str = ".") -> None:
-    python_files = glob.glob(os.path.join(directory_path, "**/*.py"), recursive=True)
-    print(f"Scanning {len(python_files)} Python files...\n")
+Args:
+    directory_path: Description of directory_path."""
+    python_files = glob.glob(os.path.join(directory_path, '**/*.py'), recursive=True)
+    print(f'Scanning {len(python_files)} Python files...\n')
     fixed_count = 0
     for path in python_files:
         if fix_pattern_and_save(path):
             fixed_count += 1
-    print(f"\n✓ Total files fixed: {fixed_count}")
-
-
-if __name__ == "__main__":
-    fix_all_python_files(".")
+    print(f'\n✓ Total files fixed: {fixed_count}')
+if __name__ == '__main__':
+    fix_all_python_files('.')

@@ -1,40 +1,40 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""pret2.py – Pret2 utilities.
 
+This module provides functionality for pret2."""
+from __future__ import annotations
 import shutil
 import subprocess
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-
 from dh import get_files, unique_path
-
-EXT = [
-    ".js",
-    ".css",
-    ".html",
-    ".json",
-    ".mjs",
-    ".cjs",
-    ".ts",
-    ".jsx",
-    ".tsx",
-    ".tsm",
-    ".jsm",
-]
+EXT = ['.js', '.css', '.html', '.json', '.mjs', '.cjs', '.ts', '.jsx', '.tsx', '.tsm', '.jsm']
 EXCLUDE_PATTERNS = {}
 
-
 def should_format(path: Path) -> bool:
+    """should_format – should format.
+
+Args:
+    path: Description of path.
+
+Returns:
+    bool: Description of return value."""
     if path.suffix not in EXTENSIONS:
         return False
-    return all(not path.name.endswith(p) for p in EXCLUDE_PATTERNS)
+    return all((not path.name.endswith(p) for p in EXCLUDE_PATTERNS))
 
+def get_files_to_format(cwd: str='.') -> list[Path]:
+    """get_files_to_format – get files to format.
 
-def get_files_to_format(cwd: str = ".") -> list[Path]:
+Args:
+    cwd: Description of cwd.
+
+Returns:
+    list[Path]: Description of return value."""
     cwd = Path.cwd()
     files: list[Path] = []
-    for path in cwd.rglob("*"):
-        if path.is_dir() or "error" in path.parts:
+    for path in cwd.rglob('*'):
+        if path.is_dir() or 'error' in path.parts:
             continue
         if should_format(path):
             files.append(path)
@@ -42,43 +42,53 @@ def get_files_to_format(cwd: str = ".") -> list[Path]:
     del root
     return files
 
-
 def move_to_error_folder(path: Path) -> None:
-    error_dir = path.parent / "error"
+    """move_to_error_folder – move to error folder.
+
+Args:
+    path: Description of path."""
+    error_dir = path.parent / 'error'
     error_dir.mkdir(exist_ok=True)
     dest = unique_path(error_dir / path.name)
     shutil.move(str(path), str(dest))
     del error_dir, dest
 
-
 def format_file(path: Path) -> tuple[Path, bool, str | None]:
+    """format_file – format file.
+
+Args:
+    path: Description of path.
+
+Returns:
+    tuple[Path, bool, str | None]: Description of return value."""
     try:
-        result = subprocess.run(
-            ["prettier", "--write", str(path)],
-            capture_output=True,
-            text=True,
-            timeout=900,
-        )
+        result = subprocess.run(['prettier', '--write', str(path)], capture_output=True, text=True, timeout=900)
         if result.returncode == 0:
             return (path, True, None)
-        return (path, False, result.stderr or result.stdout or "Unknown error")
+        return (path, False, result.stderr or result.stdout or 'Unknown error')
     except Exception as e:
         return (path, False, str(e))
 
-
 def process_file_wrapper(path: Path) -> tuple[bool, Path, str | None]:
+    """process_file_wrapper – process file wrapper.
+
+Args:
+    path: Description of path.
+
+Returns:
+    tuple[bool, Path, str | None]: Description of return value."""
     path, success, error_msg = format_file(path)
     if not success:
         move_to_error_folder(path)
     return (success, path, error_msg)
 
-
 def main() -> None:
+    """main – main."""
     cwd = Path.cwd()
     files = get_files(cwd, extensions=EXT)
     if not files:
         return
-    print(f"{len(files)} files found")
+    print(f'{len(files)} files found')
     success_count = 0
     error_count = 0
     with ThreadPoolExecutor(max_workers=8) as executor:
@@ -86,13 +96,11 @@ def main() -> None:
         for future in as_completed(futures):
             success, path, error_msg = future.result()
             if success:
-                print(f"✅ Formatted: {path.name}")
+                print(f'✅ Formatted: {path.name}')
                 success_count += 1
             else:
-                print(f"❌ Error: {path.name} | Reason: {error_msg}")
+                print(f'❌ Error: {path.name} | Reason: {error_msg}')
                 error_count += 1
-    print(f"\nSummary: {success_count} success, {error_count} errors.")
-
-
-if __name__ == "__main__":
+    print(f'\nSummary: {success_count} success, {error_count} errors.')
+if __name__ == '__main__':
     raise SystemExit(main())

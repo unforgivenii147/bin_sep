@@ -1,14 +1,18 @@
 #!/data/data/com.termux/files/home/.local/bin/python
+"""crun.py – Crun utilities.
+
+This module provides functionality for crun."""
 from __future__ import annotations
-
+from typing import Any, Iterator
 from pathlib import Path
-
 from dh import fsz, gsz, mpf3, should_skip
 
+def get_filez(root_dir: str | Path) -> Iterator[Any]:
+    """get_filez – get filez.
 
-def get_filez(root_dir: str | Path):
+Args:
+    root_dir: Description of root_dir."""
     from os import walk as os_walk
-
     visited_dirs: set[Path] = set()
     root_dir = Path(root_dir)
     if root_dir.is_dir():
@@ -27,30 +31,31 @@ def get_filez(root_dir: str | Path):
     else:
         yield root_dir
 
+def process_file(path: Path | str) -> Any:
+    """process_file – process file.
 
-def process_file(path):
+Args:
+    path: Description of path."""
     path = Path(path)
     if not path.exists():
         return False
-    if path.suffix == ".c":
+    if path.suffix == '.c':
         cmd = f"clang {path!s} -o {path.with_suffix('')!s}"
-    if path.suffix == ".cpp":
+    if path.suffix == '.cpp':
         cmd = f"clang++ {path!s} -o {path.with_suffix('')!s}"
     ret, txt, _err = run_command(cmd)
     print(txt)
     return ret
 
-
 def main() -> None:
+    """main – main."""
     cwd = Path().cwd()
     start_size = gsz(cwd)
     files = []
     for path in get_filez(cwd):
-        if path.is_file() and path.suffix in {".c", ".cpp"}:
+        if path.is_file() and path.suffix in {'.c', '.cpp'}:
             files.append(path)
     mpf3(process_file, files)
-    print(f"{fsz(start_size - gsz(cwd))}")
-
-
-if __name__ == "__main__":
+    print(f'{fsz(start_size - gsz(cwd))}')
+if __name__ == '__main__':
     raise SystemExit(main())

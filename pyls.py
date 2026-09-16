@@ -1,6 +1,9 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""pyls.py – Pyls utilities.
 
+This module provides functionality for pyls."""
+from __future__ import annotations
+from typing import Any
 import argparse
 import datetime
 import grp
@@ -9,21 +12,30 @@ import stat
 import sys
 from argparse import Namespace
 from pathlib import Path
-
 from dh import fsz
-
-COLORS = {"dir": "\x1b[34m", "link": "\x1b[36m", "exec": "\x1b[32m", "reset": "\x1b[0m"}
-
+COLORS = {'dir': '\x1b[34m', 'link': '\x1b[36m', 'exec': '\x1b[32m', 'reset': '\x1b[0m'}
 
 def use_color(mode: str) -> bool:
-    if mode == "always":
+    """use_color – use color.
+
+Args:
+    mode: Description of mode.
+
+Returns:
+    bool: Description of return value."""
+    if mode == 'always':
         return True
-    if mode == "never":
+    if mode == 'never':
         return False
     return sys.stdout.isatty()
 
+def colorize(name: str, st: Any, enabled: bool) -> Any:
+    """colorize – colorize.
 
-def colorize(name, st, enabled):
+Args:
+    name: Description of name.
+    st: Description of st.
+    enabled: Description of enabled."""
     if not enabled:
         return name
     if stat.S_ISDIR(st.st_mode):
@@ -34,37 +46,56 @@ def colorize(name, st, enabled):
         return f"{COLORS['exec']}{name}{COLORS['reset']}"
     return name
 
+def indicator(path: Path | str, st: Any) -> str:
+    """indicator – indicator.
 
-def indicator(path, st):
+Args:
+    path: Description of path.
+    st: Description of st."""
     if stat.S_ISDIR(st.st_mode):
-        return "/"
+        return '/'
     if stat.S_ISLNK(st.st_mode):
-        return "@"
+        return '@'
     if st.st_mode & stat.S_IXUSR:
-        return "*"
-    return ""
+        return '*'
+    return ''
 
+def format_time(ts: Any, full: Any) -> str:
+    """format_time – format time.
 
-def format_time(ts, full) -> str:
+Args:
+    ts: Description of ts.
+    full: Description of full.
+
+Returns:
+    str: Description of return value."""
     dt = datetime.datetime.fromtimestamp(ts)
-    return dt.strftime("%Y-%m-%d %H:%M:%S" if full else "%b %d %H:%M")
+    return dt.strftime('%Y-%m-%d %H:%M:%S' if full else '%b %d %H:%M')
 
+def format_entry(entry: Any, args: Namespace, color_enabled: bool) -> str:
+    """format_entry – format entry.
 
-def format_entry(entry, args: Namespace, color_enabled: bool) -> str:
+Args:
+    entry: Description of entry.
+    args: Description of args.
+    color_enabled: Description of color_enabled.
+
+Returns:
+    str: Description of return value."""
     try:
         st = entry.stat(follow_symlinks=args.L)
     except FileNotFoundError:
-        return ""
+        return ''
     name = entry.name
     name = colorize(name, st, color_enabled)
     if args.p and entry.is_dir():
-        name += "/"
+        name += '/'
     if args.F:
         name += indicator(entry, st)
-    inode = f"{st.st_ino} " if args.i else ""
-    blocks = f"{st.st_blocks} " if args.s else ""
+    inode = f'{st.st_ino} ' if args.i else ''
+    blocks = f'{st.st_blocks} ' if args.s else ''
     if not args.l:
-        return f"{inode}{blocks}{name}"
+        return f'{inode}{blocks}{name}'
     perms = stat.filemode(st.st_mode)
     nlink = st.st_nlink
     uid = st.st_uid if args.n else pwd.getpwuid(st.st_uid).pw_name
@@ -72,10 +103,14 @@ def format_entry(entry, args: Namespace, color_enabled: bool) -> str:
     size = fsz(st.st_size) if args.h else st.st_size
     ts = st.st_ctime if args.lc else st.st_atime if args.lu else st.st_mtime
     time_str = format_time(ts, args.full_time)
-    return f"{inode} {blocks} {perms}  {nlink}  {uid}  {gid}  {size: >6}  {time_str}  {name} "
+    return f'{inode} {blocks} {perms}  {nlink}  {uid}  {gid}  {size: >6}  {time_str}  {name} '
 
+def scan_dir(path: Path, args: Namespace) -> Any:
+    """scan_dir – scan dir.
 
-def scan_dir(path: Path, args: Namespace):
+Args:
+    path: Description of path.
+    args: Description of args."""
     try:
         entries = list(path.iterdir())
     except PermissionError:
@@ -83,15 +118,15 @@ def scan_dir(path: Path, args: Namespace):
         return []
     if not args.a:
         if args.A:
-            entries = [
-                e
-                for e in entries
-                if e.name not in {".", ".."} and not e.name.startswith(".")
-            ]
+            entries = [e for e in entries if e.name not in {'.', '..'} and (not e.name.startswith('.'))]
         else:
-            entries = [e for e in entries if not e.name.startswith(".")]
+            entries = [e for e in entries if not e.name.startswith('.')]
 
-    def key(p):
+    def key(p: Any) -> Any:
+        """key – key.
+
+Args:
+    p: Description of p."""
         try:
             st = p.stat(follow_symlinks=args.L)
         except FileNotFoundError:
@@ -107,58 +142,62 @@ def scan_dir(path: Path, args: Namespace):
         if args.X:
             return p.suffix
         return p.name
-
     entries.sort(key=key, reverse=args.r)
     if args.group_directories_first:
         entries.sort(key=lambda e: not e.is_dir())
     return entries
 
+def print_columns(items: list[str], width: int, by_row: Any) -> None:
+    """print_columns – print columns.
 
-def print_columns(items: list[str], width, by_row) -> None:
+Args:
+    items: Description of items.
+    width: Description of width.
+    by_row: Description of by_row."""
     if not items:
         return
-    max_len = max(len(i) for i in items) + 2
+    max_len = max((len(i) for i in items)) + 2
     cols = max(1, width // max_len)
     rows = (len(items) + cols - 1) // cols
     for r in range(rows):
         for c in range(cols):
             idx = r * cols + c if by_row else c * rows + r
             if idx < len(items):
-                print(items[idx].ljust(max_len), end="")
+                print(items[idx].ljust(max_len), end='')
         print()
 
-
 def main() -> None:
+    """main – main."""
     p = argparse.ArgumentParser(add_help=False)
-    p.add_argument("-1", dest="one", action="store_true")
-    p.add_argument("-a", action="store_true")
-    p.add_argument("-A", action="store_true")
-    p.add_argument("-x", action="store_true")
-    p.add_argument("-d", action="store_true")
-    p.add_argument("-L", action="store_true")
-    p.add_argument("-H", action="store_true")
-    p.add_argument("-R", action="store_true")
-    p.add_argument("-p", action="store_true")
-    p.add_argument("-F", action="store_true")
-    p.add_argument("-l", action="store_true")
-    p.add_argument("-i", action="store_true")
-    p.add_argument("-n", action="store_true")
-    p.add_argument("-s", action="store_true")
-    p.add_argument("-h", action="store_true")
-    p.add_argument("-lc", action="store_true")
-    p.add_argument("-lu", action="store_true")
-    p.add_argument("--full-time", action="store_true")
-    p.add_argument("-S", action="store_true")
-    p.add_argument("-X", action="store_true")
-    p.add_argument("-v", action="store_true")
-    p.add_argument("-t", action="store_true")
-    p.add_argument("-tc", action="store_true")
-    p.add_argument("-tu", action="store_true")
-    p.add_argument("-r", action="store_true")
-    p.add_argument("-w", type=int, default=80)
-    p.add_argument("--group-directories-first", action="store_true")
-    p.add_argument("--color", nargs="?", const="auto", default="auto")
-    p.add_argument("paths", nargs="*", default=["."])
+    p.add_argument('-1', dest='one', action='store_true')
+    p.add_argument('-a', action='store_true')
+    p.add_argument('-A', action='store_true')
+    p.add_argument('-x', action='store_true')
+    p.add_argument('-d', action='store_true')
+    p.add_argument('-L', action='store_true')
+    p.add_argument('-H', action='store_true')
+    p.add_argument('-R', action='store_true')
+    p.add_argument('-p', action='store_true')
+    p.add_argument('-F', action='store_true')
+    p.add_argument('-l', action='store_true')
+    p.add_argument('-i', action='store_true')
+    p.add_argument('-n', action='store_true')
+    p.add_argument('-s', action='store_true')
+    p.add_argument('-h', action='store_true')
+    p.add_argument('-lc', action='store_true')
+    p.add_argument('-lu', action='store_true')
+    p.add_argument('--full-time', action='store_true')
+    p.add_argument('-S', action='store_true')
+    p.add_argument('-X', action='store_true')
+    p.add_argument('-v', action='store_true')
+    p.add_argument('-t', action='store_true')
+    p.add_argument('-tc', action='store_true')
+    p.add_argument('-tu', action='store_true')
+    p.add_argument('-r', action='store_true')
+    p.add_argument('-w', type=int, default=80)
+    p.add_argument('--group-directories-first', action='store_true')
+    p.add_argument('--color', nargs='?', const='auto', default='auto')
+    p.add_argument('paths', nargs='*', default=['.'])
     args = p.parse_args()
     color_enabled = use_color(args.color)
     for path in args.paths:
@@ -172,15 +211,13 @@ def main() -> None:
             for f in formatted:
                 print(f)
         elif args._1:
-            print("\n".join(formatted))
+            print('\n'.join(formatted))
         else:
             print_columns(formatted, args.w, args.x)
         if args.R:
             for e in entries:
-                if e.is_dir() and not e.is_symlink():
-                    print(f"\n{e}:")
+                if e.is_dir() and (not e.is_symlink()):
+                    print(f'\n{e}:')
                     raise SystemExit(main())
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     raise SystemExit(main())

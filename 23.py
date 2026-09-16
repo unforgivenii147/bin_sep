@@ -1,71 +1,68 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""23.py – 23 utilities.
 
+This module provides functionality for 23."""
+from __future__ import annotations
 import sys
 from multiprocessing import Lock, Pool
 from pathlib import Path
-
 from dh import runcmd
 from fastwalk import walk_files
-
 MAX_WORKERS = 8
 print_lock = Lock()
 
-
 def is_python_file(path: Path) -> bool:
-    if path.suffix == ".py":
+    """is_python_file – is python file.
+
+Args:
+    path: Description of path.
+
+Returns:
+    bool: Description of return value."""
+    if path.suffix == '.py':
         return True
-    if path.suffix == "":
+    if path.suffix == '':
         try:
-            with Path(path).open("rb") as f:
+            with Path(path).open('rb') as f:
                 head = f.read(64)
-                if b"python" in head and b"#!" in head:
+                if b'python' in head and b'#!' in head:
                     return True
         except Exception:
             return False
     return False
 
-
 def process_file(path: str | Path) -> None:
+    """process_file – process file.
+
+Args:
+    path: Description of path."""
     path = Path(path)
-    print(f"[OK] {path.name}")
-    cmd = [
-        "ruff",
-        "check",
-        "--fix",
-        "--unsafe-fixes",
-        "--line-length",
-        "120",
-        "--quiet",
-        str(path),
-    ]
+    print(f'[OK] {path.name}')
+    cmd = ['ruff', 'check', '--fix', '--unsafe-fixes', '--line-length', '120', '--quiet', str(path)]
     rc_check, out_check, err_check = runcmd(cmd, show_output=True)
-    format_cmd = [
-        "ruff",
-        "format",
-        "--config",
-        "/data/data/com.termux/files/home/.config/ruff/ruff.toml",
-        str(path),
-    ]
+    format_cmd = ['ruff', 'format', '--config', '/data/data/com.termux/files/home/.config/ruff/ruff.toml', str(path)]
     rc_fmt, _out_fmt, err_fmt = runcmd(format_cmd, show_output=True)
     output = []
     if rc_check != 0 or err_check.strip():
-        output.append(f"--- Issues fixing {path.name} ---")
+        output.append(f'--- Issues fixing {path.name} ---')
         if err_check.strip():
             output.append(err_check.strip())
         if out_check.strip():
             output.append(out_check.strip())
     if rc_fmt != 0 or err_fmt.strip():
-        output.append(f"--- Issues formatting {path.name} ---")
+        output.append(f'--- Issues formatting {path.name} ---')
         if err_fmt.strip():
             output.append(err_fmt.strip())
     if output:
         with print_lock:
-            print("\n".join(output))
+            print('\n'.join(output))
             sys.stdout.flush()
 
+def get_all_files(cwd: Path) -> list[Path]:
+    """get_all_files – get all files.
 
-def get_all_files(cwd: Path):
+Args:
+    cwd: Description of cwd."""
     py_files = []
     for pth in walk_files(cwd):
         path = Path(pth)
@@ -73,12 +70,12 @@ def get_all_files(cwd: Path):
             py_files.append(path)
     return py_files
 
-
 def main() -> None:
+    """main – main."""
     cwd = Path.cwd()
     files = get_all_files(cwd)
     if not files:
-        print("no file found.")
+        print('no file found.')
         return
     pool = Pool(processes=MAX_WORKERS)
     pending = deque()
@@ -90,7 +87,5 @@ def main() -> None:
         pending.popleft().get()
     pool.close()
     pool.join()
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     raise SystemExit(main())

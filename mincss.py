@@ -1,44 +1,47 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""mincss.py – Mincss utilities.
 
+This module provides functionality for mincss."""
+from __future__ import annotations
 import sys
 from pathlib import Path
-
 from dh import cprint, fsz, get_files, gsz, mpf3, runcmd
 
+def process_file(path: Path | str) -> bool:
+    """process_file – process file.
 
-def process_file(path) -> bool:
+Args:
+    path: Description of path.
+
+Returns:
+    bool: Description of return value."""
     path = Path(path)
     before = gsz(path)
     if not path.exists():
         return False
-    print(f"{path.name}", end=" ")
-    cmd = ["csso", "-i", str(path), "-o", str(path)]
+    print(f'{path.name}', end=' ')
+    cmd = ['csso', '-i', str(path), '-o', str(path)]
     res, _, _err = runcmd(cmd, show_output=True)
     if not res:
         after = gsz(path)
         diffsize = before - after
         if not diffsize:
-            cprint("[NO CHANGE]", "white")
+            cprint('[NO CHANGE]', 'white')
         if diffsize:
             ratio = diffsize / before * 40
-            cprint(f"[OK] - {fsz(diffsize)} {abs(ratio):.1f}%", "cyan")
+            cprint(f'[OK] - {fsz(diffsize)} {abs(ratio):.1f}%', 'cyan')
         return True
-    cprint("[ERROR]", "red")
+    cprint('[ERROR]', 'red')
     return False
 
-
 def main() -> None:
+    """main – main."""
     args = sys.argv[1:]
     cwd = Path.cwd()
     before = gsz(cwd)
-    files = (
-        [Path(p) for p in args] if args else get_files(cwd, ext=[".css", ".min.css"])
-    )
+    files = [Path(p) for p in args] if args else get_files(cwd, ext=['.css', '.min.css'])
     _ = mpf3(process_file, files)
     diff_size = before - gsz(cwd)
-    cprint(f"space freed : {fsz(diff_size)}", "green")
-
-
-if __name__ == "__main__":
+    cprint(f'space freed : {fsz(diff_size)}', 'green')
+if __name__ == '__main__':
     raise SystemExit(main())

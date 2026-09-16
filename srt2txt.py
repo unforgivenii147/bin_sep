@@ -1,16 +1,23 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""srt2txt.py – Srt2Txt utilities.
 
+This module provides functionality for srt2txt."""
+from __future__ import annotations
 import re
 import sys
 from pathlib import Path
-
-TIMESTAMP_RE = re.compile(r"\d{2}:\d{2}:\d{2},\d{3}\s*-->\s*\d{2}:\d{2}:\d{2},\d{3}")
-TAG_RE = re.compile(r"<[^>]+>|{\w+}")
-
+TIMESTAMP_RE = re.compile('\\d{2}:\\d{2}:\\d{2},\\d{3}\\s*-->\\s*\\d{2}:\\d{2}:\\d{2},\\d{3}')
+TAG_RE = re.compile('<[^>]+>|{\\w+}')
 
 def srt_to_text(srt_path: Path) -> str:
-    lines = srt_path.read_text(encoding="utf-8", errors="ignore").splitlines()
+    """srt_to_text – srt to text.
+
+Args:
+    srt_path: Description of srt_path.
+
+Returns:
+    str: Description of return value."""
+    lines = srt_path.read_text(encoding='utf-8', errors='ignore').splitlines()
     out = []
     for line in lines:
         line = line.strip()
@@ -20,21 +27,19 @@ def srt_to_text(srt_path: Path) -> str:
             continue
         if TIMESTAMP_RE.match(line):
             continue
-        line = TAG_RE.sub("", line)
+        line = TAG_RE.sub('', line)
         out.append(line)
-    return "\n".join(out)
-
+    return '\n'.join(out)
 
 def main() -> None:
+    """main – main."""
     if len(sys.argv) < 2:
-        print("Usage: srt2txt.py file.srt [out.txt]")
+        print('Usage: srt2txt.py file.srt [out.txt]')
         sys.exit(1)
     src = Path(sys.argv[1])
-    dst = Path(sys.argv[2]) if len(sys.argv) > 2 else src.with_suffix(".txt")
+    dst = Path(sys.argv[2]) if len(sys.argv) > 2 else src.with_suffix('.txt')
     text = srt_to_text(src)
-    dst.write_text(text, encoding="utf-8")
-    print(f"✔ Converted: {src} → {dst}")
-
-
-if __name__ == "__main__":
+    dst.write_text(text, encoding='utf-8')
+    print(f'✔ Converted: {src} → {dst}')
+if __name__ == '__main__':
     raise SystemExit(main())

@@ -1,6 +1,8 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""download_images.py – Download Images utilities.
 
+This module provides functionality for download images."""
+from __future__ import annotations
 import argparse
 import hashlib
 import multiprocessing as mp
@@ -8,125 +10,148 @@ from collections import deque
 from io import BytesIO
 from pathlib import Path
 from urllib.parse import urldefrag, urljoin, urlparse
-
 import requests
 from bs4 import BeautifulSoup
 from PIL import Image
-
 MIN_WIDTH = 300
 MIN_HEIGHT = 400
-OUTPUT_FILE = Path("img_urls.txt")
-DOWNLOAD_DIR = Path("images")
-
+OUTPUT_FILE = Path('img_urls.txt')
+DOWNLOAD_DIR = Path('images')
 
 def normalize_url(url: str) -> str:
-    url, _fragment = urldefrag(url)
-    return url.rstrip("/") if urlparse(url).path else url
+    """normalize_url – normalize url.
 
+Args:
+    url: Description of url.
+
+Returns:
+    str: Description of return value."""
+    url, _fragment = urldefrag(url)
+    return url.rstrip('/') if urlparse(url).path else url
 
 def is_http_url(url: str) -> bool:
-    return urlparse(url).scheme in {"http", "https"}
+    """is_http_url – is http url.
 
+Args:
+    url: Description of url.
+
+Returns:
+    bool: Description of return value."""
+    return urlparse(url).scheme in {'http', 'https'}
 
 def get_image_urls(soup: BeautifulSoup, page_url: str) -> set[str]:
+    """get_image_urls – get image urls.
+
+Args:
+    soup: Description of soup.
+    page_url: Description of page_url.
+
+Returns:
+    set[str]: Description of return value."""
     image_urls: set[str] = set()
-    for image in soup.find_all("img"):
-        for attribute in (
-            "src",
-            "data-src",
-            "data-lazy-src",
-            "data-original",
-            "data-image",
-        ):
+    for image in soup.find_all('img'):
+        for attribute in ('src', 'data-src', 'data-lazy-src', 'data-original', 'data-image'):
             value = image.get(attribute)
             if value:
                 image_url = normalize_url(urljoin(page_url, value.strip()))
                 if is_http_url(image_url):
                     image_urls.add(image_url)
-        srcset = image.get("srcset")
+        srcset = image.get('srcset')
         if srcset:
-            for candidate in srcset.split(","):
-                image_url = candidate.strip().split(" ")[0]
+            for candidate in srcset.split(','):
+                image_url = candidate.strip().split(' ')[0]
                 if image_url:
                     image_url = normalize_url(urljoin(page_url, image_url))
                     if is_http_url(image_url):
                         image_urls.add(image_url)
     return image_urls
 
+def get_internal_links(soup: BeautifulSoup, page_url: str, site_netloc: str) -> set[str]:
+    """get_internal_links – get internal links.
 
-def get_internal_links(
-    soup: BeautifulSoup,
-    page_url: str,
-    site_netloc: str,
-) -> set[str]:
+Args:
+    soup: Description of soup.
+    page_url: Description of page_url.
+    site_netloc: Description of site_netloc.
+
+Returns:
+    set[str]: Description of return value."""
     links: set[str] = set()
-    for anchor in soup.find_all("a", href=True):
-        link = normalize_url(urljoin(page_url, anchor["href"]))
+    for anchor in soup.find_all('a', href=True):
+        link = normalize_url(urljoin(page_url, anchor['href']))
         if is_http_url(link) and urlparse(link).netloc == site_netloc:
             links.add(link)
     return links
 
-
 def inspect_image(image_url: str) -> tuple[str, int, int] | None:
+    """inspect_image – inspect image.
+
+Args:
+    image_url: Description of image_url.
+
+Returns:
+    tuple[str, int, int] | None: Description of return value."""
     try:
-        response = requests.get(
-            image_url,
-            timeout=20,
-            headers={
-                "User-Agent": "Mozilla/5.0",
-                "Accept": "image/*",
-            },
-        )
+        response = requests.get(image_url, timeout=20, headers={'User-Agent': 'Mozilla/5.0', 'Accept': 'image/*'})
         response.raise_for_status()
-        if not response.headers.get("Content-Type", "").startswith("image/"):
+        if not response.headers.get('Content-Type', '').startswith('image/'):
             return None
         with Image.open(BytesIO(response.content)) as image:
             width, height = image.size
         if width > MIN_WIDTH and height > MIN_HEIGHT:
-            return image_url, width, height
+            return (image_url, width, height)
     except Exception:
         pass
     return None
 
-
 def safe_filename(image_url: str) -> str:
+    """safe_filename – safe filename.
+
+Args:
+    image_url: Description of image_url.
+
+Returns:
+    str: Description of return value."""
     parsed = urlparse(image_url)
-    original_name = Path(parsed.path).name or "image"
+    original_name = Path(parsed.path).name or 'image'
     suffix = Path(original_name).suffix.lower()
     if not suffix:
-        suffix = ".img"
-    stem = Path(original_name).stem or "image"
+        suffix = '.img'
+    stem = Path(original_name).stem or 'image'
     unique_id = hashlib.sha256(image_url.encode()).hexdigest()[:12]
-    return f"{stem}_{unique_id}{suffix}"
-
+    return f'{stem}_{unique_id}{suffix}'
 
 def download_image(item: tuple[str, int, int]) -> str | None:
+    """download_image – download image.
+
+Args:
+    item: Description of item.
+
+Returns:
+    str | None: Description of return value."""
     image_url, _width, _height = item
     DOWNLOAD_DIR.mkdir(exist_ok=True)
     destination = DOWNLOAD_DIR / safe_filename(image_url)
     try:
-        response = requests.get(
-            image_url,
-            timeout=30,
-            headers={"User-Agent": "Mozilla/5.0"},
-        )
+        response = requests.get(image_url, timeout=30, headers={'User-Agent': 'Mozilla/5.0'})
         response.raise_for_status()
         destination.write_bytes(response.content)
         return str(destination)
     except Exception:
         return None
 
+def crawl_site(start_url: str, max_pages: int, print_urls: bool, download_images: bool) -> None:
+    """crawl_site – crawl site.
 
-def crawl_site(
-    start_url: str,
-    max_pages: int,
-    print_urls: bool,
-    download_images: bool,
-) -> None:
+Args:
+    start_url: Description of start_url.
+    max_pages: Description of max_pages.
+    print_urls: Description of print_urls.
+    download_images: Description of download_images."""
     start_url = normalize_url(start_url)
     site_netloc = urlparse(start_url).netloc
     session = requests.Session()
-    session.headers.update({"User-Agent": "Mozilla/5.0"})
+    session.headers.update({'User-Agent': 'Mozilla/5.0'})
     pages_to_visit = deque([start_url])
     visited_pages: set[str] = set()
     checked_images: set[str] = set()
@@ -138,16 +163,16 @@ def crawl_site(
             if page_url in visited_pages:
                 continue
             visited_pages.add(page_url)
-            print(f"Scanning: {page_url}", flush=True)
+            print(f'Scanning: {page_url}', flush=True)
             try:
                 response = session.get(page_url, timeout=20)
                 response.raise_for_status()
             except requests.RequestException as error:
-                print(f"Could not scan page: {error}")
+                print(f'Could not scan page: {error}')
                 continue
-            if "text/html" not in response.headers.get("Content-Type", ""):
+            if 'text/html' not in response.headers.get('Content-Type', ''):
                 continue
-            soup = BeautifulSoup(response.text, "html.parser")
+            soup = BeautifulSoup(response.text, 'html.parser')
             new_images = get_image_urls(soup, page_url) - checked_images
             checked_images.update(new_images)
             results = pool.map(inspect_image, new_images)
@@ -158,65 +183,32 @@ def crawl_site(
                 if link not in visited_pages:
                     pages_to_visit.append(link)
         if print_urls:
-            with OUTPUT_FILE.open("w", encoding="utf-8") as file:
+            with OUTPUT_FILE.open('w', encoding='utf-8') as file:
                 for image_url, width, height in matches:
-                    print(f"{width}x{height} {image_url}")
-                    file.write(f"{image_url}\n")
-            print(f"Saved URLs to {OUTPUT_FILE}")
+                    print(f'{width}x{height} {image_url}')
+                    file.write(f'{image_url}\n')
+            print(f'Saved URLs to {OUTPUT_FILE}')
         if download_images:
             downloaded = pool.map(download_image, matches)
             successful = [path for path in downloaded if path is not None]
-            print(f"Downloaded {len(successful)} image(s) to {DOWNLOAD_DIR}/")
-    print(
-        f"Scanned {len(visited_pages)} page(s), "
-        f"checked {len(checked_images)} image(s), "
-        f"found {len(matches)} matching image(s)."
-    )
-
+            print(f'Downloaded {len(successful)} image(s) to {DOWNLOAD_DIR}/')
+    print(f'Scanned {len(visited_pages)} page(s), checked {len(checked_images)} image(s), found {len(matches)} matching image(s).')
 
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Find, print, save, and download large website images."
-    )
-    parser.add_argument(
-        "url",
-        help="Starting URL, for example https://example.com",
-    )
-    parser.add_argument(
-        "-p",
-        "--print",
-        action="store_true",
-        dest="print_urls",
-        help="Print matching URLs and save them to img_urls.txt",
-    )
-    parser.add_argument(
-        "-d",
-        "--download",
-        action="store_true",
-        dest="download_images",
-        help="Download matching images into the images/ directory",
-    )
-    parser.add_argument(
-        "--max-pages",
-        type=int,
-        default=100,
-        help="Maximum same-site pages to scan; default: 100",
-    )
+    """main – main."""
+    parser = argparse.ArgumentParser(description='Find, print, save, and download large website images.')
+    parser.add_argument('url', help='Starting URL, for example https://example.com')
+    parser.add_argument('-p', '--print', action='store_true', dest='print_urls', help='Print matching URLs and save them to img_urls.txt')
+    parser.add_argument('-d', '--download', action='store_true', dest='download_images', help='Download matching images into the images/ directory')
+    parser.add_argument('--max-pages', type=int, default=100, help='Maximum same-site pages to scan; default: 100')
     args = parser.parse_args()
     if not is_http_url(args.url):
-        parser.error("URL must start with http:// or https://")
-    if not args.print_urls and not args.download_images:
-        parser.error("Use -p, -d, or both")
+        parser.error('URL must start with http:// or https://')
+    if not args.print_urls and (not args.download_images):
+        parser.error('Use -p, -d, or both')
     if args.max_pages < 1:
-        parser.error("--max-pages must be at least 1")
-    crawl_site(
-        start_url=args.url,
-        max_pages=args.max_pages,
-        print_urls=args.print_urls,
-        download_images=args.download_images,
-    )
-
-
-if __name__ == "__main__":
+        parser.error('--max-pages must be at least 1')
+    crawl_site(start_url=args.url, max_pages=args.max_pages, print_urls=args.print_urls, download_images=args.download_images)
+if __name__ == '__main__':
     mp.freeze_support()
     main()

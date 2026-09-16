@@ -1,13 +1,17 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""loname.py – Loname utilities.
 
+This module provides functionality for loname."""
+from __future__ import annotations
 import sys
 from pathlib import Path
-
 from dh import mpf_async, unique_path
 
+def process_file(path: Path | str) -> None:
+    """process_file – process file.
 
-def process_file(path) -> None:
+Args:
+    path: Description of path."""
     path = Path(path)
     if not path.exists():
         path = Path(str(path).lower())
@@ -20,15 +24,9 @@ def process_file(path) -> None:
     if new_path.exists():
         new_path = unique_path(new_path)
     path.rename(new_path)
-    print(f"{path.name} -> {new_path.name}")
-
-
-if __name__ == "__main__":
+    print(f'{path.name} -> {new_path.name}')
+if __name__ == '__main__':
     cwd = Path.cwd()
     args = sys.argv[1:]
-    files = (
-        list(cwd.glob("*"))
-        if not args
-        else [p for p in cwd.rglob("*") if ".git" not in p.parts and not p.is_symlink()]
-    )
+    files = list(cwd.glob('*')) if not args else [p for p in cwd.rglob('*') if '.git' not in p.parts and (not p.is_symlink())]
     mpf_async(process_file, files)

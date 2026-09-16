@@ -1,19 +1,24 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""pysplit.py – Pysplit utilities.
 
+This module provides functionality for pysplit."""
+from __future__ import annotations
 import sys
 from pathlib import Path
-
 from dh import is_binary
 
-
 def split_file_into_parts(path: Path, n: int) -> None:
+    """split_file_into_parts – split file into parts.
+
+Args:
+    path: Description of path.
+    n: Description of n."""
     if n <= 0:
-        raise ValueError("n must be a positive integer")
+        raise ValueError('n must be a positive integer')
     if is_binary(path):
         print(f"Error: binary file '{path}' detected. Aborting.", file=sys.stderr)
         sys.exit(1)
-    lines = path.read_text(encoding="utf-8").splitlines(keepends=True)
+    lines = path.read_text(encoding='utf-8').splitlines(keepends=True)
     num_lines = len(lines)
     padding_width = len(str(n))
     base = num_lines // n
@@ -27,28 +32,26 @@ def split_file_into_parts(path: Path, n: int) -> None:
         else:
             end = start + base
         index_str = str(i).zfill(padding_width)
-        part_name = f"{stem}_{index_str}{suffix}"
+        part_name = f'{stem}_{index_str}{suffix}'
         part_path = parent / part_name
-        part_path.write_text("".join(lines[start:end]), encoding="utf-8")
-        print(f"Created: {part_path}")
+        part_path.write_text(''.join(lines[start:end]), encoding='utf-8')
+        print(f'Created: {part_path}')
         start = end
 
-
 def main() -> None:
+    """main – main."""
     if len(sys.argv) != 3:
-        print("Usage: python script.py <n> <path>")
+        print('Usage: python script.py <n> <path>')
         sys.exit(1)
     try:
         path = Path(sys.argv[1])
         n = int(sys.argv[2])
     except ValueError:
-        print("Error: n must be an integer.", file=sys.stderr)
+        print('Error: n must be an integer.', file=sys.stderr)
         sys.exit(1)
     if not path.is_file():
-        print(f"Error: file not found: {path}", file=sys.stderr)
+        print(f'Error: file not found: {path}', file=sys.stderr)
         sys.exit(1)
     split_file_into_parts(path, n)
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     raise SystemExit(main())

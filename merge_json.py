@@ -1,17 +1,22 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""merge_json.py – Merge Json utilities.
 
+This module provides functionality for merge json."""
+from __future__ import annotations
+from typing import Any
 import argparse
 import json
 import multiprocessing
 from pathlib import Path
-
 from dh import unique_path
 
+def load_json_file(path: Path | str) -> list[Path]:
+    """load_json_file – load json file.
 
-def load_json_file(path):
+Args:
+    path: Description of path."""
     try:
-        with open(path, encoding="utf-8") as f:
+        with open(path, encoding='utf-8') as f:
             data = json.load(f)
             if isinstance(data, list):
                 return data
@@ -22,18 +27,21 @@ def load_json_file(path):
     except Exception:
         return []
 
+def merge_json_files(input_paths: Path | str) -> Any:
+    """merge_json_files – merge json files.
 
-def merge_json_files(input_paths):
+Args:
+    input_paths: Description of input_paths."""
     json_files = []
     for path_str in input_paths:
         path = Path(path_str)
-        if path.is_file() and path.suffix == ".json":
+        if path.is_file() and path.suffix == '.json':
             json_files.append(path)
         elif path.is_dir():
-            for file in path.rglob("*.json"):
+            for file in path.rglob('*.json'):
                 json_files.append(file)
         else:
-            print("no json file")
+            print('no json file')
     if not json_files:
         return []
     with multiprocessing.Pool(8) as pool:
@@ -43,23 +51,14 @@ def merge_json_files(input_paths):
         merged_data.extend(data_list)
     return merged_data
 
-
-def main():
-    parser = argparse.ArgumentParser(description="Объединение JSON-файлов.")
-    parser.add_argument(
-        "input_paths",
-        nargs="*",
-        help="Пути к файлам или директориям для обработки. Если не указаны, обрабатывается текущая директория.",
-    )
-    parser.add_argument(
-        "--output",
-        "-o",
-        default="merged.json",
-        help="output file name",
-    )
+def main() -> None:
+    """main – main."""
+    parser = argparse.ArgumentParser(description='Объединение JSON-файлов.')
+    parser.add_argument('input_paths', nargs='*', help='Пути к файлам или директориям для обработки. Если не указаны, обрабатывается текущая директория.')
+    parser.add_argument('--output', '-o', default='merged.json', help='output file name')
     args = parser.parse_args()
     if not args.input_paths:
-        input_paths = ["."]
+        input_paths = ['.']
     else:
         input_paths = args.input_paths
     merged_result = merge_json_files(input_paths)
@@ -68,13 +67,11 @@ def main():
         if out_path.exists():
             out_path = unique_path(out_path)
         try:
-            with open(out_path, "w", encoding="utf-8") as f:
+            with open(out_path, 'w', encoding='utf-8') as f:
                 json.dump(merged_result, f, ensure_ascii=False, indent=4)
         except Exception:
-            print("error")
+            print('error')
     else:
-        print("There is no data to write to the output file.")
-
-
-if __name__ == "__main__":
+        print('There is no data to write to the output file.')
+if __name__ == '__main__':
     raise SystemExit(main())

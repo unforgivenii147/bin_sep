@@ -1,17 +1,23 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""snapper.py – Snapper utilities.
 
+This module provides functionality for snapper."""
+from __future__ import annotations
 import sys
 from pathlib import Path
-
 from dh import cprint, fsz, get_files, gsz, mpf3
-
 _HASH_TABLE_SIZE = 1 << 14
 _MAX_OFFSET_1 = 2047
 _MAX_OFFSET_2 = 65535
 
-
 def _encode_varint(value: int) -> bytes:
+    """_encode_varint –  encode varint.
+
+Args:
+    value: Description of value.
+
+Returns:
+    bytes: Description of return value."""
     result = bytearray()
     while value >= 128:
         result.append(value & 127 | 128)
@@ -19,13 +25,26 @@ def _encode_varint(value: int) -> bytes:
     result.append(value)
     return bytes(result)
 
-
 def _hash_4_bytes(data: bytes, pos: int) -> int:
+    """_hash_4_bytes –  hash 4 bytes.
+
+Args:
+    data: Description of data.
+    pos: Description of pos.
+
+Returns:
+    int: Description of return value."""
     val = data[pos] | data[pos + 1] << 8 | data[pos + 2] << 16 | data[pos + 3] << 24
     return val * 406832829 >> 32 - 14 & _HASH_TABLE_SIZE - 1
 
-
 def _emit_literal(output: bytearray, data: bytes, start: int, length: int) -> None:
+    """_emit_literal –  emit literal.
+
+Args:
+    output: Description of output.
+    data: Description of data.
+    start: Description of start.
+    length: Description of length."""
     if length <= 0:
         return
     if length <= 60:
@@ -48,10 +67,15 @@ def _emit_literal(output: bytearray, data: bytes, start: int, length: int) -> No
         output.append(length - 1 >> 8 & 255)
         output.append(length - 1 >> 16 & 255)
         output.append(length - 1 >> 24 & 255)
-    output.extend(data[start : start + length])
-
+    output.extend(data[start:start + length])
 
 def _emit_copy(output: bytearray, offset: int, length: int) -> None:
+    """_emit_copy –  emit copy.
+
+Args:
+    output: Description of output.
+    offset: Description of offset.
+    length: Description of length."""
     while length > 0:
         if length >= 4 and length <= 11 and (offset <= _MAX_OFFSET_1):
             tag = 1 | length - 4 << 2 | offset >> 8 << 5
@@ -75,8 +99,14 @@ def _emit_copy(output: bytearray, offset: int, length: int) -> None:
             output.append(offset >> 24 & 255)
             length -= copy_len
 
-
 def compress(data: bytes) -> bytes:
+    """compress – compress.
+
+Args:
+    data: Description of data.
+
+Returns:
+    bytes: Description of return value."""
     if not data:
         return _encode_varint(0)
     data_len = len(data)
@@ -92,20 +122,13 @@ def compress(data: bytes) -> bytes:
         h = _hash_4_bytes(data, pos)
         candidate = hash_table[h]
         hash_table[h] = pos
-        if (
-            (candidate > 0 or (candidate == 0 and pos > 0))
-            and pos - candidate <= _MAX_OFFSET_2
-            and (data[candidate : candidate + 4] == data[pos : pos + 4])
-        ):
+        if (candidate > 0 or (candidate == 0 and pos > 0)) and pos - candidate <= _MAX_OFFSET_2 and (data[candidate:candidate + 4] == data[pos:pos + 4]):
             if pos > literal_start:
                 _emit_literal(output, data, literal_start, pos - literal_start)
             offset = pos - candidate
             match_len = 4
             max_match = min(data_len - pos, 64)
-            while (
-                match_len < max_match
-                and data[candidate + match_len] == data[pos + match_len]
-            ):
+            while match_len < max_match and data[candidate + match_len] == data[pos + match_len]:
                 match_len += 1
             _emit_copy(output, offset, match_len)
             pos += match_len
@@ -118,24 +141,37 @@ def compress(data: bytes) -> bytes:
         _emit_literal(output, data, literal_start, data_len - literal_start)
     return bytes(output)
 
-
 class SnappyError(Exception):
+    """SnappyError – SnappyError."""
     pass
 
-
 class CompressionError(SnappyError):
-    def __init__(self, message: str, algorithm: str | None = None) -> None:
+    """CompressionError – CompressionError."""
+
+    def __init__(self, message: str, algorithm: str | None=None) -> None:
+        """__init__ –   init  .
+
+Args:
+    message: Description of message.
+    algorithm: Description of algorithm."""
         super().__init__(message)
         self.algorithm = algorithm
 
-
 def _decode_varint(data: bytes, pos: int) -> tuple[int, int]:
+    """_decode_varint –  decode varint.
+
+Args:
+    data: Description of data.
+    pos: Description of pos.
+
+Returns:
+    tuple[int, int]: Description of return value."""
     result = 0
     shift = 0
     while True:
         if pos >= len(data):
-            msg = "error length"
-            raise CompressionError(msg, algorithm="snappy")
+            msg = 'error length'
+            raise CompressionError(msg, algorithm='snappy')
         byte = data[pos]
         pos += 1
         result |= (byte & 127) << shift
@@ -143,14 +179,20 @@ def _decode_varint(data: bytes, pos: int) -> tuple[int, int]:
             break
         shift += 7
         if shift > 32:
-            msg = "error length"
-            raise CompressionError(msg, algorithm="snappy")
+            msg = 'error length'
+            raise CompressionError(msg, algorithm='snappy')
     return (result, pos)
 
-
 def decompress(data: bytes) -> bytes:
+    """decompress – decompress.
+
+Args:
+    data: Description of data.
+
+Returns:
+    bytes: Description of return value."""
     if not data:
-        return b""
+        return b''
     pos = 0
     uncompressed_len, pos = _decode_varint(data, pos)
     output = bytearray(uncompressed_len)
@@ -166,101 +208,97 @@ def decompress(data: bytes) -> bytes:
             else:
                 extra_bytes = length - 60
                 if pos + extra_bytes > len(data):
-                    msg = "error length"
-                    raise CompressionError(msg, algorithm="snappy")
+                    msg = 'error length'
+                    raise CompressionError(msg, algorithm='snappy')
                 length = 1
                 for i in range(extra_bytes):
                     length += data[pos + i] << i * 8
                 pos += extra_bytes
             if pos + length > len(data):
-                msg = "error length"
-                raise CompressionError(msg, algorithm="snappy")
+                msg = 'error length'
+                raise CompressionError(msg, algorithm='snappy')
             if out_pos + length > uncompressed_len:
-                msg = "error length"
-                raise CompressionError(msg, algorithm="snappy")
-            output[out_pos : out_pos + length] = data[pos : pos + length]
+                msg = 'error length'
+                raise CompressionError(msg, algorithm='snappy')
+            output[out_pos:out_pos + length] = data[pos:pos + length]
             pos += length
             out_pos += length
         elif element_type == 1:
             length = (tag >> 2 & 7) + 4
             if pos >= len(data):
-                msg = "error length"
-                raise CompressionError(msg, algorithm="snappy")
+                msg = 'error length'
+                raise CompressionError(msg, algorithm='snappy')
             offset = tag >> 5 << 8 | data[pos]
             pos += 1
             if offset == 0:
-                msg = "error length"
-                raise CompressionError(msg, algorithm="snappy")
+                msg = 'error length'
+                raise CompressionError(msg, algorithm='snappy')
             if offset > out_pos:
-                msg = "error length"
-                raise CompressionError(msg, algorithm="snappy")
+                msg = 'error length'
+                raise CompressionError(msg, algorithm='snappy')
             if out_pos + length > uncompressed_len:
-                msg = "error length"
-                raise CompressionError(msg, algorithm="snappy")
+                msg = 'error length'
+                raise CompressionError(msg, algorithm='snappy')
             for i in range(length):
                 output[out_pos + i] = output[out_pos - offset + i]
             out_pos += length
         elif element_type == 2:
             length = (tag >> 2) + 1
             if pos + 2 > len(data):
-                msg = "error length"
-                raise CompressionError(msg, algorithm="snappy")
+                msg = 'error length'
+                raise CompressionError(msg, algorithm='snappy')
             offset = data[pos] | data[pos + 1] << 8
             pos += 2
             if offset == 0:
-                msg = "error length"
-                raise CompressionError(msg, algorithm="snappy")
+                msg = 'error length'
+                raise CompressionError(msg, algorithm='snappy')
             if offset > out_pos:
-                msg = "error length"
-                raise CompressionError(msg, algorithm="snappy")
+                msg = 'error length'
+                raise CompressionError(msg, algorithm='snappy')
             if out_pos + length > uncompressed_len:
-                msg = "error length"
-                raise CompressionError(msg, algorithm="snappy")
+                msg = 'error length'
+                raise CompressionError(msg, algorithm='snappy')
             for i in range(length):
                 output[out_pos + i] = output[out_pos - offset + i]
             out_pos += length
         else:
             length = (tag >> 2) + 1
             if pos + 4 > len(data):
-                msg = "error length"
-                raise CompressionError(msg, algorithm="snappy")
-            offset = (
-                data[pos]
-                | data[pos + 1] << 8
-                | data[pos + 2] << 16
-                | data[pos + 3] << 24
-            )
+                msg = 'error length'
+                raise CompressionError(msg, algorithm='snappy')
+            offset = data[pos] | data[pos + 1] << 8 | data[pos + 2] << 16 | data[pos + 3] << 24
             pos += 4
             if offset == 0:
-                msg = "error length"
-                raise CompressionError(msg, algorithm="snappy")
+                msg = 'error length'
+                raise CompressionError(msg, algorithm='snappy')
             if offset > out_pos:
-                msg = "error length"
-                raise CompressionError(msg, algorithm="snappy")
+                msg = 'error length'
+                raise CompressionError(msg, algorithm='snappy')
             if out_pos + length > uncompressed_len:
-                msg = "error length"
-                raise CompressionError(msg, algorithm="snappy")
+                msg = 'error length'
+                raise CompressionError(msg, algorithm='snappy')
             for i in range(length):
                 output[out_pos + i] = output[out_pos - offset + i]
             out_pos += length
     if out_pos != uncompressed_len:
-        msg = "error length"
-        raise CompressionError(msg, algorithm="snappy")
+        msg = 'error length'
+        raise CompressionError(msg, algorithm='snappy')
     return bytes(output)
-
-
-COMPRESS = "-c" in sys.argv
-DECOMPRESS = "-d" in sys.argv
-MODE = "COMPRESS"
-
+COMPRESS = '-c' in sys.argv
+DECOMPRESS = '-d' in sys.argv
+MODE = 'COMPRESS'
 
 def compress_file(path: Path) -> None:
+    """compress_file – compress file.
+
+Args:
+    path: Description of path."""
     before = gsz(path)
     if not before:
         return
     data = path.read_bytes()
     compressed = compress(data)
-    snappy_path = path.with_name(path.name + ".snappy")
+    snappy_path = path.with_name(path.name + '.snappy')
     snappy_path.write_bytes(compressed)
     after = gsz(snappy_path)
     if not after:
@@ -268,19 +306,22 @@ def compress_file(path: Path) -> None:
         return
     diff_size = before - after
     ratio = diff_size / before * 40
-    print(f"{path.name}", end=" | ")
-    cprint(f"{fsz(before)} -> {fsz(after)} | {fsz(diff_size)} | {ratio:.1f}%")
+    print(f'{path.name}', end=' | ')
+    cprint(f'{fsz(before)} -> {fsz(after)} | {fsz(diff_size)} | {ratio:.1f}%')
     path.unlink()
     return
 
-
 def decompress_file(path: Path) -> None:
+    """decompress_file – decompress file.
+
+Args:
+    path: Description of path."""
     before = gsz(path)
     if not before:
         return
     data = path.read_bytes()
     decompressed = decompress(data)
-    decomp_path = path.with_name(path.name.replace(".snappy", ""))
+    decomp_path = path.with_name(path.name.replace('.snappy', ''))
     decomp_path.write_bytes(decompressed)
     after = gsz(decomp_path)
     if not after:
@@ -288,26 +329,29 @@ def decompress_file(path: Path) -> None:
         return
     diff_size = before - after
     ratio = before / after * 40
-    print(f"{decomp_path.name}", end=" | ")
-    cprint(f"{fsz(before)} -> {fsz(after)} | {fsz(diff_size)} | {ratio:.1f}%")
+    print(f'{decomp_path.name}', end=' | ')
+    cprint(f'{fsz(before)} -> {fsz(after)} | {fsz(diff_size)} | {ratio:.1f}%')
     path.unlink()
     return
 
+def process_file(path: Path | str) -> None:
+    """process_file – process file.
 
-def process_file(path) -> None:
+Args:
+    path: Description of path."""
     path = Path(path)
-    if MODE == "COMPRESS":
+    if MODE == 'COMPRESS':
         compress_file(path)
-    elif MODE == "DECOMPRESS":
+    elif MODE == 'DECOMPRESS':
         decompress_file(path)
 
-
 def main() -> None:
+    """main – main."""
     global mode
     if COMPRESS:
-        mode = "COMPRESS"
+        mode = 'COMPRESS'
     if DECOMPRESS:
-        mode = "DECONPRESS"
+        mode = 'DECONPRESS'
     cwd = Path.cwd()
     args = sys.argv[1:]
     files = []
@@ -321,7 +365,5 @@ def main() -> None:
     else:
         files = get_files(cwd)
     mpf3(process_file, files)
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     raise SystemExit(main())

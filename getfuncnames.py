@@ -1,18 +1,26 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""getfuncnames.py – Getfuncnames utilities.
 
+This module provides functionality for getfuncnames."""
+from __future__ import annotations
+from typing import Any
+from pathlib import Path
 import ast
 import sys
 
+def get_function_names(filename: Path | str, skip_main: bool=True) -> Any:
+    """get_function_names – get function names.
 
-def get_function_names(filename, skip_main=True):
+Args:
+    filename: Description of filename.
+    skip_main: Description of skip_main."""
     try:
         with open(filename) as file:
             tree = ast.parse(file.read())
         function_names = []
         for node in ast.walk(tree):
             if isinstance(node, ast.FunctionDef):
-                if skip_main and node.name == "main":
+                if skip_main and node.name == 'main':
                     continue
                 function_names.append(node.name)
         return function_names
@@ -23,19 +31,17 @@ def get_function_names(filename, skip_main=True):
         print(f"Error: Syntax error in '{filename}': {e}")
         return []
     except Exception as e:
-        print(f"Error: {e}")
+        print(f'Error: {e}')
         return []
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     if len(sys.argv) < 2:
-        print("Usage: python script.py <python_file>")
+        print('Usage: python script.py <python_file>')
         sys.exit(1)
     filename = sys.argv[1]
     functions = get_function_names(filename, skip_main=True)
     if functions:
         print("Functions found (excluding 'main'):")
         for func in functions:
-            print(f"  - {func}")
+            print(f'  - {func}')
     else:
         print("No functions found (excluding 'main').")

@@ -1,19 +1,25 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""isnude.py – Isnude utilities.
 
+This module provides functionality for isnude."""
+from __future__ import annotations
 import sys
 from pathlib import Path
-
 import cv2
 import nude
 from dh import cprint, get_files, mpf3
-
-nude_path = Path("nude")
+nude_path = Path('nude')
 nude_path.mkdir(exist_ok=True)
-RESIZE = "-r" in sys.argv
-
+RESIZE = '-r' in sys.argv
 
 def check_nude(path: str) -> bool:
+    """check_nude – check nude.
+
+Args:
+    path: Description of path.
+
+Returns:
+    bool: Description of return value."""
     img = cv2.imread(path)
     h, w = img.shape[:2]
     n = nude.Nude(path)
@@ -24,19 +30,20 @@ def check_nude(path: str) -> bool:
     print(n)
     return bool(n.result)
 
+def process_file(path: Path | str) -> None:
+    """process_file – process file.
 
-def process_file(path) -> None:
+Args:
+    path: Description of path."""
     path = Path(path)
-    if "nude" in path.parts:
+    if 'nude' in path.parts:
         return
-    print(f"{path.name}")
+    print(f'{path.name}')
     if check_nude(str(path)):
-        cprint(f"{path.name} is nude", "cyan")
+        cprint(f'{path.name} is nude', 'cyan')
         new_path = nude_path / path.name
         path.rename(new_path)
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     cwd = Path.cwd()
-    files = get_files(cwd, ext=[".jpg", ".jpeg", ".png", ".webp"])
+    files = get_files(cwd, ext=['.jpg', '.jpeg', '.png', '.webp'])
     mpf3(process_file, files)

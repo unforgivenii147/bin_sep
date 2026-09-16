@@ -1,15 +1,20 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""fsimz.py – Fsimz utilities.
 
+This module provides functionality for fsimz."""
+from __future__ import annotations
+from typing import Any
 import os
 import sys
 from collections import defaultdict
-
 from dh import get_files
 from ppdeep import hash_from_file
 
+def find_dups(cwd: str) -> Any:
+    """find_dups – find dups.
 
-def find_dups(cwd: str):
+Args:
+    cwd: Description of cwd."""
     files_by_hash = defaultdict(list)
     duplicate_count = 0
     deleted_count = 0
@@ -23,7 +28,7 @@ def find_dups(cwd: str):
                 file_hash = hash_from_file(str(path))
                 files_by_hash[file_hash].append(path)
             except Exception as e:
-                print(f"Error processing file {path}: {e}")
+                print(f'Error processing file {path}: {e}')
                 continue
     for file_hash, paths in files_by_hash.items():
         if len(paths) > 1:
@@ -37,12 +42,10 @@ def find_dups(cwd: str):
                     deleted_count += 1
                     total_deleted_size += get_size
                 except Exception as e:
-                    print(f"Error deleting file {filetodel}: {e}")
+                    print(f'Error deleting file {filetodel}: {e}')
         else:
             continue
     return (duplicate_count, deleted_count, total_deleted_size)
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     root_folder = sys.argv[1].strip()
     find_dups(root_folder)

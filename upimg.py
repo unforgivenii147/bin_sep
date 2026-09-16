@@ -1,14 +1,18 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""upimg.py – Upimg utilities.
 
+This module provides functionality for upimg."""
+from __future__ import annotations
 import sys
 from pathlib import Path
-
 import cv2
 from dh import get_files
 
+def process_file(path: Path | str) -> None:
+    """process_file – process file.
 
-def process_file(path) -> None:
+Args:
+    path: Description of path."""
     path_str = str(path)
     img = cv2.imread(path_str)
     if not img.any():
@@ -25,11 +29,9 @@ def process_file(path) -> None:
     elif w > 2000:
         del w, h, img
         return
-    print(f"[✓] {path.name}:{h}X{w} -> {h * FACTOR}X{w * FACTOR}")
+    print(f'[✓] {path.name}:{h}X{w} -> {h * FACTOR}X{w * FACTOR}')
     try:
-        resized = cv2.resize(
-            img, (w * FACTOR, h * FACTOR), interpolation=cv2.INTER_LANCZOS4
-        )
+        resized = cv2.resize(img, (w * FACTOR, h * FACTOR), interpolation=cv2.INTER_LANCZOS4)
         del img, h, w
         sharpened = cv2.addWeighted(resized, 1.5, resized, -0.5, 0)
         del resized
@@ -38,16 +40,10 @@ def process_file(path) -> None:
         return
     except:
         return
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     cwd = Path.cwd()
     args = sys.argv[1:]
-    files = (
-        [Path(p) for p in args]
-        if args
-        else get_files(cwd, ext=[".webp", ".jpg", ".jpeg", ".png"])
-    )
+    files = [Path(p) for p in args] if args else get_files(cwd, ext=['.webp', '.jpg', '.jpeg', '.png'])
     for c, f in enumerate(files):
-        print(f"{c}/{len(files)}")
+        print(f'{c}/{len(files)}')
         process_file(f)

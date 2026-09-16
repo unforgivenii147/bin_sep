@@ -1,22 +1,26 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""dufpy.py – Dufpy utilities.
 
+This module provides functionality for dufpy."""
+from __future__ import annotations
 import ast
 from pathlib import Path
-
 from dh import cprint, get_pyfiles
 from xxhash import xxh64_hexdigest
 
+def process_file(path: Path | str) -> tuple[str, Path]:
+    """process_file – process file.
 
-def process_file(path) -> tuple[str, Path]:
+Args:
+    path: Description of path.
+
+Returns:
+    tuple[str, Path]: Description of return value."""
     path = Path(path)
-    return (
-        xxh64_hexdigest(ast.unparse(ast.parse(path.read_text(encoding="utf-8")))),
-        path,
-    )
-
+    return (xxh64_hexdigest(ast.unparse(ast.parse(path.read_text(encoding='utf-8')))), path)
 
 def main() -> None:
+    """main – main."""
     cwd = Path.cwd()
     files = get_pyfiles(cwd)
     fd = {}
@@ -26,9 +30,9 @@ def main() -> None:
         fd.setdefault(hash, []).append(path)
     for h, p in fd.items():
         if len(p) > 1:
-            print(f"files with hash: {h}")
+            print(f'files with hash: {h}')
             for path in p:
-                print(f"  - {path}")
+                print(f'  - {path}')
                 path.unlink()
     deleted = 0
     for h, p in fd.items():
@@ -38,8 +42,6 @@ def main() -> None:
                 if path.exists():
                     path.unlink()
     if deleted:
-        cprint(f"{deleted} files removed.", "cyan")
-
-
-if __name__ == "__main__":
+        cprint(f'{deleted} files removed.', 'cyan')
+if __name__ == '__main__':
     raise SystemExit(main())

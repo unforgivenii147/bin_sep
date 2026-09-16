@@ -1,31 +1,32 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""ex_func.py – Ex Func utilities.
 
+This module provides functionality for ex func."""
+from __future__ import annotations
 from collections import defaultdict
 from pathlib import Path
-
 import tree_sitter_python as tsp
 from tree_sitter import Language, Parser, Tree
-
 parser = Parser()
 parser.language = Language(tsp.language())
-OUT_DIR = Path("output")
+OUT_DIR = Path('output')
 OUT_DIR.mkdir(exist_ok=True)
-VALID = {"function_definition"}
-
+VALID = {'function_definition'}
 
 def extract_file(src: bytes, tree: Tree) -> list[str]:
+    """extract_file – extract file.
+
+Args:
+    src: Description of src.
+    tree: Description of tree.
+
+Returns:
+    list[str]: Description of return value."""
     root = tree.root_node
-    return [
-        src[node.start_byte : node.end_byte].decode()
-        for node in root.children
-        if node.type in VALID
-    ]
-
-
+    return [src[node.start_byte:node.end_byte].decode() for node in root.children if node.type in VALID]
 folder_imports = defaultdict(list)
-for py in Path().rglob("*.py"):
-    if any(part.startswith(".") for part in py.parts) or "site-packages" in py.parts:
+for py in Path().rglob('*.py'):
+    if any((part.startswith('.') for part in py.parts)) or 'site-packages' in py.parts:
         continue
     if OUT_DIR in py.parents:
         continue
@@ -34,14 +35,13 @@ for py in Path().rglob("*.py"):
     imports = extract_file(src, tree)
     if imports:
         folder_path = py.parent
-        relative_folder = folder_path.relative_to(".")
-        folder_imports[relative_folder].append("\n".join(imports))
+        relative_folder = folder_path.relative_to('.')
+        folder_imports[relative_folder].append('\n'.join(imports))
 for folder, imports_list in folder_imports.items():
     if not imports_list:
         continue
-    out_file = OUT_DIR / folder / "imports.py"
+    out_file = OUT_DIR / folder / 'imports.py'
     out_file.parent.mkdir(parents=True, exist_ok=True)
-    content = "\n\n".join(imports_list)
+    content = '\n\n'.join(imports_list)
     out_file.write_text(content)
-print(f"""
-✨ Done! Processed {len(folder_imports)} folder(s)""")
+print(f'\n✨ Done! Processed {len(folder_imports)} folder(s)')

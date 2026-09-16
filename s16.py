@@ -1,35 +1,45 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""s16.py – S16 utilities.
 
+This module provides functionality for s16."""
+from __future__ import annotations
 import sys
 from pathlib import Path
-
 from dh import mpf_map
-
-CHUNKSIZE = 15_850
-
+CHUNKSIZE = 15850
 
 def split_at_boundary(text: str, max_size: int) -> tuple[str, str]:
+    """split_at_boundary – split at boundary.
+
+Args:
+    text: Description of text.
+    max_size: Description of max_size.
+
+Returns:
+    tuple[str, str]: Description of return value."""
     if len(text) <= max_size:
-        return text, ""
-    newline_pos = text.rfind("\n", 0, max_size + 1)
+        return (text, '')
+    newline_pos = text.rfind('\n', 0, max_size + 1)
     if newline_pos > 0:
         split_pos = newline_pos + 1
-        return text[:split_pos], text[split_pos:]
+        return (text[:split_pos], text[split_pos:])
     whitespace_pos = -1
     for index in range(max_size, 0, -1):
         if text[index - 1].isspace():
             whitespace_pos = index
             break
     if whitespace_pos > 0:
-        return text[:whitespace_pos], text[whitespace_pos:]
-    return text[:max_size], text[max_size:]
-
+        return (text[:whitespace_pos], text[whitespace_pos:])
+    return (text[:max_size], text[max_size:])
 
 def process_file(path: Path) -> None:
+    """process_file – process file.
+
+Args:
+    path: Description of path."""
     path = Path(path)
     try:
-        text = path.read_text(encoding="utf-8")
+        text = path.read_text(encoding='utf-8')
         if not text:
             return
         remaining = text
@@ -43,23 +53,27 @@ def process_file(path: Path) -> None:
         while remaining:
             chunk, remaining = split_at_boundary(remaining, CHUNKSIZE)
             suffix = str(part_num).zfill(padding_width)
-            outpath = path.with_stem(f"{path.stem}_{suffix}")
-            outpath.write_text(chunk, encoding="utf-8")
+            outpath = path.with_stem(f'{path.stem}_{suffix}')
+            outpath.write_text(chunk, encoding='utf-8')
             part_num += 1
     except Exception as error:
-        print(f"An error occurred during file splitting: {error}")
-
+        print(f'An error occurred during file splitting: {error}')
 
 def get_files(path: Path) -> list[Path]:
-    return [
-        file
-        for file in path.rglob("*")
-        if file.is_file()
-        and not file.stem.endswith(tuple(f"_{number:03d}" for number in range(1000)))
-    ]
+    """get_files – get files.
 
+Args:
+    path: Description of path.
+
+Returns:
+    list[Path]: Description of return value."""
+    return [file for file in path.rglob('*') if file.is_file() and (not file.stem.endswith(tuple((f'_{number:03d}' for number in range(1000)))))]
 
 def main() -> int:
+    """main – main.
+
+Returns:
+    int: Description of return value."""
     cwd = Path.cwd()
     args = sys.argv[1:]
     files: list[Path] = []
@@ -78,7 +92,5 @@ def main() -> int:
     elif files:
         mpf_map(process_file, files)
     return 0
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     raise SystemExit(main())

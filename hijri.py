@@ -1,50 +1,50 @@
 #!/data/data/com.termux/files/home/.local/bin/python
+"""hijri.py – Hijri utilities.
+
+This module provides functionality for hijri."""
 from __future__ import annotations
-
 import datetime
-
 from faprint import faprint
 
-
 def georgian_to_hijri(year: int, month: int, day: int) -> str:
-    from datetime import date as datetime_date
+    """georgian_to_hijri – georgian to hijri.
 
-    weekdays: list[str] = [
-        "دو شنبه",
-        "سه شنبه",
-        "چهار شنبه",
-        "پنج شنبه",
-        "جمعه",
-        "شنبه",
-        "یکشنبه",
-    ]
-    months: list[str] = [
-        "فروردین",
-        "اردیبهشت",
-        "خرداد",
-        "تیر",
-        "مرداد",
-        "شهریور",
-        "مهر",
-        "آبان",
-        "آذر",
-        "دی",
-        "بهمن",
-        "اسفند",
-    ]
+Args:
+    year: Description of year.
+    month: Description of month.
+    day: Description of day.
+
+Returns:
+    str: Description of return value."""
+    from datetime import date as datetime_date
+    weekdays: list[str] = ['دو شنبه', 'سه شنبه', 'چهار شنبه', 'پنج شنبه', 'جمعه', 'شنبه', 'یکشنبه']
+    months: list[str] = ['فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور', 'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند']
     jy, jm, jd = gregorian_to_jalali(year, month, day)
     weekday_index: int = datetime_date(year, month, day).weekday()
     weekday: str = weekdays[weekday_index]
-    return f"{weekday}  {to_persian_digits(str(jd))}  {months[jm - 1]}  {to_persian_digits(str(jy))}"
-
+    return f'{weekday}  {to_persian_digits(str(jd))}  {months[jm - 1]}  {to_persian_digits(str(jy))}'
 
 def to_persian_digits(s: str) -> str:
+    """to_persian_digits – to persian digits.
+
+Args:
+    s: Description of s.
+
+Returns:
+    str: Description of return value."""
     from string import digits as string_digits
-
-    return s.translate(str.maketrans(string_digits, "۰۱۲۳۴۵۶۷۸۹"))
-
+    return s.translate(str.maketrans(string_digits, '۰۱۲۳۴۵۶۷۸۹'))
 
 def gregorian_to_jalali(gy: int, gm: int, gd: int) -> tuple[int, int, int]:
+    """gregorian_to_jalali – gregorian to jalali.
+
+Args:
+    gy: Description of gy.
+    gm: Description of gm.
+    gd: Description of gd.
+
+Returns:
+    tuple[int, int, int]: Description of return value."""
     g_days: list[int] = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334]
     gy2: int = gy - 1600
     gm2: int = gm - 1
@@ -66,14 +66,15 @@ def gregorian_to_jalali(gy: int, gm: int, gd: int) -> tuple[int, int, int]:
         j_day_no -= 186
         jm = 7 + j_day_no // 30
         jd = 1 + j_day_no % 30
-    return jy, jm, jd
-
+    return (jy, jm, jd)
 
 def get_current_ymd() -> tuple[int, int, int]:
+    """get_current_ymd – get current ymd.
+
+Returns:
+    tuple[int, int, int]: Description of return value."""
     today = datetime.date.today()
-    return today.year, today.month, today.day
-
-
-if __name__ == "__main__":
+    return (today.year, today.month, today.day)
+if __name__ == '__main__':
     y, m, d = get_current_ymd()
     faprint(georgian_to_hijri(y, m, d))

@@ -1,17 +1,25 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""find_dup_folders.py – Find Dup Folders utilities.
 
+This module provides functionality for find dup folders."""
+from __future__ import annotations
+from typing import Any
 import json
 from collections import defaultdict
 from pathlib import Path
-
 from dh import get_dirs
 from xxhash import xxh64
-
 CHUNK_SIZE = 1024 * 1024
 
-
 def is_nested(path1: Path, path2: Path) -> bool:
+    """is_nested – is nested.
+
+Args:
+    path1: Description of path1.
+    path2: Description of path2.
+
+Returns:
+    bool: Description of return value."""
     try:
         path1.resolve().relative_to(path2.resolve())
         return True
@@ -24,49 +32,56 @@ def is_nested(path1: Path, path2: Path) -> bool:
         pass
     return False
 
-
 def hash_folder(folder_path: Path) -> str:
+    """hash_folder – hash folder.
+
+Args:
+    folder_path: Description of folder_path.
+
+Returns:
+    str: Description of return value."""
     hasher = xxh64()
     files = []
-    for path in folder_path.rglob("*"):
+    for path in folder_path.rglob('*'):
         if path.is_symlink():
             continue
         if path.is_file():
             files.append(path)
     if not files:
-        return ""
+        return ''
     for file in sorted(files):
         rel = file.relative_to(folder_path)
-        hasher.update(str(rel).encode("utf-8"))
+        hasher.update(str(rel).encode('utf-8'))
         try:
-            with file.open("rb") as f:
-                while chunk := f.read(CHUNK_SIZE):
+            with file.open('rb') as f:
+                while (chunk := f.read(CHUNK_SIZE)):
                     hasher.update(chunk)
         except OSError:
             continue
     return hasher.hexdigest()
 
+def find_duplicate_folders(cwd: Path) -> Any:
+    """find_duplicate_folders – find duplicate folders.
 
-def find_duplicate_folders(cwd: Path):
+Args:
+    cwd: Description of cwd."""
     folder_hashes = defaultdict(list)
     for path in get_dirs(cwd):
-        if ".git" in path.parts:
+        if '.git' in path.parts:
             continue
         folder_hash = hash_folder(path)
         if folder_hash:
             folder_hashes.setdefault(folder_hash, []).append(path)
     return {h: paths for h, paths in folder_hashes.items() if len(paths) > 1}
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     cwd = Path.cwd()
     duplicates = find_duplicate_folders(cwd)
     if duplicates:
-        print("Duplicate folder groups:")
+        print('Duplicate folder groups:')
         for h, paths in duplicates.items():
-            print(f"\nGroup (Hash: {h}):")
+            print(f'\nGroup (Hash: {h}):')
             for path in paths:
-                print(f"  - {path}")
+                print(f'  - {path}')
         cleaned = defaultdict(list)
         for h, paths in duplicates.items():
             for i in range(len(paths)):
@@ -75,7 +90,7 @@ if __name__ == "__main__":
                     p2 = Path(paths[j])
                     if not is_nested(p1, p2):
                         cleaned[h].append(str(p1))
-        with Path("/sdcard/dupdirs.json").open("w", encoding="utf-8") as fo:
+        with Path('/sdcard/dupdirs.json').open('w', encoding='utf-8') as fo:
             json.dump(cleaned, fo)
     else:
-        print("No duplicate folders found.")
+        print('No duplicate folders found.')

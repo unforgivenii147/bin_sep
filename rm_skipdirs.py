@@ -1,26 +1,29 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""rm_skipdirs.py – Rm Skipdirs utilities.
 
+This module provides functionality for rm skipdirs."""
+from __future__ import annotations
 import sys
 from pathlib import Path
-
 from dh import get_files, mpf3
+skl = 'SKIP_DIRS: frozenset = frozenset({"lazy", ".git", "__pycache__", ".mypy_cache", ".ruff_cache", ".pytest_cache"})'
 
-skl = """SKIP_DIRS: frozenset = frozenset({"lazy", ".git", "__pycache__", ".mypy_cache", ".ruff_cache", ".pytest_cache"})"""
+def process_file(path: Path | str) -> None:
+    """process_file – process file.
 
-
-def process_file(path) -> None:
+Args:
+    path: Description of path."""
     path = Path(path)
-    lines = path.read_text(encoding="utf-8").splitlines(keepends=True)
+    lines = path.read_text(encoding='utf-8').splitlines(keepends=True)
     nl = []
     for line in lines:
         if line.strip() != skl:
             nl.append(line)
-    new_content = "".join(nl)
-    path.write_text(new_content, encoding="utf-8")
+    new_content = ''.join(nl)
+    path.write_text(new_content, encoding='utf-8')
 
-
-def main():
+def main() -> None:
+    """main – main."""
     cwd = Path.cwd()
     args = sys.argv[1:]
     if args:
@@ -33,7 +36,5 @@ def main():
     else:
         files = get_files(cwd)
     mpf3(process_file, files)
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     raise SystemExit(main())

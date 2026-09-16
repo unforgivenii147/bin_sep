@@ -1,129 +1,135 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""mynano.py – Mynano utilities.
 
+This module provides functionality for mynano."""
+from __future__ import annotations
 import readline
 import rlcompleter
 import sys
 from pathlib import Path
-
 from textual.app import App, ComposeResult
 from textual.containers import Container
 from textual.log import TextLog
 from textual.widgets import Footer, Header, TextEditor
 
-
 class BasicEditor(App):
-    BINDINGS = [
-        ("o", "open_file", "Open"),
-        ("s", "save_file", "Save"),
-        ("q", "app_quit", "Quit"),
-    ]
+    """BasicEditor – BasicEditor."""
+    BINDINGS = [('o', 'open_file', 'Open'), ('s', 'save_file', 'Save'), ('q', 'app_quit', 'Quit')]
 
-    def __init__(self, filename: str | None = None) -> None:
+    def __init__(self, filename: str | None=None) -> None:
+        """__init__ –   init  .
+
+Args:
+    filename: Description of filename."""
         super().__init__()
         self.filename = filename
         self.is_dirty = False
 
     def setup_readline(self) -> None:
-        readline.parse_and_bind("tab: complete")
+        """setup_readline – setup readline."""
+        readline.parse_and_bind('tab: complete')
         readline.set_completer(rlcompleter.Completer(namespace=sys.modules).complete)
 
     def compose(self) -> ComposeResult:
+        """compose – compose.
+
+Returns:
+    ComposeResult: Description of return value."""
         self.setup_readline()
         yield Header()
         with Container():
-            yield TextEditor(id="editor", name="editor")
-            yield TextLog(id="log", height=2, panel=True, label="Status")
+            yield TextEditor(id='editor', name='editor')
+            yield TextLog(id='log', height=2, panel=True, label='Status')
         yield Footer()
 
     def on_mount(self) -> None:
+        """on_mount – on mount."""
         editor = self.query_one(TextEditor)
         log = self.query_one(TextLog)
         if self.filename:
             try:
-                with Path(self.filename).open("r", encoding="utf-8") as f:
+                with Path(self.filename).open('r', encoding='utf-8') as f:
                     editor.text = f.read()
-                self.title = f"Basic Editor - {self.filename}"
-                log.write(f"Opened file: {self.filename}")
+                self.title = f'Basic Editor - {self.filename}'
+                log.write(f'Opened file: {self.filename}')
             except FileNotFoundError:
                 log.write(f"Error: File '{self.filename}' not found.")
-                self.title = "Basic Editor - New File"
+                self.title = 'Basic Editor - New File'
             except Exception as e:
-                log.write(f"Error opening file: {e}")
-                self.title = "Basic Editor - New File"
+                log.write(f'Error opening file: {e}')
+                self.title = 'Basic Editor - New File'
         else:
-            log.write("New file. Use Ctrl+O to open or Ctrl+S to save.")
+            log.write('New file. Use Ctrl+O to open or Ctrl+S to save.')
 
     def action_open_file(self) -> None:
+        """action_open_file – action open file."""
         log = self.query_one(TextLog)
         editor = self.query_one(TextEditor)
         try:
-            filename = input("Enter filename to open: ")
+            filename = input('Enter filename to open: ')
             if filename:
                 self.filename = filename
-                with Path(self.filename).open("r", encoding="utf-8") as f:
+                with Path(self.filename).open('r', encoding='utf-8') as f:
                     editor.text = f.read()
-                self.title = f"Basic Editor - {self.filename}"
-                log.write(f"Opened file: {self.filename}")
+                self.title = f'Basic Editor - {self.filename}'
+                log.write(f'Opened file: {self.filename}')
                 self.is_dirty = False
             else:
-                log.write("Open cancelled.")
+                log.write('Open cancelled.')
         except FileNotFoundError:
             log.write(f"Error: File '{self.filename}' not found.")
         except Exception as e:
-            log.write(f"Error opening file: {e}")
+            log.write(f'Error opening file: {e}')
 
     def action_save_file(self) -> None:
+        """action_save_file – action save file."""
         log = self.query_one(TextLog)
         editor = self.query_one(TextEditor)
         if not self.filename:
             try:
-                filename = input("Enter filename to save as: ")
+                filename = input('Enter filename to save as: ')
                 if filename:
                     self.filename = filename
                 else:
-                    log.write("Save cancelled.")
+                    log.write('Save cancelled.')
                     return
             except Exception as e:
-                log.write(f"Error getting filename: {e}")
+                log.write(f'Error getting filename: {e}')
                 return
         try:
-            Path(self.filename).write_text(editor.text, encoding="utf-8")
-            self.title = f"Basic Editor - {self.filename}"
-            log.write(f"Saved file: {self.filename}")
+            Path(self.filename).write_text(editor.text, encoding='utf-8')
+            self.title = f'Basic Editor - {self.filename}'
+            log.write(f'Saved file: {self.filename}')
             self.is_dirty = False
         except Exception as e:
-            log.write(f"Error saving file: {e}")
+            log.write(f'Error saving file: {e}')
 
     def action_app_quit(self) -> None:
+        """action_app_quit – action app quit."""
         log = self.query_one(TextLog)
         editor = self.query_one(TextEditor)
         if editor.text and self.is_dirty:
             try:
-                confirm = input(
-                    "You have unsaved changes. Are you sure you want to quit? (y/n): "
-                )
-                if confirm.lower() == "y":
+                confirm = input('You have unsaved changes. Are you sure you want to quit? (y/n): ')
+                if confirm.lower() == 'y':
                     self.exit()
                 else:
-                    log.write("Quit cancelled.")
+                    log.write('Quit cancelled.')
             except Exception as e:
-                log.write(f"Error during quit confirmation: {e}")
+                log.write(f'Error during quit confirmation: {e}')
         else:
             self.exit()
 
     def on_text_editor_changed(self, event: TextEditor.Changed) -> None:
+        """on_text_editor_changed – on text editor changed.
+
+Args:
+    event: Description of event."""
         self.is_dirty = True
-        self.query_one(Footer).key_display = [
-            ("o", "Open", "primary"),
-            ("s", "Save", "primary"),
-            ("q", "Quit", "primary"),
-        ]
+        self.query_one(Footer).key_display = [('o', 'Open', 'primary'), ('s', 'Save', 'primary'), ('q', 'Quit', 'primary')]
         if self.is_dirty:
-            self.query_one(Footer).key_display.append(("Ctrl+S", "Save", "warning"))
-
-
-if __name__ == "__main__":
+            self.query_one(Footer).key_display.append(('Ctrl+S', 'Save', 'warning'))
+if __name__ == '__main__':
     initial_filename = sys.argv[1] if len(sys.argv) > 1 else None
     app = BasicEditor(filename=initial_filename)
     app.run()

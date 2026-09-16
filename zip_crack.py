@@ -1,6 +1,8 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""zip_crack.py – Zip Crack utilities.
 
+This module provides functionality for zip crack."""
+from __future__ import annotations
 import argparse
 import multiprocessing
 import sys
@@ -11,13 +13,12 @@ from dataclasses import dataclass, field
 from itertools import islice
 from pathlib import Path
 from typing import Final
-
 DEFAULT_BATCH_SIZE: Final[int] = 2000
 DEFAULT_UPDATE_INTERVAL: Final[float] = 5.0
 
-
 @dataclass
 class CrackResult:
+    """CrackResult – CrackResult."""
     success: bool = False
     password: str | None = None
     tested_count: int = 0
@@ -26,27 +27,46 @@ class CrackResult:
 
     @property
     def elapsed(self) -> float:
+        """elapsed – elapsed.
+
+Returns:
+    float: Description of return value."""
         end = self.end_time or time.time()
         return end - self.start_time
 
     @property
     def pps(self) -> float:
+        """pps – pps.
+
+Returns:
+    float: Description of return value."""
         return self.tested_count / self.elapsed if self.elapsed > 0 else 0.0
 
-
 def format_duration(seconds: float) -> str:
+    """format_duration – format duration.
+
+Args:
+    seconds: Description of seconds.
+
+Returns:
+    str: Description of return value."""
     hours, remainder = divmod(int(seconds), 3600)
     minutes, secs = divmod(remainder, 60)
     if hours > 0:
-        return f"{hours}h {minutes}m {secs}s"
+        return f'{hours}h {minutes}m {secs}s'
     if minutes > 0:
-        return f"{minutes}m {secs}s"
-    return f"{secs}s"
+        return f'{minutes}m {secs}s'
+    return f'{secs}s'
 
+def check_password_batch(zip_path: Path, passwords: list[str]) -> tuple[str | None, int]:
+    """check_password_batch – check password batch.
 
-def check_password_batch(
-    zip_path: Path, passwords: list[str]
-) -> tuple[str | None, int]:
+Args:
+    zip_path: Description of zip_path.
+    passwords: Description of passwords.
+
+Returns:
+    tuple[str | None, int]: Description of return value."""
     tested = 0
     try:
         with zipfile.ZipFile(zip_path) as zf:
@@ -63,51 +83,66 @@ def check_password_batch(
         pass
     return (None, tested)
 
+def get_wordlist_batches(path: Path, batch_size: int) -> Generator[list[str], None, None]:
+    """get_wordlist_batches – get wordlist batches.
 
-def get_wordlist_batches(
-    path: Path, batch_size: int
-) -> Generator[list[str], None, None]:
-    with path.open("r", encoding="utf-8", errors="ignore") as f:
+Args:
+    path: Description of path.
+    batch_size: Description of batch_size.
+
+Returns:
+    Generator[list[str], None, None]: Description of return value."""
+    with path.open('r', encoding='utf-8', errors='ignore') as f:
         while True:
             batch = [line.strip() for line in islice(f, batch_size) if line.strip()]
             if not batch:
                 break
             yield batch
 
-
 def count_lines(path: Path) -> int:
+    """count_lines – count lines.
+
+Args:
+    path: Description of path.
+
+Returns:
+    int: Description of return value."""
     count = 0
-    with path.open("rb") as f:
+    with path.open('rb') as f:
         for _line in f:
             count += 1
     return count
 
+def brute_force_zip(zip_path: Path, wordlist_path: Path, num_processes: int | None=None, batch_size: int=DEFAULT_BATCH_SIZE, update_interval: float=DEFAULT_UPDATE_INTERVAL) -> CrackResult:
+    """brute_force_zip – brute force zip.
 
-def brute_force_zip(
-    zip_path: Path,
-    wordlist_path: Path,
-    num_processes: int | None = None,
-    batch_size: int = DEFAULT_BATCH_SIZE,
-    update_interval: float = DEFAULT_UPDATE_INTERVAL,
-) -> CrackResult:
+Args:
+    zip_path: Description of zip_path.
+    wordlist_path: Description of wordlist_path.
+    num_processes: Description of num_processes.
+    batch_size: Description of batch_size.
+    update_interval: Description of update_interval.
+
+Returns:
+    CrackResult: Description of return value."""
     if not zip_path.exists():
-        print(f"❌ Error: Zip file not found: {zip_path}")
+        print(f'❌ Error: Zip file not found: {zip_path}')
         return CrackResult()
     if not wordlist_path.exists():
-        print(f"❌ Error: Wordlist not found: {wordlist_path}")
+        print(f'❌ Error: Wordlist not found: {wordlist_path}')
         return CrackResult()
     try:
         with zipfile.ZipFile(zip_path) as zf:
-            if not any(info.flag_bits & 1 for info in zf.infolist()):
-                print("⚠️  Warning: Zip file does not appear to be password protected.")
+            if not any((info.flag_bits & 1 for info in zf.infolist())):
+                print('⚠️  Warning: Zip file does not appear to be password protected.')
     except zipfile.BadZipFile:
-        print("❌ Error: Invalid zip file.")
+        print('❌ Error: Invalid zip file.')
         return CrackResult()
     num_processes = num_processes or multiprocessing.cpu_count()
-    print(f"🔍 Counting passwords in {wordlist_path.name}...")
+    print(f'🔍 Counting passwords in {wordlist_path.name}...')
     total_passwords = count_lines(wordlist_path)
-    print(f"📊 Total passwords to test: {total_passwords:,}")
-    print(f"🚀 Starting attack with {num_processes} processes...")
+    print(f'📊 Total passwords to test: {total_passwords:,}')
+    print(f'🚀 Starting attack with {num_processes} processes...')
     print(f"{'=' * 40}")
     result = CrackResult(start_time=time.time())
     last_update = result.start_time
@@ -115,9 +150,7 @@ def brute_force_zip(
         with multiprocessing.Pool(processes=num_processes) as pool:
             batches = get_wordlist_batches(wordlist_path, batch_size)
             worker_args = ((zip_path, batch) for batch in batches)
-            for found_pwd, tested_in_batch in pool.starmap(
-                check_password_batch, worker_args
-            ):
+            for found_pwd, tested_in_batch in pool.starmap(check_password_batch, worker_args):
                 result.tested_count += tested_in_batch
                 current_time = time.time()
                 if found_pwd:
@@ -127,88 +160,45 @@ def brute_force_zip(
                     pool.terminate()
                     break
                 if current_time - last_update >= update_interval:
-                    progress = (
-                        result.tested_count / total_passwords * 40
-                        if total_passwords > 0
-                        else 0
-                    )
+                    progress = result.tested_count / total_passwords * 40 if total_passwords > 0 else 0
                     elapsed = current_time - result.start_time
                     pps = result.tested_count / elapsed if elapsed > 0 else 0
-                    print(
-                        f"Progress: {progress:6.2f}% | Tested: {
-                            result.tested_count:10,} | Speed: {
-                            pps:8.1f} p/s | Elapsed: {format_duration(elapsed)}",
-                        end="\r",
-                    )
+                    print(f'Progress: {progress:6.2f}% | Tested: {result.tested_count:10,} | Speed: {pps:8.1f} p/s | Elapsed: {format_duration(elapsed)}', end='\r')
                     last_update = current_time
     except KeyboardInterrupt:
-        print("\n\n⚠️  Interrupted by user.")
+        print('\n\n⚠️  Interrupted by user.')
         result.end_time = time.time()
     except Exception as e:
-        print(f"\n\n❌ Unexpected error: {e}")
+        print(f'\n\n❌ Unexpected error: {e}')
         result.end_time = time.time()
     finally:
         if not result.end_time:
             result.end_time = time.time()
-    print("\n" + "=" * 40)
+    print('\n' + '=' * 40)
     if result.success:
-        print(f"✅ SUCCESS! Password found: {result.password}")
+        print(f'✅ SUCCESS! Password found: {result.password}')
     else:
-        print("❌ FAILED. Password not found in wordlist.")
-    print(f"⏱️  Total time: {format_duration(result.elapsed)}")
-    print(f"🔢 Total tested: {result.tested_count:,}")
-    print(f"⚡ Average speed: {result.pps:.1f} passwords/second")
-    print("-" * 40)
+        print('❌ FAILED. Password not found in wordlist.')
+    print(f'⏱️  Total time: {format_duration(result.elapsed)}')
+    print(f'🔢 Total tested: {result.tested_count:,}')
+    print(f'⚡ Average speed: {result.pps:.1f} passwords/second')
+    print('-' * 40)
     return result
 
-
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Optimized Zip Brute-Forcer for Python 3.12",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-    )
-    parser.add_argument("zip_file", type=Path, help="Path to the protected zip file")
-    parser.add_argument(
-        "-w",
-        "--wordlist",
-        type=Path,
-        default=Path("wordlist.txt"),
-        help="Path to the password wordlist",
-    )
-    parser.add_argument(
-        "-p",
-        "--processes",
-        type=int,
-        help="Number of parallel processes (default: CPU count)",
-    )
-    parser.add_argument(
-        "-b",
-        "--batch-size",
-        type=int,
-        default=DEFAULT_BATCH_SIZE,
-        help="Passwords per worker batch",
-    )
-    parser.add_argument(
-        "-i",
-        "--interval",
-        type=float,
-        default=DEFAULT_UPDATE_INTERVAL,
-        help="Status update interval in seconds",
-    )
+    """main – main."""
+    parser = argparse.ArgumentParser(description='Optimized Zip Brute-Forcer for Python 3.12', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('zip_file', type=Path, help='Path to the protected zip file')
+    parser.add_argument('-w', '--wordlist', type=Path, default=Path('wordlist.txt'), help='Path to the password wordlist')
+    parser.add_argument('-p', '--processes', type=int, help='Number of parallel processes (default: CPU count)')
+    parser.add_argument('-b', '--batch-size', type=int, default=DEFAULT_BATCH_SIZE, help='Passwords per worker batch')
+    parser.add_argument('-i', '--interval', type=float, default=DEFAULT_UPDATE_INTERVAL, help='Status update interval in seconds')
     args = parser.parse_args()
     try:
-        result = brute_force_zip(
-            args.zip_file,
-            args.wordlist,
-            num_processes=args.processes,
-            batch_size=args.batch_size,
-            update_interval=args.interval,
-        )
+        result = brute_force_zip(args.zip_file, args.wordlist, num_processes=args.processes, batch_size=args.batch_size, update_interval=args.interval)
         sys.exit(0 if result.success else 1)
     except Exception as e:
-        print(f"Fatal error: {e}")
+        print(f'Fatal error: {e}')
         sys.exit(1)
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     raise SystemExit(main())

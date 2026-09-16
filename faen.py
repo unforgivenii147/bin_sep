@@ -1,73 +1,94 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""faen.py – Faen utilities.
 
+This module provides functionality for faen."""
+from __future__ import annotations
 import json
 import os
 import sys
 from pathlib import Path
 
-
 class Bidirectionaldictionary:
-    def __init__(self, json_file: str = "/sdcard/dic/dic.json"):
+    """Bidirectionaldictionary – Bidirectionaldictionary."""
+
+    def __init__(self, json_file: str='/sdcard/dic/dic.json') -> None:
+        """__init__ –   init  .
+
+Args:
+    json_file: Description of json_file."""
         self.json_file = Path(json_file)
         self.persian_to_english: dict[str, str] = {}
         self.english_to_persian: dict[str, str] = {}
         self.load_dictionary()
 
     def load_dictionary(self) -> None:
+        """load_dictionary – load dictionary."""
         try:
             if not self.json_file.exists():
-                print(f"❌ Error: {self.json_file} not found")
+                print(f'❌ Error: {self.json_file} not found')
                 sys.exit(1)
-            with self.json_file.open("r", encoding="utf-8") as file:
+            with self.json_file.open('r', encoding='utf-8') as file:
                 data = json.load(file)
             self.persian_to_english = {}
             self.english_to_persian = {}
             for persian, english in data.items():
                 self.persian_to_english[persian] = english
                 self.english_to_persian[english.lower()] = persian
-            print(
-                f"✅ Loaded {len(self.persian_to_english)} entries from {self.json_file}"
-            )
+            print(f'✅ Loaded {len(self.persian_to_english)} entries from {self.json_file}')
         except json.JSONDecodeError as e:
-            print(f"❌ Error: Invalid JSON format in {self.json_file}")
-            print(f"   {e}")
+            print(f'❌ Error: Invalid JSON format in {self.json_file}')
+            print(f'   {e}')
             sys.exit(1)
         except Exception as e:
-            print(f"❌ Error loading dictionary: {e}")
+            print(f'❌ Error loading dictionary: {e}')
             sys.exit(1)
 
     def save_dictionary(self) -> None:
+        """save_dictionary – save dictionary."""
         try:
-            with open(self.json_file, "w", encoding="utf-8") as file:
+            with open(self.json_file, 'w', encoding='utf-8') as file:
                 json.dump(self.persian_to_english, file, ensure_ascii=False, indent=2)
-            print(f"💾 dictionary saved to {self.json_file}")
+            print(f'💾 dictionary saved to {self.json_file}')
         except Exception as e:
-            print(f"❌ Error saving dictionary: {e}")
+            print(f'❌ Error saving dictionary: {e}')
 
     def search(self, query: str) -> str | None:
+        """search – search.
+
+Args:
+    query: Description of query.
+
+Returns:
+    str | None: Description of return value."""
         query = query.strip()
         if not query:
             return None
         if query in self.persian_to_english:
-            return f"📖 {query} → {self.persian_to_english[query]}"
+            return f'📖 {query} → {self.persian_to_english[query]}'
         query_lower = query.lower()
         if query_lower in self.english_to_persian:
-            return f"📖 {query} → {self.english_to_persian[query_lower]}"
+            return f'📖 {query} → {self.english_to_persian[query_lower]}'
         suggestions = self.get_suggestions(query)
         if suggestions:
-            result = "🔍 Did you mean:\n"
+            result = '🔍 Did you mean:\n'
             for match in suggestions[:5]:
                 if match in self.persian_to_english:
-                    result += f"  • {match} → {self.persian_to_english[match]}\n"
+                    result += f'  • {match} → {self.persian_to_english[match]}\n'
                 else:
                     persian = self.english_to_persian.get(match.lower())
                     if persian:
-                        result += f"  • {persian} → {match}\n"
+                        result += f'  • {persian} → {match}\n'
             return result.strip()
         return None
 
     def get_suggestions(self, query: str) -> list[str]:
+        """get_suggestions – get suggestions.
+
+Args:
+    query: Description of query.
+
+Returns:
+    list[str]: Description of return value."""
         query_lower = query.lower()
         suggestions = []
         for persian in self.persian_to_english:
@@ -79,10 +100,15 @@ class Bidirectionaldictionary:
         return suggestions
 
     def add_word(self, persian: str, english: str) -> None:
+        """add_word – add word.
+
+Args:
+    persian: Description of persian.
+    english: Description of english."""
         persian = persian.strip()
         english = english.strip()
         if not persian or not english:
-            print("❌ Error: Both Persian and English words are required")
+            print('❌ Error: Both Persian and English words are required')
             return
         if persian in self.persian_to_english:
             print(f"⚠️  Word '{persian}' already exists. Updating...")
@@ -92,6 +118,10 @@ class Bidirectionaldictionary:
         print(f"✅ Added: '{persian}' ↔ '{english}'")
 
     def delete_word(self, word: str) -> None:
+        """delete_word – delete word.
+
+Args:
+    word: Description of word."""
         word = word.strip()
         if word in self.persian_to_english:
             english = self.persian_to_english[word]
@@ -108,156 +138,163 @@ class Bidirectionaldictionary:
         else:
             print(f"❌ Error: '{word}' not found in dictionary")
 
-    def list_all(self, page: int = 1, per_page: int = 10) -> None:
+    def list_all(self, page: int=1, per_page: int=10) -> None:
+        """list_all – list all.
+
+Args:
+    page: Description of page.
+    per_page: Description of per_page."""
         if not self.persian_to_english:
-            print("📭 dictionary is empty")
+            print('📭 dictionary is empty')
             return
         sorted_items = sorted(self.persian_to_english.items())
         total = len(sorted_items)
         total_pages = (total + per_page - 1) // per_page
         if page < 1 or page > total_pages:
-            print(f"❌ Invalid page. Total pages: {total_pages}")
+            print(f'❌ Invalid page. Total pages: {total_pages}')
             return
         start = (page - 1) * per_page
         end = min(start + per_page, total)
-        print(f"\n📚 dictionary (Page {page}/{total_pages}):")
-        print("-" * 40)
+        print(f'\n📚 dictionary (Page {page}/{total_pages}):')
+        print('-' * 40)
         for i, (persian, english) in enumerate(sorted_items[start:end], start + 1):
-            print(f"{i:3}. {persian:15} → {english}")
-        print("-" * 40)
-        print(f"Showing {start + 1}-{end} of {total} entries")
+            print(f'{i:3}. {persian:15} → {english}')
+        print('-' * 40)
+        print(f'Showing {start + 1}-{end} of {total} entries')
 
     def list_all_full(self) -> None:
+        """list_all_full – list all full."""
         if not self.persian_to_english:
-            print("📭 dictionary is empty")
+            print('📭 dictionary is empty')
             return
         sorted_items = sorted(self.persian_to_english.items())
-        print(f"\n📚 dictionary ({len(sorted_items)} entries):")
-        print("-" * 40)
+        print(f'\n📚 dictionary ({len(sorted_items)} entries):')
+        print('-' * 40)
         for i, (persian, english) in enumerate(sorted_items, 1):
-            print(f"{i:3}. {persian:15} → {english}")
-        print("-" * 40)
+            print(f'{i:3}. {persian:15} → {english}')
+        print('-' * 40)
 
     def stats(self) -> dict[str, int]:
-        return {
-            "total": len(self.persian_to_english),
-            "persian": len(self.persian_to_english),
-            "english": len(self.english_to_persian),
-        }
+        """stats – stats.
 
-    def export_csv(self, filename: str = "dictionary_export.csv") -> None:
+Returns:
+    dict[str, int]: Description of return value."""
+        return {'total': len(self.persian_to_english), 'persian': len(self.persian_to_english), 'english': len(self.english_to_persian)}
+
+    def export_csv(self, filename: str='dictionary_export.csv') -> None:
+        """export_csv – export csv.
+
+Args:
+    filename: Description of filename."""
         try:
-            with open(filename, "w", encoding="utf-8") as file:
-                file.write("Persian,English\n")
-                file.writelines(
-                    f"{persian},{english}\n"
-                    for persian, english in sorted(self.persian_to_english.items())
-                )
-            print(f"✅ Exported to {filename}")
+            with open(filename, 'w', encoding='utf-8') as file:
+                file.write('Persian,English\n')
+                file.writelines((f'{persian},{english}\n' for persian, english in sorted(self.persian_to_english.items())))
+            print(f'✅ Exported to {filename}')
         except Exception as e:
-            print(f"❌ Error exporting to CSV: {e}")
+            print(f'❌ Error exporting to CSV: {e}')
 
     def random_word(self) -> None:
+        """random_word – random word."""
         import random
-
         if not self.persian_to_english:
-            print("📭 dictionary is empty")
+            print('📭 dictionary is empty')
             return
         persian = random.choice(list(self.persian_to_english.keys()))
         english = self.persian_to_english[persian]
-        print(f"🎲 Random: {persian} → {english}")
+        print(f'🎲 Random: {persian} → {english}')
 
-
-def main():
-    dict_app = Bidirectionaldictionary("dic.json")
+def main() -> None:
+    """main – main."""
+    dict_app = Bidirectionaldictionary('dic.json')
     search_history = []
-    print("\n" + "=" * 40)
-    print("📖 PERSIAN-ENGLISH BIDIRECTIONAL DICTIONARY")
-    print("-" * 40)
-    print("Commands:")
-    print("  :add <fa> <en>    - Add a new word")
-    print("  :del <word>       - Delete a word")
-    print("  :list [page]      - list words (page number optional)")
-    print("  :list all         - list all words")
-    print("  :stats            - Show dictionary statistics")
-    print("  :export           - Export to CSV")
-    print("  :random           - Show random word")
-    print("  :clear            - Clear screen")
-    print("  :help             - Show this help")
-    print("  :exit/:q          - Exit the application")
-    print("-" * 40)
-    print("💡 Just type a word to search (supports Persian & English)")
-    print("-" * 40)
+    print('\n' + '=' * 40)
+    print('📖 PERSIAN-ENGLISH BIDIRECTIONAL DICTIONARY')
+    print('-' * 40)
+    print('Commands:')
+    print('  :add <fa> <en>    - Add a new word')
+    print('  :del <word>       - Delete a word')
+    print('  :list [page]      - list words (page number optional)')
+    print('  :list all         - list all words')
+    print('  :stats            - Show dictionary statistics')
+    print('  :export           - Export to CSV')
+    print('  :random           - Show random word')
+    print('  :clear            - Clear screen')
+    print('  :help             - Show this help')
+    print('  :exit/:q          - Exit the application')
+    print('-' * 40)
+    print('💡 Just type a word to search (supports Persian & English)')
+    print('-' * 40)
     while True:
         try:
-            user_input = input(": ").strip()
+            user_input = input(': ').strip()
             if not user_input:
                 continue
-            if user_input.startswith(":"):
+            if user_input.startswith(':'):
                 parts = user_input[1:].split(maxsplit=2)
-                command = parts[0].lower() if parts else ""
-                if command in ["exit", "q", "quit"]:
-                    print("👋 Goodbye!")
+                command = parts[0].lower() if parts else ''
+                if command in ['exit', 'q', 'quit']:
+                    print('👋 Goodbye!')
                     break
-                elif command == "help":
-                    print("\nCommands:")
-                    print("  :add <fa> <en>    - Add a new Persian-English word pair")
-                    print("  :del <word>       - Delete a word from dictionary")
-                    print("  :list [page]      - list words (page number optional)")
-                    print("  :list all         - list all words")
-                    print("  :stats            - Show dictionary statistics")
-                    print("  :export           - Export dictionary to CSV file")
-                    print("  :random           - Show a random word")
-                    print("  :clear            - Clear the screen")
-                    print("  :help             - Show this help")
-                    print("  :exit/:q          - Exit the application")
-                    print("\n💡 Just type a word to search (works both directions)")
+                elif command == 'help':
+                    print('\nCommands:')
+                    print('  :add <fa> <en>    - Add a new Persian-English word pair')
+                    print('  :del <word>       - Delete a word from dictionary')
+                    print('  :list [page]      - list words (page number optional)')
+                    print('  :list all         - list all words')
+                    print('  :stats            - Show dictionary statistics')
+                    print('  :export           - Export dictionary to CSV file')
+                    print('  :random           - Show a random word')
+                    print('  :clear            - Clear the screen')
+                    print('  :help             - Show this help')
+                    print('  :exit/:q          - Exit the application')
+                    print('\n💡 Just type a word to search (works both directions)')
                     continue
-                elif command == "add":
+                elif command == 'add':
                     if len(parts) < 3:
-                        print("❌ Usage: :add <persian_word> <english_word>")
-                        print("   Example: :add سلام hello")
+                        print('❌ Usage: :add <persian_word> <english_word>')
+                        print('   Example: :add سلام hello')
                         continue
                     persian_word = parts[1]
                     english_word = parts[2]
                     dict_app.add_word(persian_word, english_word)
                     continue
-                elif command in ["del", "delete"]:
+                elif command in ['del', 'delete']:
                     if len(parts) < 2:
-                        print("❌ Usage: :del <word>")
-                        print("   Example: :del سلام")
+                        print('❌ Usage: :del <word>')
+                        print('   Example: :del سلام')
                         continue
                     word_to_delete = parts[1]
                     dict_app.delete_word(word_to_delete)
                     continue
-                elif command == "list":
-                    if len(parts) > 1 and parts[1] == "all":
+                elif command == 'list':
+                    if len(parts) > 1 and parts[1] == 'all':
                         dict_app.list_all_full()
                     else:
                         page = int(parts[1]) if len(parts) > 1 else 1
                         dict_app.list_all(page)
                     continue
-                elif command == "stats":
+                elif command == 'stats':
                     stats = dict_app.stats()
-                    print("\n📊 dictionary Statistics:")
-                    print("-" * 40)
+                    print('\n📊 dictionary Statistics:')
+                    print('-' * 40)
                     print(f"  Total entries:   {stats['total']}")
                     print(f"  Persian words:   {stats['persian']}")
                     print(f"  English words:   {stats['english']}")
-                    print("-" * 40)
+                    print('-' * 40)
                     continue
-                elif command == "export":
+                elif command == 'export':
                     dict_app.export_csv()
                     continue
-                elif command == "random":
+                elif command == 'random':
                     dict_app.random_word()
                     continue
-                elif command == "clear":
-                    os.system("clear" if os.name == "posix" else "cls")
+                elif command == 'clear':
+                    os.system('clear' if os.name == 'posix' else 'cls')
                     continue
                 else:
-                    print(f"❌ Unknown command: :{command}")
-                    print("💡 Type :help for available commands")
+                    print(f'❌ Unknown command: :{command}')
+                    print('💡 Type :help for available commands')
                     continue
             else:
                 query = user_input
@@ -267,18 +304,16 @@ def main():
                     print(result)
                 else:
                     print(f"❌ '{query}' not found in dictionary")
-                    print("💡 Use :list to see all words or try a different search")
+                    print('💡 Use :list to see all words or try a different search')
         except KeyboardInterrupt:
-            print("\n\n👋 Goodbye!")
+            print('\n\n👋 Goodbye!')
             break
         except EOFError:
-            print("\n👋 Goodbye!")
+            print('\n👋 Goodbye!')
             break
         except ValueError as e:
-            print(f"❌ Invalid input: {e}")
+            print(f'❌ Invalid input: {e}')
         except Exception as e:
-            print(f"❌ Error: {e}")
-
-
-if __name__ == "__main__":
+            print(f'❌ Error: {e}')
+if __name__ == '__main__':
     raise SystemExit(main())

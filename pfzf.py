@@ -1,14 +1,21 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
+"""pfzf.py – Pfzf utilities.
 
+This module provides functionality for pfzf."""
+from __future__ import annotations
+from typing import Any
 import os
 import select
 import sys
 import termios
 import tty
 
+def fuzzy_score(query: str, text: str) -> Any:
+    """fuzzy_score – fuzzy score.
 
-def fuzzy_score(query, text):
+Args:
+    query: Description of query.
+    text: Description of text."""
     if not query:
         return (0, [])
     query_lower = query.lower()
@@ -27,9 +34,9 @@ def fuzzy_score(query, text):
                 found = True
                 break
         if not found:
-            return (float("-inf"), [])
+            return (float('-inf'), [])
     if q_idx < len(query):
-        return (float("-inf"), [])
+        return (float('-inf'), [])
     score = 0
     score += len(positions) * 10
     consecutive = 0
@@ -39,7 +46,7 @@ def fuzzy_score(query, text):
             score += 20 * consecutive
         else:
             consecutive = 0
-    separators = set(" /.-_\\")
+    separators = set(' /.-_\\')
     for pos in positions:
         if pos == 0 or text[pos - 1] in separators:
             score += 15
@@ -53,15 +60,21 @@ def fuzzy_score(query, text):
     score -= len(text) * 0.5
     return (score, positions)
 
+def render_match(text: str, positions: Any, width: int, selected: bool=False) -> Any:
+    """render_match – render match.
 
-def render_match(text, positions, width, selected=False):
-    RESET = "\033[0m"
-    SELECTED = "\033[7m"
-    MATCH = "\033[1;33m"
-    SELECTED_MATCH = "\033[1;37m\033[45m"
+Args:
+    text: Description of text.
+    positions: Description of positions.
+    width: Description of width.
+    selected: Description of selected."""
+    RESET = '\x1b[0m'
+    SELECTED = '\x1b[7m'
+    MATCH = '\x1b[1;33m'
+    SELECTED_MATCH = '\x1b[1;37m\x1b[45m'
     display = text
     if len(display) > width - 3:
-        display = display[: width - 4] + "…"
+        display = display[:width - 4] + '…'
     result = []
     if selected:
         result.append(SELECTED)
@@ -83,126 +96,140 @@ def render_match(text, positions, width, selected=False):
     if selected:
         result.append(RESET)
     visible_len = len(display)
-    result.append(" " * max(0, width - visible_len - 1))
-    return "".join(result)
+    result.append(' ' * max(0, width - visible_len - 1))
+    return ''.join(result)
 
-
-def get_terminal_size():
+def get_terminal_size() -> Any:
+    """get_terminal_size – get terminal size."""
     try:
         import shutil
-
         return shutil.get_terminal_size()
     except:
         return os.terminal_size((80, 24))
 
-
-def read_key():
+def read_key() -> Any:
+    """read_key – read key."""
     fd = sys.stdin.fileno()
     old_settings = termios.tcgetattr(fd)
     try:
         tty.setraw(fd)
         ch = os.read(fd, 1)
-        if ch == b"\x1b":
+        if ch == b'\x1b':
             import select
-
             if select.select([sys.stdin], [], [], 0.01)[0]:
                 seq = os.read(fd, 2)
-                if seq == b"[A":
-                    return "UP"
-                elif seq == b"[B":
-                    return "DOWN"
-                elif seq == b"[C":
-                    return "RIGHT"
-                elif seq == b"[D":
-                    return "LEFT"
-                elif seq == b"[3~":
-                    return "DELETE"
-                elif seq == b"[H":
-                    return "HOME"
-                elif seq == b"[F":
-                    return "END"
-                elif seq.startswith(b"["):
-                    extra = b""
+                if seq == b'[A':
+                    return 'UP'
+                elif seq == b'[B':
+                    return 'DOWN'
+                elif seq == b'[C':
+                    return 'RIGHT'
+                elif seq == b'[D':
+                    return 'LEFT'
+                elif seq == b'[3~':
+                    return 'DELETE'
+                elif seq == b'[H':
+                    return 'HOME'
+                elif seq == b'[F':
+                    return 'END'
+                elif seq.startswith(b'['):
+                    extra = b''
                     while True:
                         b = os.read(fd, 1)
                         extra += b
-                        if b.isalpha() or b == b"~":
+                        if b.isalpha() or b == b'~':
                             break
-                    return f"ESC[{seq[1:].decode()}{extra.decode()}"
-                return f"ESC{seq.decode()}"
-            return "ESC"
-        elif ch == b"\r" or ch == b"\n":
-            return "ENTER"
-        elif ch == b"\t":
-            return "TAB"
-        elif ch == b"\x7f":
-            return "BACKSPACE"
-        elif ch == b"\x03":
-            return "CTRL_C"
-        elif ch == b"\x04":
-            return "CTRL_D"
-        elif ch == b"\x15":
-            return "CTRL_U"
-        elif ch == b"\x17":
-            return "CTRL_W"
-        elif ch == b"\x01":
-            return "HOME"
-        elif ch == b"\x05":
-            return "END"
-        elif ch == b"\x0b":
-            return "CTRL_K"
-        elif ch == b"\x1c":
-            return "CTRL_SLASH"
-        elif ch == b"\x00" or ch == b"\xe0":
+                    return f'ESC[{seq[1:].decode()}{extra.decode()}'
+                return f'ESC{seq.decode()}'
+            return 'ESC'
+        elif ch == b'\r' or ch == b'\n':
+            return 'ENTER'
+        elif ch == b'\t':
+            return 'TAB'
+        elif ch == b'\x7f':
+            return 'BACKSPACE'
+        elif ch == b'\x03':
+            return 'CTRL_C'
+        elif ch == b'\x04':
+            return 'CTRL_D'
+        elif ch == b'\x15':
+            return 'CTRL_U'
+        elif ch == b'\x17':
+            return 'CTRL_W'
+        elif ch == b'\x01':
+            return 'HOME'
+        elif ch == b'\x05':
+            return 'END'
+        elif ch == b'\x0b':
+            return 'CTRL_K'
+        elif ch == b'\x1c':
+            return 'CTRL_SLASH'
+        elif ch == b'\x00' or ch == b'\xe0':
             return None
         else:
             try:
-                return ch.decode("utf-8")
+                return ch.decode('utf-8')
             except:
                 return None
     finally:
         termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
 
-
-def clear_screen():
-    sys.stdout.write("\033[2J\033[H")
+def clear_screen() -> None:
+    """clear_screen – clear screen."""
+    sys.stdout.write('\x1b[2J\x1b[H')
     sys.stdout.flush()
 
+def move_cursor(row: int, col: int=0) -> None:
+    """move_cursor – move cursor.
 
-def move_cursor(row, col=0):
-    sys.stdout.write(f"\033[{row + 1};{col + 1}H")
+Args:
+    row: Description of row.
+    col: Description of col."""
+    sys.stdout.write(f'\x1b[{row + 1};{col + 1}H')
     sys.stdout.flush()
 
-
-def clear_line():
-    sys.stdout.write("\033[2K\r")
+def clear_line() -> None:
+    """clear_line – clear line."""
+    sys.stdout.write('\x1b[2K\r')
     sys.stdout.flush()
 
+def fzf(items: list[Any], prompt: str='> ', multi: bool=False, preview: Any | None=None, preview_window: str='right:50%') -> Any:
+    """fzf – fzf.
 
-def fzf(items, prompt="> ", multi=False, preview=None, preview_window="right:50%"):
+Args:
+    items: Description of items.
+    prompt: Description of prompt.
+    multi: Description of multi.
+    preview: Description of preview.
+    preview_window: Description of preview_window."""
     items = list(items)
     if not items:
         return [] if multi else None
-    sys.stdout.write("\033[?25l")
+    sys.stdout.write('\x1b[?25l')
     sys.stdout.flush()
-    query = ""
+    query = ''
     cursor_pos = 0
     selected_idx = 0
     scroll_offset = 0
     selected_items = set()
 
-    def get_matches(q):
+    def get_matches(q: Any) -> Any:
+        """get_matches – get matches.
+
+Args:
+    q: Description of q."""
         if not q:
             return [(item, 0, []) for item in items]
         scored = []
         for item in items:
             score, positions = fuzzy_score(q, item)
-            if score > float("-inf"):
+            if score > float('-inf'):
                 scored.append((score, item, positions))
         scored.sort(key=lambda x: (-x[0], items.index(x[1])))
         return [(item, score, positions) for score, item, positions in scored]
 
-    def redraw():
+    def redraw() -> None:
+        """redraw – redraw."""
         cols, rows = get_terminal_size()
         height = rows - 2
         matches = get_matches(query)
@@ -215,41 +242,40 @@ def fzf(items, prompt="> ", multi=False, preview=None, preview_window="right:50%
         scroll_offset = max(0, min(scroll_offset, max(0, total - height)))
         selected_idx = max(0, min(selected_idx, total - 1)) if total > 0 else 0
         clear_screen()
-        header = f" {total}/{len(items)} "
+        header = f' {total}/{len(items)} '
         if multi:
-            header += f" [{len(selected_items)} selected] "
-        header += f"  (Ctrl-C to cancel, Enter to select"
+            header += f' [{len(selected_items)} selected] '
+        header += f'  (Ctrl-C to cancel, Enter to select'
         if multi:
-            header += ", Tab to multi-select"
-        header += ")"
+            header += ', Tab to multi-select'
+        header += ')'
         if len(header) > cols:
-            header = header[: cols - 1]
-        sys.stdout.write(f"\033[90m{header}\033[0m\n")
-        visible = matches[scroll_offset : scroll_offset + height]
+            header = header[:cols - 1]
+        sys.stdout.write(f'\x1b[90m{header}\x1b[0m\n')
+        visible = matches[scroll_offset:scroll_offset + height]
         for i, (item, _score, positions) in enumerate(visible):
             actual_idx = scroll_offset + i
             is_selected = actual_idx == selected_idx
             in_multi = item in selected_items
-            prefix = ""
+            prefix = ''
             if multi:
-                prefix = "[+] " if in_multi else "[ ] "
+                prefix = '[+] ' if in_multi else '[ ] '
             line_width = cols - len(prefix) - 1
             line = render_match(item, positions, line_width, selected=is_selected)
             if is_selected and multi and in_multi:
-                sys.stdout.write(f"\033[36m{prefix}\033[0m{line}\n")
+                sys.stdout.write(f'\x1b[36m{prefix}\x1b[0m{line}\n')
             else:
-                sys.stdout.write(f"{prefix}{line}\n")
+                sys.stdout.write(f'{prefix}{line}\n')
         drawn = len(visible)
         for _ in range(height - drawn):
-            sys.stdout.write("\033[2K\n")
-        sys.stdout.write(f"\033[{rows};1H")
-        sys.stdout.write("\033[2K")
+            sys.stdout.write('\x1b[2K\n')
+        sys.stdout.write(f'\x1b[{rows};1H')
+        sys.stdout.write('\x1b[2K')
         display_query = query
-        sys.stdout.write(f"\033[1m{prompt}\033[0m{display_query}")
+        sys.stdout.write(f'\x1b[1m{prompt}\x1b[0m{display_query}')
         cursor_col = len(prompt) + cursor_pos + 1
-        sys.stdout.write(f"\033[{rows};{cursor_col}H")
+        sys.stdout.write(f'\x1b[{rows};{cursor_col}H')
         sys.stdout.flush()
-
     try:
         while True:
             redraw()
@@ -257,9 +283,9 @@ def fzf(items, prompt="> ", multi=False, preview=None, preview_window="right:50%
             if key is None:
                 continue
             matches = get_matches(query)
-            if key == "CTRL_C" or key == "CTRL_D" or key == "ESC":
+            if key == 'CTRL_C' or key == 'CTRL_D' or key == 'ESC':
                 return [] if multi else None
-            elif key == "ENTER":
+            elif key == 'ENTER':
                 if matches and selected_idx < len(matches):
                     item = matches[selected_idx][0]
                     if multi:
@@ -274,55 +300,55 @@ def fzf(items, prompt="> ", multi=False, preview=None, preview_window="right:50%
                     else:
                         return item
                 return [] if multi else None
-            elif key == "TAB" and multi:
+            elif key == 'TAB' and multi:
                 if matches and selected_idx < len(matches):
                     item = matches[selected_idx][0]
                     if item in selected_items:
                         selected_items.remove(item)
                     else:
                         selected_items.add(item)
-            elif key == "UP":
+            elif key == 'UP':
                 selected_idx = max(0, selected_idx - 1)
-            elif key == "DOWN":
+            elif key == 'DOWN':
                 selected_idx = min(len(matches) - 1, selected_idx + 1)
-            elif key == "HOME" or key == "CTRL_A":
+            elif key == 'HOME' or key == 'CTRL_A':
                 cursor_pos = 0
-            elif key == "END" or key == "CTRL_E":
+            elif key == 'END' or key == 'CTRL_E':
                 cursor_pos = len(query)
-            elif key == "LEFT":
+            elif key == 'LEFT':
                 cursor_pos = max(0, cursor_pos - 1)
-            elif key == "RIGHT":
+            elif key == 'RIGHT':
                 cursor_pos = min(len(query), cursor_pos + 1)
-            elif key == "BACKSPACE":
+            elif key == 'BACKSPACE':
                 if cursor_pos > 0:
-                    query = query[: cursor_pos - 1] + query[cursor_pos:]
+                    query = query[:cursor_pos - 1] + query[cursor_pos:]
                     cursor_pos -= 1
                     selected_idx = 0
                     scroll_offset = 0
-            elif key == "DELETE":
+            elif key == 'DELETE':
                 if cursor_pos < len(query):
-                    query = query[:cursor_pos] + query[cursor_pos + 1 :]
+                    query = query[:cursor_pos] + query[cursor_pos + 1:]
                     selected_idx = 0
-            elif key == "CTRL_U":
+            elif key == 'CTRL_U':
                 query = query[cursor_pos:]
                 cursor_pos = 0
                 selected_idx = 0
                 scroll_offset = 0
-            elif key == "CTRL_K":
+            elif key == 'CTRL_K':
                 query = query[:cursor_pos]
                 selected_idx = 0
-            elif key == "CTRL_W":
+            elif key == 'CTRL_W':
                 if cursor_pos > 0:
                     pos = cursor_pos - 1
                     while pos >= 0 and query[pos].isspace():
                         pos -= 1
-                    while pos >= 0 and not query[pos].isspace():
+                    while pos >= 0 and (not query[pos].isspace()):
                         pos -= 1
-                    query = query[: pos + 1] + query[cursor_pos:]
+                    query = query[:pos + 1] + query[cursor_pos:]
                     cursor_pos = pos + 1
                     selected_idx = 0
                     scroll_offset = 0
-            elif key == "CTRL_SLASH":
+            elif key == 'CTRL_SLASH':
                 pass
             elif len(key) == 1 and key.isprintable():
                 query = query[:cursor_pos] + key + query[cursor_pos:]
@@ -330,58 +356,36 @@ def fzf(items, prompt="> ", multi=False, preview=None, preview_window="right:50%
                 selected_idx = 0
                 scroll_offset = 0
     finally:
-        sys.stdout.write("\033[?25h")
-        sys.stdout.write("\033[2J\033[H")
+        sys.stdout.write('\x1b[?25h')
+        sys.stdout.write('\x1b[2J\x1b[H')
         sys.stdout.flush()
 
+def fzf_filter(query: str, items: list[Any]) -> Any:
+    """fzf_filter – fzf filter.
 
-def fzf_filter(query, items):
+Args:
+    query: Description of query.
+    items: Description of items."""
     results = []
     for item in items:
         score, positions = fuzzy_score(query, item)
-        if score > float("-inf"):
+        if score > float('-inf'):
             results.append((score, item, positions))
     results.sort(key=lambda x: -x[0])
     return [item for _, item, _ in results]
-
-
-if __name__ == "__main__":
-    test_items = [
-        "src/components/Button.tsx",
-        "src/components/Modal.tsx",
-        "src/utils/helpers.ts",
-        "src/utils/api.ts",
-        "tests/Button.test.tsx",
-        "tests/Modal.test.tsx",
-        "package.json",
-        "tsconfig.json",
-        "README.md",
-        ".gitignore",
-        "src/styles/main.css",
-        "src/styles/theme.css",
-        "docker-compose.yml",
-        "Dockerfile",
-        "scripts/build.sh",
-        "scripts/deploy.sh",
-        "src/pages/Home.tsx",
-        "src/pages/About.tsx",
-        "src/pages/Contact.tsx",
-        "src/hooks/useAuth.ts",
-        "src/hooks/useFetch.ts",
-        "src/types/index.ts",
-        "src/context/AppContext.tsx",
-    ]
+if __name__ == '__main__':
+    test_items = ['src/components/Button.tsx', 'src/components/Modal.tsx', 'src/utils/helpers.ts', 'src/utils/api.ts', 'tests/Button.test.tsx', 'tests/Modal.test.tsx', 'package.json', 'tsconfig.json', 'README.md', '.gitignore', 'src/styles/main.css', 'src/styles/theme.css', 'docker-compose.yml', 'Dockerfile', 'scripts/build.sh', 'scripts/deploy.sh', 'src/pages/Home.tsx', 'src/pages/About.tsx', 'src/pages/Contact.tsx', 'src/hooks/useAuth.ts', 'src/hooks/useFetch.ts', 'src/types/index.ts', 'src/context/AppContext.tsx']
     if not sys.stdin.isatty():
-        piped_items = [line.rstrip("\n") for line in sys.stdin]
+        piped_items = [line.rstrip('\n') for line in sys.stdin]
         if piped_items:
             test_items = piped_items
-    if len(sys.argv) > 1 and sys.argv[1] == "--filter":
-        query = sys.argv[2] if len(sys.argv) > 2 else ""
+    if len(sys.argv) > 1 and sys.argv[1] == '--filter':
+        query = sys.argv[2] if len(sys.argv) > 2 else ''
         results = fzf_filter(query, test_items)
         for r in results:
             print(r)
     else:
-        result = fzf(test_items, multi="--multi" in sys.argv)
+        result = fzf(test_items, multi='--multi' in sys.argv)
         if result is None:
             sys.exit(1)
         elif isinstance(result, list):
