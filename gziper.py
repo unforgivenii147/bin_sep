@@ -146,12 +146,12 @@ Examples:
     args = parser.parse_args()
     directories: list[Path] = [Path(d).resolve() for d in args.directories]
 
-    logger.info("=" * 40)
-    logger.info("🔍 GZIP Compression Tool (Maximum Compression - Level 9)".center(70))
-    logger.info("-" * 40)
-    logger.info("📂 Processing directories:")
+    print("=" * 40)
+    print("🔍 GZIP Compression Tool (Maximum Compression - Level 9)".center(70))
+    print("-" * 40)
+    print("📂 Processing directories:")
     for d in directories:
-        logger.info("   • {}", d)
+        print("   • {}", d)
 
     skip_extensions: set[str] = set(DEFAULT_SKIP_EXTENSIONS)
     if args.exclude:
@@ -159,21 +159,21 @@ Examples:
             if not ext.startswith("."):
                 ext = "." + ext
             skip_extensions.add(ext)
-        logger.info("🚫 Excluding extensions: {}", ", ".join(sorted(skip_extensions)))
+        print("🚫 Excluding extensions: {}", ", ".join(sorted(skip_extensions)))
 
-    logger.info("🔎 Scanning for files...")
+    print("🔎 Scanning for files...")
     start_time: float = time.time()
     files_to_compress: list[Path] = find_files_to_compress(directories, skip_extensions)
     if not files_to_compress:
         logger.success("✅ No files found to compress!")
         return 0
 
-    logger.info("📊 Found {} file(s) to compress", len(files_to_compress))
-    logger.info("-" * 40)
-    logger.info(
+    print("📊 Found {} file(s) to compress", len(files_to_compress))
+    print("-" * 40)
+    print(
         f"{'File':<50} {'Original':>10} {'Compressed':>10} {'Ratio':>8} {'Status':>10}"
     )
-    logger.info("-" * 40)
+    print("-" * 40)
 
     stats: CompressionStats = CompressionStats()
     with Pool(processes=WORKERS) as pool:
@@ -192,7 +192,7 @@ Examples:
             if success:
                 stats.add_success(orig_size, comp_size)
                 status_symbol: str = "✅"
-                logger.info(
+                print(
                     f"{display_path:<50} {fsz(orig_size):>10} "
                     f"{fsz(comp_size):>10} "
                     f"{format_ratio(orig_size, comp_size):>8} "
@@ -201,7 +201,7 @@ Examples:
             else:
                 stats.add_failure()
                 status_symbol = "❌"
-                logger.info(
+                print(
                     f"{display_path:<50} {'N/A':>10} {'N/A':>10} "
                     f"{'N/A':>8} {status_symbol:>10}"
                 )
@@ -209,26 +209,26 @@ Examples:
                     logger.warning("   ⚠ Error: {}", error)
 
     elapsed_time: float = time.time() - start_time
-    logger.info("=" * 40)
-    logger.info("📊 COMPRESSION SUMMARY".center(70))
-    logger.info("-" * 40)
-    logger.info("  Total files processed:     {}", stats.total_files)
-    logger.info("  Successfully compressed:   {} ✅", stats.successful)
-    logger.info("  Failed compressions:       {} ❌", stats.failed)
-    logger.info("  Original total size:       {}", fsz(stats.total_original_size))
-    logger.info("  Compressed total size:     {}", fsz(stats.total_compressed_size))
+    print("=" * 40)
+    print("📊 COMPRESSION SUMMARY".center(70))
+    print("-" * 40)
+    print("  Total files processed:     {}", stats.total_files)
+    print("  Successfully compressed:   {} ✅", stats.successful)
+    print("  Failed compressions:       {} ❌", stats.failed)
+    print("  Original total size:       {}", fsz(stats.total_original_size))
+    print("  Compressed total size:     {}", fsz(stats.total_compressed_size))
     if stats.total_original_size > 0:
         overall_ratio: float = (
             1 - stats.total_compressed_size / stats.total_original_size
         ) * 100
         space_saved: int = stats.total_original_size - stats.total_compressed_size
-        logger.info("  Overall compression ratio: {:.1f}%", overall_ratio)
-        logger.info("  Space saved:               {}", fsz(space_saved))
-    logger.info(
+        print("  Overall compression ratio: {:.1f}%", overall_ratio)
+        print("  Space saved:               {}", fsz(space_saved))
+    print(
         "  Time elapsed:               {}",
         timedelta(seconds=int(elapsed_time)),
     )
-    logger.info("-" * 40)
+    print("-" * 40)
     return 0
 
 

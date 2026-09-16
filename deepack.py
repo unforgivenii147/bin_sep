@@ -7,12 +7,11 @@ and docstrings. Usage: python script.py requests jinja2
 """
 
 import argparse
-import importlib.metadata
 import shutil
 import site
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from loguru import logger
 
@@ -34,7 +33,7 @@ def get_site_packages_paths() -> list[Path]:
     return paths
 
 
-def get_package_path(package_name: str, site_paths: list[Path]) -> Optional[Path]:
+def get_package_path(package_name: str, site_paths: list[Path]) -> Path | None:
     """Locate the directory of an installed package within site-packages."""
     for site_path in site_paths:
         pkg_path: Path = site_path / package_name
@@ -58,7 +57,7 @@ def copy_package(
     """Copy a single package's directory (excluding .pyc files) to the output directory."""
     package_name, output_dir, site_paths = args_tuple
     try:
-        pkg_path: Optional[Path] = get_package_path(package_name, site_paths)
+        pkg_path: Path | None = get_package_path(package_name, site_paths)
         if not pkg_path:
             return package_name, False, "Package directory not found"
 
@@ -103,10 +102,10 @@ def main() -> int:
 
     output_dir: Path = Path(args.output).expanduser().resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
-    logger.info(f"Output directory: {output_dir}")
+    print(f"Output directory: {output_dir}")
 
     site_paths: list[Path] = get_site_packages_paths()
-    logger.info(f"Site-packages paths: {[str(p) for p in site_paths]}")
+    print(f"Site-packages paths: {[str(p) for p in site_paths]}")
 
     process_args: list[tuple[str, Path, list[Path]]] = [
         (pkg, output_dir, site_paths) for pkg in args.packages
@@ -124,17 +123,17 @@ def main() -> int:
             pkg_name, success, message = async_result.get()
             if success:
                 successful.append((pkg_name, message))
-                logger.info(f"[{idx}/{total}] ✓ {pkg_name}: {message}")
+                print(f"[{idx}/{total}] ✓ {pkg_name}: {message}")
             else:
                 failed.append((pkg_name, message))
                 logger.error(f"[{idx}/{total}] ✗ {pkg_name}: {message}")
 
-    logger.info("\n" + "=" * 40)
-    logger.info("SUMMARY")
-    logger.info("=" * 40)
-    logger.info(f"Total packages processed: {len(process_args)}")
-    logger.info(f"✓ Successfully copied: {len(successful)}")
-    logger.info(f"✗ Failed: {len(failed)}")
+    print("\n" + "=" * 40)
+    print("SUMMARY")
+    print("=" * 40)
+    print(f"Total packages processed: {len(process_args)}")
+    print(f"✓ Successfully copied: {len(successful)}")
+    print(f"✗ Failed: {len(failed)}")
 
     if failed:
         logger.error("\nFailed packages:")

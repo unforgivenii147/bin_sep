@@ -19,9 +19,10 @@ import lzma
 import shutil
 import sys
 import tarfile
+from collections.abc import Sequence
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
+from typing import Any, Self
 
 import brotli
 import zstandard as zstd
@@ -178,10 +179,9 @@ def _compress_with_algo(algo: str, level: int, subdir: Path, tar_path: Path) -> 
 
     if algo == "zstd":
         cctx = zstd.ZstdCompressor(level=level, threads=4)
-        with open(tar_path, "wb") as f_out:
-            with cctx.stream_writer(f_out) as compressor:
-                with tarfile.open(fileobj=compressor, mode="w|") as tar:
-                    tar.add(str(subdir), arcname=subdir.name, recursive=True)
+        with open(tar_path, "wb") as f_out, cctx.stream_writer(f_out) as compressor:
+            with tarfile.open(fileobj=compressor, mode="w|") as tar:
+                tar.add(str(subdir), arcname=subdir.name, recursive=True)
         return
 
     raise ValueError(f"Unknown compression algorithm: {algo}")
@@ -307,7 +307,7 @@ class _ClosingReader:
             return b""
         return self._reader.read(size)  # type: ignore[no-any-return]
 
-    def __enter__(self) -> "_ClosingReader":
+    def __enter__(self) -> Self:
         """Return self for use as a context manager."""
         return self
 
@@ -331,12 +331,14 @@ def decompress_archive(archive_path: Path) -> dict[str, Any]:
         extracted_size = 0
 
         # First pass: compute total extracted size and detect top-level dir.
-        with _open_decompressed_stream(archive_path) as stream:
-            with tarfile.open(fileobj=stream, mode="r|") as tar:
-                for member in tar:
-                    if member is None:
-                        continue
-                    extracted_size += int(getattr(member, "size", 0) or 0)
+        with (
+            _open_decompressed_stream(archive_path) as stream,
+            tarfile.open(fileobj=stream, mode="r|") as tar,
+        ):
+            for member in tar:
+                if member is None:
+                    continue
+                extracted_size += int(getattr(member, "size", 0) or 0)
 
         dir_name = archive_path.stem
         if archive_path.name.endswith(".tar.zst"):
@@ -347,9 +349,11 @@ def decompress_archive(archive_path: Path) -> dict[str, Any]:
             dir_name = archive_path.name[: -len(".tar.xz")]
         target_dir = archive_path.parent / dir_name
 
-        with _open_decompressed_stream(archive_path) as stream:
-            with tarfile.open(fileobj=stream, mode="r|") as tar:
-                safe_extract_stream(tar, target_dir)
+        with (
+            _open_decompressed_stream(archive_path) as stream,
+            tarfile.open(fileobj=stream, mode="r|") as tar,
+        ):
+            safe_extract_stream(tar, target_dir)
 
         archive_path.unlink()
         space_used = extracted_size - archive_size
@@ -428,7 +432,7 @@ def _resolve_algo(args: argparse.Namespace) -> str:
     return "zstd"
 
 
-def _resolve_level(algo: str, level_arg: Optional[int]) -> int:
+def _resolve_level(algo: str, level_arg: int | None) -> int:
     """Return the effective compression level for the chosen algorithm."""
     if level_arg is not None:
         return level_arg
@@ -448,11 +452,11 @@ def _run_compression(args: argparse.Namespace) -> int:
 
     subdirs = [d for d in iter_target_dirs(paths, recursive=recursive) if d.is_dir()]
     if not subdirs:
-        logger.info("No subdirectories found to compress.")
+        print("No subdirectories found to compress.")
         return 0
 
-    logger.info(f"Found {len(subdirs)} directories to compress.")
-    logger.info(f"Starting compression with {algo} (level {level})...")
+    print(f"Found {len(subdirs)} directories to compress.")
+    print(f"Starting compression with {algo} (level {level})...")
 
     total_original = 0
     total_compressed = 0
@@ -474,7 +478,7 @@ def _run_compression(args: argparse.Namespace) -> int:
                 successful += 1
                 total_original += int(result["original_size"])
                 total_compressed += int(result["compressed_size"])
-                logger.info(
+                print(
                     f"✓ {result['name']}: {fsz(result['original_size'])} -> "
                     f"{fsz(result['compressed_size'])} "
                     f"(freed {fsz(result['space_freed'])})"
@@ -485,17 +489,17 @@ def _run_compression(args: argparse.Namespace) -> int:
                     f"✗ {result.get('name', subdir.name)}: Failed - {result.get('error')}"
                 )
 
-    logger.info("=" * 40)
-    logger.info(f"Compression complete: {successful} successful, {failed} failed")
+    print("=" * 40)
+    print(f"Compression complete: {successful} successful, {failed} failed")
     if successful > 0:
         total_freed = total_original - total_compressed
         compression_ratio = (
             (1 - total_compressed / total_original) * 100 if total_original else 0.0
         )
-        logger.info(f"Total original size:   {fsz(total_original)}")
-        logger.info(f"Total compressed size: {fsz(total_compressed)}")
-        logger.info(f"Total space freed:     {fsz(total_freed)}")
-        logger.info(f"Compression ratio:     {compression_ratio:.1f}%")
+        print(f"Total original size:   {fsz(total_original)}")
+        print(f"Total compressed size: {fsz(total_compressed)}")
+        print(f"Total space freed:     {fsz(total_freed)}")
+        print(f"Compression ratio:     {compression_ratio:.1f}%")
     return 0
 
 
@@ -504,11 +508,11 @@ def _run_decompression(args: argparse.Namespace) -> int:
     paths: Sequence[str] = args.paths if args.paths else ["."]
     archives = [a for a in iter_target_archives(paths) if a.is_file()]
     if not archives:
-        logger.info("No archives found to decompress.")
+        print("No archives found to decompress.")
         return 0
 
-    logger.info(f"Found {len(archives)} archives to decompress.")
-    logger.info("Starting decompression...")
+    print(f"Found {len(archives)} archives to decompress.")
+    print("Starting decompression...")
 
     total_archive = 0
     total_extracted = 0
@@ -535,7 +539,7 @@ def _run_decompression(args: argparse.Namespace) -> int:
                     change_str = f"(space used: +{fsz(space_change)})"
                 else:
                     change_str = f"(space freed: {fsz(-space_change)})"
-                logger.info(
+                print(
                     f"✓ {result['name']}: {fsz(result['archive_size'])} -> "
                     f"{fsz(result['extracted_size'])} {change_str}"
                 )
@@ -545,17 +549,17 @@ def _run_decompression(args: argparse.Namespace) -> int:
                     f"✗ {result.get('name', archive.name)}: Failed - {result.get('error')}"
                 )
 
-    logger.info("=" * 40)
-    logger.info(f"Decompression complete: {successful} successful, {failed} failed")
+    print("=" * 40)
+    print(f"Decompression complete: {successful} successful, {failed} failed")
     if successful > 0:
         total_change = total_extracted - total_archive
-        logger.info(f"Total archive size:     {fsz(total_archive)}")
-        logger.info(f"Total extracted size:   {fsz(total_extracted)}")
-        logger.info(f"Net space change:       {fsz(total_change)}")
+        print(f"Total archive size:     {fsz(total_archive)}")
+        print(f"Total extracted size:   {fsz(total_extracted)}")
+        print(f"Net space change:       {fsz(total_change)}")
     return 0
 
 
-def main(argv: Optional[Sequence[str]] = None) -> int:
+def main(argv: Sequence[str] | None = None) -> int:
     """Parse arguments and dispatch to compression or decompression."""
     parser = _build_parser()
     args = parser.parse_args(argv)

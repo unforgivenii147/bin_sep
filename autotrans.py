@@ -9,16 +9,14 @@ GoogleTranslator; logging via loguru.
 """
 
 import re
-import sys
 from multiprocessing import Pool
 from multiprocessing.pool import AsyncResult
 from pathlib import Path
 from typing import Final
 
 from deep_translator import GoogleTranslator  # type: ignore[import-untyped]
-from loguru import logger
-
 from dh import is_binary  # type: ignore[import-untyped]
+from loguru import logger
 
 DIRECTORY: Final[str] = "."
 CHUNK_SIZE: Final[int] = 32768
@@ -96,7 +94,7 @@ def translate_file(path: Path) -> None:
     Args:
         path: The source file to translate.
     """
-    logger.info(f"Processing file: {path}")
+    print(f"Processing file: {path}")
     try:
         content: str = path.read_text(encoding="utf-8", errors="ignore")
     except Exception as exc:
@@ -104,12 +102,12 @@ def translate_file(path: Path) -> None:
         return
 
     if not contains_non_english(content):
-        logger.info(f"File is already English: {path.name}")
+        print(f"File is already English: {path.name}")
         return
 
-    logger.info(f"Non-English content detected in: {path.name}")
+    print(f"Non-English content detected in: {path.name}")
     chunks: list[str] = split_into_chunks(content, CHUNK_SIZE)
-    logger.info(f"Total chunks: {len(chunks)}. Translating...")
+    print(f"Total chunks: {len(chunks)}. Translating...")
 
     translated_chunks: list[str] = [translate_chunk(chunk) for chunk in chunks]
     translated_text: str = "".join(translated_chunks)
@@ -117,7 +115,7 @@ def translate_file(path: Path) -> None:
     new_path: Path = path.with_stem(f"{path.stem}_eng")
     try:
         new_path.write_text(translated_text, encoding="utf-8")
-        logger.info(f"✓ Translated → {new_path.name}")
+        print(f"✓ Translated → {new_path.name}")
     except Exception as exc:
         logger.error(f"Failed to write output file {new_path}: {exc}")
 
@@ -162,16 +160,16 @@ def process_directory(directory: str) -> None:
     Args:
         directory: Directory path to scan.
     """
-    logger.info(f"Scanning directory: {directory}")
+    print(f"Scanning directory: {directory}")
     dir_path: Path = Path(directory)
 
     files: list[Path] = scan_files(dir_path)
-    logger.info(f"Total text files found: {len(files)}")
+    print(f"Total text files found: {len(files)}")
 
     if not files:
         return
 
-    logger.info("Starting parallel file translation...\n")
+    print("Starting parallel file translation...\n")
 
     with Pool(processes=MAX_WORKERS) as pool:
         async_results: list[AsyncResult[None]] = [

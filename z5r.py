@@ -21,7 +21,7 @@ import time
 from dataclasses import dataclass
 from multiprocessing.pool import AsyncResult, Pool
 from pathlib import Path
-from typing import Final, List, Optional, Union
+from typing import Final, List
 
 import zstandard as zstd
 from dh import fsz, gsz
@@ -117,7 +117,7 @@ class FolderResult:
     original_size: int = 0
     compressed_size: int = 0
     success: bool = False
-    error: Optional[str] = None
+    error: str | None = None
     duration: float = 0.0
 
     @property
@@ -152,7 +152,7 @@ def compress_folder_task(
     temp_tar = output_dir / f".tmp_{folder_name}.tar"
     try:
         orig_size = gsz(folder_path)
-        logger.info(f"Compressing {folder_name} (size: {fsz(orig_size)})")
+        print(f"Compressing {folder_name} (size: {fsz(orig_size)})")
 
         with tarfile.open(temp_tar, "w") as tar:
             tar.add(folder_path, arcname=folder_name)
@@ -169,7 +169,7 @@ def compress_folder_task(
         temp_tar.unlink()
         remove_tree(folder_path)
 
-        logger.info(f"Compressed {folder_name}: {fsz(orig_size)} -> {fsz(comp_size)}")
+        print(f"Compressed {folder_name}: {fsz(orig_size)} -> {fsz(comp_size)}")
 
         return FolderResult(
             name=folder_name,
@@ -179,7 +179,7 @@ def compress_folder_task(
             duration=time.perf_counter() - start_time,
         )
     except Exception as e:
-        logger.error(f"Failed to compress {folder_name}: {str(e)}")
+        logger.error(f"Failed to compress {folder_name}: {e!s}")
         if temp_tar.exists():
             temp_tar.unlink()
         if zst_path.exists():
@@ -203,7 +203,7 @@ def decompress_folder_task(zst_path: Path, output_dir: Path) -> FolderResult:
     temp_tar = output_dir / f".tmp_{folder_name}.tar"
     try:
         comp_size = zst_path.stat().st_size
-        logger.info(f"Decompressing {folder_name} (size: {fsz(comp_size)})")
+        print(f"Decompressing {folder_name} (size: {fsz(comp_size)})")
 
         dctx = zstd.ZstdDecompressor()
         with (
@@ -220,9 +220,7 @@ def decompress_folder_task(zst_path: Path, output_dir: Path) -> FolderResult:
         zst_path.unlink()
         extracted_size = gsz(output_dir / folder_name)
 
-        logger.info(
-            f"Decompressed {folder_name}: {fsz(comp_size)} -> {fsz(extracted_size)}"
-        )
+        print(f"Decompressed {folder_name}: {fsz(comp_size)} -> {fsz(extracted_size)}")
 
         return FolderResult(
             name=folder_name,
@@ -232,7 +230,7 @@ def decompress_folder_task(zst_path: Path, output_dir: Path) -> FolderResult:
             duration=time.perf_counter() - start_time,
         )
     except Exception as e:
-        logger.error(f"Failed to decompress {folder_name}: {str(e)}")
+        logger.error(f"Failed to decompress {folder_name}: {e!s}")
         if temp_tar.exists():
             temp_tar.unlink()
         return FolderResult(name=folder_name, success=False, error=str(e))
@@ -294,7 +292,7 @@ def process_targets_with_progress(
                                     f"[red]Error on {res.name}: {res.error}[/red]"
                                 )
                         except Exception as e:
-                            console.print(f"[red]Worker error: {str(e)}[/red]")
+                            console.print(f"[red]Worker error: {e!s}[/red]")
                             completed += 1
                             progress.advance(task)
                 time.sleep(0.1)
@@ -347,7 +345,7 @@ def process_targets_without_progress(
                         )
                         async_results[i] = None  # Mark as processed
                     except Exception as e:
-                        print(f"Worker error: {str(e)}")
+                        print(f"Worker error: {e!s}")
                         completed += 1
                         async_results[i] = None
             time.sleep(0.1)
@@ -409,10 +407,10 @@ def main() -> int:
         mode_name = "Compressing"
 
     if not targets:
-        logger.info("No targets found to process.")
+        print("No targets found to process.")
         return 0
 
-    logger.info(f"🚀 {mode_name} {len(targets)} items in {root}...")
+    print(f"🚀 {mode_name} {len(targets)} items in {root}...")
 
     if RICH_AVAILABLE:
         results = process_targets_with_progress(

@@ -19,9 +19,10 @@ import argparse
 import multiprocessing as mp
 import sys
 import time
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any
 
 from loguru import logger
 
@@ -423,7 +424,7 @@ class NonEnglishDetector:
         """Scan a directory tree and return DetectionResult for each file."""
         results: list[DetectionResult] = []
         paths: list[Path] = []
-        logger.info(f"Scanning directory: {root_dir.absolute()}")
+        print(f"Scanning directory: {root_dir.absolute()}")
         for path in root_dir.rglob("*"):
             if (
                 path.is_file()
@@ -431,7 +432,7 @@ class NonEnglishDetector:
                 and not self.should_ignore(path)
             ):
                 paths.append(path)
-        logger.info(f"Found {len(paths)} text files to process")
+        print(f"Found {len(paths)} text files to process")
         if not paths:
             return results
 
@@ -453,7 +454,7 @@ class NonEnglishDetector:
                             f"{rel}: {len(result.non_english_lines)}"
                         )
                     else:
-                        logger.info(f"[{completed}/{total}] ok {rel}")
+                        print(f"[{completed}/{total}] ok {rel}")
                 except Exception as e:
                     rel = path.relative_to(root_dir)
                     logger.error(f"[{completed}/{total}] failed {rel}: {e!s}")
@@ -584,13 +585,13 @@ def main(argv: Sequence[str] | None = None) -> int:
         files_with_issues: int = sum(1 for r in results if r.non_english_lines)
         total_non_eng: int = sum(len(r.non_english_lines) for r in results)
 
-        logger.info("=" * 40)
-        logger.info(f"Scan completed in {elapsed:.1f} seconds")
-        logger.info(f"Files scanned: {len(results)}")
-        logger.info(f"Files with non-English content: {files_with_issues}")
-        logger.info(f"Total non-English lines: {total_non_eng}")
-        logger.info(f"Results saved to: {output_path.absolute()}")
-        logger.info("-" * 40)
+        print("=" * 40)
+        print(f"Scan completed in {elapsed:.1f} seconds")
+        print(f"Files scanned: {len(results)}")
+        print(f"Files with non-English content: {files_with_issues}")
+        print(f"Total non-English lines: {total_non_eng}")
+        print(f"Results saved to: {output_path.absolute()}")
+        print("-" * 40)
         return 0 if files_with_issues == 0 else 1
     except KeyboardInterrupt:
         logger.warning("Scan interrupted by user")

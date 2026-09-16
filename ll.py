@@ -25,8 +25,7 @@ def fsz(sz: int) -> str:
     # Show one decimal if it fits nicely, otherwise round
     if v < 10:
         s = f"{v:.1f}"
-        if s.endswith(".0"):
-            s = s[:-2]
+        s = s.removesuffix(".0")
     else:
         s = f"{int(v)}"
     return f"{s} {units[i]}B"
@@ -167,8 +166,7 @@ def main() -> None:
         name_disp = truncate(name, name_w)
         # Pad name to name_w using visible length
         pad = name_w - visible_len(name_disp)
-        if pad < 0:
-            pad = 0
+        pad = max(pad, 0)
         print(
             f"\x1b[05;{name_color}m{name_disp}\x1b[0m"
             f"{' ' * pad}"

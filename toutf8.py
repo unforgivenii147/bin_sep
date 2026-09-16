@@ -7,7 +7,6 @@ fixed multiprocessing.Pool of 8 workers. Logging via loguru.
 """
 
 import argparse
-import sys
 from collections.abc import Generator
 from multiprocessing import Pool
 from multiprocessing.pool import AsyncResult
@@ -134,10 +133,10 @@ def main() -> int:
         files = list(get_nobinary(cwd))
 
     if not files:
-        logger.info("No files to process.")
+        print("No files to process.")
         return 0
 
-    logger.info(f"Processing {len(files)} file(s) with {MAX_WORKERS} worker(s)...\n")
+    print(f"Processing {len(files)} file(s) with {MAX_WORKERS} worker(s)...\n")
 
     converted: int = 0
     skipped: int = 0
@@ -155,7 +154,7 @@ def main() -> int:
                     rel: Path = file_path.relative_to(cwd)
                 except ValueError:
                     rel = file_path
-                logger.info(f"{status} {rel} - {message}")
+                print(f"{status} {rel} - {message}")
             if success:
                 if "Already UTF8" in message or "Skipped" in message:
                     skipped += 1
@@ -164,12 +163,12 @@ def main() -> int:
             else:
                 errors += 1
 
-    logger.info("=" * 40)
-    logger.info("Summary:")
-    logger.info(f"  Converted: {converted}")
-    logger.info(f"  Skipped:   {skipped}")
-    logger.info(f"  Errors:    {errors}")
-    logger.info("=" * 40)
+    print("=" * 40)
+    print("Summary:")
+    print(f"  Converted: {converted}")
+    print(f"  Skipped:   {skipped}")
+    print(f"  Errors:    {errors}")
+    print("=" * 40)
 
     return 0 if errors == 0 else 1
 

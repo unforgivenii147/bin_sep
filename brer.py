@@ -26,7 +26,7 @@ import sys
 import tarfile
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Final, Optional
+from typing import Final
 
 import brotli
 from loguru import logger
@@ -38,7 +38,7 @@ BROTLI_QUALITY: Final[int] = 11
 BROTLI_LGWIN: Final[int] = 24
 MIN_COMPRESS_SIZE: Final[int] = 1024
 
-_POOL: Optional[Pool] = None
+_POOL: Pool | None = None
 
 
 def fsz(size: int) -> str:
@@ -82,7 +82,7 @@ def decompress_file(path: Path) -> bool:
         out_path.write_bytes(decompressed_data)
         original_size: int = path.stat().st_size
         decompressed_size: int = out_path.stat().st_size
-        logger.info(
+        print(
             f"  ✓ Decompressed {path.name}: "
             f"{fsz(original_size)} → {fsz(decompressed_size)}"
         )
@@ -128,7 +128,7 @@ def compress_chunked(in_path: Path, out_path: Path, file_size: int) -> bool:
                 end: int = min((i + 1) * CHUNK_SIZE_SMALL, file_size)
                 chunk: bytes = mm[start:end]
                 async_results.append(pool.apply_async(compress_chunk, (chunk,)))
-            results: list[Optional[bytes]] = [None] * chunk_count
+            results: list[bytes | None] = [None] * chunk_count
             for idx, ar in enumerate(async_results):
                 try:
                     results[idx] = ar.get()
@@ -177,7 +177,7 @@ def compress_tar_to_br(tar_path: Path, br_path: Path) -> bool:
             if br_size < tar_size:
                 tar_path.unlink()
                 reduction: float = (tar_size - br_size) / tar_size * 100
-                logger.info(
+                print(
                     f"  ✓ Compressed archive: {reduction:.1f}% saved "
                     f"({fsz(tar_size)} → {fsz(br_size)})"
                 )
@@ -197,14 +197,14 @@ async def compress_folder_async(folder_path: Path, output_base_name: str) -> boo
     tar_path: Path = Path(output_base_name + ".tar")
     br_path: Path = Path(output_base_name + ".tar.br")
     try:
-        logger.info("  Creating tar archive...")
+        print("  Creating tar archive...")
         success: bool = await loop.run_in_executor(
             None, create_tar_archive, folder_path, tar_path
         )
         if not success or not tar_path.exists():
             logger.error("  Failed to create tar archive")
             return False
-        logger.info("  Compressing tar archive with Brotli (max quality)...")
+        print("  Compressing tar archive with Brotli (max quality)...")
         if compress_tar_to_br(tar_path, br_path):
             await loop.run_in_executor(None, shutil.rmtree, folder_path)
             return True
@@ -222,7 +222,7 @@ def compress_file(path: Path) -> tuple[bool, int, int]:
     """Compress a single file to `.br`, returning (success, original_size, compressed_size)."""
     out_path: Path = path.with_suffix(path.suffix + ".br")
     if out_path.exists():
-        logger.info(f"Skipping {path.name} - output already exists")
+        print(f"Skipping {path.name} - output already exists")
         return False, 0, 0
     try:
         original_size: int = path.stat().st_size
@@ -243,12 +243,12 @@ def compress_file(path: Path) -> tuple[bool, int, int]:
                 reduction: float = (
                     (original_size - compressed_size) / original_size * 100
                 )
-                logger.info(
+                print(
                     f"  ✓ {path.name}: {reduction:.1f}% saved "
                     f"({fsz(original_size)} → {fsz(compressed_size)})"
                 )
                 return True, original_size, compressed_size
-            logger.info(f"  ✗ {path.name}: No space saved, removing compressed file")
+            print(f"  ✗ {path.name}: No space saved, removing compressed file")
             out_path.unlink()
             return False, 0, 0
         return False, 0, 0
@@ -309,21 +309,21 @@ def extract_tar_archive(tar_path: Path, extract_dir: Path) -> bool:
 async def process_compress() -> None:
     """Compress all eligible directories and files in the current working directory."""
     cwd: Path = Path.cwd()
-    logger.info("\n🔧 Brotli Compression Settings:")
-    logger.info(f"   Quality: {BROTLI_QUALITY}/11 (maximum)")
-    logger.info("   Window size: 16MB")
-    logger.info(f"   Workers: {MAX_WORKERS}")
-    logger.info(f"   Chunk size: {fsz(CHUNK_SIZE)}")
+    print("\n🔧 Brotli Compression Settings:")
+    print(f"   Quality: {BROTLI_QUALITY}/11 (maximum)")
+    print("   Window size: 16MB")
+    print(f"   Workers: {MAX_WORKERS}")
+    print(f"   Chunk size: {fsz(CHUNK_SIZE)}")
 
     dirs_to_compress: list[Path] = get_dirs(cwd)
     if dirs_to_compress:
-        logger.info(f"\n📁 Compressing {len(dirs_to_compress)} directories...")
+        print(f"\n📁 Compressing {len(dirs_to_compress)} directories...")
         for dir_path in sorted(dirs_to_compress):
             relative_path: Path = dir_path.relative_to(cwd)
-            logger.info(f"\n  Processing {relative_path}...")
+            print(f"\n  Processing {relative_path}...")
             archive_path: str = str(dir_path.parent / dir_path.name)
             if await compress_folder_async(dir_path, archive_path):
-                logger.info(
+                print(
                     f"  ✓ Successfully compressed {relative_path} "
                     f"to {dir_path.name}.tar.br"
                 )
@@ -332,10 +332,10 @@ async def process_compress() -> None:
 
     files_to_compress: list[Path] = get_files(cwd, mode="compress")
     if not files_to_compress:
-        logger.info("\n📄 No files to compress")
+        print("\n📄 No files to compress")
         return
 
-    logger.info(
+    print(
         f"\n📄 Compressing {len(files_to_compress)} files with Brotli max compression..."
     )
     total_original: int = 0
@@ -343,7 +343,7 @@ async def process_compress() -> None:
     successful: int = 0
 
     for i, path in enumerate(sorted(files_to_compress), 1):
-        logger.info(f"\n[{i}/{len(files_to_compress)}] {path.name}")
+        print(f"\n[{i}/{len(files_to_compress)}] {path.name}")
         success, orig_size, comp_size = compress_file(path)
         if success:
             successful += 1
@@ -353,12 +353,12 @@ async def process_compress() -> None:
     if successful > 0:
         savings: int = total_original - total_compressed
         savings_percent: float = savings / total_original * 100
-        logger.info(f"\n{'=' * 40}")
-        logger.info(f"✅ Compressed {successful}/{len(files_to_compress)} files")
-        logger.info(f"📊 Original size:  {fsz(total_original)}")
-        logger.info(f"📦 Compressed size: {fsz(total_compressed)}")
-        logger.info(f"💾 Space saved:    {fsz(savings)} ({savings_percent:.1f}%)")
-        logger.info(f"{'=' * 40}")
+        print(f"\n{'=' * 40}")
+        print(f"✅ Compressed {successful}/{len(files_to_compress)} files")
+        print(f"📊 Original size:  {fsz(total_original)}")
+        print(f"📦 Compressed size: {fsz(total_compressed)}")
+        print(f"💾 Space saved:    {fsz(savings)} ({savings_percent:.1f}%)")
+        print(f"{'=' * 40}")
     elif files_to_compress:
         logger.error("\n❌ No files were successfully compressed")
 
@@ -368,18 +368,18 @@ async def process_decompress() -> None:
     cwd: Path = Path.cwd()
     archives: list[Path] = [p for p in cwd.glob("*.tar.br") if p.is_file()]
     if archives:
-        logger.info(f"\n📦 Decompressing {len(archives)} archives...")
+        print(f"\n📦 Decompressing {len(archives)} archives...")
         for archive in sorted(archives):
-            logger.info(f"\n  Decompressing {archive.name}...")
-            tar_path: Optional[Path] = None
+            print(f"\n  Decompressing {archive.name}...")
+            tar_path: Path | None = None
             try:
                 tar_path = archive.with_suffix("")
-                logger.info("    Decompressing Brotli...")
+                print("    Decompressing Brotli...")
                 compressed_data: bytes = archive.read_bytes()
                 tar_data: bytes = brotli.decompress(compressed_data)
                 tar_path.write_bytes(tar_data)
                 extract_dir: str = archive.stem
-                logger.info(f"    Extracting tar to {extract_dir}/...")
+                print(f"    Extracting tar to {extract_dir}/...")
                 loop: asyncio.AbstractEventLoop = asyncio.get_running_loop()
                 success: bool = await loop.run_in_executor(
                     None, extract_tar_archive, tar_path, Path(extract_dir)
@@ -387,7 +387,7 @@ async def process_decompress() -> None:
                 if success:
                     tar_path.unlink()
                     archive.unlink()
-                    logger.info(f"  ✓ Extracted {archive.name} to {extract_dir}/")
+                    print(f"  ✓ Extracted {archive.name} to {extract_dir}/")
                 else:
                     logger.error(f"  ✗ Failed to extract {archive.name}")
             except Exception as e:
@@ -397,7 +397,7 @@ async def process_decompress() -> None:
 
     files_to_decompress: list[Path] = get_files(cwd, mode="decompress")
     if not files_to_decompress:
-        logger.info("\n📄 No .br files to decompress")
+        print("\n📄 No .br files to decompress")
         return
 
     files_to_decompress = [
@@ -406,13 +406,13 @@ async def process_decompress() -> None:
     if not files_to_decompress:
         return
 
-    logger.info(f"\n📄 Decompressing {len(files_to_decompress)} Brotli files...")
+    print(f"\n📄 Decompressing {len(files_to_decompress)} Brotli files...")
     total_original: int = 0
     total_decompressed: int = 0
     successful: int = 0
 
     for i, path in enumerate(sorted(files_to_decompress), 1):
-        logger.info(f"\n[{i}/{len(files_to_decompress)}] {path.name}")
+        print(f"\n[{i}/{len(files_to_decompress)}] {path.name}")
         original_size: int = path.stat().st_size
         total_original += original_size
         if decompress_file(path):
@@ -422,11 +422,11 @@ async def process_decompress() -> None:
                 total_decompressed += out_path.stat().st_size
 
     if successful > 0:
-        logger.info(f"\n{'=' * 40}")
-        logger.info(f"✅ Decompressed {successful}/{len(files_to_decompress)} files")
-        logger.info(f"📦 Compressed size:   {fsz(total_original)}")
-        logger.info(f"📊 Decompressed size: {fsz(total_decompressed)}")
-        logger.info(f"{'=' * 40}")
+        print(f"\n{'=' * 40}")
+        print(f"✅ Decompressed {successful}/{len(files_to_decompress)} files")
+        print(f"📦 Compressed size:   {fsz(total_original)}")
+        print(f"📊 Decompressed size: {fsz(total_decompressed)}")
+        print(f"{'=' * 40}")
     elif files_to_decompress:
         logger.error("\n❌ No files were successfully decompressed")
 

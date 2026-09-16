@@ -24,9 +24,9 @@ from __future__ import annotations
 
 import argparse
 import site
+from collections.abc import Iterable
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Iterable
 
 import importlib_metadata
 from loguru import logger
@@ -146,10 +146,10 @@ def main() -> int:
         logger.add(lambda msg: print(msg, end=""), level="DEBUG")
 
     site_paths = get_site_packages_paths()
-    logger.info(f"Site-packages paths: {[str(p) for p in site_paths]}")
+    print(f"Site-packages paths: {[str(p) for p in site_paths]}")
 
     all_packages = get_installed_packages()
-    logger.info(f"Found {len(all_packages)} installed packages")
+    print(f"Found {len(all_packages)} installed packages")
 
     if not all_packages:
         logger.error("No packages found")
@@ -164,7 +164,7 @@ def main() -> int:
     total: int = len(process_args)
     completed: int = 0
 
-    logger.info(f"Checking packages using {NUM_WORKERS} parallel workers...")
+    print(f"Checking packages using {NUM_WORKERS} parallel workers...")
 
     with Pool(processes=NUM_WORKERS) as pool:
         async_results = [
@@ -175,27 +175,27 @@ def main() -> int:
             result_name, version, is_pure = async_result.get()
             if not is_pure:
                 binary_packages.append((result_name, version))
-                logger.info(f"[{completed}/{total}] ✓ {result_name} is BINARY")
+                print(f"[{completed}/{total}] ✓ {result_name} is BINARY")
             else:
                 pure_packages.append((result_name, version))
                 logger.debug(f"[{completed}/{total}] - {result_name} is pure Python")
 
     output_path = write_output(args.output, binary_packages)
 
-    logger.info("=" * 40)
-    logger.info("SUMMARY")
-    logger.info("=" * 40)
-    logger.info(f"Total packages checked: {total}")
-    logger.info(f"Binary packages found: {len(binary_packages)}")
-    logger.info(f"Pure Python packages: {len(pure_packages)}")
-    logger.info(f"Results saved to: {output_path}")
+    print("=" * 40)
+    print("SUMMARY")
+    print("=" * 40)
+    print(f"Total packages checked: {total}")
+    print(f"Binary packages found: {len(binary_packages)}")
+    print(f"Pure Python packages: {len(pure_packages)}")
+    print(f"Results saved to: {output_path}")
 
     if binary_packages:
-        logger.info("Binary packages:")
+        print("Binary packages:")
         for pkg, ver in binary_packages[:10]:
-            logger.info(f"  - {pkg}=={ver}")
+            print(f"  - {pkg}=={ver}")
         if len(binary_packages) > 10:
-            logger.info(f"  ... and {len(binary_packages) - 10} more")
+            print(f"  ... and {len(binary_packages) - 10} more")
 
     return 0
 

@@ -34,8 +34,9 @@ import sys
 import tarfile
 import zipfile
 from collections import defaultdict
+from collections.abc import Callable, Iterable
 from pathlib import Path
-from typing import Any, Callable, Iterable, NamedTuple
+from typing import Any, NamedTuple
 
 from loguru import logger
 
@@ -756,7 +757,7 @@ def write_global_imports(imports: list[str], output_dir: Path) -> None:
     out: Path = output_dir / "global_imports.py"
     try:
         out.write_text(content, encoding="utf-8")
-        logger.info("Global imports saved → {}", out)
+        print("Global imports saved → {}", out)
     except OSError as exc:
         logger.error("cannot write global imports: {}", exc)
 
@@ -769,16 +770,16 @@ def report(entities: list[Entity], all_imports: list[str], saved_count: int) -> 
         all_imports: All collected import statements.
         saved_count: Number of entities successfully written.
     """
-    logger.info("=" * 40)
-    logger.info("EXTRACTION SUMMARY")
-    logger.info("-" * 40)
+    print("=" * 40)
+    print("EXTRACTION SUMMARY")
+    print("-" * 40)
     by_type: dict[str, int] = defaultdict(int)
     for e in entities:
         by_type[e.entity_type] += 1
     for etype, count in sorted(by_type.items()):
-        logger.info("  {:<12}: {}", etype, count)
-    logger.info("  {:<12}: {}", "total", len(entities))
-    logger.info("  {:<12}: {}", "saved", saved_count)
+        print("  {:<12}: {}", etype, count)
+    print("  {:<12}: {}", "total", len(entities))
+    print("  {:<12}: {}", "saved", saved_count)
 
     module_counts: dict[str, int] = defaultdict(int)
     for stmt in all_imports:
@@ -786,10 +787,10 @@ def report(entities: list[Entity], all_imports: list[str], saved_count: int) -> 
         if m:
             module_counts[m.group(1)] += 1
     if module_counts:
-        logger.info("Top imported modules:")
+        print("Top imported modules:")
         for mod, cnt in sorted(module_counts.items(), key=lambda x: -x[1])[:15]:
-            logger.info("  {:<30} {}", mod, cnt)
-    logger.info("-" * 40)
+            print("  {:<30} {}", mod, cnt)
+    print("-" * 40)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -830,18 +831,16 @@ def main(argv: list[str] | None = None) -> int:
         Path.home() / "tmp" / "output" if args.tmp else Path.cwd() / "output"
     )
     output_dir.mkdir(parents=True, exist_ok=True)
-    logger.info("Output directory: {}", output_dir)
+    print("Output directory: {}", output_dir)
 
     root: Path = args.dir.resolve()
-    logger.info("Scanning: {}", root)
-    logger.info("Discovering files…")
+    print("Scanning: {}", root)
+    print("Discovering files…")
     py_files, archives = discover_files(root)
-    logger.info(
-        "  Found {} Python files and {} archive(s).", len(py_files), len(archives)
-    )
+    print("  Found {} Python files and {} archive(s).", len(py_files), len(archives))
 
     if not py_files and not archives:
-        logger.info("Nothing to process.")
+        print("Nothing to process.")
         return 0
 
     all_entities: list[Entity] = []
@@ -851,7 +850,7 @@ def main(argv: list[str] | None = None) -> int:
         (_worker_py, p) for p in py_files
     ] + [(_worker_archive, p) for p in archives]
 
-    logger.info("Processing {} file(s) with {} worker(s)…", len(tasks), args.workers)
+    print("Processing {} file(s) with {} worker(s)…", len(tasks), args.workers)
 
     with mp.Pool(processes=args.workers) as pool:
         async_results: list[
@@ -863,13 +862,13 @@ def main(argv: list[str] | None = None) -> int:
         for fn, path, result in async_results:
             try:
                 entities, imports, label = result.get()
-                logger.info("  ✓ {}  ({} entities)", label, len(entities))
+                print("  ✓ {}  ({} entities)", label, len(entities))
                 all_entities.extend(entities)
                 all_imports.extend(imports)
             except Exception as exc:
                 logger.error("  ✗ {}: {}", path, exc)
 
-    logger.info("Writing {} entities…", len(all_entities))
+    print("Writing {} entities…", len(all_entities))
     saved: int = 0
     for entity in all_entities:
         if write_entity(entity, output_dir):

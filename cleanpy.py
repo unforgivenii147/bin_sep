@@ -21,10 +21,10 @@ from __future__ import annotations
 import argparse
 import ast
 import sys
+from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Iterable, Iterator
 
 import libcst as cst
 from libcst import RemovalSentinel
@@ -251,7 +251,7 @@ def main() -> int:
     input_paths: list[Path] = args.paths or [Path(".")]
     files: list[Path] = list(iter_python_files(input_paths))
     if not files:
-        logger.info("No Python files found.")
+        print("No Python files found.")
         return 0
 
     changed_files: int = 0
@@ -287,17 +287,17 @@ def main() -> int:
                 changed_files += 1
                 total_comments += result.comments_removed
                 total_docstrings += result.docstrings_removed
-                logger.info(
+                print(
                     f"{result.path}: comments removed={result.comments_removed}, "
                     f"docstrings removed={result.docstrings_removed}"
                 )
             else:
-                logger.info(f"{result.path}: no changes")
+                print(f"{result.path}: no changes")
         pool.join()
     finally:
         pool.terminate()
 
-    logger.info(
+    print(
         "Summary: "
         f"files changed={changed_files}, "
         f"comments removed={total_comments}, "

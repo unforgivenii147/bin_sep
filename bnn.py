@@ -183,15 +183,15 @@ Examples:
         return 1
     if not args.inputs:
         inputs = [Path.cwd()]
-        logger.info("No inputs provided, processing current directory recursively")
+        print("No inputs provided, processing current directory recursively")
     else:
         inputs = args.inputs
     files = list(collect_files(inputs))
     if not files:
         logger.warning("No files found to process")
         return 0
-    logger.info(f"Found {len(files)} files to process")
-    logger.info(f"Starting parallel processing with {args.workers} workers")
+    print(f"Found {len(files)} files to process")
+    print(f"Starting parallel processing with {args.workers} workers")
     results = Parallel(n_jobs=args.workers, verbose=0)(
         delayed(process_file_chunked)(path, chunk_size) for path in files
     )

@@ -26,7 +26,7 @@ import time
 from dataclasses import dataclass
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any
 
 from loguru import logger
 
@@ -38,9 +38,9 @@ class ExtractionStats:
     archive_path: Path
     status: str
     extraction_time: float
-    output_dir: Optional[Path] = None
+    output_dir: Path | None = None
     extracted_files: int = 0
-    error_message: Optional[str] = None
+    error_message: str | None = None
     original_size: int = 0
 
     def __str__(self) -> str:
@@ -197,7 +197,7 @@ class ArchiveExtractor:
             original_size=original_size,
         )
         archive_name: str = archive_path.name.lower()
-        ext: Optional[str] = None
+        ext: str | None = None
         for possible_ext in sorted(
             self.EXTRACTION_COMMANDS.keys(), key=len, reverse=True
         ):
@@ -355,19 +355,19 @@ def find_archives(directory: Path) -> list[Path]:
 def main() -> int:
     """Main entry point for the script."""
     current_dir: Path = Path.cwd()
-    logger.info(f"Scanning for archivesin: {current_dir}")
+    print(f"Scanning for archivesin: {current_dir}")
     archives: list[Path] = find_archives(current_dir)
     if not archives:
-        logger.info("No archive files found.")
+        print("No archive files found.")
         return 0
 
-    logger.info(f"Found {len(archives)} archive(s):")
+    print(f"Found {len(archives)} archive(s):")
     for archive in archives:
         size_mb: float = archive.stat().st_size / (1024 * 1024)
-        logger.info(f"  • {archive.name} ({size_mb:.1f} MB)")
+        print(f"  • {archive.name} ({size_mb:.1f} MB)")
 
     max_workers: int = 8  # Fixed pool size as requested
-    logger.info(f"Processing with {max_workers} parallel worker(s)...")
+    print(f"Processing with {max_workers} parallel worker(s)...")
 
     extractor: ArchiveExtractor = ArchiveExtractor(current_dir)
     results: list[ExtractionStats] = []
@@ -383,7 +383,7 @@ def main() -> int:
             try:
                 result: ExtractionStats = async_result.get()
                 results.append(result)
-                logger.info(str(result))
+                print(str(result))
             except Exception as e:
                 logger.error(f"✗ {archive.name} - Worker error: {e}")
 
@@ -392,19 +392,19 @@ def main() -> int:
     failed: int = sum(1 for r in results if r.status == "failed")
     skipped: int = sum(1 for r in results if r.status == "skipped")
 
-    logger.info(f"\n{'=' * 40}")
-    logger.info("SUMMARY")
-    logger.info(f"{'=' * 40}")
-    logger.info(f"Total archives: {len(archives)}")
-    logger.info(f"✓ Successfully extracted: {successful}")
-    logger.info(f"✗ Failed: {failed}")
-    logger.info(f"○ Skipped: {skipped}")
-    logger.info(f"Total time: {total_time:.1f}s")
+    print(f"\n{'=' * 40}")
+    print("SUMMARY")
+    print(f"{'=' * 40}")
+    print(f"Total archives: {len(archives)}")
+    print(f"✓ Successfully extracted: {successful}")
+    print(f"✗ Failed: {failed}")
+    print(f"○ Skipped: {skipped}")
+    print(f"Total time: {total_time:.1f}s")
 
     if results:
-        logger.info("\nDetailed results:")
+        print("\nDetailed results:")
         for result in results:
-            logger.info(f"  {result}")
+            print(f"  {result}")
 
     return 0
 

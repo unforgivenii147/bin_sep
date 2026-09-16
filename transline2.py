@@ -133,9 +133,9 @@ def main() -> None:
     else:
         files = get_files(cwd, extensions=(".md", ".txt"))
     if not files:
-        logger.info("No files found to process.")
+        print("No files found to process.")
         return
-    logger.info("Starting processing of {} files...", len(files))
+    print("Starting processing of {} files...", len(files))
     pool: Pool = Pool(processes=MAX_WORKERS)
     try:
         results: list[AsyncResult[str]] = [
@@ -144,7 +144,7 @@ def main() -> None:
         pool.close()
         for result in results:
             try:
-                logger.info(result.get())
+                print(result.get())
             except Exception as e:
                 logger.error("Worker error: {}", e)
         pool.join()

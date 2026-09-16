@@ -139,7 +139,7 @@ def collect_results(chunks: list[list[str]], pool: Pool) -> dict[str, str]:
         for i, original_line in enumerate(original_lines):
             if i < len(translated_lines):
                 results[original_line] = translated_lines[i]
-                logger.info("{} → {}", original_line, translated_lines[i])
+                print("{} → {}", original_line, translated_lines[i])
             else:
                 logger.error(
                     "Line count mismatch in chunk, missing translation for: {}",
@@ -167,13 +167,13 @@ def main() -> int:
         return 1
 
     if not all_lines:
-        logger.info("No lines found in {}", input_path.name)
+        print("No lines found in {}", input_path.name)
         return 0
 
     persian_lines: list[str] = [line for line in all_lines if contains_persian(line)]
     non_persian_count: int = len(all_lines) - len(persian_lines)
 
-    logger.info(
+    print(
         "Loaded {} lines: {} with persian, {} already English/skipped",
         len(all_lines),
         len(persian_lines),
@@ -181,11 +181,11 @@ def main() -> int:
     )
 
     if not persian_lines:
-        logger.info("No persian lines to translate in {}", input_path.name)
+        print("No persian lines to translate in {}", input_path.name)
         return 0
 
     chunks: list[list[str]] = create_chunks(persian_lines)
-    logger.info(
+    print(
         "Created {} chunks from {} persian lines (max {} chars per chunk)",
         len(chunks),
         len(persian_lines),
@@ -203,13 +203,13 @@ def main() -> int:
     output_path: Path = input_path.with_suffix(".json")
     try:
         save_json(results, output_path)
-        logger.info("Saved {} translations to {}", len(results), output_path.name)
+        print("Saved {} translations to {}", len(results), output_path.name)
     except Exception as e:  # noqa: BLE001
         logger.error("Error saving JSON file: {}", e)
 
     try:
         rewrite_input(input_path, all_lines, results)
-        logger.info(
+        print(
             "Updated {}: translated {} lines, kept {} lines unchanged",
             input_path.name,
             len(results),

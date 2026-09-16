@@ -467,27 +467,27 @@ def main() -> None:
     base = Path.cwd()
     files = collect_python_files(base)
     if not files:
-        logger.info("No Python files found.")
+        print("No Python files found.")
         return
     with mp.Pool(processes=max(1, args.jobs)) as pool:
         nested = pool.map(process_file, [str(p) for p in files])
     all_objects = [obj for sub in nested for obj in sub]
     if not all_objects:
-        logger.info("No top-level objects found.")
+        print("No top-level objects found.")
         return
     by_hash = defaultdict(list)
     for obj in all_objects:
         by_hash[obj["hash"]].append(obj)
     duplicate_groups = {h: group for h, group in by_hash.items() if len(group) > 1}
     if not duplicate_groups:
-        logger.info("No duplicates found.")
+        print("No duplicates found.")
         return
-    logger.info(f"Found {len(duplicate_groups)} duplicate content groups.")
+    print(f"Found {len(duplicate_groups)} duplicate content groups.")
     if not args.move and not args.copy:
         for h, group in duplicate_groups.items():
-            logger.info(f"Duplicate {h[:12]}:")
+            print(f"Duplicate {h[:12]}:")
             for g in group:
-                logger.info(
+                print(
                     f"  {g['file']} :: {g['name']} ({g['kind']}) lines {g['lineno']}-{g['end_lineno']}"
                 )
         return
@@ -497,9 +497,9 @@ def main() -> None:
     if not write_utils_file(utils_path, utils_objects):
         logger.error("Aborting because utils file could not be written.")
         sys.exit(1)
-    logger.info(f"Wrote deduplicated objects to {utils_path}")
+    print(f"Wrote deduplicated objects to {utils_path}")
     if args.copy:
-        logger.info("Copy mode complete; source files unchanged.")
+        print("Copy mode complete; source files unchanged.")
         return
     by_file = defaultdict(list)
     for group in duplicate_groups.values():
@@ -512,7 +512,7 @@ def main() -> None:
     for file_str, objs in by_file.items():
         ok = update_file_for_move(Path(file_str), objs, utils_module_name)
         if ok:
-            logger.info(f"Updated {file_str}")
+            print(f"Updated {file_str}")
         else:
             logger.error(f"Failed to update {file_str}")
 

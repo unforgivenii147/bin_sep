@@ -13,9 +13,9 @@ from __future__ import annotations
 
 import re
 import sys
+from collections.abc import Iterable
 from multiprocessing.pool import AsyncResult, Pool
 from pathlib import Path
-from typing import Iterable, Optional
 from urllib.parse import unquote, urlparse
 
 import requests
@@ -77,7 +77,7 @@ def is_safe_extension(url: str) -> bool:
     return bool(EXT_PATTERN.search(base_name))
 
 
-def get_filesize(url: str, session: requests.Session) -> Optional[int]:
+def get_filesize(url: str, session: requests.Session) -> int | None:
     """Return the remote Content-Length via HEAD, or None if unavailable."""
     try:
         r = session.head(url, timeout=TIMEOUT, allow_redirects=True)
@@ -92,7 +92,7 @@ def download_one(
     url: str,
     session: requests.Session,
     output_dir: str,
-    resume_from: Optional[int] = None,
+    resume_from: int | None = None,
 ) -> tuple[str, bool, str]:
     """Download a single URL with optional range-based resume.
 
@@ -149,7 +149,7 @@ def download_urls(urls: list[str], output_dir: str = OUTPUT_DIR) -> None:
         logger.error("No valid URLs to download.")
         return
 
-    logger.info(f"Starting download of {len(safe_urls)} URLs...")
+    print(f"Starting download of {len(safe_urls)} URLs...")
 
     with Pool(processes=MAX_WORKERS) as pool:
         async_results: list[AsyncResult[tuple[str, bool, str]]] = [
@@ -176,13 +176,13 @@ def _read_urls(path: str) -> list[str]:
         return [line.strip() for line in f if line.strip() and not line.startswith("#")]
 
 
-def main(argv: Optional[Iterable[str]] = None) -> int:
+def main(argv: Iterable[str] | None = None) -> int:
     """CLI entry point. Returns an exit code."""
     args = list(sys.argv[1:] if argv is None else argv)
     urls_file = args[0] if args else URLS_FILE
 
     if urls_file != URLS_FILE:
-        logger.info(f"Using input file: {urls_file}")
+        print(f"Using input file: {urls_file}")
 
     try:
         urls = _read_urls(urls_file)
@@ -195,7 +195,7 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
         return 0
 
     download_urls(urls)
-    logger.info("All downloads completed.")
+    print("All downloads completed.")
     return 0
 
 

@@ -15,9 +15,10 @@ import os
 import shutil
 import sys
 import tarfile
+from collections.abc import Iterable
 from multiprocessing.pool import Pool
 from pathlib import Path
-from typing import Iterable, List, Tuple
+from typing import List, Tuple
 
 from loguru import logger
 
@@ -116,7 +117,7 @@ def compress_files(files: Iterable[Path]) -> list[tuple[Path, bytes]]:
     if not file_list:
         return []
 
-    logger.info(f"Reading {len(file_list)} file(s) with {WORKERS} workers")
+    print(f"Reading {len(file_list)} file(s) with {WORKERS} workers")
     with Pool(processes=WORKERS) as pool:
         results: list[tuple[Path, bytes]] = pool.map(_read_file, file_list)
     return results
@@ -148,7 +149,7 @@ def build_archive(
     OSError
         If the archive cannot be created or written.
     """
-    logger.info(f"Writing archive: {archive_path}")
+    print(f"Writing archive: {archive_path}")
     top_level = root.name  # e.g. "myproject"
 
     with tarfile.open(
@@ -190,7 +191,7 @@ def remove_directory(root: Path) -> None:
     OSError
         If the directory cannot be removed.
     """
-    logger.info(f"Removing original directory: {root}")
+    print(f"Removing original directory: {root}")
     shutil.rmtree(root)
     logger.success(f"Removed: {root}")
 
@@ -218,8 +219,8 @@ def archive_current_directory() -> Path:
     top_level: str = cwd.name
     archive_path: Path = parent / f"{top_level}{ARCHIVE_SUFFIX}"
 
-    logger.info(f"Current directory: {cwd}")
-    logger.info(f"Target archive:    {archive_path}")
+    print(f"Current directory: {cwd}")
+    print(f"Target archive:    {archive_path}")
 
     if archive_path.exists():
         raise RuntimeError(f"Archive already exists: {archive_path}")

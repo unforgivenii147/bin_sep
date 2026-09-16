@@ -20,7 +20,7 @@ def load_existing_translations(json_path: str) -> dict[str, str]:
             with open(json_path, "r", encoding="utf-8") as f:
                 existing_data = json.load(f)
                 if isinstance(existing_data, dict):
-                    logger.info(
+                    print(
                         f"Loaded {len(existing_data)} existing translations from {json_path}"
                     )
                     return existing_data
@@ -38,7 +38,7 @@ def load_failed_words(failed_path: str) -> set[str]:
         try:
             with open(failed_path, "r", encoding="utf-8") as f:
                 failed_words = {line.strip() for line in f if line.strip()}
-                logger.info(f"Loaded {len(failed_words)} existing failed words")
+                print(f"Loaded {len(failed_words)} existing failed words")
                 return failed_words
         except OSError as e:
             logger.warning(f"Could not load failed words file: {e}")
@@ -101,7 +101,7 @@ def merge_translations(src_dir: str = "."):
     if not fa_files:
         logger.warning(f"No FA files found in {src_dir}")
         return
-    logger.info(f"Found {len(fa_files)} FA files to process")
+    print(f"Found {len(fa_files)} FA files to process")
     for fa_file in fa_files:
         base_name = fa_file[:-4]
         en_file = f"{base_name}_en.txt"
@@ -123,7 +123,7 @@ def merge_translations(src_dir: str = "."):
                 failed_words.discard(fa_word)
         processed_files.add(fa_file)
         processed_files.add(en_file)
-        logger.info(
+        print(
             f"Processed {fa_file}: "
             f"{len(file_translations)} translations "
             f"({new_translations_count} new), "
@@ -133,23 +133,23 @@ def merge_translations(src_dir: str = "."):
         sorted_translations = dict(sorted(translations.items()))
         with open(output_json, "w", encoding="utf-8") as f:
             json.dump(sorted_translations, f, ensure_ascii=False, indent=2)
-        logger.info(f"Saved {len(translations)} translations to {output_json}")
+        print(f"Saved {len(translations)} translations to {output_json}")
     except OSError as e:
         logger.error(f"Error saving translations to {output_json}: {e}")
     try:
         sorted_failed = sorted(failed_words)
         with open(output_failed, "w", encoding="utf-8") as f:
             f.write("\n".join(sorted_failed))
-        logger.info(f"Saved {len(failed_words)} failed words to {output_failed}")
+        print(f"Saved {len(failed_words)} failed words to {output_failed}")
     except OSError as e:
         logger.error(f"Error saving failed words to {output_failed}: {e}")
-    logger.info("=" * 40)
-    logger.info("SUMMARY:")
-    logger.info(f"Files processed: {len(processed_files) // 2} pairs")
-    logger.info(f"New translations added: {total_new_translations}")
-    logger.info(f"Total translations in dictionary: {len(translations)}")
-    logger.info(f"Total failed words: {len(failed_words)}")
-    logger.info("=" * 40)
+    print("=" * 40)
+    print("SUMMARY:")
+    print(f"Files processed: {len(processed_files) // 2} pairs")
+    print(f"New translations added: {total_new_translations}")
+    print(f"Total translations in dictionary: {len(translations)}")
+    print(f"Total failed words: {len(failed_words)}")
+    print("=" * 40)
 
 
 if __name__ == "__main__":
@@ -159,9 +159,9 @@ if __name__ == "__main__":
     try:
         merge_translations()
     except KeyboardInterrupt:
-        logger.info("Process interrupted by user")
+        print("Process interrupted by user")
     except Exception as e:
         logger.error(f"Unexpected error in main execution: {e}", exc_info=True)
     finally:
         elapsed_time = time.time() - start_time
-        logger.info(f"Execution completed in {elapsed_time:.2f} seconds")
+        print(f"Execution completed in {elapsed_time:.2f} seconds")

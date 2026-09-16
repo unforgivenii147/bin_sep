@@ -539,7 +539,7 @@ def scan_directory(directory: str) -> list[MismatchResult]:
         logger.warning("No files found")
         return []
 
-    logger.info(f"Found {len(files):,} files, analyzing with {WORKER_COUNT} workers...")
+    print(f"Found {len(files):,} files, analyzing with {WORKER_COUNT} workers...")
 
     results: list[MismatchResult] = []
     tasks: list[tuple[Path, Path]] = [(base_dir, f) for f in files]
@@ -561,7 +561,7 @@ def scan_directory(directory: str) -> list[MismatchResult]:
             if result:
                 results.append(result)
 
-    logger.info(f"Processed: {completed:,}/{len(files):,}")
+    print(f"Processed: {completed:,}/{len(files):,}")
     return results
 
 
@@ -599,7 +599,7 @@ def print_results(mismatches: list[MismatchResult], confirm: bool = False) -> in
             logger.error("    ✗ Failed to rename")
         print()
 
-    logger.info(f"Summary: {renamed_count} file(s) renamed")
+    print(f"Summary: {renamed_count} file(s) renamed")
     return renamed_count
 
 

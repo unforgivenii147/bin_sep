@@ -71,13 +71,13 @@ class UniversalTranslator:
 
 
 def process_file(path: Path, batch_size: int = 10) -> None:
-    logger.info("Processing: %s", path)
+    print("Processing: %s", path)
     try:
         source = path.read_text(encoding="utf-8", errors="ignore")
         lines = source.splitlines(keepends=True)
         target_indices = [i for i, line in enumerate(lines) if is_non_english(line)]
         if not target_indices:
-            logger.info("  No non-English (Chinese) lines found, skipping.")
+            print("  No non-English (Chinese) lines found, skipping.")
             return
         translator = UniversalTranslator()
         translated_count = 0
@@ -90,11 +90,9 @@ def process_file(path: Path, batch_size: int = 10) -> None:
             lines[idx] = f"{leading_ws}{translated}{trailing_ws}"
             translated_count += 1
             if (i + 1) % batch_size == 0:
-                logger.info(
-                    "  Progress: %d/%d lines translated", i + 1, len(target_indices)
-                )
+                print("  Progress: %d/%d lines translated", i + 1, len(target_indices))
         path.write_text("".join(lines), encoding="utf-8", errors="ignore")
-        logger.info("  ✓ Completed: %d lines translated", translated_count)
+        print("  ✓ Completed: %d lines translated", translated_count)
     except Exception as e:
         logger.error("  ✗ Error processing %s: %s", path, e)
 
@@ -142,11 +140,9 @@ def main() -> None:
                     ):
                         files_to_process.append(path)
     if not files_to_process:
-        logger.info("No files to process.")
+        print("No files to process.")
         return
-    logger.info(
-        "Found %d files. Using %d workers...", len(files_to_process), args.workers
-    )
+    print("Found %d files. Using %d workers...", len(files_to_process), args.workers)
     tasks = [(fp, args.batch_size) for fp in files_to_process]
     if args.workers == 1:
         for t in tasks:
@@ -154,7 +150,7 @@ def main() -> None:
     else:
         with mp.Pool(processes=args.workers) as pool:
             pool.map(worker, tasks)
-    logger.info("\n✓ All translations completed!")
+    print("\n✓ All translations completed!")
 
 
 if __name__ == "__main__":

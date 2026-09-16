@@ -23,20 +23,18 @@ Example:
 from __future__ import annotations
 
 import argparse
-import logging
-import multiprocessing
 import shutil
-import sys
 import tarfile
 import threading
 import time
+from multiprocessing import Pool
 from pathlib import Path
-from typing import Any, Final, Optional
+from typing import Any, Final
 
 import zstandard as zstd
 from dh import fsz
+from loguru import logger
 
-# Directories to skip during recursive traversal
 SKIP_DIRS: Final[frozenset[str]] = frozenset(
     {"lazy", ".git", "__pycache__", ".mypy_cache", ".ruff_cache", ".pytest_cache"}
 )
@@ -45,8 +43,8 @@ SKIP_DIRS: Final[frozenset[str]] = frozenset(
 LARGE_FILE_THRESHOLD: Final[int] = 5 * 1024 * 1024
 
 # Compression levels
-LEVEL_DEFAULT: Final[int] = 19
-LEVEL_LARGE: Final[int] = 9
+LEVEL_DEFAULT: Final[int] = 21
+LEVEL_LARGE: Final[int] = 21
 
 # File extension for compressed files
 ZSTD_EXT: Final[str] = ".zst"
@@ -56,14 +54,6 @@ DEFAULT_THREADS: Final[int] = 4
 
 # Fixed number of worker processes for parallel processing
 WORKERS: Final[int] = 8
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(message)s",
-    handlers=[logging.StreamHandler(sys.stdout)],
-)
-logger: logging.Logger = logging.getLogger(__name__)
 
 
 def choose_level(path: Path) -> int:
@@ -222,7 +212,7 @@ def decompress_file(src: Path, dry_run: bool, verbose: bool) -> dict[str, Any]:
     return result
 
 
-def tar_subdir(subdir: Path, dry_run: bool, verbose: bool) -> Optional[Path]:
+def tar_subdir(subdir: Path, dry_run: bool, verbose: bool) -> Path | None:
     """Create a tar archive of a subdirectory.
 
     Args:
@@ -237,14 +227,14 @@ def tar_subdir(subdir: Path, dry_run: bool, verbose: bool) -> Optional[Path]:
 
     if dry_run:
         if verbose:
-            logger.info(f"  [dry-run] would tar {subdir}/ → {tar_path.name}")
+            print(f"  [dry-run] would tar {subdir}/ → {tar_path.name}")
         return tar_path
 
     try:
         with tarfile.open(tar_path, "w") as tf:
             tf.add(subdir, arcname=subdir.name)
         if verbose:
-            logger.info(
+            print(
                 f"  tarred {subdir.name}/ → {tar_path.name} ({fsz(tar_path.stat().st_size)})"
             )
         return tar_path
@@ -262,12 +252,12 @@ def remove_subdir(subdir: Path, dry_run: bool, verbose: bool) -> None:
         verbose: If True, log additional details.
     """
     if dry_run:
-        logger.info(f"  [dry-run] would remove {subdir}/")
+        print(f"  [dry-run] would remove {subdir}/")
         return
 
     try:
         shutil.rmtree(subdir)
-        logger.info(f"  removed original dir: {subdir.name}/")
+        print(f"  removed original dir: {subdir.name}/")
     except Exception as exc:
         logger.warning(f"  WARNING — could not remove {subdir}: {exc}")
 
@@ -297,14 +287,16 @@ def run_parallel(
         nonlocal results
         with lock:
             results.append(res)
-            logger.info(res["line"])
+            print(res["line"])
             if res.get("msg"):
                 if res["ok"]:
-                    logger.info(res["msg"])
+                    print(res["msg"])
                 else:
                     logger.error(res["msg"])
 
-    pool: multiprocessing.Pool = multiprocessing.Pool(processes=WORKERS)
+    pool = Pool(processes=WORKERS)
+    print(type(pool))
+    input('press any key to continue...')
     try:
         for path in tasks:
             pool.apply_async(
@@ -342,11 +334,11 @@ def do_compress(
             p for p in root.iterdir() if p.is_dir() and p.name not in SKIP_DIRS
         ]
         if verbose:
-            logger.info(f"Tarring {len(subdirs)} subdirectory/ies …")
+            print(f"Tarring {len(subdirs)} subdirectory/ies …")
 
-        tar_paths: list[tuple[Path, Optional[Path]]] = []
+        tar_paths: list[tuple[Path, Path | None]] = []
         for sd in subdirs:
-            tp: Optional[Path] = tar_subdir(sd, dry_run, verbose)
+            tp: Path | None = tar_subdir(sd, dry_run, verbose)
             if tp:
                 tar_paths.append((sd, tp))
 
@@ -354,7 +346,7 @@ def do_compress(
 
         if tar_files:
             if verbose:
-                logger.info(
+                print(
                     f"Compressing {len(tar_files)} .tar archive(s) at level {LEVEL_LARGE} …"
                 )
             run_parallel(
@@ -382,7 +374,7 @@ def do_compress(
         ]
         if loose:
             if verbose:
-                logger.info(f"Compressing {len(loose)} loose file(s) …")
+                print(f"Compressing {len(loose)} loose file(s) …")
             run_parallel(
                 loose,
                 compress_file,
@@ -398,11 +390,11 @@ def do_compress(
         ]
 
         if not files:
-            logger.info("No files to compress.")
+            print("No files to compress.")
             return
 
         if verbose:
-            logger.info(
+            print(
                 f"Compressing {len(files)} file(s) with {WORKERS} processes × {threads} zstd threads each …"
             )
 
@@ -415,11 +407,11 @@ def do_compress(
         )
 
         elapsed: float = time.perf_counter() - start
-        logger.info(f"\nDone — {ok} compressed, {err} error(s) [{elapsed:.2f}s]")
+        print(f"\nDone — {ok} compressed, {err} error(s) [{elapsed:.2f}s]")
         return
 
     elapsed = time.perf_counter() - start
-    logger.info(f"\nDone [{elapsed:.2f}s]")
+    print(f"\nDone [{elapsed:.2f}s]")
 
 
 def do_decompress(root: Path, dry_run: bool, verbose: bool) -> None:
@@ -434,11 +426,11 @@ def do_decompress(root: Path, dry_run: bool, verbose: bool) -> None:
     files: list[Path] = [p for p in root.rglob(f"*{ZSTD_EXT}") if p.is_file()]
 
     if not files:
-        logger.info(f"No {ZSTD_EXT} files found.")
+        print(f"No {ZSTD_EXT} files found.")
         return
 
     if verbose:
-        logger.info(f"Decompressing {len(files)} file(s) with {WORKERS} workers …")
+        print(f"Decompressing {len(files)} file(s) with {WORKERS} workers …")
 
     ok: int
     err: int
@@ -447,7 +439,7 @@ def do_decompress(root: Path, dry_run: bool, verbose: bool) -> None:
     )
 
     elapsed: float = time.perf_counter() - start
-    logger.info(f"\nDone — {ok} decompressed, {err} error(s) [{elapsed:.2f}s]")
+    print(f"\nDone — {ok} decompressed, {err} error(s) [{elapsed:.2f}s]")
 
 
 def main() -> None:
@@ -496,12 +488,12 @@ def main() -> None:
     compress: bool = args.compress or not args.decompress
 
     if args.dry_run:
-        logger.info("[dry-run mode — no files will be modified]")
+        print("[dry-run mode — no files will be modified]")
     if args.verbose or args.dry_run:
-        logger.info(f"Root    : {root}")
-        logger.info(f"Mode    : {('compress' if compress else 'decompress')}")
-        logger.info(f"Threads : {args.threads} (zstd) × {WORKERS} processes")
-        logger.info("")
+        print(f"Root    : {root}")
+        print(f"Mode    : {('compress' if compress else 'decompress')}")
+        print(f"Threads : {args.threads} (zstd) × {WORKERS} processes")
+        print()
 
     if compress:
         do_compress(

@@ -428,21 +428,21 @@ def main() -> None:
     base = Path.cwd()
     files = collect_python_files(base)
     if not files:
-        logger.info("No Python files found.")
+        print("No Python files found.")
         return
     file_args = [str(p) for p in files]
     with mp.Pool(processes=max(1, args.jobs)) as pool:
         nested_results = pool.map(process_file, file_args)
     all_objects = [obj for sub in nested_results for obj in sub]
     if not all_objects:
-        logger.info("No extractable objects found.")
+        print("No extractable objects found.")
         return
     by_hash = defaultdict(list)
     for obj in all_objects:
         by_hash[obj["hash"]].append(obj)
     duplicate_groups = {h: group for h, group in by_hash.items() if len(group) > 1}
     if not duplicate_groups:
-        logger.info("No duplicates found.")
+        print("No duplicates found.")
         return
     utils_objects = []
     seen_hashes = set()
@@ -451,23 +451,21 @@ def main() -> None:
             continue
         utils_objects.append(group[0])
         seen_hashes.add(h)
-    logger.info(f"Found {len(utils_objects)} unique duplicated objects.")
+    print(f"Found {len(utils_objects)} unique duplicated objects.")
     if not (args.move or args.copy):
         for h, group in duplicate_groups.items():
-            logger.info(f"Duplicate hash {h[:12]} found in:")
+            print(f"Duplicate hash {h[:12]} found in:")
             for item in group:
-                logger.info(f"  {item['file']} :: {item['name']} ({item['kind']})")
+                print(f"  {item['file']} :: {item['name']} ({item['kind']})")
         return
     utils_path = get_utils_path(base)
     utils_module_name = utils_path.stem
     if not write_utils_file(utils_path, utils_objects):
         logger.error("Failed to create utils file; aborting source changes.")
         sys.exit(1)
-    logger.info(f"Wrote deduplicated objects to {utils_path}")
+    print(f"Wrote deduplicated objects to {utils_path}")
     if args.copy:
-        logger.info(
-            "Copy mode: source files were not modified and no imports were added."
-        )
+        print("Copy mode: source files were not modified and no imports were added.")
         return
     by_file_to_remove = defaultdict(list)
     for h, group in duplicate_groups.items():
@@ -486,7 +484,7 @@ def main() -> None:
             continue
         ok = update_file_for_move(path, objects, utils_module_name)
         if ok:
-            logger.info(f"Updated {path}")
+            print(f"Updated {path}")
         else:
             logger.error(f"Failed to update {path}")
 

@@ -2,7 +2,6 @@
 import argparse
 import json
 import multiprocessing as mp
-import os
 import random
 import re
 import signal

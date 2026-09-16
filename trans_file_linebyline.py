@@ -53,12 +53,12 @@ def process_file(path: Path, replace_original: bool = False) -> None:
                         tmp_file.write(f"{stripped} [TRANSLATION: {translated}]\n")
                     else:
                         tmp_file.write(f"{translated}\n")
-                    logger.info("Line %d translated.", i)
+                    print("Line %d translated.", i)
                 else:
                     tmp_file.write(line)
         shutil.move(tmp_file.name, path)
-        logger.info("✓ File updated successfully: %s", path.name)
-        logger.info("✓ Backup saved as: %s", backup_path.name)
+        print("✓ File updated successfully: %s", path.name)
+        print("✓ Backup saved as: %s", backup_path.name)
     except Exception as e:
         logger.error("Error processing file %s: %s", path, e)
         if "tmp_file" in locals() and Path(tmp_file.name).exists():
@@ -72,7 +72,7 @@ def main() -> None:
         sys.exit(1)
     path = Path(sys.argv[1])
     replace_original = "--replace" in sys.argv
-    logger.info("Processing file: %s", path)
+    print("Processing file: %s", path)
     process_file(path, replace_original)
 
 

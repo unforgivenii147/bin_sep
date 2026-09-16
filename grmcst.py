@@ -11,13 +11,13 @@ reports per-file status via loguru.
 import argparse
 import ast
 import sys
+from collections.abc import Sequence
 from multiprocessing import Pool
 from multiprocessing.pool import AsyncResult
 from pathlib import Path
-from typing import Final, Sequence
+from typing import Final
 
 import libcst as cst
-from loguru import logger
 
 MAX_WORKERS: Final[int] = 8
 PRESERVE_PREFIXES: Final[tuple[str, ...]] = ("#!", "# type:", "# fmt:")
@@ -236,10 +236,10 @@ def main() -> None:
 
     targets: list[Path] = gather_files(args.paths)
     if not targets:
-        logger.info("No target Python source files detected.")
+        print("No target Python source files detected.")
         sys.exit(0)
 
-    logger.info(
+    print(
         f"Queue loaded. Processing {len(targets)} target files via Parallel Pipeline..."
     )
 
@@ -249,7 +249,7 @@ def main() -> None:
         ]
         for async_res in async_results:
             result_string: str = async_res.get()
-            logger.info(result_string)
+            print(result_string)
 
 
 if __name__ == "__main__":

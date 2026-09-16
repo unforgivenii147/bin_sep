@@ -75,9 +75,7 @@ def collect_inputs(argv: list[str]) -> list[Path]:
         if not paths:
             logger.error("No .json files found in the current directory.")
             sys.exit(1)
-        logger.info(
-            f"No CLI args provided — merging {len(paths)} .json file(s) from cwd."
-        )
+        print(f"No CLI args provided — merging {len(paths)} .json file(s) from cwd.")
         return paths
 
     paths = []
@@ -119,7 +117,7 @@ def main():
         if direction is None:
             direction = file_dir
             direction_source = path
-            logger.info(f"Detected direction '{direction}' from {path.name}.")
+            print(f"Detected direction '{direction}' from {path.name}.")
         elif file_dir != direction:
             msg = (
                 f"{path.name} looks like a '{file_dir}' dict but we already "
@@ -157,7 +155,7 @@ def main():
 
     multi = sum(1 for v in merged.values() if len(v) > 1)
     if multi:
-        logger.info(f"{multi} key(s) have multiple translations.")
+        print(f"{multi} key(s) have multiple translations.")
 
     for path in input_paths:
         try:

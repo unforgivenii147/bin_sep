@@ -8,20 +8,21 @@ duplicates while keeping one file per group (move mode).
 
 import argparse
 import shutil
+from collections.abc import Iterator
 from multiprocessing import Pool
 from multiprocessing.pool import AsyncResult
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple, Iterator, Any
+from typing import List
 
 import ssdeep
 import xxhash
 from loguru import logger
 from tqdm import tqdm
 
-EXCLUDE_DIRS: Set[str] = {".git", "__pycache__", "node_modules"}
+EXCLUDE_DIRS: set[str] = {".git", "__pycache__", "node_modules"}
 
 
-def hash_file(path: Path) -> Tuple[str, Optional[str], Optional[str]]:
+def hash_file(path: Path) -> tuple[str, str | None, str | None]:
     """
     Compute xxhash and ssdeep hashes for a file.
 
@@ -58,8 +59,8 @@ class FileSimilarityDetector:
             cwd: The directory to scan. Defaults to the current directory.
         """
         self.cwd: Path = Path(cwd)
-        self.file_hashes: Dict[str, Dict[str, str]] = {}
-        self.duplicates: Dict[str, List[str]] = {}
+        self.file_hashes: dict[str, dict[str, str]] = {}
+        self.duplicates: dict[str, list[str]] = {}
 
     def scan_files(self) -> Iterator[Path]:
         """
@@ -73,18 +74,18 @@ class FileSimilarityDetector:
                 if not any(part in EXCLUDE_DIRS for part in path.parts):
                     yield path
 
-    def process_files(self, files: List[Path]) -> None:
+    def process_files(self, files: list[Path]) -> None:
         """
         Process files in parallel to compute hashes and find exact duplicates.
 
         Args:
             files: List of file paths to process.
         """
-        logger.info(f"Processing {len(files)} files...")
+        print(f"Processing {len(files)} files...")
         with Pool(processes=8) as pool:
-            async_results: List[
-                AsyncResult[Tuple[str, Optional[str], Optional[str]]]
-            ] = [pool.apply_async(hash_file, (f,)) for f in files]
+            async_results: list[AsyncResult[tuple[str, str | None, str | None]]] = [
+                pool.apply_async(hash_file, (f,)) for f in files
+            ]
             for async_res in tqdm(
                 async_results, total=len(async_results), desc="Hashing"
             ):
@@ -99,7 +100,7 @@ class FileSimilarityDetector:
             h: paths for h, paths in self.duplicates.items() if len(paths) > 1
         }
 
-    def find_similarity_groups(self, threshold: int) -> List[List[str]]:
+    def find_similarity_groups(self, threshold: int) -> list[list[str]]:
         """
         Find groups of similar files using ssdeep comparison, excluding exact duplicates.
 
@@ -109,15 +110,15 @@ class FileSimilarityDetector:
         Returns:
             A list of groups, where each group is a list of file paths that are similar.
         """
-        excluded: Set[str] = {p for group in self.duplicates.values() for p in group}
-        candidates: List[str] = [p for p in self.file_hashes if p not in excluded]
-        visited: Set[str] = set()
-        groups: List[List[str]] = []
+        excluded: set[str] = {p for group in self.duplicates.values() for p in group}
+        candidates: list[str] = [p for p in self.file_hashes if p not in excluded]
+        visited: set[str] = set()
+        groups: list[list[str]] = []
 
         for i, p1 in enumerate(tqdm(candidates, desc="Finding Similarities")):
             if p1 in visited:
                 continue
-            group: List[str] = [p1]
+            group: list[str] = [p1]
             visited.add(p1)
             h1: str = self.file_hashes[p1]["ssdeep"]
             for p2 in candidates[i + 1 :]:
@@ -132,7 +133,7 @@ class FileSimilarityDetector:
         return groups
 
     def handle_groups(
-        self, groups: List[List[str]], *, move: bool, output_dir: str
+        self, groups: list[list[str]], *, move: bool, output_dir: str
     ) -> None:
         """
         Handle similarity groups: either copy to output dir or delete duplicates (move mode).
@@ -151,7 +152,7 @@ class FileSimilarityDetector:
                 for victim in group[1:]:
                     try:
                         Path(victim).unlink()
-                        logger.info(f"Deleted {victim}")
+                        print(f"Deleted {victim}")
                     except Exception as e:
                         logger.error(f"Failed to delete {victim}: {e}")
             else:
@@ -160,7 +161,7 @@ class FileSimilarityDetector:
                 for p in group:
                     try:
                         shutil.copy2(p, grp_dir / Path(p).name)
-                        logger.info(f"Copied {p} to {grp_dir}")
+                        print(f"Copied {p} to {grp_dir}")
                     except Exception as e:
                         logger.error(f"Failed to copy {p}: {e}")
 
@@ -168,13 +169,13 @@ class FileSimilarityDetector:
         """Log information about exact duplicate files."""
         if not self.duplicates:
             return
-        logger.info("=" * 40)
-        logger.info("DUPLICATES (100% identical)")
+        print("=" * 40)
+        print("DUPLICATES (100% identical)")
         for h, paths in self.duplicates.items():
-            logger.info(f"\nHash: {h}")
+            print(f"\nHash: {h}")
             for p in paths:
-                logger.info(f"  - {p}")
-        logger.info("-" * 40)
+                print(f"  - {p}")
+        print("-" * 40)
 
 
 def main() -> None:
@@ -195,19 +196,19 @@ def main() -> None:
     args: argparse.Namespace = parser.parse_args()
 
     detector: FileSimilarityDetector = FileSimilarityDetector()
-    files: List[Path] = list(detector.scan_files())
+    files: list[Path] = list(detector.scan_files())
     if not files:
-        logger.info("No files found.")
+        print("No files found.")
         return
 
     detector.process_files(files)
-    groups: List[List[str]] = detector.find_similarity_groups(args.threshold)
+    groups: list[list[str]] = detector.find_similarity_groups(args.threshold)
 
     if groups:
         detector.handle_groups(groups, move=args.move, output_dir=args.output)
-        logger.info(f"Processed {len(groups)} similarity groups.")
+        print(f"Processed {len(groups)} similarity groups.")
     else:
-        logger.info("No similar (non-identical) files found.")
+        print("No similar (non-identical) files found.")
 
     detector.print_duplicates()
 

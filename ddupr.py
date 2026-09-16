@@ -334,7 +334,7 @@ def write_utils(
                 logger.warning("Could not parse existing {}: {}", dest, exc)
         new_objects = [o for o in objects if o.content_hash not in existing_hashes]
         if not new_objects:
-            logger.info("No new objects for {} — skipping", dest)
+            print("No new objects for {} — skipping", dest)
             continue
         new_source = _build_utils_source(new_objects)
         if dest.exists():
@@ -347,9 +347,7 @@ def write_utils(
             dest.write_text(combined, encoding="utf-8")
             logger.success("Wrote {} object(s) to {}", len(new_objects), dest)
         else:
-            logger.info(
-                "[dry-run] Would write {} object(s) to {}", len(new_objects), dest
-            )
+            print("[dry-run] Would write {} object(s) to {}", len(new_objects), dest)
         written[kind] = dest
     return written
 
@@ -444,15 +442,15 @@ def find_duplicates(
 def run(cwd: Path, mode: str | None, workers: int) -> None:
     utils_dir = cwd / "utils"
     paths = collect_all_paths(cwd)
-    logger.info("Found {} file(s) to scan", len(paths))
+    print("Found {} file(s) to scan", len(paths))
     all_objects: list[PyObject] = []
     with Pool(processes=workers) as pool:
         for result in pool.imap_unordered(_worker, paths, chunksize=4):
             all_objects.extend(result)
-    logger.info("Extracted {} top-level object(s) total", len(all_objects))
+    print("Extracted {} top-level object(s) total", len(all_objects))
     duplicates, grouped = find_duplicates(all_objects)
     sum(len(v) for v in grouped.values())
-    logger.info(
+    print(
         "Found {} duplicate group(s): {} func, {} class, {} const",
         len(duplicates),
         len(grouped.get("func", [])),
@@ -460,12 +458,12 @@ def run(cwd: Path, mode: str | None, workers: int) -> None:
         len(grouped.get("const", [])),
     )
     if not duplicates:
-        logger.info("Nothing to do.")
+        print("Nothing to do.")
         return
     if mode is None:
         for kind, objs in grouped.items():
             for obj in objs:
-                logger.info(
+                print(
                     "[{}] '{}' duplicated in {} file(s)",
                     kind,
                     obj.name,
@@ -546,7 +544,7 @@ def main() -> None:
         mode = "copy"
     elif args.move:
         mode = "move"
-    logger.info(
+    print(
         "Root: {}  |  mode: {}  |  workers: {}",
         root,
         mode or "report-only",

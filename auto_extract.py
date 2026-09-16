@@ -63,9 +63,11 @@ def extract_file(path):
                 with py7zr.SevenZipFile(path, mode="r") as archive:
                     archive.extractall(path=path.parent)
             elif path.suffix == ".lz4":
-                with lz4.frame.open(path, mode="rb") as f_in:
-                    with open(path.with_suffix(""), "wb") as f_out:
-                        f_out.write(f_in.read())
+                with (
+                    lz4.frame.open(path, mode="rb") as f_in,
+                    open(path.with_suffix(""), "wb") as f_out,
+                ):
+                    f_out.write(f_in.read())
             elif path.suffix == ".br":
                 with open(path, "rb") as f_in:
                     data = f_in.read()

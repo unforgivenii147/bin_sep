@@ -9,10 +9,11 @@ multiprocessing.Pool of 8 workers; logging via loguru.
 
 import argparse
 import ast
+from collections.abc import Sequence
 from multiprocessing import Pool
 from multiprocessing.pool import AsyncResult
 from pathlib import Path
-from typing import Final, Sequence, Union
+from typing import Final
 
 import libcst as cst
 from loguru import logger
@@ -89,7 +90,7 @@ class PythonCleaner(cst.CSTTransformer):
         self,
         original_node: cst.Comment,
         updated_node: cst.Comment,
-    ) -> Union[cst.Comment, cst.RemovalSentinel]:
+    ) -> cst.Comment | cst.RemovalSentinel:
         """
         Remove every comment encountered and increment the counter.
 
@@ -223,7 +224,7 @@ def process_file(task: Task) -> int:
         ast.parse(cleaned_code)
 
         path.write_text(cleaned_code, encoding="utf-8")
-        logger.info(
+        print(
             f"{rel_path}: removed {cleaner.comments_removed} comments, "
             f"{cleaner.docstrings_removed} docstrings"
         )
@@ -262,7 +263,7 @@ def main() -> None:
                         files_to_process.append((path.resolve(), root))
 
     if not files_to_process:
-        logger.info("No Python files found to process.")
+        print("No Python files found to process.")
         return
 
     total_removed: int = 0

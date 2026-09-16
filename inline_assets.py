@@ -13,7 +13,8 @@ import sys
 import time
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Any, Dict, List, Match, Optional, Tuple
+from re import Match
+from typing import Any
 from urllib.parse import urljoin, urlparse
 
 import requests
@@ -70,7 +71,7 @@ def get_mime_type(path: str) -> str:
     return mime
 
 
-def fetch_remote(url: str) -> Optional[bytes]:
+def fetch_remote(url: str) -> bytes | None:
     """Fetch a remote URL and return its bytes, or None on failure."""
     if url.startswith("//"):
         url = "https:" + url
@@ -83,7 +84,7 @@ def fetch_remote(url: str) -> Optional[bytes]:
         return None
 
 
-def read_local(path: Path) -> Optional[bytes]:
+def read_local(path: Path) -> bytes | None:
     """Read a local file and return its bytes, or None on failure."""
     try:
         return path.read_bytes()
@@ -93,7 +94,7 @@ def read_local(path: Path) -> Optional[bytes]:
 
 
 def process_css_content(
-    css_content: str, base_path: Path, base_url: Optional[str] = None
+    css_content: str, base_path: Path, base_url: str | None = None
 ) -> tuple[str, int, int]:
     """Inline url(...) references in CSS as data URIs.
 
@@ -153,7 +154,7 @@ def process_html_file(path: Path) -> dict[str, Any]:
 
         img: Tag
         for img in soup.find_all("img"):
-            src: Optional[str] = img.get("src")
+            src: str | None = img.get("src")
             if not src or src.startswith("data:"):
                 continue
             if is_remote(src):
@@ -172,11 +173,11 @@ def process_html_file(path: Path) -> dict[str, Any]:
 
         link: Tag
         for link in soup.find_all("link", rel="stylesheet"):
-            href: Optional[str] = link.get("href")
+            href: str | None = link.get("href")
             if not href:
                 continue
             css_text: str = ""
-            base_url: Optional[str] = None
+            base_url: str | None = None
             css_base_path: Path = path
             if is_remote(href):
                 raw = fetch_remote(href)
@@ -321,9 +322,7 @@ def main() -> None:
         logger.warning("No HTML or CSS files found to process.")
         return
 
-    logger.info(
-        f"Processing {len(targets)} files with a pool of {POOL_SIZE} workers..."
-    )
+    print(f"Processing {len(targets)} files with a pool of {POOL_SIZE} workers...")
 
     t_loc: int = 0
     t_rem: int = 0
@@ -345,7 +344,7 @@ def main() -> None:
             status: str = s["status"]
 
             if status == "success":
-                logger.info(
+                print(
                     f"[SUCCESS] {display_path} ({s['time']:.2f}s) - "
                     f"Embedded: {s['local']} local, {s['remote']} remote"
                 )
@@ -359,7 +358,7 @@ def main() -> None:
 
     total_time: float = time.perf_counter() - start_time
     logger.success(f"Build Complete in {total_time:.2f}s!")
-    logger.info(f"Total globally embedded resources: {t_loc} local, {t_rem} remote.")
+    print(f"Total globally embedded resources: {t_loc} local, {t_rem} remote.")
 
 
 if __name__ == "__main__":

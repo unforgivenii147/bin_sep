@@ -90,14 +90,14 @@ def main() -> None:
         if matches:
             print("\n".join(matches))
             sys.exit(0)
-        logger.info("No matches found for prefix: %s", args.prefix)
+        print("No matches found for prefix: %s", args.prefix)
         sys.exit(1)
     if args.fuzzy:
         matches = fuzzy_search(args.fuzzy, all_words)
         if matches:
             print("\n".join(matches))
             sys.exit(0)
-        logger.info("No close matches found for: %s", args.fuzzy)
+        print("No close matches found for: %s", args.fuzzy)
         sys.exit(1)
     if args.word:
         word = " ".join(args.word).strip()

@@ -310,16 +310,16 @@ def main() -> int:
         return 1
 
     mode = "recursively" if args.recursive else "non-recursively"
-    logger.info(f"Scanning {mode} in: {root_dir}")
+    print(f"Scanning {mode} in: {root_dir}")
 
     files = find_python_files(root_dir, args.recursive)
     if not files:
         logger.warning("No Python files found.")
         return 0
 
-    logger.info(f"Found {len(files)} Python files")
-    logger.info(f"Using {NUM_WORKERS} workers with {args.timeout}s timeout per file")
-    logger.info("-" * 40)
+    print(f"Found {len(files)} Python files")
+    print(f"Using {NUM_WORKERS} workers with {args.timeout}s timeout per file")
+    print("-" * 40)
 
     start_time = time.time()
     try:
@@ -333,19 +333,19 @@ def main() -> int:
         return 130
     elapsed_time = time.time() - start_time
 
-    logger.info("=" * 40)
-    logger.info("SUMMARY")
-    logger.info("-" * 40)
-    logger.info(f"Total files: {len(files)}")
-    logger.info(f"Successfully ran: {len(results['success'])}")
-    logger.info(f"Failed: {len(results['failed'])}")
-    logger.info(f"Time elapsed: {elapsed_time:.2f} seconds")
+    print("=" * 40)
+    print("SUMMARY")
+    print("-" * 40)
+    print(f"Total files: {len(files)}")
+    print(f"Successfully ran: {len(results['success'])}")
+    print(f"Failed: {len(results['failed'])}")
+    print(f"Time elapsed: {elapsed_time:.2f} seconds")
 
     failed = results["failed"]
     if failed:
-        logger.info("-" * 40)
-        logger.info("FAILED FILES:")
-        logger.info("-" * 40)
+        print("-" * 40)
+        print("FAILED FILES:")
+        print("-" * 40)
         for path, error_type, error_msg in failed:
             logger.error(f"{path}")
             logger.error(f"   Error: {error_type}")

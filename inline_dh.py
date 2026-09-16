@@ -7,9 +7,10 @@ from __future__ import annotations
 
 import ast
 import sys
+from collections.abc import Iterable
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Any, Iterable, Optional
+from typing import Any
 
 from dh import get_files
 from loguru import logger
@@ -41,7 +42,7 @@ def build_dh_mapping(dh_path: Path) -> dict[str, Path]:
     tree: ast.Module = ast.parse(init_file.read_text(encoding="utf-8"))
     for node in tree.body:
         if isinstance(node, ast.ImportFrom) and node.level == 1:
-            module_name: Optional[str] = node.module
+            module_name: str | None = node.module
             if module_name is None:
                 continue
             module_path: Path = dh_path / f"{module_name}.py"
@@ -241,9 +242,7 @@ def process_file(path: Path, mapping: dict[str, Path]) -> None:
                 "".join(lines[:insert_idx]) + inlined_code + "".join(lines[insert_idx:])
             )
             path.write_text(new_content, encoding="utf-8")
-            logger.info(
-                "Refactored: {} -> Inlined: {}", path, ", ".join(used_dh_symbols)
-            )
+            print("Refactored: {} -> Inlined: {}", path, ", ".join(used_dh_symbols))
     except Exception as e:
         logger.exception("Error processing {}: {}", path, e)
 

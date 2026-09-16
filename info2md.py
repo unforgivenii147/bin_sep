@@ -48,7 +48,7 @@ def convert_info_file(info_path: Path) -> None:
     if result.returncode == 0:
         md_path.write_text(result.stdout)
         info_path.unlink()
-        logger.info(f"Converted {info_path.name} -> {md_path.name}")
+        print(f"Converted {info_path.name} -> {md_path.name}")
     else:
         logger.error(
             f"Failed to convert {info_path.name} "
@@ -66,10 +66,10 @@ def main() -> int:
     info_files: list[Path] = list(cwd.glob("*.info*"))
 
     if not info_files:
-        logger.info("No .info files found.")
+        print("No .info files found.")
         return 0
 
-    logger.info(f"Converting {len(info_files)} .info file(s) with {WORKERS} workers.")
+    print(f"Converting {len(info_files)} .info file(s) with {WORKERS} workers.")
 
     with Pool(processes=WORKERS) as pool:
         async_results = [

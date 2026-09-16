@@ -119,15 +119,15 @@ def main() -> None:
         logger.error(f"Input file {INPUT_FILE} not found.")
         return
 
-    logger.info("Extracting chunks...")
+    print("Extracting chunks...")
     chunks: list[Chunk] = chunk_file(INPUT_FILE)
-    logger.info(f"Total chunks: {len(chunks)}")
+    print(f"Total chunks: {len(chunks)}")
 
     if not chunks:
         logger.warning("No text found to translate.")
         return
 
-    logger.info("Translating chunks...")
+    print("Translating chunks...")
     translations: list[TranslationResult] = []
     total_chunks: int = len(chunks)
 
@@ -141,13 +141,13 @@ def main() -> None:
             result: TranslationResult | None = async_res.get()
             if result is not None:
                 translations.append(result)
-            logger.info(f"Progress: {i}/{total_chunks}")
+            print(f"Progress: {i}/{total_chunks}")
 
     if not translations:
         logger.warning("No translations were successful.")
         return
 
-    logger.info(f"Writing results to {OUTPUT_FILE}...")
+    print(f"Writing results to {OUTPUT_FILE}...")
     try:
         final_data: dict[str, list[TranslationResult]] = {
             "translations": sorted(translations, key=lambda item: item["start_line"])
@@ -155,7 +155,7 @@ def main() -> None:
         OUTPUT_FILE.write_text(
             json.dumps(final_data, ensure_ascii=False, indent=2), encoding="utf-8"
         )
-        logger.info("Done!")
+        print("Done!")
     except Exception as exc:
         logger.error(f"Error writing output file: {exc}")
 

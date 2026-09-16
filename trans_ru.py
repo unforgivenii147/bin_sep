@@ -163,7 +163,7 @@ def _merge_chunk_result(
         results.update(_translate_lines_individually(original_lines))
 
     sample_original: str = original_lines[0] if original_lines else ""
-    logger.info(
+    print(
         "Translated chunk {}/{} (sample: '{}' → '{}')",
         completed,
         total,
@@ -177,7 +177,7 @@ def _save_json(results: dict[str, str], output_path: Path) -> None:
     try:
         with output_path.open("w", encoding="utf-8") as handle:
             json.dump(results, handle, ensure_ascii=False, indent=2)
-        logger.info("Saved {} translations to {}", len(results), output_path.name)
+        print("Saved {} translations to {}", len(results), output_path.name)
     except Exception as exc:  # noqa: BLE001 - report and continue
         logger.error("Error saving JSON file: {}", exc)
 
@@ -195,7 +195,7 @@ def _rewrite_input_file(
                     translated_count += 1
                 else:
                     handle.write(f"{line}\n")
-        logger.info(
+        print(
             "Updated {}: translated {} lines, kept {} lines unchanged",
             input_path.name,
             translated_count,
@@ -220,14 +220,14 @@ def main() -> int:
     if all_lines is None:
         return 1
     if not all_lines:
-        logger.info("No non-empty lines found in {}", input_path.name)
+        print("No non-empty lines found in {}", input_path.name)
         return 0
 
     russian_lines_raw: list[str] = [
         line for line in all_lines if contains_cyrillic(line)
     ]
     non_russian_count: int = len(all_lines) - len(russian_lines_raw)
-    logger.info(
+    print(
         "Loaded {} lines: {} with Cyrillic, {} already non-Cyrillic/skipped",
         len(all_lines),
         len(russian_lines_raw),
@@ -235,11 +235,11 @@ def main() -> int:
     )
 
     if not russian_lines_raw:
-        logger.info("No Russian/Cyrillic lines to translate in {}", input_path.name)
+        print("No Russian/Cyrillic lines to translate in {}", input_path.name)
         return 0
 
     russian_lines: list[str] = _dedupe_preserving_order(russian_lines_raw)
-    logger.info(
+    print(
         "Deduplicated Russian lines: {} unique from {} total",
         len(russian_lines),
         len(russian_lines_raw),
@@ -247,10 +247,10 @@ def main() -> int:
 
     chunks: list[list[str]] = create_chunks(russian_lines)
     if not chunks:
-        logger.info("Nothing to translate after chunking.")
+        print("Nothing to translate after chunking.")
         return 0
 
-    logger.info(
+    print(
         "Created {} chunk(s) from {} unique Russian lines (max {} chars per "
         "chunk), using {} worker(s)",
         len(chunks),

@@ -7,7 +7,7 @@ import tempfile
 from pathlib import Path
 from zipfile import ZipFile
 
-from dh import fsz, runcmd, gsze
+from dh import fsz, runcmd
 from rich.console import Console
 from rich.progress import BarColumn, Progress, TaskProgressColumn, TextColumn
 

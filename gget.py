@@ -29,7 +29,7 @@ import sys
 import threading
 from multiprocessing.pool import AsyncResult, Pool
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional
 from urllib.parse import unquote
 
 import requests
@@ -85,17 +85,17 @@ class Downloader:
     url: str
     stop_event: threading.Event
     file_size: int
-    filename: Optional[str]
-    expected_hash: Optional[str]
-    state_file: Optional[Path]
+    filename: str | None
+    expected_hash: str | None
+    state_file: Path | None
     progress_data: dict[str, Any]
     lock: threading.Lock
 
     def __init__(
         self,
         url: str,
-        output_path: Optional[str] = None,
-        expected_hash: Optional[str] = None,
+        output_path: str | None = None,
+        expected_hash: str | None = None,
     ) -> None:
         """Initialize the downloader.
 
@@ -134,7 +134,7 @@ class Downloader:
         self.file_size = int(resp.headers.get("content-length", 0))
 
         if not self.filename:
-            cd: Optional[str] = resp.headers.get("Content-Disposition")
+            cd: str | None = resp.headers.get("Content-Disposition")
             if cd and "filename=" in cd:
                 self.filename = cd.split("filename=")[1].strip(' "')
             else:
@@ -152,7 +152,7 @@ class Downloader:
         """
         assert self.filename is not None
         sha256_hash = hashlib.sha256()
-        logger.info("Verifying file integrity...")
+        print("Verifying file integrity...")
 
         with Path(self.filename).open("rb") as f:
             for byte_block in iter(lambda: f.read(CHUNK_SIZE), b""):
@@ -169,7 +169,7 @@ class Downloader:
                 logger.error(f"Got:      {calculated_hash}")
         else:
             logger.warning(f"SHA-256 checksum: {calculated_hash}")
-            logger.info("Provide this hash next time to verify automatically.")
+            print("Provide this hash next time to verify automatically.")
 
     def _load_state(self) -> None:
         """Load persisted progress data from the state file, if it exists."""
@@ -338,8 +338,8 @@ def main() -> None:
         sys.exit(1)
 
     url_arg: str = sys.argv[1]
-    out_arg: Optional[str] = sys.argv[2] if len(sys.argv) > 2 else None
-    hash_arg: Optional[str] = sys.argv[3] if len(sys.argv) > 3 else None
+    out_arg: str | None = sys.argv[2] if len(sys.argv) > 2 else None
+    hash_arg: str | None = sys.argv[3] if len(sys.argv) > 3 else None
 
     dl = Downloader(url_arg, out_arg, hash_arg)
     dl.start()

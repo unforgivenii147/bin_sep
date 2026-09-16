@@ -19,9 +19,10 @@ from __future__ import annotations
 
 import argparse
 import sys
+from collections.abc import Iterable
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Final, Iterable
+from typing import Final
 
 from dh import is_binary
 from loguru import logger
@@ -350,7 +351,7 @@ def _iter_results(
             logger.error("[{}/{}] Error: {}: {}", completed, total, rel, error)
             files_with_errors += 1
         elif removed > 0:
-            logger.info(
+            print(
                 "[{}/{}] Removed {} comment(s): {}",
                 completed,
                 total,
@@ -384,8 +385,8 @@ def main() -> int:
     if args.exclude_dirs:
         exclude_dirs.update(args.exclude_dirs)
 
-    logger.info("Scanning directory: {}", root_dir)
-    logger.info("Finding non-binary files...")
+    print("Scanning directory: {}", root_dir)
+    print("Finding non-binary files...")
 
     target_files: list[Path] = find_target_files(
         root_dir,
@@ -395,17 +396,17 @@ def main() -> int:
     )
 
     if not target_files:
-        logger.info("No files found to process.")
+        print("No files found to process.")
         return 0
 
-    logger.info("Found {} file(s) to check", len(target_files))
+    print("Found {} file(s) to check", len(target_files))
 
     if args.dry_run:
-        logger.info("[Dry Run] Would check these files:")
+        print("[Dry Run] Would check these files:")
         for f in sorted(target_files)[:20]:
-            logger.info("  {}", f.relative_to(root_dir))
+            print("  {}", f.relative_to(root_dir))
         if len(target_files) > 20:
-            logger.info("  ... and {} more files", len(target_files) - 20)
+            print("  ... and {} more files", len(target_files) - 20)
         return 0
 
     total_removed: int = 0
@@ -413,7 +414,7 @@ def main() -> int:
     files_with_errors: int = 0
     binary_files: int = 0
 
-    logger.info("Processing files in parallel with {} workers...", POOL_SIZE)
+    print("Processing files in parallel with {} workers...", POOL_SIZE)
 
     results: list[ProcessResult] = []
     try:
@@ -440,15 +441,15 @@ def main() -> int:
     ) = _iter_results(results, len(target_files), root_dir, bool(args.verbose))
     files_with_errors += files_with_errors_extra
 
-    logger.info("{}", "=" * 40)
-    logger.info("Summary:")
-    logger.info("  Files scanned: {}", len(target_files))
-    logger.info("  Binary files skipped: {}", binary_files)
-    logger.info("  Files changed: {}", files_changed)
-    logger.info("  Total comments removed: {}", total_removed)
+    print("{}", "=" * 40)
+    print("Summary:")
+    print("  Files scanned: {}", len(target_files))
+    print("  Binary files skipped: {}", binary_files)
+    print("  Files changed: {}", files_changed)
+    print("  Total comments removed: {}", total_removed)
     if files_with_errors > 0:
-        logger.info("  Files with errors: {}", files_with_errors)
-    logger.info("{}", "=" * 40)
+        print("  Files with errors: {}", files_with_errors)
+    print("{}", "=" * 40)
 
     return 0
 

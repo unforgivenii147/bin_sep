@@ -336,21 +336,21 @@ def validate_paths(paths: list[str] | None) -> list[Path]:
 def main(input_paths: list[str] | None = None, output_file: str = OUTPUT_FILE) -> int:
     cwd = Path.cwd()
     valid_paths = validate_paths(input_paths)
-    logger.info(f"Searching for fonts in {len(valid_paths)} location(s)...")
+    print(f"Searching for fonts in {len(valid_paths)} location(s)...")
     fonts = collect_fonts(valid_paths)
     if not fonts:
         logger.warning(
             f"No font files found. Supported formats: {', '.join(sorted(FONTEXT))}"
         )
         return 1
-    logger.info(f"Found {len(fonts)} font(s)")
-    logger.info("Generating preview HTML...")
+    print(f"Found {len(fonts)} font(s)")
+    print("Generating preview HTML...")
     html_content = generate_html(fonts, cwd)
     output_path = cwd / output_file
-    logger.info(f"Writing to {output_path}...")
+    print(f"Writing to {output_path}...")
     if write_preview(html_content, output_path):
-        logger.info(f"✓ Successfully generated {output_path}")
-        logger.info(f"  File size: {format_file_size(output_path.stat().st_size)}")
+        print(f"✓ Successfully generated {output_path}")
+        print(f"  File size: {format_file_size(output_path.stat().st_size)}")
         return 0
     else:
         return 1

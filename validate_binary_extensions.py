@@ -48,7 +48,7 @@ class OptimizedWalker:
                 root_dir, extensions_lower, progress_callback, file_count
             )
         except KeyboardInterrupt:
-            logger.info("Traversal interrupted by user")
+            print("Traversal interrupted by user")
             raise
 
     def _walk_recursive(
@@ -164,11 +164,11 @@ def validate_extensions(
     if not root_path.exists():
         logger.error(f"Root directory {root_dir} does not exist")
         return {}
-    logger.info(f"Starting optimized filesystem traversal from {root_dir}...")
-    logger.info(f"Looking for extensions: {sorted(BIN_EXT)}")
-    logger.info(f"Using {num_workers} worker processes")
+    print(f"Starting optimized filesystem traversal from {root_dir}...")
+    print(f"Looking for extensions: {sorted(BIN_EXT)}")
+    print(f"Using {num_workers} worker processes")
     if skip_mount_points:
-        logger.info("Skipping different filesystems/mount points")
+        print("Skipping different filesystems/mount points")
     print()
     walker = OptimizedWalker(skip_symlinks=True, skip_mount_points=skip_mount_points)
     progress = SpinnerProgressReporter(verbose=verbose)
@@ -184,8 +184,8 @@ def validate_extensions(
             "mismatches": [],
             "by_extension": {},
         }
-    logger.info(f"Found {len(matching_files)} files with target extensions")
-    logger.info("Checking file types (parallel processing)...")
+    print(f"Found {len(matching_files)} files with target extensions")
+    print("Checking file types (parallel processing)...")
     with Pool(num_workers) as pool:
         results = pool.map(check_file, matching_files, chunksize=100)
     binary_count = 0

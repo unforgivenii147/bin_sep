@@ -10,13 +10,12 @@ grouped by file plus language distribution and errors.
 """
 
 import argparse
+from collections.abc import Iterable, Sequence
 from datetime import datetime
 from multiprocessing import Pool, cpu_count
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Sequence, Set, Tuple, Union
 
 import pycld2 as cld2
-from loguru import logger
 
 TEXT_EXTENSIONS: set[str] = {
     ".txt",
@@ -120,7 +119,7 @@ FIXED_WORKERS: int = 8
 MAX_FILE_SIZE_BYTES: int = 10 * 1024 * 1024
 
 NonEnglishLine = tuple[int, str, str, str, int]
-FileResult = tuple[Path, Optional[list[NonEnglishLine]], Optional[str]]
+FileResult = tuple[Path, list[NonEnglishLine] | None, str | None]
 
 
 def is_likely_text_file(path: Path) -> bool:
@@ -128,7 +127,7 @@ def is_likely_text_file(path: Path) -> bool:
     return path.suffix.lower() in TEXT_EXTENSIONS
 
 
-def detect_language(text: str) -> tuple[Optional[str], Optional[str], int, bool]:
+def detect_language(text: str) -> tuple[str | None, str | None, int, bool]:
     """
     Detect the language of a text fragment using pycld2.
 
@@ -164,7 +163,7 @@ def process_file(path: Path) -> FileResult:
     except (OSError, PermissionError) as exc:
         return path, None, f"Cannot access file: {exc}"
 
-    content: Optional[list[str]] = None
+    content: list[str] | None = None
     for encoding in ("utf-8", "latin-1", "cp1252"):
         try:
             with open(path, "r", encoding=encoding) as handle:
@@ -315,10 +314,10 @@ def main() -> int:
         extensions.update(args.extensions)
 
     scanned_directory = Path(args.directory)
-    logger.info("Scanning directory: {}", scanned_directory)
+    print("Scanning directory: {}", scanned_directory)
 
     text_files = find_text_files(scanned_directory, extensions)
-    logger.info("Found {} text files to process", len(text_files))
+    print("Found {} text files to process", len(text_files))
 
     non_english_results: list[tuple[Path, list[NonEnglishLine]]] = []
     errors: list[tuple[Path, str]] = []
@@ -326,7 +325,7 @@ def main() -> int:
     total_non_eng_lines = 0
 
     workers = min(FIXED_WORKERS, max(1, cpu_count()))
-    logger.info("Processing files using {} workers...", workers)
+    print("Processing files using {} workers...", workers)
 
     with Pool(processes=workers) as pool:
         async_results = [pool.apply_async(process_file, (f,)) for f in text_files]
@@ -334,7 +333,7 @@ def main() -> int:
 
         for completed, async_result in enumerate(async_results, 1):
             if completed % 100 == 0 or completed == total:
-                logger.info("Progress: {}/{} files processed", completed, total)
+                print("Progress: {}/{} files processed", completed, total)
 
             path, results, error = async_result.get()
 
@@ -346,7 +345,7 @@ def main() -> int:
                 non_english_results.append((path, results))
 
     output_path = Path(args.output)
-    logger.info("Generating report: {}", output_path)
+    print("Generating report: {}", output_path)
 
     write_report(
         output_path=output_path,
@@ -357,14 +356,14 @@ def main() -> int:
         min_confidence=args.min_confidence,
     )
 
-    logger.info("=" * 40)
-    logger.info("Scan complete!")
-    logger.info("Files scanned: {}", len(text_files))
-    logger.info("Files with non-English content: {}", files_with_findings)
-    logger.info("Total non-English lines found: {}", total_non_eng_lines)
-    logger.info("Errors: {}", len(errors))
-    logger.info("Report saved to: {}", output_path.resolve())
-    logger.info("=" * 40)
+    print("=" * 40)
+    print("Scan complete!")
+    print("Files scanned: {}", len(text_files))
+    print("Files with non-English content: {}", files_with_findings)
+    print("Total non-English lines found: {}", total_non_eng_lines)
+    print("Errors: {}", len(errors))
+    print("Report saved to: {}", output_path.resolve())
+    print("=" * 40)
 
     return 0
 

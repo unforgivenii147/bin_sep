@@ -14,9 +14,9 @@ import re
 import sys
 import tarfile
 import zipfile
+from collections.abc import Iterable
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Iterable, Set
 
 import py7zr
 from dh import cprint, get_nobinary
@@ -171,8 +171,8 @@ def main() -> None:
         f.write("\n")
         f.writelines(url + "\n" for url in sorted(github_urls))
 
-    logger.info(f"Extracted {len(all_urls)} unique URLs to {OUTPUT_ALL}")
-    logger.info(f"Extracted {len(github_urls)} GitHub URLs to {OUTPUT_GIT}")
+    print(f"Extracted {len(all_urls)} unique URLs to {OUTPUT_ALL}")
+    print(f"Extracted {len(github_urls)} GitHub URLs to {OUTPUT_GIT}")
 
 
 if __name__ == "__main__":

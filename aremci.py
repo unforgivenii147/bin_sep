@@ -11,11 +11,11 @@ workers; logging via loguru.
 
 import ast
 import shutil
-import sys
+from collections.abc import Sequence
 from multiprocessing import Pool
 from multiprocessing.pool import AsyncResult
 from pathlib import Path
-from typing import Final, Sequence
+from typing import Final
 
 import libcst as cst
 from dh import get_pyfiles  # type: ignore[import-untyped]
@@ -170,7 +170,7 @@ def strip_comments_and_docstrings(file_path_str: str) -> bool:
     final_code: str = new_module.code
 
     if final_code == original_content:
-        logger.info(f"No comments or docstrings to strip in {file_path}")
+        print(f"No comments or docstrings to strip in {file_path}")
         return False
 
     try:
@@ -184,20 +184,20 @@ def strip_comments_and_docstrings(file_path_str: str) -> bool:
 
     try:
         shutil.copy2(file_path, backup_path)
-        logger.info(f"Backup created: {backup_path}")
+        print(f"Backup created: {backup_path}")
     except Exception as exc:
         logger.error(f"Error creating backup for {file_path}: {exc}")
         return False
 
     try:
         file_path.write_text(final_code, encoding="utf-8")
-        logger.info(f"Successfully stripped comments/docstrings from {file_path}")
+        print(f"Successfully stripped comments/docstrings from {file_path}")
         return True
     except Exception as exc:
         logger.error(f"Error writing cleaned file {file_path}: {exc}")
         try:
             shutil.move(str(backup_path), str(file_path))
-            logger.info(f"Restored original content from backup for {file_path}")
+            print(f"Restored original content from backup for {file_path}")
         except Exception as restore_exc:
             logger.critical(
                 f"Failed to write cleaned file and restore backup for {file_path}: "
@@ -214,10 +214,10 @@ def process_directory(directory: str) -> None:
         directory: Root directory to scan for ``.py`` files.
     """
     python_files: list[Path] = list(get_pyfiles(directory))
-    logger.info(f"Found {len(python_files)} Python files to process.")
+    print(f"Found {len(python_files)} Python files to process.")
 
     if not python_files:
-        logger.info("Nothing to do.")
+        print("Nothing to do.")
         return
 
     processed_count: int = 0
@@ -235,7 +235,7 @@ def process_directory(directory: str) -> None:
             except Exception as exc:
                 logger.error(f"Error processing future for {file_path}: {exc}")
 
-    logger.info(
+    print(
         f"Finished processing. Successfully stripped comments/docstrings from "
         f"{processed_count}/{len(python_files)} files."
     )
@@ -244,7 +244,7 @@ def process_directory(directory: str) -> None:
 def main() -> None:
     """Entry point: run stripping against the current directory."""
     target_directory: str = "."
-    logger.info(
+    print(
         f"Starting comment and docstring stripping in directory: "
         f"{Path(target_directory).resolve()}"
     )

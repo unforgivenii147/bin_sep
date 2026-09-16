@@ -17,7 +17,7 @@ from datetime import datetime
 from functools import lru_cache
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, List, Set
 
 from loguru import logger
 
@@ -303,10 +303,10 @@ class HtmlFile:
     """Data class representing an HTML file with its processing metadata."""
 
     path: Path
-    title: Optional[str] = None
-    new_name: Optional[str] = None
+    title: str | None = None
+    new_name: str | None = None
     renamed: bool = False
-    error: Optional[str] = None
+    error: str | None = None
 
 
 @dataclass
@@ -315,10 +315,10 @@ class ProcessingResult:
 
     path: Path
     original_name: str
-    new_name: Optional[str]
-    title: Optional[str]
+    new_name: str | None
+    title: str | None
     success: bool
-    error: Optional[str] = None
+    error: str | None = None
     duration: float = 0.0
 
 
@@ -421,11 +421,11 @@ class HtmlTitleExtractor:
     """Extracts titles from HTML files using multiple parsing strategies."""
 
     def __init__(self) -> None:
-        self.parser: Optional[TreeSitterParser] = (
+        self.parser: TreeSitterParser | None = (
             TreeSitterParser() if TREE_SITTER_AVAILABLE else None
         )
 
-    def extract_title(self, path: Path) -> Optional[str]:
+    def extract_title(self, path: Path) -> str | None:
         """Extract the title from an HTML file.
 
         Args:
@@ -443,13 +443,13 @@ class HtmlTitleExtractor:
 
         # Try tree-sitter first, then fall back to regex
         if self.parser and self.parser.available:
-            title: Optional[str] = self._extract_with_tree_sitter(content)
+            title: str | None = self._extract_with_tree_sitter(content)
             if title:
                 return title
 
         return self._extract_with_regex(content)
 
-    def _extract_with_tree_sitter(self, html_content: str) -> Optional[str]:
+    def _extract_with_tree_sitter(self, html_content: str) -> str | None:
         """Extract title using tree-sitter parser.
 
         Args:
@@ -468,7 +468,7 @@ class HtmlTitleExtractor:
 
         return None
 
-    def _query_tree_for_title(self, tree: Any) -> Optional[str]:
+    def _query_tree_for_title(self, tree: Any) -> str | None:
         """Query the tree-sitter parse tree for the title tag.
 
         Args:
@@ -479,7 +479,7 @@ class HtmlTitleExtractor:
         """
         try:
 
-            def traverse(node: Any) -> Optional[str]:
+            def traverse(node: Any) -> str | None:
                 if hasattr(node, "type") and node.type == "tag_name":
                     if hasattr(node, "text") and b"title" in node.text:
                         parent = node.parent if hasattr(node, "parent") else None
@@ -509,7 +509,7 @@ class HtmlTitleExtractor:
             return None
 
     @staticmethod
-    def _extract_with_regex(html_content: str) -> Optional[str]:
+    def _extract_with_regex(html_content: str) -> str | None:
         """Extract title using regex patterns.
 
         Args:
@@ -555,7 +555,7 @@ class TreeSitterParser:
 
     def __init__(self) -> None:
         self.available: bool = TREE_SITTER_AVAILABLE
-        self.parser: Optional[Any] = None
+        self.parser: Any | None = None
         if self.available:
             try:
                 self._init_parser()
@@ -574,7 +574,7 @@ class TreeSitterParser:
             logger.debug(f"Could not initialize tree-sitter parser: {e}")
             self.available = False
 
-    def parse(self, content: bytes) -> Optional[Any]:
+    def parse(self, content: bytes) -> Any | None:
         """Parse HTML content.
 
         Args:
@@ -736,7 +736,7 @@ class HtmlFileProcessor:
                     duration=(datetime.now() - start_time).total_seconds(),
                 )
 
-            title: Optional[str] = self.title_extractor.extract_title(path)
+            title: str | None = self.title_extractor.extract_title(path)
             if not title:
                 return ProcessingResult(
                     path=path,
@@ -912,24 +912,24 @@ def process_file_task(path: Path) -> ProcessingResult:
 class HtmlRenamerApp:
     """Main application class for HTML file renaming."""
 
-    def __init__(self, paths: Optional[list[str]] = None) -> None:
+    def __init__(self, paths: list[str] | None = None) -> None:
         self.paths: list[str] = paths or ["."]
         self.results: list[ProcessingResult] = []
 
     def run(self) -> None:
         """Run the HTML file renaming application."""
-        logger.info("=" * 70)
-        logger.info("HTML File Renamer (by Title Tag)")
-        logger.info("=" * 70)
-        logger.info(f"Discovering HTML files in: {', '.join(self.paths)}")
+        print("=" * 70)
+        print("HTML File Renamer (by Title Tag)")
+        print("=" * 70)
+        print(f"Discovering HTML files in: {', '.join(self.paths)}")
 
         files: list[Path] = FileDiscovery.discover_files(self.paths)
         if not files:
             logger.warning("No HTML files found")
             return
 
-        logger.info(f"Found {len(files):,} HTML files")
-        logger.info(f"Processing with {WORKERS} workers...")
+        print(f"Found {len(files):,} HTML files")
+        print(f"Processing with {WORKERS} workers...")
 
         with Pool(WORKERS) as pool:
             async_results = []
@@ -942,7 +942,7 @@ class HtmlRenamerApp:
                     result: ProcessingResult = async_result.get(timeout=60)
                     self.results.append(result)
                     if i % 10 == 0 or i == len(async_results):
-                        logger.info(f"Progress: {i}/{len(async_results)} files")
+                        print(f"Progress: {i}/{len(async_results)} files")
                 except Exception as e:
                     logger.error(f"Error retrieving result: {e}")
 
@@ -950,9 +950,9 @@ class HtmlRenamerApp:
 
     def _print_summary(self) -> None:
         """Print summary of processing results."""
-        logger.info("=" * 70)
-        logger.info("SUMMARY")
-        logger.info("=" * 70)
+        print("=" * 70)
+        print("SUMMARY")
+        print("=" * 70)
 
         successful: int = sum(1 for r in self.results if r.success)
         failed: int = len(self.results) - successful
@@ -962,34 +962,32 @@ class HtmlRenamerApp:
         skipped: int = successful - renamed
         total_duration: float = sum(r.duration for r in self.results)
 
-        logger.info(f"Total files processed: {len(self.results)}")
-        logger.info(f"  ✓ Successful: {successful}")
-        logger.info(f"    - Renamed: {renamed}")
-        logger.info(f"    - Skipped: {skipped}")
-        logger.info(f"  ✗ Failed: {failed}")
-        logger.info(f"Total processing time: {total_duration:.2f}s")
+        print(f"Total files processed: {len(self.results)}")
+        print(f"  ✓ Successful: {successful}")
+        print(f"    - Renamed: {renamed}")
+        print(f"    - Skipped: {skipped}")
+        print(f"  ✗ Failed: {failed}")
+        print(f"Total processing time: {total_duration:.2f}s")
 
         if total_duration > 0:
-            logger.info(
-                f"Average time per file: {total_duration / len(self.results):.3f}s"
-            )
+            print(f"Average time per file: {total_duration / len(self.results):.3f}s")
 
         if renamed > 0:
-            logger.info(f"\n✓ Successfully renamed files ({renamed}):")
+            print(f"\n✓ Successfully renamed files ({renamed}):")
             for result in sorted(self.results, key=lambda r: r.duration, reverse=True)[
                 :10
             ]:
                 if result.new_name and result.new_name != result.original_name:
-                    logger.info(f"  '{result.original_name:40}' -> '{result.new_name}'")
-                    logger.info(f"    Title: {result.title}")
+                    print(f"  '{result.original_name:40}' -> '{result.new_name}'")
+                    print(f"    Title: {result.title}")
 
         if failed > 0:
-            logger.info(f"\n✗ Failed files ({failed}):")
+            print(f"\n✗ Failed files ({failed}):")
             for result in self.results:
                 if not result.success:
-                    logger.info(f"  {result.original_name}: {result.error}")
+                    print(f"  {result.original_name}: {result.error}")
 
-        logger.info("=" * 70)
+        print("=" * 70)
 
 
 def main() -> None:

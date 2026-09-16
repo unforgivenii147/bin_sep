@@ -77,7 +77,7 @@ def process_single_dist(
         except:
             pass
     except Exception as e:
-        logger.info(f"Warning: Could not process package {dist_name}: {e}")
+        print(f"Warning: Could not process package {dist_name}: {e}")
     return files, dirs
 
 
@@ -149,7 +149,7 @@ class OrphanFileDetector:
         return list(importlib.metadata.distributions())
 
     def collect_package_files(self):
-        logger.info("Collecting package files...")
+        print("Collecting package files...")
         packages = self.get_installed_packages()
         package_infos = []
         for dist in packages:
@@ -165,18 +165,18 @@ class OrphanFileDetector:
         for files, dirs in results:
             self.package_files.update(files)
             self.package_dirs.update(dirs)
-        logger.info(f"Found {len(self.package_files)} files belonging to packages")
+        print(f"Found {len(self.package_files)} files belonging to packages")
 
     def scan_site_dirs(self) -> list[Path]:
         orphan_files = []
-        logger.info("\nScanning site-packages directories:")
+        print("\nScanning site-packages directories:")
         scan_args = []
         for site_dir in self.site_dirs:
-            logger.info(f"  - {site_dir}")
+            print(f"  - {site_dir}")
             if site_dir.exists():
                 scan_args.append((str(site_dir), self.package_files, self.package_dirs))
             else:
-                logger.info("    (does not exist)")
+                print("    (does not exist)")
         with Pool(processes=8) as pool:
             results = pool.map(scan_directory_worker, scan_args)
         for files in results:
@@ -223,36 +223,36 @@ class OrphanFileDetector:
         return categories
 
     def run(self, verbose: bool = False):
-        logger.info("=" * 40)
-        logger.info("Orphan File Detector for Python Site-Packages")
-        logger.info("=" * 40)
+        print("=" * 40)
+        print("Orphan File Detector for Python Site-Packages")
+        print("=" * 40)
         self.collect_package_files()
         orphan_files = self.scan_site_dirs()
         categories = self.analyze_orphan_files(orphan_files)
-        logger.info("\n" + "=" * 40)
-        logger.info("RESULTS")
-        logger.info("=" * 40)
-        logger.info(f"\nFound {len(orphan_files)} orphan files/directories:")
+        print("\n" + "=" * 40)
+        print("RESULTS")
+        print("=" * 40)
+        print(f"\nFound {len(orphan_files)} orphan files/directories:")
         for category, files in categories.items():
             if files:
-                logger.info(f"\n{category} ({len(files)}):")
+                print(f"\n{category} ({len(files)}):")
                 for path in sorted(files):
                     if verbose:
                         if path.is_file():
                             size = path.stat().st_size
                             size_str = self._format_size(size)
-                            logger.info(f"  {path} ({size_str})")
+                            print(f"  {path} ({size_str})")
                         else:
-                            logger.info(f"  {path} (directory)")
+                            print(f"  {path} (directory)")
                     else:
-                        logger.info(f"  {path}")
-        logger.info("\n" + "-" * 40)
-        logger.info("SUMMARY:")
+                        print(f"  {path}")
+        print("\n" + "-" * 40)
+        print("SUMMARY:")
         for category, files in categories.items():
             if files:
-                logger.info(f"  {category}: {len(files)}")
-        logger.info("\nWARNING: Review these files carefully before removing them.")
-        logger.info("Some may be intentionally installed or required by other tools.")
+                print(f"  {category}: {len(files)}")
+        print("\nWARNING: Review these files carefully before removing them.")
+        print("Some may be intentionally installed or required by other tools.")
         return orphan_files
 
     def _format_size(self, size: int) -> str:
@@ -272,7 +272,7 @@ class OrphanFileDetector:
         }
         with open(output_file, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2)
-        logger.info(f"\nOrphan files list exported to: {output_file}")
+        print(f"\nOrphan files list exported to: {output_file}")
 
 
 def main():

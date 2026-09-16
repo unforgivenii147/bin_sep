@@ -31,7 +31,6 @@ def build_wheel(pkg_dir: Path) -> tuple[str, bool, str]:
     Returns (package_name, success, message).
     """
     try:
-        # Ensure 'build' module is available
         result = subprocess.run(
             [
                 sys.executable,

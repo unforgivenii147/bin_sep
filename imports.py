@@ -25,7 +25,7 @@ import time
 from collections import defaultdict
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple
+from typing import List, Set, Tuple
 
 from dh import STDLIB, get_installed_pkgs
 
@@ -94,7 +94,7 @@ def get_local_packages(start_path: Path) -> set[str]:
     return packages
 
 
-def _process_file(path: Path) -> tuple[Path, set[str], bool, Optional[str]]:
+def _process_file(path: Path) -> tuple[Path, set[str], bool, str | None]:
     """
     Process a single Python file to extract its imports.
 
@@ -105,7 +105,7 @@ def _process_file(path: Path) -> tuple[Path, set[str], bool, Optional[str]]:
         Tuple containing (path, imports_set, success_flag, error_message)
     """
     imports: set[str] = set()
-    error: Optional[str] = None
+    error: str | None = None
     try:
         code = path.read_text(encoding="utf-8")
         tree = ast.parse(code)

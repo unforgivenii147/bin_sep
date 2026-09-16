@@ -52,9 +52,9 @@ def main() -> None:
         logger.error("Error reading input file: %s", e)
         return
     if not words:
-        logger.info("No words found in %s", input_path.name)
+        print("No words found in %s", input_path.name)
         return
-    logger.info(
+    print(
         "Loaded %d Persian words. Starting translation with %d workers...",
         len(words),
         MAX_WORKERS,
@@ -76,7 +76,7 @@ def main() -> None:
     try:
         with output_path.open("w", encoding="utf-8") as f:
             json.dump(results, f, ensure_ascii=False, indent=2)
-        logger.info(
+        print(
             "Translation dictionary saved to %s (%d entries)",
             output_path.name,
             len(results),

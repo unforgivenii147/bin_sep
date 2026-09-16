@@ -12,12 +12,11 @@ import shutil
 from multiprocessing import Pool
 from multiprocessing.pool import AsyncResult
 from pathlib import Path
-from typing import Any, Final, cast
+from typing import Final, cast
 
 from deep_translator import GoogleTranslator  # type: ignore[import-untyped]
-from loguru import logger
-
 from dh import get_pyfiles
+from loguru import logger
 
 CHUNK_SIZE: Final[int] = 5000
 MAX_WORKERS: Final[int] = 8
@@ -173,10 +172,10 @@ def main() -> None:
     py_files: list[Path] = get_pyfiles(cwd)
 
     if not py_files:
-        logger.info("No Python files found.")
+        print("No Python files found.")
         return
 
-    logger.info(f"Processing {len(py_files)} files...")
+    print(f"Processing {len(py_files)} files...")
     modified_count: int = 0
 
     with Pool(processes=MAX_WORKERS) as pool:
@@ -186,9 +185,9 @@ def main() -> None:
         for file_path, async_res in zip(py_files, async_results):
             if async_res.get():
                 modified_count += 1
-                logger.info(f"✓ Updated: {file_path.name}")
+                print(f"✓ Updated: {file_path.name}")
 
-    logger.info(f"Done. Modified {modified_count} files.")
+    print(f"Done. Modified {modified_count} files.")
 
 
 if __name__ == "__main__":

@@ -19,7 +19,7 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from datetime import datetime
 from io import BytesIO
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, List, Tuple
 
 import brotli
 import lz4.frame
@@ -264,8 +264,8 @@ def is_already_compressed(data: bytes, sample_size: int = 4096) -> bool:
 
 def choose_algorithm(
     path: str | Path,
-    data: Optional[bytes] = None,
-    file_size: Optional[int] = None,
+    data: bytes | None = None,
+    file_size: int | None = None,
 ) -> dict[str, str | int]:
     """Choose optimal compression algorithm for a file.
 
@@ -311,7 +311,7 @@ def choose_algorithm(
 
 def compress_single_file(
     path: str | Path,
-    output_path: Optional[str | Path] = None,
+    output_path: str | Path | None = None,
     remove_original: bool = False,
     verbose: bool = False,
 ) -> dict[str, Any]:
@@ -357,7 +357,7 @@ def compress_single_file(
         ratio = compressed_size / original_size * 100
 
         if verbose:
-            logger.info(
+            print(
                 f"✓ {Path(path).name}: {algo.upper()}:{level} "
                 f"{original_size:,d} → {compressed_size:,d} bytes ({ratio:.1f}%) "
                 f"in {elapsed:.2f}s"
@@ -382,8 +382,8 @@ def compress_single_file(
 
 def compress_multiple_files(
     paths: list[str | Path],
-    output_dir: Optional[str | Path] = None,
-    max_workers: Optional[int] = None,
+    output_dir: str | Path | None = None,
+    max_workers: int | None = None,
     remove_original: bool = False,
     verbose: bool = False,
 ) -> list[dict[str, Any]]:
@@ -432,11 +432,11 @@ def compress_multiple_files(
 
 def create_tar_archive(
     source_dir: str | Path,
-    output_path: Optional[str | Path] = None,
+    output_path: str | Path | None = None,
     compression: str = "auto",
-    level: Optional[int] = None,
+    level: int | None = None,
     parallel: bool = False,
-    max_workers: Optional[int] = None,
+    max_workers: int | None = None,
 ) -> tuple[Path, dict[str, Any]]:
     """Create a compressed tar archive.
 
@@ -469,7 +469,7 @@ def create_tar_archive(
     if compression != "none" and compression != "auto":
         tar_path = tar_path.with_suffix("")
 
-    logger.info(f"Creating archive from {source_dir}...")
+    print(f"Creating archive from {source_dir}...")
     file_count = 0
     total_size = 0
 
@@ -482,7 +482,7 @@ def create_tar_archive(
                 if file_count % 1000 == 0:
                     logger.debug(f"  Added {file_count} files...")
 
-    logger.info(f"\nArchived {file_count} files ({total_size / 1024 / 1024:.2f} MB)")
+    print(f"\nArchived {file_count} files ({total_size / 1024 / 1024:.2f} MB)")
 
     if compression != "none":
         with open(tar_path, "rb") as f:
@@ -498,7 +498,7 @@ def create_tar_archive(
         else:
             raise ValueError(f"Unsupported compression: {compression}")
 
-        logger.info(f"Compressing with {algo.upper()} (level {level})...")
+        print(f"Compressing with {algo.upper()} (level {level})...")
         is_large = len(tar_data) > 50 * 1024 * 1024
         compressed_data = compress_data(tar_data, algo, level, is_large)
 
@@ -512,12 +512,12 @@ def create_tar_archive(
         compressed_size = len(compressed_data)
         ratio = compressed_size / total_size * 100
 
-        logger.info(f"\n✓ Archive created: {final_path}")
-        logger.info(
+        print(f"\n✓ Archive created: {final_path}")
+        print(
             f"  Size: {compressed_size / 1024 / 1024:.2f} MB ({ratio:.1f}% of original)"
         )
-        logger.info(f"  Time: {elapsed:.2f}s")
-        logger.info(f"  Algorithm: {algo.upper()} level {level}")
+        print(f"  Time: {elapsed:.2f}s")
+        print(f"  Algorithm: {algo.upper()} level {level}")
 
         return final_path, {
             "file_count": file_count,
@@ -530,9 +530,9 @@ def create_tar_archive(
         }
     else:
         elapsed = time.time() - start_time
-        logger.info(f"\n✓ Archive created: {tar_path}")
-        logger.info(f"  Size: {total_size / 1024 / 1024:.2f} MB")
-        logger.info(f"  Time: {elapsed:.2f}s")
+        print(f"\n✓ Archive created: {tar_path}")
+        print(f"  Size: {total_size / 1024 / 1024:.2f} MB")
+        print(f"  Time: {elapsed:.2f}s")
 
         return tar_path, {
             "file_count": file_count,
@@ -543,7 +543,7 @@ def create_tar_archive(
 
 def decompress_file(
     compressed_path: str | Path,
-    output_dir: Optional[str | Path] = None,
+    output_dir: str | Path | None = None,
     verbose: bool = False,
 ) -> Path | str:
     """Decompress a file.
@@ -613,11 +613,11 @@ def decompress_file(
             tar.extractall(extract_dir)
         Path(output_path).unlink()
         if verbose:
-            logger.info(f"✓ Extracted to: {extract_dir}")
+            print(f"✓ Extracted to: {extract_dir}")
         return extract_dir
 
     if verbose:
-        logger.info(f"✓ Decompressed to: {output_path}")
+        print(f"✓ Decompressed to: {output_path}")
     return output_path
 
 
@@ -725,17 +725,17 @@ Examples:
                 r.get("compressed_size", 0) for r in results if r["success"]
             )
 
-            logger.info(f"\n{'=' * 40}")
-            logger.info("COMPRESSION SUMMARY")
-            logger.info(f"  Successful: {successful}/{len(results)} files")
+            print(f"\n{'=' * 40}")
+            print("COMPRESSION SUMMARY")
+            print(f"  Successful: {successful}/{len(results)} files")
             if failed:
                 logger.warning(f"  Failed: {failed} files")
             if successful:
-                logger.info(
+                print(
                     f"  Total size: {total_original / 1024 / 1024:.2f} MB → "
                     f"{total_compressed / 1024 / 1024:.2f} MB"
                 )
-                logger.info(
+                print(
                     f"  Overall ratio: {total_compressed / total_original * 100:.1f}%"
                 )
         else:
@@ -780,7 +780,7 @@ Examples:
                         }
                     with open(args.output, "w") as f:
                         json.dump(serializable, f, indent=2)
-                    logger.info(f"\nResults saved to {args.output}")
+                    print(f"\nResults saved to {args.output}")
         else:
             with open(input_path, "rb") as f:
                 data = f.read()

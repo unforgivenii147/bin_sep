@@ -13,15 +13,16 @@ Features:
 
 import argparse
 import json
-import logging
-import os
 import sys
 import traceback
+from collections.abc import Iterable
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from datetime import date, datetime, time
 from decimal import Decimal
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Tuple
+from typing import Any
+
+from loguru import logger
 
 try:
     import pyodbc
@@ -32,8 +33,6 @@ except ImportError:
     sys.exit(1)
 
 
-# ---------- Configuration ----------
-
 DEFAULT_WORKERS = 8
 MDB_EXTENSIONS = {".mdb", ".accdb"}
 BATCH_SIZE = 1000  # rows per batch when streaming
@@ -41,17 +40,6 @@ LOG_FORMAT = "%(asctime)s [%(levelname)s] %(processName)s: %(message)s"
 
 
 # ---------- Logging setup ----------
-
-
-def setup_logging(verbose: bool = False) -> None:
-    level = logging.DEBUG if verbose else logging.INFO
-    logging.basicConfig(level=level, format=LOG_FORMAT, stream=sys.stderr)
-
-
-logger = logging.getLogger(__name__)
-
-
-# ---------- Type conversion helpers ----------
 
 
 def _convert_value(value: Any) -> Any:
@@ -104,7 +92,7 @@ def _connect(mdb_path: Path) -> "pyodbc.Connection":
         "Microsoft Access Driver (*.mdb)",
         "MDBTools",
     ]
-    last_err: Optional[Exception] = None
+    last_err: Exception | None = None
     for drv in candidate_drivers:
         try:
             conn_str = f"DRIVER={{{drv}}};DBQ={abs_path};"
@@ -123,10 +111,10 @@ def _connect(mdb_path: Path) -> "pyodbc.Connection":
 
 def convert_mdb_to_json(
     mdb_path: str,
-    output_path: Optional[str] = None,
+    output_path: str | None = None,
     overwrite: bool = False,
     pretty: bool = False,
-    tables: Optional[list[str]] = None,
+    tables: list[str] | None = None,
 ) -> tuple[str, bool, str]:
     """
     Convert a single MDB file to JSON.
@@ -324,7 +312,7 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main(argv: Optional[list[str]] = None) -> int:
+def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
 
@@ -337,10 +325,10 @@ def main(argv: Optional[list[str]] = None) -> int:
         logger.error("No .mdb/.accdb files found in: %s", inputs)
         return 2
 
-    logger.info("Found %d MDB file(s). Using %d workers.", len(files), args.workers)
+    print("Found %d MDB file(s). Using %d workers.", len(files), args.workers)
 
     # Build per-file output paths up-front (deterministic)
-    jobs: list[tuple[str, Optional[str]]] = []
+    jobs: list[tuple[str, str | None]] = []
     for f in files:
         if args.output_dir:
             out_dir = Path(args.output_dir).expanduser().resolve()
@@ -380,7 +368,7 @@ def main(argv: Optional[list[str]] = None) -> int:
                     ok, msg = False, f"Unhandled: {exc}"
                 if ok:
                     successes += 1
-                    logger.info("[%d/%d] OK   %s — %s", done, total, src, msg)
+                    print("[%d/%d] OK   %s — %s", done, total, src, msg)
                 else:
                     failures += 1
                     logger.error("[%d/%d] FAIL %s — %s", done, total, src, msg)
@@ -388,9 +376,7 @@ def main(argv: Optional[list[str]] = None) -> int:
         logger.warning("Interrupted by user.")
         return 130
 
-    logger.info(
-        "Done. Successes: %d, Failures: %d, Total: %d", successes, failures, total
-    )
+    print("Done. Successes: %d, Failures: %d, Total: %d", successes, failures, total)
     return 0 if failures == 0 else 1
 
 

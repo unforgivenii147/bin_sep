@@ -13,7 +13,7 @@ import sys
 from functools import lru_cache
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from loguru import logger
 
@@ -43,9 +43,9 @@ def find_dist_info_dirs(search_paths: list[Path]) -> list[Path]:
     for path in search_paths:
         if not path.exists():
             continue
-        logger.info(f"Searching in {path}")
+        print(f"Searching in {path}")
         dist_info_dirs.extend(path.glob("*.dist-info"))
-    logger.info(f"Found {len(dist_info_dirs)} dist-info directories")
+    print(f"Found {len(dist_info_dirs)} dist-info directories")
     return dist_info_dirs
 
 
@@ -96,7 +96,7 @@ def parse_record_file(dist_info_dir: Path) -> list[tuple[Path, str]]:
 @lru_cache(maxsize=128)
 def find_file_in_paths(
     relative_path: str, search_paths: tuple[Path, ...]
-) -> Optional[Path]:
+) -> Path | None:
     """Locate a file from a RECORD entry within the given search paths."""
     if Path(relative_path).is_absolute():
         abs_path = Path(relative_path)
@@ -176,7 +176,7 @@ def copy_package_files(
             with contextlib.suppress(Exception):
                 shutil.copytree(dist_info_dir, dist_info_dest, dirs_exist_ok=True)
         success_msg = f"Copied {files_copied} files"
-        logger.info(f"{package_name}: {success_msg}")
+        print(f"{package_name}: {success_msg}")
         return (package_name, True, success_msg)
     except Exception as e:
         error_msg = f"Error: {e!s}"
@@ -186,9 +186,9 @@ def copy_package_files(
 
 def main() -> int:
     """Entry point: discover, copy, and summarize packages with entry points."""
-    logger.info("Starting package copy process...")
+    print("Starting package copy process...")
     search_paths = get_python_paths()
-    logger.info(f"Search paths: {search_paths}")
+    print(f"Search paths: {search_paths}")
     dist_info_dirs = find_dist_info_dirs(search_paths)
     if not dist_info_dirs:
         logger.error("No dist-info directories found!")
@@ -199,10 +199,10 @@ def main() -> int:
         if has_entry_points(dist_info_dir):
             package_name = dist_info_dir.name.replace(".dist-info", "")
             if "-" in package_name:
-                logger.info(f"Found package with entry points: {package_name}")
+                print(f"Found package with entry points: {package_name}")
             packages_with_entry_points.append((package_name, dist_info_dir))
 
-    logger.info(f"Found {len(packages_with_entry_points)} packages with entry points")
+    print(f"Found {len(packages_with_entry_points)} packages with entry points")
     if not packages_with_entry_points:
         logger.warning("No packages with entry points found!")
         return 1
@@ -212,9 +212,7 @@ def main() -> int:
         (name, d, search_paths_str) for name, d in packages_with_entry_points
     ]
 
-    logger.info(
-        f"Processing {len(package_infos)} packages using {MAX_WORKERS} workers..."
-    )
+    print(f"Processing {len(package_infos)} packages using {MAX_WORKERS} workers...")
 
     results: list[tuple[str, bool, str]] = []
     with Pool(processes=MAX_WORKERS) as pool:
@@ -230,24 +228,24 @@ def main() -> int:
                 logger.error(f"Exception processing package: {e}")
                 results.append(("unknown", False, str(e)))
 
-    logger.info("=" * 40)
-    logger.info("SUMMARY")
-    logger.info("-" * 40)
+    print("=" * 40)
+    print("SUMMARY")
+    print("-" * 40)
 
     successful = [r for r in results if r[1]]
     failed = [r for r in results if not r[1]]
 
-    logger.info(f"✅ Successfully processed: {len(successful)} packages")
+    print(f"✅ Successfully processed: {len(successful)} packages")
     for pkg_name, _, msg in successful:
-        logger.info(f"  - {pkg_name}: {msg}")
+        print(f"  - {pkg_name}: {msg}")
 
     if failed:
-        logger.info(f"❌ Failed: {len(failed)} packages")
+        print(f"❌ Failed: {len(failed)} packages")
         for pkg_name, _, msg in failed:
-            logger.info(f"  - {pkg_name}: {msg}")
+            print(f"  - {pkg_name}: {msg}")
 
-    logger.info(f"📁 Packages copied to: {DEST_ROOT}")
-    logger.info("-" * 40)
+    print(f"📁 Packages copied to: {DEST_ROOT}")
+    print("-" * 40)
 
     return 0
 
@@ -256,7 +254,7 @@ if __name__ == "__main__":
     try:
         raise SystemExit(main())
     except KeyboardInterrupt:
-        logger.info("\nProcess interrupted by user")
+        print("\nProcess interrupted by user")
         sys.exit(1)
     except Exception as e:
         logger.error(f"Unexpected error: {e}", exc_info=True)

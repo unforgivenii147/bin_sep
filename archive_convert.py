@@ -292,7 +292,7 @@ def main() -> None:
     cwd = Path.cwd()
     tar_inputs = find_tar_inputs(cwd)
     if not tar_inputs:
-        logger.info("No *.tar.<codec> files found recursively in current directory.")
+        print("No *.tar.<codec> files found recursively in current directory.")
         return
 
     initial_bytes = gsz(cwd)
@@ -313,23 +313,21 @@ def main() -> None:
     ok_count = sum(1 for _, ok, _ in results if ok)
     fail_count = len(results) - ok_count
 
-    logger.info(
+    print(
         f"Converted inputs: {len(tar_inputs)}; OK: {ok_count}; Failed/Skipped: {fail_count}"
     )
     for name, ok, msg in sorted(results, key=lambda x: x[0]):
         status = "OK" if ok else "FAIL"
-        logger.info(f"[{status}] {name}: {msg}")
+        print(f"[{status}] {name}: {msg}")
 
-    logger.info(
-        f"Disk usage (sum of file sizes under cwd) initial: {fsz(initial_bytes)}"
-    )
-    logger.info(f"Disk usage (sum of file sizes under cwd) final:   {fsz(final_bytes)}")
+    print(f"Disk usage (sum of file sizes under cwd) initial: {fsz(initial_bytes)}")
+    print(f"Disk usage (sum of file sizes under cwd) final:   {fsz(final_bytes)}")
     if delta < 0:
-        logger.info(f"Saved: {fsz(-delta)}")
+        print(f"Saved: {fsz(-delta)}")
     elif delta > 0:
-        logger.info(f"Extra used: {fsz(delta)}")
+        print(f"Extra used: {fsz(delta)}")
     else:
-        logger.info("No disk usage change (by summed file sizes).")
+        print("No disk usage change (by summed file sizes).")
 
 
 if __name__ == "__main__":

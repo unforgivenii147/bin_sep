@@ -67,7 +67,7 @@ def process_file(path: Path, dry_run: bool = False, threshold: float = 0.3) -> d
         "errors": 0,
     }
     prefix = "[DRY RUN] " if dry_run else ""
-    logger.info("%sProcessing: %s", prefix, path)
+    print("%sProcessing: %s", prefix, path)
     try:
         content = path.read_text(encoding="utf-8", errors="ignore")
         lines = content.splitlines(keepends=True)
@@ -88,7 +88,7 @@ def process_file(path: Path, dry_run: bool = False, threshold: float = 0.3) -> d
                     new_lines.append(f"{leading_ws}{translated}{trailing_ws}")
                     stats["translated_lines"] += 1
                     if stats["translated_lines"] % 10 == 0:
-                        logger.info(
+                        print(
                             "  Progress: %d Chinese lines translated",
                             stats["translated_lines"],
                         )
@@ -96,11 +96,11 @@ def process_file(path: Path, dry_run: bool = False, threshold: float = 0.3) -> d
                 new_lines.append(line)
         if not dry_run and found_chinese:
             path.write_text("".join(new_lines), encoding="utf-8")
-            logger.info("  ✓ Completed: %d lines translated", stats["translated_lines"])
+            print("  ✓ Completed: %d lines translated", stats["translated_lines"])
         elif dry_run and found_chinese:
-            logger.info("  ℹ Found %d lines with Chinese text", stats["chinese_lines"])
+            print("  ℹ Found %d lines with Chinese text", stats["chinese_lines"])
         elif not found_chinese:
-            logger.info("  No Chinese text found, skipping.")
+            print("  No Chinese text found, skipping.")
     except Exception as e:
         logger.error("  ✗ Error processing %s: %s", path, e)
         stats["errors"] += 1
@@ -153,9 +153,9 @@ def main() -> None:
                     ):
                         files_to_process.append(fp)
     if not files_to_process:
-        logger.info("No files to process.")
+        print("No files to process.")
         return
-    logger.info(
+    print(
         "Found %d files. Using %d workers (Threshold: %.0f%%)",
         len(files_to_process),
         args.workers,

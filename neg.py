@@ -33,14 +33,14 @@ def is_image_file(path: Path) -> bool:
 def invert_image(image_path: Path, dry_run: bool = False) -> tuple[Path, bool]:
     try:
         if dry_run:
-            logger.info(f"[DRY RUN] Would invert: {image_path}")
+            print(f"[DRY RUN] Would invert: {image_path}")
             return (image_path, True)
         with Image.open(image_path) as img:
             if img.mode not in ("RGB", "L"):
                 img = img.convert("RGB")
             inverted = img.point(lambda p: 255 - p)
             inverted.save(image_path, quality=95, optimize=True)
-        logger.info(f"✓ Inverted: {image_path}")
+        print(f"✓ Inverted: {image_path}")
         return (image_path, True)
     except Exception as e:
         logger.error(f"✗ Failed to process {image_path}: {e}")
@@ -110,29 +110,29 @@ def main():
                 ext = "." + ext
             SUPPORTED_EXTENSIONS.add(ext.lower())
     recursive = not args.no_recursive
-    logger.info(
+    print(
         f"Scanning {('recursively' if recursive else 'non-recursively')} in: {root_dir}"
     )
     image_files = find_images(root_dir, recursive)
     if not image_files:
         logger.warning("No image files found to process")
         sys.exit(0)
-    logger.info(f"Found {len(image_files)} image(s) to process")
+    print(f"Found {len(image_files)} image(s) to process")
     num_processes = args.processes or cpu_count()
-    logger.info(f"Using {num_processes} process(es)")
+    print(f"Using {num_processes} process(es)")
     if args.dry_run:
-        logger.info("DRY RUN MODE - No files will be modified")
+        print("DRY RUN MODE - No files will be modified")
     invert_func = partial(invert_image, dry_run=args.dry_run)
     with Pool(processes=num_processes) as pool:
         results = pool.map(invert_func, image_files)
     successful = sum((1 for _, success in results if success))
     failed = len(results) - successful
-    logger.info(f"\n{'=' * 40}")
-    logger.info("Processing complete!")
-    logger.info(f"✓ Successful: {successful}")
+    print(f"\n{'=' * 40}")
+    print("Processing complete!")
+    print(f"✓ Successful: {successful}")
     if failed > 0:
         logger.warning(f"✗ Failed: {failed}")
-    logger.info(f"Total processed: {len(results)}")
+    print(f"Total processed: {len(results)}")
 
 
 if __name__ == "__main__":

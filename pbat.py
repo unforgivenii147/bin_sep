@@ -32,7 +32,6 @@ import subprocess
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
 
 from pygments import highlight as pyg_highlight
 from pygments.formatters import Terminal256Formatter, TerminalTrueColorFormatter
@@ -73,14 +72,14 @@ ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
 @dataclass
 class BatConfig:
     files: list = field(default_factory=list)
-    language: Optional[str] = None
+    language: str | None = None
     theme: str = "monokai"
     show_numbers: bool = True
     show_grid: bool = True
     show_header: bool = True
     show_changes: bool = True
     plain: bool = False
-    line_range: Optional[tuple] = None
+    line_range: tuple | None = None
     highlight_lines: set = field(default_factory=set)
     paging: str = "auto"  # auto | always | never
     tab_width: int = 4
@@ -173,7 +172,7 @@ class GitDiffCalculator:
                 for i in range(new_count):
                     self.added.add(new_start + i)
 
-    def status_for(self, line_no: int) -> Optional[str]:
+    def status_for(self, line_no: int) -> str | None:
         if line_no in self.added:
             return "added"
         if line_no in self.modified:
@@ -193,7 +192,7 @@ class Printer:
     def __init__(self, config: BatConfig):
         self.config = config
 
-    def print_file(self, path: Optional[Path], content: str) -> str:
+    def print_file(self, path: Path | None, content: str) -> str:
         lines = content.splitlines()
         total = len(lines)
 

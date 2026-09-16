@@ -13,7 +13,7 @@ import ast
 import traceback
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from dh import cprint, fsz, gsz
 
@@ -833,7 +833,7 @@ def _is_docstring(node: ast.AST) -> bool:
 
 def process_file(
     path: Path, dry_run: bool = False, verbose: bool = False
-) -> tuple[Optional[str], bool, list[str], list[str]]:
+) -> tuple[str | None, bool, list[str], list[str]]:
     """Process a single Python file for pathlib refactoring.
 
     Args:

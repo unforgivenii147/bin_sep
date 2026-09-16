@@ -8,7 +8,6 @@ Usage:
 
 import json
 import os
-import subprocess
 import sys
 
 from dh import runcmd

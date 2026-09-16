@@ -3,7 +3,6 @@
 
 import argparse
 import multiprocessing as mp
-import sys
 from collections.abc import Iterator
 from pathlib import Path
 
@@ -163,9 +162,9 @@ def main() -> int:
             total_comments += count
             if count > 0:
                 files_changed += 1
-                logger.info(f"{rel}: {count} comment(s) removed")
+                print(f"{rel}: {count} comment(s) removed")
 
-    logger.info(
+    print(
         f"Summary: {files_changed}/{len(files)} file(s) changed, "
         f"{total_comments} comment(s) removed, {errors} error(s)."
     )

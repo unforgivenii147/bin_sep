@@ -8,10 +8,11 @@ from __future__ import annotations
 import argparse
 import tarfile
 import time
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Any, Callable, Iterable, Optional
+from typing import Any
 
 import zstandard as zstd
 from dh import fsz, should_skip
@@ -132,7 +133,7 @@ class OperationResult:
     operation: str = "compress"
     was_tarred: bool = False
     was_untarred: bool = False
-    error: Optional[str] = None
+    error: str | None = None
 
     @property
     def ratio(self) -> float:
@@ -273,7 +274,7 @@ def get_files(
     mode: str,
     exclude_ext: set[str],
     exclude_patterns: list[str],
-    ext_filter: Optional[list[str]] = None,
+    ext_filter: list[str] | None = None,
     recursive: bool = True,
 ) -> list[Path]:
     """Collect candidate files for the given mode, applying filters."""
@@ -348,14 +349,14 @@ def print_summary(results: list[OperationResult], root: Path, operation: str) ->
         )
         console.print(Panel(summary, border_style="cyan"))
     else:
-        logger.info(f"--- {operation.capitalize()} Summary ---")
-        logger.info(
+        print(f"--- {operation.capitalize()} Summary ---")
+        print(
             f"Processed {len(results)} files "
             f"({len(successes)} success, {len(failures)} failure)"
         )
-        logger.info(f"Original size: {fsz(total_orig)}")
-        logger.info(f"Processed size: {fsz(total_proc)}")
-        logger.info(f"Total time: {total_time:.2f}s")
+        print(f"Original size: {fsz(total_orig)}")
+        print(f"Processed size: {fsz(total_proc)}")
+        print(f"Total time: {total_time:.2f}s")
 
 
 def _build_job(
@@ -414,10 +415,10 @@ def main() -> int:
         recursive=not args.tar,
     )
     if not files:
-        logger.info("No files found to process.")
+        print("No files found to process.")
         return 0
 
-    logger.info(f"Found {len(files)} files. Starting {mode}...")
+    print(f"Found {len(files)} files. Starting {mode}...")
 
     worker = _build_job(mode, args.level, args.keep)
     results: list[OperationResult] = []
@@ -444,7 +445,7 @@ def main() -> int:
                 res = ar.get()
                 results.append(res)
                 status = "OK" if res.success else "FAIL"
-                logger.info(f"[{i}/{total}] {res.path.name} - {status}")
+                print(f"[{i}/{total}] {res.path.name} - {status}")
 
     print_summary(results, root, mode)
     return 0

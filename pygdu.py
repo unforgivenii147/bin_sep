@@ -18,7 +18,7 @@ import tty
 from dataclasses import dataclass, field
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Final, Optional
+from typing import Final
 
 from dh import fsz
 from loguru import logger
@@ -49,8 +49,8 @@ class FSItem:
     name: str
     is_dir: bool
     size: int = 0
-    children: list["FSItem"] = field(default_factory=list)
-    parent: Optional["FSItem"] = None
+    children: list[FSItem] = field(default_factory=list)
+    parent: FSItem | None = None
     flag: str = " "
 
 
@@ -185,7 +185,7 @@ def main() -> int:
         logger.error("{} is not a valid directory.", target_dir)
         return 1
 
-    logger.info("Scanning {} targets efficiently...", target_dir.resolve())
+    print("Scanning {} targets efficiently...", target_dir.resolve())
     analyzer = DiskAnalyzer(target_dir)
     current_node: FSItem = analyzer.scan()
     selected_idx: int = 0

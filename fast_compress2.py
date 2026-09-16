@@ -22,10 +22,10 @@ import heapq
 import json
 import sys
 import threading
+from collections.abc import Generator, Iterator
 from multiprocessing import Pool
 from multiprocessing.pool import AsyncResult
 from pathlib import Path
-from typing import Generator, Iterator, Tuple
 
 import zstandard as zstd
 from dh import fsz
@@ -335,22 +335,20 @@ def get_files_generator(directory: Path, compress: bool) -> Generator[Path, None
     if skipped_symlinks > 0:
         logger.warning(f"Skipped {skipped_symlinks} symlinks")
     if skipped_media > 0:
-        logger.info(f"Skipped {skipped_media} media/binary files (already compressed)")
+        print(f"Skipped {skipped_media} media/binary files (already compressed)")
     if skipped_extensions > 0:
-        logger.info(f"Skipped {skipped_extensions} files with unwanted extensions")
+        print(f"Skipped {skipped_extensions} files with unwanted extensions")
     if skipped_editable > 0:
-        logger.info(f"Skipped {skipped_editable} editable package directories")
+        print(f"Skipped {skipped_editable} editable package directories")
     if skipped_dirs > 0:
-        logger.info(f"Skipped {skipped_dirs} excluded directories")
+        print(f"Skipped {skipped_dirs} excluded directories")
 
-    logger.info(f"Sorting {total_files} files by size (largest first)...")
+    print(f"Sorting {total_files} files by size (largest first)...")
     while file_heap:
         _neg_size, fp = heapq.heappop(file_heap)
         yield fp
 
-    logger.info(
-        f"Scanned {total_dirs} directories, found {total_files} files to process"
-    )
+    print(f"Scanned {total_dirs} directories, found {total_files} files to process")
 
 
 # ---------------------------------------------------------------------------
@@ -433,18 +431,18 @@ def process_files(
     skipped = 0
     completed = 0
 
-    logger.info(f"\n{'Compressing' if compress else 'Decompressing'} files...")
-    logger.info(f"Remove original files: {'Yes' if remove_original else 'No'}")
-    logger.info("-" * 40)
+    print(f"\n{'Compressing' if compress else 'Decompressing'} files...")
+    print(f"Remove original files: {'Yes' if remove_original else 'No'}")
+    print("-" * 40)
 
     files_list: list[Path] = list(file_generator)
     total_files = len(files_list)
 
     if total_files == 0:
-        logger.info("No files to process.")
+        print("No files to process.")
         return
 
-    logger.info(f"Processing {total_files} files...")
+    print(f"Processing {total_files} files...")
 
     pending: list[tuple[AsyncResult, Path, Path]] = []
 
@@ -495,15 +493,15 @@ def process_files(
             if not success:
                 failed.append((path, str(_payload)))
 
-    logger.info("-" * 40)
+    print("-" * 40)
 
     if compress and total_files > 0:
         saved, ratio, percent_saved = stats.get_savings()
-        logger.info("Compression Statistics:")
-        logger.info(f"   Original size:  {fsz(stats.original_size)}")
-        logger.info(f"   Compressed size: {fsz(stats.compressed_size)}")
-        logger.info(f"   Space saved:    {fsz(saved)} ({percent_saved:.1f}%)")
-        logger.info(f"   Compression ratio: {ratio:.1f}%")
+        print("Compression Statistics:")
+        print(f"   Original size:  {fsz(stats.original_size)}")
+        print(f"   Compressed size: {fsz(stats.compressed_size)}")
+        print(f"   Space saved:    {fsz(saved)} ({percent_saved:.1f}%)")
+        print(f"   Compression ratio: {ratio:.1f}%")
 
     if skipped > 0:
         logger.warning(f"Skipped {skipped} files (already exist or invalid format)")
@@ -521,7 +519,7 @@ def process_files(
                 f"{success_count} files!"
             )
             if remove_original:
-                logger.info("   Original files have been removed.")
+                print("   Original files have been removed.")
         else:
             logger.warning("No files were processed.")
 
@@ -571,7 +569,7 @@ def main() -> int:
 
     if not args.compress and not args.decompress:
         args.compress = True
-        logger.info("No action specified, defaulting to compression mode")
+        print("No action specified, defaulting to compression mode")
 
     if args.compress and (args.level < 1 or args.level > 22):
         logger.error("Compression level must be between 1 and 22")
@@ -587,13 +585,13 @@ def main() -> int:
 
     remove_original = not args.keep
 
-    logger.info(f"Working directory: {base_dir}")
-    logger.info(f"Mode: {'Compression' if args.compress else 'Decompression'}")
-    logger.info(f"Threads: {args.threads}")
+    print(f"Working directory: {base_dir}")
+    print(f"Mode: {'Compression' if args.compress else 'Decompression'}")
+    print(f"Threads: {args.threads}")
     if args.compress:
-        logger.info(f"Compression level: {args.level}")
-    logger.info(f"Keep original files: {'Yes' if args.keep else 'No'}")
-    logger.info("\nScanning directory tree...")
+        print(f"Compression level: {args.level}")
+    print(f"Keep original files: {'Yes' if args.keep else 'No'}")
+    print("\nScanning directory tree...")
 
     file_generator = get_files_generator(base_dir, args.compress)
     process_files(

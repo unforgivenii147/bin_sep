@@ -20,7 +20,7 @@ import tempfile
 import tokenize
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Final, Optional, Union
+from typing import Final
 
 from deep_translator import GoogleTranslator
 from dh import DOC_TH1, DOC_TH2, get_files, is_binary
@@ -44,7 +44,7 @@ SKIP_DIRS: Final[frozenset[str]] = frozenset(
 NON_ENGLISH_PATTERN: Final[re.Pattern[str]] = re.compile(r"[^\x00-\x7F]")
 
 TokenTuple = tuple[int, str, tuple[int, int], tuple[int, int], str]
-TranslationTarget = Union[tuple[int, str], tuple[int, str, str]]
+TranslationTarget = tuple[int, str] | tuple[int, str, str]
 
 
 def is_english(text: str) -> bool:
@@ -66,7 +66,7 @@ def batch_translate(texts: list[str]) -> list[str]:
     combined_text = separator.join(texts)
 
     try:
-        translated_combined: Optional[str] = GoogleTranslator(
+        translated_combined: str | None = GoogleTranslator(
             source="auto", target="en"
         ).translate(combined_text)
         if not translated_combined:
@@ -181,7 +181,7 @@ def process_file(path: Path) -> None:
     if is_english(original.strip()):
         return
 
-    logger.info(f"Processing {path.name}...")
+    print(f"Processing {path.name}...")
 
     try:
         translated: str
@@ -192,7 +192,7 @@ def process_file(path: Path) -> None:
 
         if translated.strip() != original.strip():
             safe_overwrite(path, translated)
-            logger.info(f"✓ Updated {path.name}")
+            print(f"✓ Updated {path.name}")
     except Exception as e:
         logger.error(f"Failed to process {path}: {e}")
 
@@ -207,7 +207,7 @@ def main() -> None:
     )
 
     if not files:
-        logger.info("No files to process.")
+        print("No files to process.")
         return
 
     with Pool(processes=POOL_WORKERS) as pool:

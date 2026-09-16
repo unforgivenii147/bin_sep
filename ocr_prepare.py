@@ -19,9 +19,8 @@ from __future__ import annotations
 
 import argparse
 import sys
-from multiprocessing import Pool, cpu_count
+from multiprocessing import Pool
 from pathlib import Path
-from typing import Dict, List, Set, Tuple
 
 from loguru import logger
 
@@ -29,14 +28,17 @@ try:
     import cv2  # type: ignore[import-not-found]
 
     USE_CV2: bool = True
-    logger.info("Using OpenCV for image processing")
+    print("Using OpenCV for image processing")
 except ImportError:
     try:
-        from PIL import ImageEnhance  # type: ignore[import-not-found]
-        from PIL import Image, ImageFilter
+        from PIL import (
+            Image,
+            ImageEnhance,  # type: ignore[import-not-found]
+            ImageFilter,
+        )
 
         USE_CV2 = False
-        logger.info("OpenCV not found, using Pillow for image processing")
+        print("OpenCV not found, using Pillow for image processing")
     except ImportError:
         logger.error("Neither OpenCV nor Pillow found. Please install at least one.")
         sys.exit(1)
@@ -162,7 +164,7 @@ def process_images_parallel(image_files: list[Path]) -> dict[str, int]:
         return {"success": 0, "failed": 0}
 
     workers: int = min(POOL_SIZE, len(image_files))
-    logger.info(f"Processing {len(image_files)} images using {workers} workers")
+    print(f"Processing {len(image_files)} images using {workers} workers")
 
     results: dict[str, int] = {"success": 0, "failed": 0}
     with Pool(processes=workers) as pool:
@@ -174,7 +176,7 @@ def process_images_parallel(image_files: list[Path]) -> dict[str, int]:
                 _, success = async_result.get()
                 if success:
                     results["success"] += 1
-                    logger.info(f"✓ Processed: {path}")
+                    print(f"✓ Processed: {path}")
                 else:
                     results["failed"] += 1
                     logger.error(f"✗ Failed: {path}")
@@ -218,21 +220,21 @@ def main() -> int:
 
     paths: list[Path] = args.paths if args.paths else [Path.cwd()]
     if not args.paths:
-        logger.info(f"No input specified, processing current directory: {Path.cwd()}")
+        print(f"No input specified, processing current directory: {Path.cwd()}")
 
     image_files: list[Path] = find_images(paths, args.recursive)
     if not image_files:
         logger.error("No supported image files found")
-        logger.info(f"Supported extensions: {', '.join(sorted(IMAGE_EXTENSIONS))}")
+        print(f"Supported extensions: {', '.join(sorted(IMAGE_EXTENSIONS))}")
         return 1
 
-    logger.info(f"Found {len(image_files)} image(s) to process")
+    print(f"Found {len(image_files)} image(s) to process")
     results: dict[str, int] = process_images_parallel(image_files)
-    logger.info("=" * 40)
-    logger.info("Processing complete:")
-    logger.info(f"  ✓ Success: {results['success']}")
-    logger.info(f"  ✗ Failed:  {results['failed']}")
-    logger.info(f"  Total:     {len(image_files)}")
+    print("=" * 40)
+    print("Processing complete:")
+    print(f"  ✓ Success: {results['success']}")
+    print(f"  ✗ Failed:  {results['failed']}")
+    print(f"  Total:     {len(image_files)}")
     return 0 if results["failed"] == 0 else 1
 
 

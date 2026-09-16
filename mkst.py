@@ -18,7 +18,8 @@ import time
 from multiprocessing import Pool
 from multiprocessing.pool import AsyncResult
 from pathlib import Path
-from typing import Any, Dict, List, Match, Optional, Set, Tuple
+from re import Match
+from typing import Any
 from urllib.parse import urljoin, urlparse
 
 import requests
@@ -77,7 +78,7 @@ def get_mime_type(path: str) -> str:
     return mime
 
 
-def fetch_remote(url: str) -> Optional[bytes]:
+def fetch_remote(url: str) -> bytes | None:
     """Fetch a remote URL and return its bytes, or None on failure."""
     if url.startswith("//"):
         url = "https:" + url
@@ -90,7 +91,7 @@ def fetch_remote(url: str) -> Optional[bytes]:
         return None
 
 
-def read_local(path: Path) -> Optional[bytes]:
+def read_local(path: Path) -> bytes | None:
     """Read a local file and return its bytes, or None on failure."""
     try:
         return path.read_bytes()
@@ -100,7 +101,7 @@ def read_local(path: Path) -> Optional[bytes]:
 
 
 def process_css_content(
-    css_content: str, base_path: Path, base_url: Optional[str] = None
+    css_content: str, base_path: Path, base_url: str | None = None
 ) -> tuple[str, int, int]:
     """Embed all url(...) references in CSS content as base64 data URIs.
 
@@ -179,7 +180,7 @@ def process_html_file(path: Path) -> Stats:
             if not href:
                 continue
             css_text = ""
-            base_url: Optional[str] = None
+            base_url: str | None = None
             css_base_path: Path = path
             if is_remote(href):
                 if raw := fetch_remote(href):
@@ -316,7 +317,7 @@ def main() -> None:
         logger.warning("No HTML or CSS files found to process.")
         return
 
-    logger.info(f"Processing {len(targets)} files across multiple CPU cores...\n")
+    print(f"Processing {len(targets)} files across multiple CPU cores...\n")
 
     t_loc, t_rem = 0, 0
     start_time = time.perf_counter()
@@ -336,7 +337,7 @@ def main() -> None:
             t_rem += s["remote"]
             status = s["status"]
             if status == "success":
-                logger.info(
+                print(
                     f"[SUCCESS] {display_path} "
                     f"({s['time']:.2f}s) - Embedded: "
                     f"{s['local']} local, {s['remote']} remote"
@@ -347,8 +348,8 @@ def main() -> None:
                 logger.error(f"[ERROR] {display_path} - {status}")
 
     total_time = time.perf_counter() - start_time
-    logger.info(f"\nBuild Complete in {total_time:.2f}s!")
-    logger.info(f"Total globally embedded resources: {t_loc} local, {t_rem} remote.")
+    print(f"\nBuild Complete in {total_time:.2f}s!")
+    print(f"Total globally embedded resources: {t_loc} local, {t_rem} remote.")
 
 
 if __name__ == "__main__":

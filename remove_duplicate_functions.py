@@ -25,9 +25,10 @@ import argparse
 import ast
 import hashlib
 import sys
+from collections.abc import Sequence
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any, Optional
 
 from loguru import logger
 
@@ -57,7 +58,7 @@ def normalize_function_body(lines: Sequence[str], start_idx: int, end_idx: int) 
     return "\n".join(line[min_indent:] if line.strip() else "" for line in body_lines)
 
 
-def compute_function_hash(path: Path, func_node: ast.FunctionDef) -> Optional[str]:
+def compute_function_hash(path: Path, func_node: ast.FunctionDef) -> str | None:
     """Compute an MD5 hash for a top-level function definition.
 
     The hash covers the function's signature (arguments and return
@@ -98,7 +99,7 @@ def compute_function_hash(path: Path, func_node: ast.FunctionDef) -> Optional[st
 
 def extract_top_level_functions(
     path: Path,
-) -> Optional[dict[str, dict[str, Any]]]:
+) -> dict[str, dict[str, Any]] | None:
     """Extract all top-level function definitions from a Python file.
 
     Args:
@@ -118,7 +119,7 @@ def extract_top_level_functions(
     functions: dict[str, dict[str, Any]] = {}
     for node in ast.iter_child_nodes(tree):
         if isinstance(node, ast.FunctionDef):
-            content_hash: Optional[str] = compute_function_hash(path, node)
+            content_hash: str | None = compute_function_hash(path, node)
             if content_hash:
                 functions[node.name] = {
                     "name": node.name,
@@ -144,9 +145,7 @@ def process_target_file(
     Returns:
         A result dict with keys: file, status, duplicates, and optionally error.
     """
-    funcs: Optional[dict[str, dict[str, Any]]] = extract_top_level_functions(
-        target_path
-    )
+    funcs: dict[str, dict[str, Any]] | None = extract_top_level_functions(target_path)
     if funcs is None or not funcs:
         return {"file": target_path, "status": "skipped", "duplicates": []}
 
@@ -219,7 +218,7 @@ def expand_input_paths(inputs: Sequence[str]) -> list[Path]:
     return sorted(py_files)
 
 
-def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
+def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     """Parse command-line arguments.
 
     Args:
@@ -252,7 +251,7 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
-def main(argv: Optional[Sequence[str]] = None) -> int:
+def main(argv: Sequence[str] | None = None) -> int:
     """Entry point for the duplicate-function remover.
 
     Args:
@@ -271,10 +270,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         logger.error("❌ Reference must be a .py file")
         return 1
 
-    logger.info(f"📖 Analyzing reference: {ref_path}")
-    ref_funcs: Optional[dict[str, dict[str, Any]]] = extract_top_level_functions(
-        ref_path
-    )
+    print(f"📖 Analyzing reference: {ref_path}")
+    ref_funcs: dict[str, dict[str, Any]] | None = extract_top_level_functions(ref_path)
     if ref_funcs is None:
         logger.error("❌ Failed to parse reference file")
         return 1
@@ -285,7 +282,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     ref_hashes: dict[str, str] = {
         info["hash"]: info["name"] for info in ref_funcs.values()
     }
-    logger.info(f"  Found {len(ref_hashes)} functions")
+    print(f"  Found {len(ref_hashes)} functions")
 
     target_files: list[Path] = expand_input_paths(args.inputs)
     target_files = [f for f in target_files if f != ref_path]
@@ -294,8 +291,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         return 0
 
     mode: str = "applying" if args.apply else "scanning"
-    logger.info(f"\n🔍 {mode} {len(target_files)} file(s)...")
-    logger.info("-" * 40)
+    print(f"\n🔍 {mode} {len(target_files)} file(s)...")
+    print("-" * 40)
 
     total_duplicates: int = 0
     total_updated: int = 0
@@ -309,9 +306,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             result: dict[str, Any] = async_result.get()
             status: str = result["status"]
             if status == "skipped":
-                logger.info(f"⊘  {result['file']}")
+                print(f"⊘  {result['file']}")
             elif status == "ok":
-                logger.info(f"✅ {result['file']}")
+                print(f"✅ {result['file']}")
             elif status == "found":
                 total_duplicates += len(result["duplicates"])
                 names: str = ", ".join(d["name"] for d in result["duplicates"])
@@ -319,16 +316,16 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             elif status == "updated":
                 total_updated += len(result["duplicates"])
                 names = ", ".join(result["duplicates"])
-                logger.info(f"✂️  {result['file']}: removed {names}")
+                print(f"✂️  {result['file']}: removed {names}")
             elif status == "error":
                 logger.error(f"❌ {result['file']}: {result['error']}")
 
-    logger.info("-" * 40)
+    print("-" * 40)
     if args.apply:
-        logger.info(f"✅ Removed {total_updated} duplicate(s)")
+        print(f"✅ Removed {total_updated} duplicate(s)")
     else:
-        logger.info(f"ℹ️  Found {total_duplicates} duplicate function(s)")
-        logger.info("   Run with -a/--apply to remove")
+        print(f"ℹ️  Found {total_duplicates} duplicate function(s)")
+        print("   Run with -a/--apply to remove")
 
     return 0
 

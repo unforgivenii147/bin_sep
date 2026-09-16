@@ -89,7 +89,7 @@ def main() -> None:
         return
 
     if not all_lines:
-        logger.info(f"No lines found in {input_path.name}")
+        print(f"No lines found in {input_path.name}")
         return
 
     chinese_lines: list[str] = [line for line in all_lines if contains_chinese(line)]
@@ -97,16 +97,16 @@ def main() -> None:
         line for line in all_lines if not contains_chinese(line)
     ]
 
-    logger.info(
+    print(
         f"Loaded {len(all_lines)} lines: {len(chinese_lines)} with Chinese, "
         f"{len(non_chinese_lines)} already English/skipped"
     )
 
     if not chinese_lines:
-        logger.info(f"No Chinese lines to translate in {input_path.name}")
+        print(f"No Chinese lines to translate in {input_path.name}")
         return
 
-    logger.info(f"Starting translation with {MAX_WORKERS} workers...")
+    print(f"Starting translation with {MAX_WORKERS} workers...")
 
     results: dict[str, str] = {}
 
@@ -119,7 +119,7 @@ def main() -> None:
                 _, english_line = async_res.get()
                 if english_line:
                     results[chinese_line] = english_line
-                    logger.info(f"{chinese_line} → {english_line}")
+                    print(f"{chinese_line} → {english_line}")
                 else:
                     logger.error(f"Could not translate: {chinese_line}")
             except Exception as exc:
@@ -132,7 +132,7 @@ def main() -> None:
                     f.write(f"{results[line]}\n")
                 else:
                     f.write(f"{line}\n")
-        logger.info(
+        print(
             f"Updated {input_path.name}: translated {len(results)} lines, "
             f"kept {len(non_chinese_lines)} lines unchanged"
         )

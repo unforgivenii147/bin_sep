@@ -24,7 +24,7 @@ import sys
 import time
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Union
+from typing import Any, List
 
 from dh import fsz
 from loguru import logger
@@ -55,7 +55,7 @@ DEFAULT_OUTPUT_FORMAT: str = "woff2"
 FIXED_WORKERS: int = 8
 
 
-def detect_format(path: Path) -> Optional[str]:
+def detect_format(path: Path) -> str | None:
     """Return the lowercase font format from a path's extension, or None if unsupported."""
     ext = path.suffix.lower().lstrip(".")
     return ext if ext in SUPPORTED_FORMATS else None
@@ -64,7 +64,7 @@ def detect_format(path: Path) -> Optional[str]:
 def generate_output_path(
     input_path: Path,
     output_format: str,
-    output_dir: Optional[Path] = None,
+    output_dir: Path | None = None,
 ) -> Path:
     """Build the output path for a converted font, optionally inside output_dir."""
     stem = input_path.stem
@@ -77,7 +77,7 @@ def convert_font(
     input_path: Path,
     output_format: str,
     remove_original: bool,
-    output_dir: Optional[Path],
+    output_dir: Path | None,
     force: bool,
 ) -> dict[str, Any]:
     """Convert a single font file to the requested format and return a stats dict."""
@@ -112,7 +112,7 @@ def convert_font(
         font = TTFont(str(input_path), lazy=False)
         has_cff = "CFF " in font or "CFF2" in font
         has_glyf = "glyf" in font
-        warning: Optional[str] = None
+        warning: str | None = None
         font.flavor = FLAVORS.get(output_format)
         if output_format in SFNT_VERSIONS:
             if output_format == "otf" and has_glyf and not has_cff:
@@ -182,19 +182,19 @@ def print_file_stats(stats: dict[str, Any]) -> None:
         out_sz = stats["output_size"]
         ratio = (out_sz / in_sz * 100) if in_sz else 0.0
         saved = (1 - out_sz / in_sz) * 100 if in_sz else 0.0
-        logger.info("  {} {}", status, name)
-        logger.info(
+        print("  {} {}", status, name)
+        print(
             "      {} → {}  ({:.1f}% of original, {:+.1f}% change)",
             fsz(in_sz),
             fsz(out_sz),
             ratio,
             saved,
         )
-        logger.info("      Time: {:.3f}s", stats["time"])
+        print("      Time: {:.3f}s", stats["time"])
         if stats["warning"]:
             logger.warning("      ⚠  {}", stats["warning"])
         if stats["removed_original"]:
-            logger.info("      🗑  original removed")
+            print("      🗑  original removed")
     else:
         logger.error("  {} {} — ERROR: {}", status, name, stats["error"])
 
@@ -204,28 +204,28 @@ def print_summary(all_stats: list[dict[str, Any]]) -> None:
     total = len(all_stats)
     ok = sum(1 for s in all_stats if s["success"])
     fail = total - ok
-    logger.info("")
-    logger.info("=" * 40)
-    logger.info("Summary")
-    logger.info("-" * 40)
-    logger.info("  Files processed : {}", total)
-    logger.info("  Successful      : {}", ok)
-    logger.info("  Failed          : {}", fail)
+    print()
+    print("=" * 40)
+    print("Summary")
+    print("-" * 40)
+    print("  Files processed : {}", total)
+    print("  Successful      : {}", ok)
+    print("  Failed          : {}", fail)
     if ok:
         total_in = sum(s["input_size"] for s in all_stats if s["success"])
         total_out = sum(s["output_size"] for s in all_stats if s["success"])
         total_time = sum(s["time"] for s in all_stats if s["success"])
-        logger.info("  Input size      : {}", fsz(total_in))
-        logger.info("  Output size     : {}", fsz(total_out))
+        print("  Input size      : {}", fsz(total_in))
+        print("  Output size     : {}", fsz(total_out))
         if total_in:
-            logger.info(
+            print(
                 "  Ratio           : {:.1f}% of original",
                 total_out / total_in * 100,
             )
-        logger.info("  Total time      : {:.3f}s", total_time)
+        print("  Total time      : {:.3f}s", total_time)
         if total > 1:
-            logger.info("  Avg per file    : {:.3f}s", total_time / total)
-    logger.info("=" * 40)
+            print("  Avg per file    : {:.3f}s", total_time / total)
+    print("=" * 40)
 
 
 def parse_args() -> argparse.Namespace:
@@ -306,7 +306,7 @@ def main() -> None:
     input_paths: list[Path] = args.inputs if args.inputs else [Path.cwd()]
     font_files = find_font_files(input_paths)
     if not font_files:
-        logger.info("No font files found.")
+        print("No font files found.")
         sys.exit(0)
 
     to_convert: list[Path] = []
@@ -318,26 +318,26 @@ def main() -> None:
             to_convert.append(f)
 
     if already_target:
-        logger.info(
+        print(
             "Skipping {} file(s) already in .{} format",
             len(already_target),
             args.output_format,
         )
 
     if not to_convert:
-        logger.info("Nothing to convert.")
+        print("Nothing to convert.")
         sys.exit(0)
 
-    logger.info("")
-    logger.info("Converting {} file(s) → .{}", len(to_convert), args.output_format)
+    print()
+    print("Converting {} file(s) → .{}", len(to_convert), args.output_format)
     if args.remove:
-        logger.info("  (originals will be removed on success)")
-    logger.info("")
+        print("  (originals will be removed on success)")
+    print()
 
     if args.dry_run:
         for f in to_convert:
             out = generate_output_path(f, args.output_format, args.output_dir)
-            logger.info("  {}  →  {}", f, out)
+            print("  {}  →  {}", f, out)
         sys.exit(0)
 
     all_stats: list[dict[str, Any]] = []
@@ -376,8 +376,8 @@ def main() -> None:
                     all_stats.append(stats)
                     print_file_stats(stats)
             except KeyboardInterrupt:
-                logger.info("")
-                logger.info("Interrupted — terminating pool …")
+                print()
+                print("Interrupted — terminating pool …")
                 pool.terminate()
                 pool.join()
                 for ar in async_results:

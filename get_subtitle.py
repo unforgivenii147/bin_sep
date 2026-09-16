@@ -28,18 +28,18 @@ def get_english_subtitles(mkv_path, output_dir=None):
     else:
         output_dir = Path(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
-    logger.info(f"Scanning video: {mkv_path}")
+    print(f"Scanning video: {mkv_path}")
     try:
         video = scan_video(mkv_path)
-        logger.info(f"Found video: {video.name}")
-        logger.info(f"  - Size: {video.size} bytes")
-        logger.info(f"  - Duration: {video.duration:.2f} seconds")
-        logger.info(f"  - Hashes: {video.hashes}")
+        print(f"Found video: {video.name}")
+        print(f"  - Size: {video.size} bytes")
+        print(f"  - Duration: {video.duration:.2f} seconds")
+        print(f"  - Hashes: {video.hashes}")
     except Exception as e:
         logger.error(f"Error scanning video: {e}")
         return False
     language = babelfish.Language("eng")
-    logger.info("Searching for English subtitles...")
+    print("Searching for English subtitles...")
     try:
         subtitles = download_best_subtitles(
             [video],
@@ -52,7 +52,7 @@ def get_english_subtitles(mkv_path, output_dir=None):
             return False
         subtitle_path = output_dir / f"{mkv_path.stem}.srt"
         save_subtitles(video, video_subtitles, single=True, path=subtitle_path)
-        logger.info(f"Subtitles saved to: {subtitle_path}")
+        print(f"Subtitles saved to: {subtitle_path}")
         return True
     except ProviderError as e:
         logger.error(f"Provider error: {e}")

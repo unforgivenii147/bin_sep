@@ -24,7 +24,7 @@ import io
 import tarfile
 from multiprocessing import Pool
 from pathlib import Path
-from typing import List, Optional, Tuple, Union
+from typing import List
 
 import pylzma
 from loguru import logger
@@ -57,7 +57,7 @@ def compress_file(
     path: Path,
     output_dir: Path,
     tar_subdirs_first: bool = False,
-) -> Optional[str]:
+) -> str | None:
     """
     Compress a single file or directory into a .7z (or .tar.7z) archive.
 
@@ -168,7 +168,7 @@ def process_files_parallel(
             result = async_result.get()
             if result:
                 results.append(result)
-                logger.info(result)
+                print(result)
 
     return results
 
@@ -254,7 +254,7 @@ def main() -> int:
     mode: str = args.mode
     tar_subdirs_first: bool = args.tar_subdirs_first
 
-    output_arg: Optional[str] = args.output
+    output_arg: str | None = args.output
     output_dir = Path(
         output_arg if output_arg is not None else _default_output_for_mode(mode)
     )
@@ -285,8 +285,8 @@ def main() -> int:
         if not all_files:
             logger.warning("No files found to compress in current directory")
             return 0
-        logger.info(f"Found {len(all_files)} items to compress")
-        logger.info(f"Compressing to: {output_dir}")
+        print(f"Found {len(all_files)} items to compress")
+        print(f"Compressing to: {output_dir}")
         process_files_parallel(all_files, output_dir, "compress", tar_subdirs_first)
     else:
         output_dir.mkdir(exist_ok=True)
@@ -303,8 +303,8 @@ def main() -> int:
         if not compressed_files:
             logger.warning("No .7z or .tar.7z files found in current directory")
             return 0
-        logger.info(f"Found {len(compressed_files)} files to decompress")
-        logger.info(f"Decompressing to: {output_dir}")
+        print(f"Found {len(compressed_files)} files to decompress")
+        print(f"Decompressing to: {output_dir}")
         process_files_parallel(compressed_files, output_dir, "decompress", False)
 
     return 0

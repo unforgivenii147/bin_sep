@@ -69,7 +69,7 @@ def main() -> int:
         logger.warning("No PNG files found in the current directory.")
         return 0
 
-    logger.info(f"Found {len(png_files)} PNG files to optimize.")
+    print(f"Found {len(png_files)} PNG files to optimize.")
 
     results: list[tuple[bool, Path, str | None]] = []
     with Pool(processes=MAX_WORKERS) as pool:
@@ -80,7 +80,7 @@ def main() -> int:
                 pbar.update(1)
 
     success: int = sum(1 for ok, _, _ in results if ok)
-    logger.info(f"Optimization complete. Success: {success}/{len(png_files)} files.")
+    print(f"Optimization complete. Success: {success}/{len(png_files)} files.")
     return 0
 
 

@@ -43,7 +43,7 @@ FIXED_WORKERS: Final[int] = 8
 # ---------------------------------------------------------------------------
 
 
-def find_rst2html_script() -> Optional[Path]:
+def find_rst2html_script() -> Path | None:
     """Locate the ``rest2html.py`` helper script in common locations.
 
     Returns:
@@ -85,7 +85,7 @@ def convert_md_to_rst(content: str) -> str:
     content = MD_LINK_PATTERN.sub(r"`\1 <\2>`_", content)
 
     def replace_code_block(match: re.Match[str]) -> str:
-        language: Optional[str] = match.group(1)
+        language: str | None = match.group(1)
         code: str = match.group(2).strip()
         indented: str = "\n".join("    " + line for line in code.split("\n"))
         if language:
@@ -102,9 +102,7 @@ def convert_md_to_rst(content: str) -> str:
     return content
 
 
-def convert_file_to_html(
-    path: Path, stylesheet_url: Optional[str] = None
-) -> Optional[Path]:
+def convert_file_to_html(path: Path, stylesheet_url: str | None = None) -> Path | None:
     """Convert a single source file to HTML.
 
     Args:
@@ -121,7 +119,7 @@ def convert_file_to_html(
 
         content: str = path.read_text(encoding="utf-8")
         cleanup_temp: bool = False
-        temp_file: Optional[Path] = None
+        temp_file: Path | None = None
 
         if path.suffix.lower() == ".md":
             content = convert_md_to_rst(content)
@@ -143,7 +141,7 @@ def convert_file_to_html(
         try:
             subprocess.run(cmd, check=True, capture_output=True, text=True, timeout=30)
         except (subprocess.CalledProcessError, FileNotFoundError):
-            rst2html_script: Optional[Path] = find_rst2html_script()
+            rst2html_script: Path | None = find_rst2html_script()
             if rst2html_script:
                 cmd = [
                     sys.executable,
@@ -185,7 +183,7 @@ def generate_stylesheet_hash(stylesheet_path: Path) -> str:
     return f"style_{checksum}.css"
 
 
-def process_file(args: tuple[Path, Optional[str]]) -> tuple[Path, Optional[Path]]:
+def process_file(args: tuple[Path, str | None]) -> tuple[Path, Path | None]:
     """Worker entry point for converting a single file.
 
     Args:
@@ -195,11 +193,11 @@ def process_file(args: tuple[Path, Optional[str]]) -> tuple[Path, Optional[Path]
         A tuple of ``(original_path, html_path_or_None)``.
     """
     path, stylesheet_url = args
-    html_path: Optional[Path] = convert_file_to_html(path, stylesheet_url)
+    html_path: Path | None = convert_file_to_html(path, stylesheet_url)
     return (path, html_path)
 
 
-def find_all_source_files(root_dir: Optional[Path] = None) -> list[Path]:
+def find_all_source_files(root_dir: Path | None = None) -> list[Path]:
     """Recursively find all supported source files under ``root_dir``.
 
     Args:
@@ -218,7 +216,7 @@ def find_all_source_files(root_dir: Optional[Path] = None) -> list[Path]:
 
 
 def publish_parallel(
-    root_dir: Optional[Path] = None, max_workers: Optional[int] = None
+    root_dir: Path | None = None, max_workers: int | None = None
 ) -> None:
     """Convert all source files under ``root_dir`` to HTML in parallel.
 
@@ -233,7 +231,7 @@ def publish_parallel(
     root_dir = Path(root_dir).resolve()
 
     stylesheet_path: Path = root_dir / "style.css"
-    stylesheet_url: Optional[str] = None
+    stylesheet_url: str | None = None
     if stylesheet_path.exists():
         stylesheet_filename: str = generate_stylesheet_hash(stylesheet_path)
         stylesheet_dest: Path = root_dir / stylesheet_filename
@@ -243,15 +241,15 @@ def publish_parallel(
 
     source_files: list[Path] = find_all_source_files(root_dir)
     if not source_files:
-        logger.info(f"No source files found in {root_dir}")
+        print(f"No source files found in {root_dir}")
         return
 
-    logger.info(f"Found {len(source_files)} files to convert")
+    print(f"Found {len(source_files)} files to convert")
 
     converted: int = 0
     errors: int = 0
 
-    worker_args: list[tuple[Path, Optional[str]]] = [
+    worker_args: list[tuple[Path, str | None]] = [
         (fp, stylesheet_url) for fp in source_files
     ]
 
@@ -267,7 +265,7 @@ def publish_parallel(
                 original, html_path = async_result.get()
                 if html_path:
                     converted += 1
-                    logger.info(
+                    print(
                         f"Converted: {original.relative_to(root_dir)} -> "
                         f"{html_path.relative_to(root_dir)}"
                     )
@@ -277,7 +275,7 @@ def publish_parallel(
                 errors += 1
                 logger.error(f"Error processing file: {e}")
 
-    logger.info(f"\nConversion complete: {converted} converted, {errors} errors")
+    print(f"\nConversion complete: {converted} converted, {errors} errors")
 
 
 def main() -> int:

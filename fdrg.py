@@ -10,9 +10,9 @@ import fnmatch
 import tarfile
 import threading
 import zipfile
+from collections.abc import Sequence
 from multiprocessing.pool import AsyncResult, Pool
 from pathlib import Path
-from typing import List, Optional, Sequence, Set, Tuple
 
 from fastwalk import walk_files
 from loguru import logger
@@ -34,7 +34,7 @@ ARCHIVE_EXTENSIONS: tuple[str, ...] = (
 )
 WORKER_COUNT: int = 8
 
-SearchResult = tuple[str, Optional[int]]
+SearchResult = tuple[str, int | None]
 
 
 def setup_keyboard_listener() -> bool:
@@ -46,13 +46,13 @@ def setup_keyboard_listener() -> bool:
     try:
         import keyboard  # type: ignore[import-not-found]
 
-        def on_key_press(event: "keyboard.KeyboardEvent") -> None:  # type: ignore[name-defined]
+        def on_key_press(event: keyboard.KeyboardEvent) -> None:  # type: ignore[name-defined]
             if event.name in {"space", "p"} and pause_event.is_set():
                 pause_event.clear()
-                logger.info("PAUSED - press 'c' to continue...")
+                print("PAUSED - press 'c' to continue...")
             elif event.name == "c" and not pause_event.is_set():
                 pause_event.set()
-                logger.info("RESUMED - searching...")
+                print("RESUMED - searching...")
 
         keyboard.on_press(on_key_press)
         return True
@@ -199,13 +199,13 @@ def _report(results: Sequence[SearchResult]) -> int:
     """Log each result and return the count of newly reported matches."""
     for path, line_num in results:
         if line_num is not None:
-            logger.info(f"[FOUND] {path} (Line: {line_num})")
+            print(f"[FOUND] {path} (Line: {line_num})")
         else:
-            logger.info(f"[FOUND] {path}")
+            print(f"[FOUND] {path}")
     return len(results)
 
 
-def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
+def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     """Parse command-line arguments."""
     parser = argparse.ArgumentParser(description="Fast recursive string search")
     parser.add_argument("search_string")
@@ -221,7 +221,7 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
-def main(argv: Optional[Sequence[str]] = None) -> int:
+def main(argv: Sequence[str] | None = None) -> int:
     """Entry point: parse args, walk files, and search with a multiprocessing pool."""
     args = parse_args(argv)
 
@@ -235,14 +235,14 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     setup_keyboard_listener()
 
     root = Path(args.directory).resolve()
-    logger.info(f"Root: {root}")
-    logger.info(f"Mode: {'content' if args.content else 'filename'}")
-    logger.info(f"Excluded dirs: {sorted(excluded_dirs)}")
-    logger.info(f"Excluded patterns: {sorted(excluded_patterns)}")
-    logger.info("-" * 40)
+    print(f"Root: {root}")
+    print(f"Mode: {'content' if args.content else 'filename'}")
+    print(f"Excluded dirs: {sorted(excluded_dirs)}")
+    print(f"Excluded patterns: {sorted(excluded_patterns)}")
+    print("-" * 40)
 
     files = collect_files(root, excluded_dirs, excluded_patterns)
-    logger.info(f"Files queued: {len(files)}")
+    print(f"Files queued: {len(files)}")
 
     total: int = 0
     pool: Pool = Pool(processes=WORKER_COUNT)
@@ -262,7 +262,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     finally:
         pool.join()
 
-    logger.info(f"Total results: {total}")
+    print(f"Total results: {total}")
     return 0
 
 

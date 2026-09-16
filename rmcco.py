@@ -28,7 +28,7 @@ import zipfile
 from dataclasses import dataclass, field
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Final, Optional
+from typing import Final
 
 from loguru import logger
 
@@ -132,7 +132,7 @@ class CommentRemover:
         result: list[str] = []
         i = 0
         in_string = False
-        string_char: Optional[str] = None
+        string_char: str | None = None
         in_triple = False
         while i < len(line):
             if i + 2 < len(line):
@@ -325,10 +325,12 @@ def _remove_docstrings_from_source(
 
     needs_pass = False
     for node in ast.walk(new_tree):
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
-            if not node.body:
-                needs_pass = True
-                break
+        if (
+            isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))
+            and not node.body
+        ):
+            needs_pass = True
+            break
         if isinstance(node, ast.Module) and not node.body:
             needs_pass = True
             break
@@ -340,14 +342,16 @@ def _remove_docstrings_from_source(
     lines = result.split("\n")
     insertions: list[tuple[int, str]] = []
     for node in ast.walk(new_tree):
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
-            if not node.body:
-                # Insert a `pass` after the def/class line (and decorators).
-                insert_at = getattr(node, "lineno", 1)
-                indent = " " * (
-                    len(lines[insert_at - 1]) - len(lines[insert_at - 1].lstrip())
-                )
-                insertions.append((insert_at, f"{indent}    pass"))
+        if (
+            isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))
+            and not node.body
+        ):
+            # Insert a `pass` after the def/class line (and decorators).
+            insert_at = getattr(node, "lineno", 1)
+            indent = " " * (
+                len(lines[insert_at - 1]) - len(lines[insert_at - 1].lstrip())
+            )
+            insertions.append((insert_at, f"{indent}    pass"))
         if isinstance(node, ast.Module) and not node.body:
             insertions.append((0, "pass"))
 
@@ -481,7 +485,7 @@ def discover_files(start_path: str) -> tuple[list[Path], list[Path]]:
 
 def print_header(python_count: int, wheel_count: int) -> None:
     """Log a header with the number of discovered files."""
-    logger.info(f"Found: {python_count} Python files, {wheel_count} wheel files")
+    print(f"Found: {python_count} Python files, {wheel_count} wheel files")
 
 
 def print_results(stats: ProcessingStats, base_dir: Path) -> None:
@@ -492,7 +496,7 @@ def print_results(stats: ProcessingStats, base_dir: Path) -> None:
             logger.error(f"✗ {result.path}")
             logger.error(f"  Error: {result.error_message}")
         elif result.comments_removed == 0 and result.docstrings_removed == 0:
-            logger.info(f"○ {result.path} (no change)")
+            print(f"○ {result.path} (no change)")
         else:
             changes: list[str] = []
             if result.comments_removed > 0:
@@ -503,20 +507,20 @@ def print_results(stats: ProcessingStats, base_dir: Path) -> None:
                 changes.append(
                     f"{result.docstrings_removed} docstring{('s' if result.docstrings_removed != 1 else '')}"
                 )
-            logger.info(f"✓ {result.path} ({', '.join(changes)} removed)")
+            print(f"✓ {result.path} ({', '.join(changes)} removed)")
 
 
 def print_summary(stats: ProcessingStats) -> None:
     """Log the final processing summary."""
-    logger.info("=" * 40)
-    logger.info("Summary:")
-    logger.info(f"  Total files processed: {stats.total_files}")
-    logger.info(f"  Files changed: {stats.changed_files}")
-    logger.info(f"  Total comments removed: {stats.comments_removed}")
-    logger.info(f"  Total docstrings removed: {stats.docstrings_removed}")
+    print("=" * 40)
+    print("Summary:")
+    print(f"  Total files processed: {stats.total_files}")
+    print(f"  Files changed: {stats.changed_files}")
+    print(f"  Total comments removed: {stats.comments_removed}")
+    print(f"  Total docstrings removed: {stats.docstrings_removed}")
     if stats.errors > 0:
-        logger.info(f"  Errors: {stats.errors}")
-    logger.info("=" * 40)
+        print(f"  Errors: {stats.errors}")
+    print("=" * 40)
 
 
 def _accumulate_result(stats: ProcessingStats, result: FileResult) -> None:
@@ -586,8 +590,8 @@ def main() -> int:
                 _accumulate_result(stats, result)
                 processed += 1
                 if processed % 10 == 0:
-                    logger.info(f"  Processed: {processed}/{len(python_files)}")
-        logger.info(f"  Processed: {len(python_files)}/{len(python_files)}")
+                    print(f"  Processed: {processed}/{len(python_files)}")
+        print(f"  Processed: {len(python_files)}/{len(python_files)}")
 
     base_dir = Path(args.path).resolve()
     print_results(stats, base_dir)

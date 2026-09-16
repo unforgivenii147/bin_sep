@@ -8,8 +8,6 @@ from multiprocessing import Pool
 from pathlib import Path
 from typing import Any, Final
 
-from loguru import logger
-
 SHEBANG_PATTERN: Final[re.Pattern[str]] = re.compile(
     r"^#!.*python[23]?(?:\.\d+)?(?:[ \t]+.*)?$", re.MULTILINE
 )
@@ -196,14 +194,14 @@ def main() -> int:
         Exit code (0 on success, 1 if errors occurred).
     """
     current_dir = Path.cwd()
-    logger.info(f"📁 Scanning directory: {current_dir}")
-    logger.info("-" * 40)
+    print(f"📁 Scanning directory: {current_dir}")
+    print("-" * 40)
     python_files = find_python_files(current_dir)
     if not python_files:
-        logger.info("No Python files found.")
+        print("No Python files found.")
         return 0
-    logger.info(f"Found {len(python_files)} Python files to check.")
-    logger.info("-" * 40)
+    print(f"Found {len(python_files)} Python files to check.")
+    print("-" * 40)
     updated_files: list[tuple[Path, str]] = []
     added_shebang_files: list[tuple[Path, str]] = []
     errors: list[tuple[str, str]] = []
@@ -234,37 +232,37 @@ def main() -> int:
             else:
                 skipped_count += 1
     if updated_files:
-        logger.info(f"\n✅ Updated existing shebangs in {len(updated_files)} files:")
-        logger.info("-" * 40)
+        print(f"\n✅ Updated existing shebangs in {len(updated_files)} files:")
+        print("-" * 40)
         for path, rel_path in updated_files:
             file_info = rel_path
             if "." not in Path(rel_path).name:
                 file_info += " (no extension)"
-            logger.info(f"  ✏️  {file_info}")
+            print(f"  ✏️  {file_info}")
     if added_shebang_files:
-        logger.info(f"\n➕ Added new shebang to {len(added_shebang_files)} files:")
-        logger.info("-" * 40)
+        print(f"\n➕ Added new shebang to {len(added_shebang_files)} files:")
+        print("-" * 40)
         for path, rel_path in added_shebang_files:
             file_info = rel_path
             if "." not in Path(rel_path).name:
                 file_info += " (no extension)"
-            logger.info(f"  ➕ {file_info}")
+            print(f"  ➕ {file_info}")
     if not updated_files and not added_shebang_files:
-        logger.info("\n✅ No files needed updating.")
-    logger.info("\n" + "=" * 40)
-    logger.info("📊 Summary:")
-    logger.info(f"  ✏️  Updated existing shebangs: {len(updated_files)} files")
-    logger.info(f"  ➕ Added new shebangs: {len(added_shebang_files)} files")
-    logger.info(f"  ⏭️  Skipped (symlinks): {skipped_count} files")
-    logger.info(f"  ⏭️  Not Python shebang: {not_python_count} files")
-    logger.info(f"  ⏭️  Already correct: {already_correct_count} files")
-    logger.info(f"  📝 Total processed: {len(python_files)} files")
+        print("\n✅ No files needed updating.")
+    print("\n" + "=" * 40)
+    print("📊 Summary:")
+    print(f"  ✏️  Updated existing shebangs: {len(updated_files)} files")
+    print(f"  ➕ Added new shebangs: {len(added_shebang_files)} files")
+    print(f"  ⏭️  Skipped (symlinks): {skipped_count} files")
+    print(f"  ⏭️  Not Python shebang: {not_python_count} files")
+    print(f"  ⏭️  Already correct: {already_correct_count} files")
+    print(f"  📝 Total processed: {len(python_files)} files")
     if errors:
-        logger.info(f"  ❌ Errors: {len(errors)} files")
+        print(f"  ❌ Errors: {len(errors)} files")
     if errors:
-        logger.info("\n❌ Errors:")
+        print("\n❌ Errors:")
         for rel_path, error in errors:
-            logger.info(f"  - {rel_path}: {error}")
+            print(f"  - {rel_path}: {error}")
         return 1
     return 0
 

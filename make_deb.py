@@ -104,7 +104,7 @@ def create_deb_for_package(pkg_name: str) -> bool:
         DEB_DIR.mkdir(parents=True, exist_ok=True)
         deb_file: Path = DEB_DIR / f"{pkg_name}.deb"
         if deb_file.exists():
-            logger.info(f"✓ {pkg_name}.deb already exists, skipping...")
+            print(f"✓ {pkg_name}.deb already exists, skipping...")
             return True
 
         cache: apt.Cache = apt.Cache()
@@ -118,14 +118,14 @@ def create_deb_for_package(pkg_name: str) -> bool:
             logger.error(f"✗ No candidate version available for {pkg_name}")
             return False
 
-        logger.info(f"⟳ Creating .deb for {pkg_name}...")
+        print(f"⟳ Creating .deb for {pkg_name}...")
         result_path: str | None = candidate.fetch_binary(dest_dir=str(DEB_DIR))
 
         if result_path and Path(result_path).exists():
-            logger.info(f"✓ Successfully created {pkg_name}.deb")
+            print(f"✓ Successfully created {pkg_name}.deb")
             return True
         if deb_file.exists():
-            logger.info(f"✓ Successfully created {pkg_name}.deb")
+            print(f"✓ Successfully created {pkg_name}.deb")
             return True
 
         logger.warning(f"⚠ Fetch returned no file for {pkg_name}")
@@ -153,7 +153,7 @@ def process_packages(packages: list[str]) -> tuple[int, int]:
         logger.warning("No packages to process (all excluded or empty list)")
         return 0, 0
 
-    logger.info(f"Processing {len(filtered)} packages with {MAX_WORKERS} workers...")
+    print(f"Processing {len(filtered)} packages with {MAX_WORKERS} workers...")
 
     with Pool(processes=MAX_WORKERS) as pool:
         async_results: list[AsyncResult[bool]] = [
@@ -176,11 +176,11 @@ def main() -> None:
     """Entry point: parse args, enumerate packages, and download .deb files."""
     if len(sys.argv) > 1:
         packages: list[str] = sys.argv[1:]
-        logger.info(f"Processing specified packages: {', '.join(packages)}")
+        print(f"Processing specified packages: {', '.join(packages)}")
     else:
-        logger.info("Getting list of all installed packages...")
+        print("Getting list of all installed packages...")
         packages = get_installed_packages()
-        logger.info(f"Found {len(packages)} installed packages (after exclusions)")
+        print(f"Found {len(packages)} installed packages (after exclusions)")
 
     if not packages:
         logger.error("No packages to process")
@@ -190,11 +190,11 @@ def main() -> None:
     failed: int
     successful, failed = process_packages(packages)
 
-    logger.info("=" * 40)
-    logger.info(f"Summary: {successful} successful, {failed} failed")
-    logger.info(f"Total: {successful + failed}")
-    logger.info(f".deb files saved in: {DEB_DIR}")
-    logger.info(f"Log file: {LOG_FILE}")
+    print("=" * 40)
+    print(f"Summary: {successful} successful, {failed} failed")
+    print(f"Total: {successful + failed}")
+    print(f".deb files saved in: {DEB_DIR}")
+    print(f"Log file: {LOG_FILE}")
 
     if failed > 0:
         logger.warning(f"Some packages failed. Check {LOG_FILE} for details.")

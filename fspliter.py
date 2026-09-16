@@ -172,11 +172,11 @@ def process_file(
             with open(input_file, encoding="latin-1") as f:
                 content = f.read()
         if not content.strip():
-            logger.info(f"Skipping empty file: {input_file}")
+            print(f"Skipping empty file: {input_file}")
             return (input_file, 0)
         parts = split_text(content, min_chars, max_chars)
         if not parts:
-            logger.info(f"No parts generated for: {input_file}")
+            print(f"No parts generated for: {input_file}")
             return (input_file, 0)
         output_dir.mkdir(parents=True, exist_ok=True)
         stem = input_file.stem
@@ -185,7 +185,7 @@ def process_file(
             output_file = output_dir / f"{stem}_{i:03d}{suffix}"
             with open(output_file, "w", encoding="utf-8") as f:
                 f.write(part)
-        logger.info(f"Split {input_file.name} into {len(parts)} parts")
+        print(f"Split {input_file.name} into {len(parts)} parts")
         return (input_file, len(parts))
     except Exception as e:
         logger.error(f"Error processing {input_file}: {e}")
@@ -266,8 +266,8 @@ Examples:
         logger.error("No text files found to process")
         return 1
 
-    logger.info(f"Found {len(text_files)} file(s) to process")
-    logger.info(f"Character limits: {args.min_chars}-{args.max_chars} per part")
+    print(f"Found {len(text_files)} file(s) to process")
+    print(f"Character limits: {args.min_chars}-{args.max_chars} per part")
 
     process_args: list[tuple[Path, Path, int, int]] = [
         (path, args.output, args.min_chars, args.max_chars) for path in text_files
@@ -288,10 +288,10 @@ Examples:
             except Exception as e:
                 logger.error(f"Failed to process a file: {e}")
 
-    logger.info(
+    print(
         f"Processing complete: {processed_files} files split into {total_parts} parts"
     )
-    logger.info(f"Output directory: {args.output.absolute()}")
+    print(f"Output directory: {args.output.absolute()}")
     return 0
 
 

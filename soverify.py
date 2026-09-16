@@ -133,7 +133,7 @@ def main() -> None:
         print(f"{'=' * 40}")
         for path in error_files:
             print(f"  ✗ {path}")
-    logger.info(
+    print(
         f"Verification complete: {valid_count} valid, {error_count} errors out of {len(files)} files"
     )
     if error_count > 0:

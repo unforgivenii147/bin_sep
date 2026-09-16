@@ -303,7 +303,7 @@ class FileProcessor:
             )
             if code_blocks:
                 self._save_code_blocks(code_blocks, str(path))
-                logger.info("Extracted {} code blocks from {}", len(code_blocks), path)
+                print("Extracted {} code blocks from {}", len(code_blocks), path)
             return len(code_blocks)
         except Exception as exc:  # noqa: BLE001
             logger.exception("Error processing {}: {}", path, exc)
@@ -320,7 +320,7 @@ class FileProcessor:
             )
             if code_blocks:
                 self._save_code_blocks(code_blocks, url)
-                logger.info("Extracted {} code blocks from {}", len(code_blocks), url)
+                print("Extracted {} code blocks from {}", len(code_blocks), url)
             return len(code_blocks)
         except Exception as exc:  # noqa: BLE001
             logger.exception("Error processing URL {}: {}", url, exc)
@@ -428,7 +428,7 @@ def _process_directory(path: str, output_dir: str) -> int:
         logger.warning("No HTML files found in {}", path)
         return 0
 
-    logger.info("Found {} HTML files", len(html_files))
+    print("Found {} HTML files", len(html_files))
     total_blocks: int = 0
     pool: Pool = Pool(processes=POOL_SIZE)
     try:
@@ -457,28 +457,28 @@ def main() -> int:
     total_blocks: int = 0
 
     if args.url:
-        logger.info("Processing URL: {}", args.url)
+        print("Processing URL: {}", args.url)
         processor: FileProcessor = FileProcessor(output_dir=args.output)
         try:
             total_blocks += processor.process_url(args.url)
         finally:
             processor.close()
     elif args.file:
-        logger.info("Processing file: {}", args.file)
+        print("Processing file: {}", args.file)
         processor = FileProcessor(output_dir=args.output)
         try:
             total_blocks += processor.process_file(args.file)
         finally:
             processor.close()
     elif args.path:
-        logger.info("Processing directory: {}", args.path)
+        print("Processing directory: {}", args.path)
         total_blocks += _process_directory(args.path, args.output)
     else:
-        logger.info("Processing HTML files in current directory recursively")
+        print("Processing HTML files in current directory recursively")
         total_blocks += _process_directory(".", args.output)
 
-    logger.info("Total code blocks extracted: {}", total_blocks)
-    logger.info("Results saved to: {}", Path(args.output))
+    print("Total code blocks extracted: {}", total_blocks)
+    print("Results saved to: {}", Path(args.output))
     return 0
 
 

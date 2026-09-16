@@ -163,7 +163,7 @@ def minify_batch(input_paths: list[Path]) -> int:
         return 1
 
     cwd: Path = Path.cwd()
-    logger.info(f"Found {len(html_files)} HTML file(s). Starting minification...")
+    print(f"Found {len(html_files)} HTML file(s). Starting minification...")
 
     results: list[MinifyResult] = []
     with Pool(processes=WORKER_COUNT) as pool:
@@ -171,7 +171,7 @@ def minify_batch(input_paths: list[Path]) -> int:
         for async_result in async_results:
             result: MinifyResult = async_result.get()
             results.append(result)
-            logger.info(result.report(cwd))
+            print(result.report(cwd))
 
     total_original: int = sum(r.original_size for r in results)
     total_minified: int = sum(r.minified_size for r in results)
@@ -182,15 +182,13 @@ def minify_batch(input_paths: list[Path]) -> int:
     errors: int = sum(1 for r in results if r.error)
     total_time: float = sum(r.duration for r in results)
 
-    logger.info("=" * 40)
-    logger.info(
-        f"Files: {len(html_files)} ({errors} error{'s' if errors != 1 else ''})"
-    )
-    logger.info(
+    print("=" * 40)
+    print(f"Files: {len(html_files)} ({errors} error{'s' if errors != 1 else ''})")
+    print(
         f"Original: {total_original:,} B | Minified: {total_minified:,} B | "
         f"Saved: {total_saved:,} B ({avg_compression:.1f}%)"
     )
-    logger.info(f"Total time: {total_time:.2f}s")
+    print(f"Total time: {total_time:.2f}s")
     return 0 if errors == 0 else 1
 
 

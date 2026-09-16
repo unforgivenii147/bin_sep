@@ -191,24 +191,24 @@ def print_summary(results: list[ProcessResult], targets: list[Path]) -> None:
     total_final_size = sum(r.final_size for r in successful)
     total_backup_size = sum(r.backup_size for r in successful)
     total_space_used = total_final_size + total_backup_size
-    logger.info("=" * 40)
-    logger.info("Processing Summary:")
-    logger.info(f"  Files processed: {len(results)}")
-    logger.info(f"  Successful: {len(successful)}")
-    logger.info(f"  Failed: {len(failed)}")
-    logger.info(f"  Total comments removed: {total_comments}")
-    logger.info(f"  Total lines removed: {total_lines_removed}")
-    logger.info("=" * 40)
-    logger.info("Disk Space Summary:")
-    logger.info(f"  Space freed: {_format_bytes(total_space_freed)}")
-    logger.info(f"  Final file size: {_format_bytes(total_final_size)}")
-    logger.info(f"  Backup files size: {_format_bytes(total_backup_size)}")
-    logger.info(f"  Total space used: {_format_bytes(total_space_used)}")
-    logger.info("=" * 40)
+    print("=" * 40)
+    print("Processing Summary:")
+    print(f"  Files processed: {len(results)}")
+    print(f"  Successful: {len(successful)}")
+    print(f"  Failed: {len(failed)}")
+    print(f"  Total comments removed: {total_comments}")
+    print(f"  Total lines removed: {total_lines_removed}")
+    print("=" * 40)
+    print("Disk Space Summary:")
+    print(f"  Space freed: {_format_bytes(total_space_freed)}")
+    print(f"  Final file size: {_format_bytes(total_final_size)}")
+    print(f"  Backup files size: {_format_bytes(total_backup_size)}")
+    print(f"  Total space used: {_format_bytes(total_space_used)}")
+    print("=" * 40)
     if successful:
-        logger.info("Successful files:")
+        print("Successful files:")
         for result in successful:
-            logger.info(
+            print(
                 f"  {result.path.name}: {result.comments_removed} comments, {
                     result.original_lines - result.final_lines
                 } lines removed, freed {_format_bytes(result.space_freed)}"
@@ -234,16 +234,16 @@ def main(
             logger.error(f"Path not found: {target}")
             return 1
         target_paths.append(path)
-    logger.info("Scanning for C/C++ files...")
-    logger.info(f"Targets: {', '.join(str(p) for p in target_paths)}")
+    print("Scanning for C/C++ files...")
+    print(f"Targets: {', '.join(str(p) for p in target_paths)}")
     source_files = collect_source_files(targets)
     if not source_files:
         logger.warning("No C/C++ source files found.")
         return 0
-    logger.info(f"Found {len(source_files)} source files")
-    logger.info("File types: .h, .hpp, .c, .cpp, .cc, .cxx, .hxx")
+    print(f"Found {len(source_files)} source files")
+    print("File types: .h, .hpp, .c, .cpp, .cc, .cxx, .hxx")
     if dry_run:
-        logger.info("DRY RUN MODE: No files will be modified")
+        print("DRY RUN MODE: No files will be modified")
         remover = CommentRemover()
         total_preview_freed = 0
         for path in source_files[:5]:
@@ -254,22 +254,22 @@ def main(
                 final_size = len(cleaned.encode("utf-8"))
                 freed = original_size - final_size
                 total_preview_freed += freed
-                logger.info(
+                print(
                     f"  {path.name}: {comments} comments, would free {_format_bytes(freed)}"
                 )
             except Exception as e:
                 logger.error(f"  {path.name}: {e}")
         if len(source_files) > 5:
-            logger.info(f"  ... and {len(source_files) - 5} more files")
-            logger.info(
+            print(f"  ... and {len(source_files) - 5} more files")
+            print(
                 f"Preview: Would free approximately {_format_bytes(total_preview_freed)} (for {5} processed files)"
             )
         return 0
-    logger.info(f"Using {num_workers or cpu_count()} workers for parallel processing")
+    print(f"Using {num_workers or cpu_count()} workers for parallel processing")
     results = process_files_parallel(source_files, num_workers)
     print_summary(results, target_paths)
     if not keep_backups:
-        logger.info("Removing backup files...")
+        print("Removing backup files...")
         backup_count = 0
         for result in results:
             if result.success:
@@ -277,7 +277,7 @@ def main(
                 if backup_path.exists():
                     backup_path.unlink()
                     backup_count += 1
-        logger.info(f"Removed {backup_count} backup files")
+        print(f"Removed {backup_count} backup files")
     failed = [r for r in results if not r.success]
     return 1 if failed else 0
 

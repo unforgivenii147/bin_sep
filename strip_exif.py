@@ -125,8 +125,8 @@ def strip_exif_single(
             percent_change: float = size_change / original_size * 100
 
             if verbose:
-                logger.info(f"✅ {image_path.name}")
-                logger.info(
+                print(f"✅ {image_path.name}")
+                print(
                     f"   {fsz(original_size)} → {fsz(new_size)} "
                     f"({percent_change:+.1f}%)"
                 )
@@ -299,7 +299,7 @@ def main() -> int:
     image_files: list[Path] = find_image_files(args.paths, args.extensions, recursive)
 
     if not image_files:
-        logger.info("ℹ️  No image files found.")
+        print("ℹ️  No image files found.")
         return 0
 
     dirs: set[Path] = set()
@@ -311,11 +311,11 @@ def main() -> int:
         for dir_path in dirs:
             initial_sizes[dir_path] = gsz(dir_path)
 
-    logger.info(f"📸 Found {len(image_files)} image file(s)")
-    logger.info(f"🔧 Using {max_workers} parallel worker(s)")
-    logger.info(f"💾 Backup: {'Yes' if args.backup else 'No'}")
-    logger.info(f"📁 Recursive: {'Yes' if recursive else 'No'}")
-    logger.info("-" * 40)
+    print(f"📸 Found {len(image_files)} image file(s)")
+    print(f"🔧 Using {max_workers} parallel worker(s)")
+    print(f"💾 Backup: {'Yes' if args.backup else 'No'}")
+    print(f"📁 Recursive: {'Yes' if recursive else 'No'}")
+    print("-" * 40)
 
     results: list[dict[str, Any]] = []
     processed: int = 0
@@ -342,7 +342,7 @@ def main() -> int:
                     logger.error(f"❌ {img.name}: {result['message']}")
                 elif not args.verbose and result["success"]:
                     progress: str = f"[{processed}/{len(image_files)}]"
-                    logger.info(f"  {progress} ✅ {img.name}")
+                    print(f"  {progress} ✅ {img.name}")
 
             except Exception as e:
                 logger.error(f"❌ {img.name}: Unexpected error: {e!s}")
@@ -357,7 +357,7 @@ def main() -> int:
                     }
                 )
 
-    logger.info("-" * 40)
+    print("-" * 40)
 
     successful: int = sum(1 for r in results if r["success"])
     failed: int = len(results) - successful
@@ -365,22 +365,22 @@ def main() -> int:
     total_new: int = sum(r["new_size"] for r in results)
     total_change: int = total_new - total_original
 
-    logger.info("📊 Summary:")
-    logger.info(f"   Total files: {len(results)}")
-    logger.info(f"   ✅ Successful: {successful}")
-    logger.info(f"   ❌ Failed: {failed}")
-    logger.info(f"   📦 Original size: {fsz(total_original)}")
-    logger.info(f"   📦 New size: {fsz(total_new)}")
+    print("📊 Summary:")
+    print(f"   Total files: {len(results)}")
+    print(f"   ✅ Successful: {successful}")
+    print(f"   ❌ Failed: {failed}")
+    print(f"   📦 Original size: {fsz(total_original)}")
+    print(f"   📦 New size: {fsz(total_new)}")
     if total_original > 0:
-        logger.info(
+        print(
             f"   💰 Change: {fsz(total_change)} "
             f"({total_change / total_original * 100:+.1f}%)"
         )
     else:
-        logger.info(f"   💰 Change: {fsz(total_change)} (N/A)")
+        print(f"   💰 Change: {fsz(total_change)} (N/A)")
 
     if not args.no_size_report and len(dirs) > 0:
-        logger.info("📁 Folder size changes:")
+        print("📁 Folder size changes:")
         for dir_path in sorted(dirs):
             final_size: int = gsz(dir_path)
             initial_size: int = initial_sizes.get(dir_path, 0)
@@ -389,8 +389,8 @@ def main() -> int:
                 percent: float = (
                     change / initial_size * 100 if initial_size > 0 else 0.0
                 )
-                logger.info(f"   {dir_path}:")
-                logger.info(
+                print(f"   {dir_path}:")
+                print(
                     f"      {fsz(initial_size)} → {fsz(final_size)} ({percent:+.1f}%)"
                 )
 
@@ -398,13 +398,13 @@ def main() -> int:
         r for r in results if r.get("backup_created", False)
     ]
     if backups:
-        logger.info(f"💾 Backups created for {len(backups)} file(s)")
+        print(f"💾 Backups created for {len(backups)} file(s)")
         if args.verbose:
             for r in backups[:5]:
                 backup_path: Path = r["path"].with_suffix(r["path"].suffix + ".backup")
-                logger.info(f"   📋 {backup_path.name}")
+                print(f"   📋 {backup_path.name}")
             if len(backups) > 5:
-                logger.info(f"   ... and {len(backups) - 5} more")
+                print(f"   ... and {len(backups) - 5} more")
 
     return 0
 

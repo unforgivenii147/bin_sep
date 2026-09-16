@@ -106,9 +106,7 @@ def should_skip_file(path: Path) -> bool:
     if path.is_symlink():
         return True
     content = _read_file_text(path)
-    if content is not None and _contains_skip_signature(content):
-        return True
-    return False
+    return bool(content is not None and _contains_skip_signature(content))
 
 
 def scan_file(path: Path) -> tuple[str, list[dict[str, Any]]]:
@@ -156,10 +154,10 @@ def check_secrets(root_dir: Path = Path(".")) -> tuple[int, int, int]:
     """Scan all files under root_dir for secrets using a multiprocessing pool and return (files_scanned, total_leaks, files_with_leaks)."""
     files: list[Path] = get_all_files(root_dir)
     if not files:
-        logger.info("No files found to scan.")
+        print("No files found to scan.")
         return 0, 0, 0
 
-    logger.info(f"Scanning {len(files)} files for secrets...\n")
+    print(f"Scanning {len(files)} files for secrets...\n")
 
     total_leaks: int = 0
     files_with_leaks: int = 0
@@ -185,18 +183,18 @@ def check_secrets(root_dir: Path = Path(".")) -> tuple[int, int, int]:
 
 def main() -> int:
     """Entry point: run the secret scan and return an exit code (0 clean, 1 leaks found, 2 error/interrupt)."""
-    logger.info("-" * 40)
-    logger.info("SECRET LEAK DETECTOR - Pre-GitHub Push Scanner")
-    logger.info("-" * 40)
-    logger.info("")
+    print("-" * 40)
+    print("SECRET LEAK DETECTOR - Pre-GitHub Push Scanner")
+    print("-" * 40)
+    print()
     try:
         total_files, total_leaks, files_affected = check_secrets()
-        logger.info("-" * 40)
-        logger.info("Scan Complete!")
-        logger.info(f"Files scanned: {total_files}")
-        logger.info(f"Leaks found: {total_leaks}")
-        logger.info(f"Files with leaks: {files_affected}")
-        logger.info("-" * 40)
+        print("-" * 40)
+        print("Scan Complete!")
+        print(f"Files scanned: {total_files}")
+        print(f"Leaks found: {total_leaks}")
+        print(f"Files with leaks: {files_affected}")
+        print("-" * 40)
         if total_leaks > 0:
             logger.error("\n❌ SECRETS DETECTED! DO NOT PUSH TO GITHUB!")
             logger.error("Please review and remove the secrets before committing.\n")

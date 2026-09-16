@@ -19,7 +19,7 @@ from datetime import datetime
 from functools import lru_cache
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, List, Tuple
 
 from loguru import logger
 
@@ -77,14 +77,14 @@ class ProcessingResult:
     success: bool
     extracted_count: int
     replaced_count: int
-    error: Optional[str] = None
+    error: str | None = None
     duration: float = 0.0
 
 
 @lru_cache(maxsize=256)
 def detect_base64_mime_type(
     data: bytes,
-) -> tuple[Optional[str], Optional[str], Optional[str]]:
+) -> tuple[str | None, str | None, str | None]:
     """
     Detect MIME type from decoded base64 data.
 
@@ -117,9 +117,7 @@ def detect_base64_mime_type(
         return ("font/otf", ".otf", "fonts")
     if data.startswith((b"{", b"[")):
         return ("application/json", ".json", "data")
-    if data.startswith(b"\x00\x00\x00\x18ftypmp42") or data.startswith(
-        b"\x00\x00\x00\x20ftypmp42"
-    ):
+    if data.startswith((b"\x00\x00\x00\x18ftypmp42", b"\x00\x00\x00 ftypmp42")):
         return ("video/mp4", ".mp4", "videos")
     if data.startswith(b"\x00\x00\x01\x00"):
         return ("image/x-icon", ".ico", "images")
@@ -274,7 +272,7 @@ class TreeSitterParser:
         self.available = False
         self.parsers: dict[str, Any] = {}
 
-    def parse_file(self, path: Path) -> Optional[str]:
+    def parse_file(self, path: Path) -> str | None:
         """
         Read file content for parsing.
 
@@ -306,7 +304,7 @@ class AssetExtractor:
         for subdir in ["images", "fonts", "videos", "data"]:
             (self.assets_dir / subdir).mkdir(exist_ok=True)
 
-    def extract_asset(self, match: Base64Match) -> Optional[ExtractedAsset]:
+    def extract_asset(self, match: Base64Match) -> ExtractedAsset | None:
         """
         Extract a base64 asset to a file.
 
@@ -470,7 +468,7 @@ class FileProcessor:
 
             self._write_file_atomic(path, modified_content)
 
-            logger.info(
+            print(
                 f"Processed {path.name}: "
                 f"extracted={extracted_count}, "
                 f"replaced={len(replacements)}"
@@ -634,25 +632,25 @@ def process_file_task(args: tuple[Path, AssetExtractor]) -> ProcessingResult:
 class Base64AssetExtractor:
     """Main orchestrator for base64 asset extraction."""
 
-    def __init__(self, paths: Optional[list[str]] = None) -> None:
+    def __init__(self, paths: list[str] | None = None) -> None:
         self.paths = paths or ["."]
         self.asset_extractor = AssetExtractor()
         self.results: list[ProcessingResult] = []
 
     def run(self) -> None:
         """Execute the base64 asset extraction process."""
-        logger.info("=" * 70)
-        logger.info("Base64 Asset Extractor")
-        logger.info("=" * 70)
-        logger.info(f"Discovering files in: {', '.join(self.paths)}")
+        print("=" * 70)
+        print("Base64 Asset Extractor")
+        print("=" * 70)
+        print(f"Discovering files in: {', '.join(self.paths)}")
 
         files = FileDiscovery.discover_files(self.paths)
         if not files:
             logger.warning("No supported files found")
             return
 
-        logger.info(f"Found {len(files):,} supported files")
-        logger.info(f"Processing with {WORKERS} workers...")
+        print(f"Found {len(files):,} supported files")
+        print(f"Processing with {WORKERS} workers...")
 
         tasks = [(f, self.asset_extractor) for f in files]
 
@@ -667,7 +665,7 @@ class Base64AssetExtractor:
                     result = async_result.get(timeout=60)
                     self.results.append(result)
                     if i % 10 == 0 or i == len(async_results):
-                        logger.info(f"Progress: {i}/{len(async_results)} files")
+                        print(f"Progress: {i}/{len(async_results)} files")
                 except Exception as e:
                     logger.error(f"Error retrieving result: {e}")
 
@@ -675,9 +673,9 @@ class Base64AssetExtractor:
 
     def _print_summary(self) -> None:
         """Print processing summary."""
-        logger.info("=" * 70)
-        logger.info("SUMMARY")
-        logger.info("=" * 70)
+        print("=" * 70)
+        print("SUMMARY")
+        print("=" * 70)
 
         successful = sum(1 for r in self.results if r.success)
         failed = len(self.results) - successful
@@ -685,37 +683,37 @@ class Base64AssetExtractor:
         total_replaced = sum(r.replaced_count for r in self.results)
         total_duration = sum(r.duration for r in self.results)
 
-        logger.info(f"Total files processed: {len(self.results)}")
-        logger.info(f"  ✓ Successful: {successful}")
-        logger.info(f"  ✗ Failed: {failed}")
-        logger.info(f"Total base64 assets extracted: {total_extracted:,}")
-        logger.info(f"Total replacements made: {total_replaced:,}")
-        logger.info(f"Total processing time: {total_duration:.2f}s")
+        print(f"Total files processed: {len(self.results)}")
+        print(f"  ✓ Successful: {successful}")
+        print(f"  ✗ Failed: {failed}")
+        print(f"Total base64 assets extracted: {total_extracted:,}")
+        print(f"Total replacements made: {total_replaced:,}")
+        print(f"Total processing time: {total_duration:.2f}s")
 
         if failed > 0:
-            logger.info("\nFailed files:")
+            print("\nFailed files:")
             for result in self.results:
                 if not result.success:
-                    logger.info(f"  - {result.path}: {result.error}")
+                    print(f"  - {result.path}: {result.error}")
 
         if self.results:
-            logger.info("\nDetailed results:")
+            print("\nDetailed results:")
             for result in sorted(
                 self.results, key=lambda r: r.extracted_count, reverse=True
             ):
                 if result.extracted_count > 0 or result.replaced_count > 0:
-                    logger.info(
+                    print(
                         f"  {result.path.name:40} "
                         f"extracted={result.extracted_count:3} "
                         f"replaced={result.replaced_count:3} "
                         f"time={result.duration:.3f}s"
                     )
 
-        logger.info(f"\nAssets saved to: {ASSETS_DIR.resolve()}")
+        print(f"\nAssets saved to: {ASSETS_DIR.resolve()}")
         if ASSETS_DIR.exists():
             asset_count = sum(1 for _ in ASSETS_DIR.rglob("*") if _.is_file())
             if asset_count > 0:
-                logger.info(f"Total asset files: {asset_count}")
+                print(f"Total asset files: {asset_count}")
                 for category in ["images", "fonts", "videos", "data"]:
                     cat_dir = ASSETS_DIR / category
                     if cat_dir.exists():
@@ -726,7 +724,7 @@ class Base64AssetExtractor:
                                 for _ in cat_dir.iterdir()
                                 if _.is_file()
                             )
-                            logger.info(
+                            print(
                                 f"  {category:8}: {count:4} files ({size / 1024:.1f} KB)"
                             )
 

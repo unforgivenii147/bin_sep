@@ -22,10 +22,11 @@ import argparse
 import ast
 import sys
 import time
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Any, Final, Iterable, Sequence
+from typing import Any, Final
 
 from loguru import logger
 
@@ -306,7 +307,7 @@ def process_directory(
         logger.warning("No Python files found in {}", directory)
         return [], 0.0
 
-    logger.info("Processing {} files using {}", len(py_files), method)
+    print("Processing {} files using {}", len(py_files), method)
     start_time: float = time.perf_counter()
     process_func: Any = _select_process_func(method)
 
@@ -321,7 +322,7 @@ def process_directory(
             results.append(result)
             status: str = "✓" if result.success else "✗"
             error_msg: str = f" ({result.error})" if result.error else ""
-            logger.info(
+            print(
                 "{status} {name}{err}",
                 status=status,
                 name=result.path.name,
@@ -357,17 +358,17 @@ def print_results(
         sum(r.processing_time for r in results) / len(results) if results else 0.0
     )
 
-    logger.info("=" * 40)
-    logger.info("Results ({})", method.upper())
-    logger.info("=" * 40)
-    logger.info("Total files:      {}", len(results))
-    logger.info("Successful:       {}", len(successful))
-    logger.info("Failed:           {}", len(failed))
-    logger.info("Total time:       {:.3f}s", total_time)
-    logger.info("Avg time/file:    {:.3f}s", avg_time)
-    logger.info("Original size:    {:,} bytes", total_original)
-    logger.info("New size:         {:,} bytes", total_new)
-    logger.info("Reduction:        {:,} bytes ({:.1f}%)", reduction, reduction_pct)
+    print("=" * 40)
+    print("Results ({})", method.upper())
+    print("=" * 40)
+    print("Total files:      {}", len(results))
+    print("Successful:       {}", len(successful))
+    print("Failed:           {}", len(failed))
+    print("Total time:       {:.3f}s", total_time)
+    print("Avg time/file:    {:.3f}s", avg_time)
+    print("Original size:    {:,} bytes", total_original)
+    print("New size:         {:,} bytes", total_new)
+    print("Reduction:        {:,} bytes ({:.1f}%)", reduction, reduction_pct)
     if failed:
         logger.warning("Failed files:")
         for r in failed:
@@ -428,25 +429,25 @@ def main() -> int:
         return 1
 
     if args.compare:
-        logger.info("Comparing methods on {}", directory)
+        print("Comparing methods on {}", directory)
         py_files: list[Path] = list(_iter_py_files(directory))
-        logger.info("Found {} Python files", len(py_files))
+        print("Found {} Python files", len(py_files))
 
-        logger.info("[1/2] Testing tree-sitter method...")
+        print("[1/2] Testing tree-sitter method...")
         ts_results, ts_time = process_directory(directory, "tree-sitter")
         print_results(ts_results, ts_time, "tree-sitter")
 
-        logger.info("[2/2] Testing AST method...")
+        print("[2/2] Testing AST method...")
         ast_results, ast_time = process_directory(directory, "ast")
         print_results(ast_results, ast_time, "ast")
 
-        logger.info("=" * 40)
-        logger.info("PERFORMANCE COMPARISON")
-        logger.info("=" * 40)
-        logger.info("Tree-sitter time: {:.3f}s", ts_time)
-        logger.info("AST time:         {:.3f}s", ast_time)
+        print("=" * 40)
+        print("PERFORMANCE COMPARISON")
+        print("=" * 40)
+        print("Tree-sitter time: {:.3f}s", ts_time)
+        print("AST time:         {:.3f}s", ast_time)
         speedup: float = ast_time / ts_time if ts_time > 0 else 0.0
-        logger.info("Speedup:          {:.2f}x", speedup)
+        print("Speedup:          {:.2f}x", speedup)
         logger.warning("NOTE: Files were NOT modified (dry-run mode)")
     else:
         results, total_time = process_directory(directory, args.method)

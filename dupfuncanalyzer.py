@@ -17,9 +17,7 @@ import ast
 from collections import defaultdict
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Any, DefaultDict, Dict, List, Optional, Set, Tuple
-
-from loguru import logger
+from typing import Any
 
 # Module-level constants
 POOL_SIZE: int = 8
@@ -68,7 +66,7 @@ def analyze_file(path: Path) -> dict[str, Any]:
     return {"definitions": dict(definitions), "source_map": dict(source_map)}
 
 
-def analyze_files(target_dirs: Optional[list[Path]] = None) -> list[RepeatedItem]:
+def analyze_files(target_dirs: list[Path] | None = None) -> list[RepeatedItem]:
     """Find duplicate top-level functions across all Python files in *target_dirs*.
 
     Returns a list of dicts sorted by descending duplicate count, each containing
@@ -175,7 +173,7 @@ def refactor_file(path: Path, repeated: list[RepeatedItem]) -> None:
 
 def apply_refactoring(
     repeated: list[RepeatedItem],
-    target_dirs: Optional[list[Path]] = None,
+    target_dirs: list[Path] | None = None,
 ) -> None:
     """Apply refactoring to every Python file under *target_dirs* using a pool."""
     resolved_dirs: list[Path] = target_dirs if target_dirs else [Path.cwd()]
@@ -212,7 +210,7 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    target_dirs: Optional[list[Path]] = (
+    target_dirs: list[Path] | None = (
         [Path(p) for p in args.paths] if args.paths else None
     )
     repeated: list[RepeatedItem] = analyze_files(target_dirs)
@@ -220,9 +218,9 @@ def main() -> None:
 
     if args.apply:
         apply_refactoring(repeated, target_dirs)
-        logger.info(f"Saved {len(repeated)} functions to {DEFAULT_OUTPUT_NAME}")
+        print(f"Saved {len(repeated)} functions to {DEFAULT_OUTPUT_NAME}")
     else:
-        logger.info(
+        print(
             f"Found {len(repeated)} repeated functions. Saved to {DEFAULT_OUTPUT_NAME}"
         )
 

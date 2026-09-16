@@ -208,12 +208,12 @@ def process_files(
     files = get_files_to_process(root_dir, compress)
     if not files:
         action = "compress" if compress else "decompress"
-        logger.info(f"No files found to {action}")
+        print(f"No files found to {action}")
         return
 
     action = "Compressing" if compress else "Decompressing"
-    logger.info(f"{action} {len(files)} files with {NUM_WORKERS} workers...")
-    logger.info(f"Preset: {preset}, Threads: {threads}")
+    print(f"{action} {len(files)} files with {NUM_WORKERS} workers...")
+    print(f"Preset: {preset}, Threads: {threads}")
 
     total_success = 0
     total_failed = 0
@@ -238,7 +238,7 @@ def process_files(
             path, success, message, orig_size, space_freed = async_result.get()
             completed += 1
             pct = completed / total * 40
-            logger.info(f"[{pct:5.1f}%] {completed}/{total}")
+            print(f"[{pct:5.1f}%] {completed}/{total}")
             if success:
                 total_success += 1
                 status = "✓"
@@ -249,15 +249,15 @@ def process_files(
                 total_failed += 1
                 status = "✗"
             rel_path = path.relative_to(root_dir)
-            logger.info(f"{status} {rel_path}: {message}")
+            print(f"{status} {rel_path}: {message}")
 
-    logger.info(f"{'─' * 40}")
-    logger.info(f"Total successful: {total_success}")
-    logger.info(f"Total failed: {total_failed}")
+    print(f"{'─' * 40}")
+    print(f"Total successful: {total_success}")
+    print(f"Total failed: {total_failed}")
     if compress and total_original_size > 0:
-        logger.info(f"Total original size: {format_bytes(total_original_size)}")
+        print(f"Total original size: {format_bytes(total_original_size)}")
         if total_space_freed > 0:
-            logger.info(f"Disk space freed: {format_bytes(total_space_freed)}")
+            print(f"Disk space freed: {format_bytes(total_space_freed)}")
 
 
 def main() -> int:

@@ -18,9 +18,10 @@ import argparse
 import io
 import shutil
 import tarfile
+from collections.abc import Iterable, Sequence
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
+from typing import Any
 
 import pylzma
 from loguru import logger
@@ -66,7 +67,7 @@ def _format_result(
     dst: Path,
     original_size: int,
     compressed_size: int,
-    extra_line: Optional[str] = None,
+    extra_line: str | None = None,
 ) -> str:
     """Build a consistent summary string for compress/decompress results."""
     if original_size > 0:
@@ -254,16 +255,16 @@ def _build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main(argv: Optional[Sequence[str]] = None) -> int:
+def main(argv: Sequence[str] | None = None) -> int:
     """Entry point: parse args, dispatch jobs, and print summary."""
     parser = _build_parser()
     args = parser.parse_args(argv)
     mode = "decompress" if args.decompress else "compress"
     targets = _collect_targets(args.paths, mode)
     if not targets:
-        logger.info(f"No items found to {mode}")
+        print(f"No items found to {mode}")
         return 0
-    logger.info(f"{mode.capitalize()}ing {len(targets)} item(s)...")
+    print(f"{mode.capitalize()}ing {len(targets)} item(s)...")
 
     total_original = sum(gsz(t) for t in targets)
 
@@ -277,7 +278,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         results: list[str] = [r.get() for r in async_results]
 
     for res in results:
-        logger.info(res)
+        print(res)
 
     if mode == "compress":
         total_compressed = 0
@@ -291,12 +292,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         if total_original > 0:
             total_ratio = (1 - total_compressed / total_original) * 40
             total_freed = total_original - total_compressed
-            logger.info("=" * 40)
-            logger.info("SUMMARY:")
-            logger.info(f"  Total original size: {fsz(total_original)}")
-            logger.info(f"  Total compressed size: {fsz(total_compressed)}")
-            logger.info(f"  Overall compression ratio: {total_ratio:.1f}%")
-            logger.info(f"  Total space freed: {fsz(max(0, total_freed))}")
+            print("=" * 40)
+            print("SUMMARY:")
+            print(f"  Total original size: {fsz(total_original)}")
+            print(f"  Total compressed size: {fsz(total_compressed)}")
+            print(f"  Overall compression ratio: {total_ratio:.1f}%")
+            print(f"  Total space freed: {fsz(max(0, total_freed))}")
     else:
         total_decompressed = 0
         for t in targets:
@@ -306,11 +307,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                 dst = t.parent / t.name[: -len(".7z")]
             total_decompressed += gsz(dst)
         total_space_used = total_decompressed - total_original
-        logger.info("=" * 40)
-        logger.info("SUMMARY:")
-        logger.info(f"  Total compressed size: {fsz(total_original)}")
-        logger.info(f"  Total decompressed size: {fsz(total_decompressed)}")
-        logger.info(f"  Total space used: {fsz(total_space_used)}")
+        print("=" * 40)
+        print("SUMMARY:")
+        print(f"  Total compressed size: {fsz(total_original)}")
+        print(f"  Total decompressed size: {fsz(total_decompressed)}")
+        print(f"  Total space used: {fsz(total_space_used)}")
 
     return 0
 

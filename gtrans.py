@@ -93,7 +93,7 @@ def process_file(input_file: Path, output_file: Path | None = None) -> None:
     output_lines: list[str] = []
     for i, line in enumerate(lines):
         lang_type = detect_language_type(line)
-        logger.info("Translating line %d (%s)...", i + 1, lang_type)
+        print("Translating line %d (%s)...", i + 1, lang_type)
         translated = translator.translate(line)
         output_lines.append(line)
         output_lines.append(f"→ {translated}")
@@ -102,7 +102,7 @@ def process_file(input_file: Path, output_file: Path | None = None) -> None:
     if output_file:
         try:
             output_file.write_text(result_text, encoding="utf-8")
-            logger.info("Output written to: %s", output_file)
+            print("Output written to: %s", output_file)
         except Exception as e:
             logger.error("Error writing output file: %s", e)
     else:

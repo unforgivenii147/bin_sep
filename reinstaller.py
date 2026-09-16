@@ -288,7 +288,7 @@ def reinstall_package_with_pip(
         with global_tempdir_manager():
             try:
                 install_cmd.run(options, args)
-                logger.info(f"✓ Successfully reinstalled: {package_name}")
+                print(f"✓ Successfully reinstalled: {package_name}")
                 return ReinstallResult(
                     name=package_name,
                     success=True,
@@ -329,8 +329,8 @@ def _run_pool(packages: set[str], include_deps: bool) -> list[ReinstallResult]:
 
 
 def reinstall_entrypoint_packages(
-    exclude_packages: Optional[set[str]] = None,
-    only_packages: Optional[set[str]] = None,
+    exclude_packages: set[str] | None = None,
+    only_packages: set[str] | None = None,
     include_deps: bool = False,
     dry_run: bool = False,
     skip_confirmation: bool = False,
@@ -358,20 +358,20 @@ def reinstall_entrypoint_packages(
     if only_packages:
         packages_to_reinstall &= only_packages
 
-    logger.info(f"Found {len(entry_point_packages)} packages with entry points")
-    logger.info(f"Will reinstall {len(packages_to_reinstall)} packages after filtering")
+    print(f"Found {len(entry_point_packages)} packages with entry points")
+    print(f"Will reinstall {len(packages_to_reinstall)} packages after filtering")
 
     if packages_to_reinstall:
-        logger.info("\nPackages with entry points:")
+        print("\nPackages with entry points:")
         for i, pkg in enumerate(sorted(packages_to_reinstall), 1):
             info = entry_point_packages[pkg]
-            logger.info(
+            print(
                 f"  {i:3d}. {pkg} (v{info.version}) - "
                 f"entry points: {', '.join(sorted(info.groups))}"
             )
 
     if dry_run:
-        logger.info("\nDRY RUN - No packages will be reinstalled")
+        print("\nDRY RUN - No packages will be reinstalled")
         return
 
     if not packages_to_reinstall:
@@ -397,9 +397,9 @@ def reinstall_entrypoint_packages(
             logger.warning("No packages selected for reinstallation!")
             return
     else:
-        logger.info("Skipping confirmation - will reinstall all packages")
+        print("Skipping confirmation - will reinstall all packages")
 
-    logger.info(
+    print(
         f"\nStarting reinstallation of {len(packages_to_reinstall)} selected packages..."
     )
 
@@ -410,21 +410,21 @@ def reinstall_entrypoint_packages(
         (r.name, r.message) for r in results if not r.success
     ]
 
-    logger.info("\n" + "=" * 40)
-    logger.info("REINSTALLATION SUMMARY")
-    logger.info("=" * 40)
-    logger.info(f"✓ Successfully reinstalled: {len(successful)} packages")
-    logger.info(f"✗ Failed to reinstall: {len(failed)} packages")
+    print("\n" + "=" * 40)
+    print("REINSTALLATION SUMMARY")
+    print("=" * 40)
+    print(f"✓ Successfully reinstalled: {len(successful)} packages")
+    print(f"✗ Failed to reinstall: {len(failed)} packages")
 
     if successful:
-        logger.info("\nSuccessfully reinstalled packages:")
+        print("\nSuccessfully reinstalled packages:")
         for name in sorted(successful):
-            logger.info(f"  ✓ {name}")
+            print(f"  ✓ {name}")
 
     if failed:
-        logger.info("\nFailed packages:")
+        print("\nFailed packages:")
         for name, error in failed:
-            logger.info(f"  ✗ {name}: {error[:100]}...")
+            print(f"  ✗ {name}: {error[:100]}...")
 
 
 # ---------------------------------------------------------------------------
@@ -470,7 +470,7 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main(argv: Optional[list[str]] = None) -> int:
+def main(argv: list[str] | None = None) -> int:
     """Entry point for the CLI.
 
     Args:
@@ -484,8 +484,8 @@ def main(argv: Optional[list[str]] = None) -> int:
 
     configure_logging(verbose=bool(args.verbose))
 
-    logger.info(f"Starting package reinstallation with {FIXED_WORKERS} workers")
-    logger.info(
+    print(f"Starting package reinstallation with {FIXED_WORKERS} workers")
+    print(
         "Reinstalling ONLY packages with entry points "
         "(console_scripts, gui_scripts, etc.)"
     )

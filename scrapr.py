@@ -22,9 +22,9 @@ import argparse
 import json
 import re
 import signal
-from multiprocessing import Manager, Pool, cpu_count
+from multiprocessing import Manager, Pool
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any
 from urllib.parse import urljoin
 
 import requests
@@ -50,7 +50,7 @@ def signal_handler(sig: int, frame: Any) -> None:
 signal.signal(signal.SIGINT, signal_handler)
 
 
-def size_to_mb(size_str: str) -> Optional[float]:
+def size_to_mb(size_str: str) -> float | None:
     """Convert a size string like '123.4 MiB' to megabytes as float."""
     match = re.search(r"([\d.]+)\s*Mi?B", size_str)
     if match:
@@ -58,7 +58,7 @@ def size_to_mb(size_str: str) -> Optional[float]:
     return None
 
 
-def extract_quality(filename: str) -> Optional[str]:
+def extract_quality(filename: str) -> str | None:
     """Extract '480' or '720' quality tag from a filename, if present."""
     lower = filename.lower()
     if "480p" in lower:
@@ -68,7 +68,7 @@ def extract_quality(filename: str) -> Optional[str]:
     return None
 
 
-def fetch_directory(url: str) -> Optional[str]:
+def fetch_directory(url: str) -> str | None:
     """Fetch the HTML content of a directory URL, returning None on failure."""
     try:
         headers: dict[str, str] = {"User-Agent": "Mozilla/5.0"}
@@ -128,7 +128,7 @@ def save_state(queue: list[str], visited: set[str]) -> None:
         json.dump(state, f)
 
 
-def load_state() -> tuple[Optional[set[str]], Optional[list[str]]]:
+def load_state() -> tuple[set[str] | None, list[str] | None]:
     """Load previously saved crawl state, if any."""
     if not STATE_FILE.exists():
         return None, None
@@ -163,13 +163,13 @@ def main() -> int:
 
     prev_visited, prev_queue = load_state()
     if prev_queue:
-        logger.info("🔁 Resuming previous crawl...")
+        print("🔁 Resuming previous crawl...")
         visited[:] = prev_visited or []
         queue[:] = prev_queue
     else:
         queue.append(base_url)
 
-    logger.info(f"🚀 Using {FIXED_WORKERS} processes")
+    print(f"🚀 Using {FIXED_WORKERS} processes")
 
     with Pool(processes=FIXED_WORKERS) as pool:
         while queue and not stop_flag:
@@ -192,18 +192,18 @@ def main() -> int:
                     continue
                 if results:
                     append_results(results)
-                    logger.info(f"✅ Found {len(results)} movies")
+                    print(f"✅ Found {len(results)} movies")
                 for sub in subdirs:
                     if sub not in visited:
                         queue.append(sub)
 
     save_state(list(queue), set(visited))
     if stop_flag:
-        logger.info("💾 Progress saved. Run again to continue.")
+        print("💾 Progress saved. Run again to continue.")
     else:
         if STATE_FILE.exists():
             STATE_FILE.unlink()
-        logger.info("✅ Crawl completed successfully.")
+        print("✅ Crawl completed successfully.")
     return 0
 
 

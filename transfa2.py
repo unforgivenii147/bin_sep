@@ -96,7 +96,7 @@ def translate_chunk(chunk: str) -> str:
         translator: GoogleTranslator = GoogleTranslator(source="fa", target="en")
         result: str | None = translator.translate(chunk)
         if result:
-            logger.info(f"Chunk translated: {result[:30].replace(chr(10), ' ')}...")
+            print(f"Chunk translated: {result[:30].replace(chr(10), ' ')}...")
             time.sleep(CHUNK_DELAY)
             return result
         return chunk
@@ -125,7 +125,7 @@ def translate_file(path: Path) -> None:
     if not PERSIAN_PATTERN.search(content):
         return
 
-    logger.info(f"Translating: {path.name}")
+    print(f"Translating: {path.name}")
     chunks: list[str] = split_into_chunks(content)
 
     translated_chunks: list[str] = []
@@ -140,7 +140,7 @@ def translate_file(path: Path) -> None:
 
     try:
         path.write_text(translated_text, encoding="utf-8")
-        logger.info(f"✓ Updated: {path.name}")
+        print(f"✓ Updated: {path.name}")
     except Exception as exc:
         logger.error(f"Error writing to {path}: {exc}")
 
@@ -180,10 +180,10 @@ def main() -> None:
 
     files: list[Path] = get_files(start_path)
     if not files:
-        logger.info("No files found to process.")
+        print("No files found to process.")
         return
 
-    logger.info(f"Processing {len(files)} files...")
+    print(f"Processing {len(files)} files...")
     for f in files:
         translate_file(f)
 

@@ -14,10 +14,9 @@ import sys
 from multiprocessing import Pool
 from multiprocessing.pool import AsyncResult
 from pathlib import Path
-from typing import Final, Optional
+from typing import Final
 
 import tree_sitter_python as tspython  # type: ignore[import-untyped]
-from loguru import logger
 from tree_sitter import Language, Parser, Tree, TreeCursor  # type: ignore[import-untyped]
 
 MAX_WORKERS: Final[int] = 8
@@ -85,7 +84,7 @@ def process_file(file_path: Path) -> str:
 
     removals: list[Removal] = []
 
-    module_docstring_node: Optional[object] = None
+    module_docstring_node: object | None = None
     if root.child_count > 0:
         first_child = root.child(0)
         if first_child is not None and first_child.type == "expression_statement":
@@ -185,10 +184,10 @@ def main() -> None:
 
     targets: list[Path] = gather_files(args.paths)
     if not targets:
-        logger.info("No target Python source files detected.")
+        print("No target Python source files detected.")
         sys.exit(0)
 
-    logger.info(
+    print(
         f"Queue loaded. Processing {len(targets)} target files via Parallel Pipeline..."
     )
 
@@ -198,7 +197,7 @@ def main() -> None:
         ]
         for async_res in async_results:
             result_string: str = async_res.get()
-            logger.info(result_string)
+            print(result_string)
 
 
 if __name__ == "__main__":

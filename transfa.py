@@ -22,7 +22,7 @@ def translate_line(line: str) -> tuple[str, str] | None:
             return None
         translator = GoogleTranslator(source="fa", target="en")
         result = translator.translate(stripped)
-        logger.info(f"{stripped} == {result}")
+        print(f"{stripped} == {result}")
         return (stripped, result) if result else None
     except Exception as e:
         logger.debug("Translation error for '%s': %s", stripped[:20], e)
@@ -40,20 +40,20 @@ def translate_file(file_input: str) -> None:
         logger.error("Error reading file: %s", e)
         return
     out_path = path.parent / f"{path.stem}_en{path.suffix}"
-    logger.info("Translating %d lines from %s...", len(lines), path.name)
+    print("Translating %d lines from %s...", len(lines), path.name)
     results: list[tuple[str, str]] = []
     with ProcessPoolExecutor(max_workers=MAX_WORKERS) as executor:
         future_to_line = {executor.submit(translate_line, line): line for line in lines}
         for future in as_completed(future_to_line):
             if res := future.result():
                 text, translated = res
-                logger.info("%s -> %s", text, translated)
+                print("%s -> %s", text, translated)
                 results.append(res)
     try:
         with out_path.open("w", encoding="utf-8") as f:
             for text, translated in results:
                 f.write(f"{text} = {translated}\n")
-        logger.info("✓ Translated output saved to %s", out_path)
+        print("✓ Translated output saved to %s", out_path)
     except Exception as e:
         logger.error("Error writing output file: %s", e)
 

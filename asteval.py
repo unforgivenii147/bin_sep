@@ -65,20 +65,20 @@ def process_file(args: tuple[Path, int, int, bool]) -> None:
     path, counter, total, dry_run = args
     path = Path(path)
     prefix = "[DRY RUN] " if dry_run else ""
-    logger.info(f"{prefix}[{counter}/{total}] {path.name}")
+    print(f"{prefix}[{counter}/{total}] {path.name}")
 
     try:
         content: str = path.read_text(encoding="utf-8")
         ast.parse(content)
         if dry_run:
-            logger.info(f"  ✅ {path.name} - Valid Python syntax")
+            print(f"  ✅ {path.name} - Valid Python syntax")
         return
     except (SyntaxError, ValueError, UnicodeDecodeError, OSError) as e:
         error_dir: Path = path.parent / ERROR_DIR_NAME
         new_path: Path = error_dir / path.name
 
         if dry_run:
-            logger.info(f"  🔍 Would move to: {new_path} | Error: {e}")
+            print(f"  🔍 Would move to: {new_path} | Error: {e}")
             return
 
         error_dir.mkdir(exist_ok=True)
@@ -216,13 +216,13 @@ def main() -> int:
         return 1
 
     if not files:
-        logger.info("ℹ️  No Python files found to process.")
+        print("ℹ️  No Python files found to process.")
         return 0
 
-    logger.info(f"📁 Found {len(files)} Python file(s) to process")
+    print(f"📁 Found {len(files)} Python file(s) to process")
     if args.dry_run:
-        logger.info("🔍 DRY RUN MODE - No files will be moved")
-        logger.info("-" * 40)
+        print("🔍 DRY RUN MODE - No files will be moved")
+        print("-" * 40)
 
     try:
         process_files(files, dry_run=bool(args.dry_run))
@@ -234,8 +234,8 @@ def main() -> int:
         return 1
 
     if args.dry_run:
-        logger.info("-" * 40)
-        logger.info("🔍 DRY RUN COMPLETE - No files were moved")
+        print("-" * 40)
+        print("🔍 DRY RUN COMPLETE - No files were moved")
     return 0
 
 

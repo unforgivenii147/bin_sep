@@ -19,9 +19,9 @@ from __future__ import annotations
 
 import ast
 import sys
+from collections.abc import Iterable, Sequence
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Iterable, Optional, Sequence, Tuple, Union
 
 from loguru import logger
 
@@ -155,7 +155,7 @@ class DocstringRemover(ast.NodeTransformer):
         return new_body
 
 
-def remove_docstrings_from_code(source_code: str) -> Optional[str]:
+def remove_docstrings_from_code(source_code: str) -> str | None:
     """Remove docstrings from the given Python source code.
 
     Args:
@@ -197,7 +197,7 @@ def validate_python_code(code: str) -> bool:
         return False
 
 
-def process_file(path: Path) -> tuple[Path, bool, Optional[str]]:
+def process_file(path: Path) -> tuple[Path, bool, str | None]:
     """Process a single Python file, removing docstrings in place.
 
     Args:
@@ -260,7 +260,7 @@ def main() -> int:
         logger.warning("No Python files found to process")
         return 0
 
-    logger.info(f"Found {len(python_files)} Python file(s) to process")
+    print(f"Found {len(python_files)} Python file(s) to process")
 
     successful = 0
     failed = 0
@@ -272,18 +272,18 @@ def main() -> int:
         for async_result in async_results:
             path, success, error = async_result.get()
             if success:
-                logger.info(f"✓ Processed: {path}")
+                print(f"✓ Processed: {path}")
                 successful += 1
             else:
                 logger.error(f"✗ Failed: {path} - {error}")
                 failed += 1
 
-    logger.info(f"\n{'=' * 40}")
-    logger.info("Processing complete:")
-    logger.info(f"  Successful: {successful}")
-    logger.info(f"  Failed:     {failed}")
-    logger.info(f"  Total:      {len(python_files)}")
-    logger.info(f"{'=' * 40}")
+    print(f"\n{'=' * 40}")
+    print("Processing complete:")
+    print(f"  Successful: {successful}")
+    print(f"  Failed:     {failed}")
+    print(f"  Total:      {len(python_files)}")
+    print(f"{'=' * 40}")
 
     return 0 if failed == 0 else 1
 

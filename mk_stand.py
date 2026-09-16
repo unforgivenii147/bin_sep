@@ -9,7 +9,7 @@ import sys
 import time
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any
 from urllib.parse import urljoin, urlparse
 
 import requests
@@ -66,7 +66,7 @@ def get_mime_type(path: str) -> str:
     return mime
 
 
-def fetch_remote(url: str) -> Optional[bytes]:
+def fetch_remote(url: str) -> bytes | None:
     """Fetch a remote URL and return its bytes, or None on failure."""
     if url.startswith("//"):
         url = "https:" + url
@@ -79,7 +79,7 @@ def fetch_remote(url: str) -> Optional[bytes]:
         return None
 
 
-def read_local(path: Path) -> Optional[bytes]:
+def read_local(path: Path) -> bytes | None:
     """Read a local file and return its bytes, or None on failure."""
     try:
         return path.read_bytes()
@@ -89,7 +89,7 @@ def read_local(path: Path) -> Optional[bytes]:
 
 
 def process_css_content(
-    css_content: str, base_path: Path, base_url: Optional[str] = None
+    css_content: str, base_path: Path, base_url: str | None = None
 ) -> tuple[str, int, int]:
     """Inline url() references in CSS content with base64 data URIs.
 
@@ -148,7 +148,7 @@ def process_html_file(path: Path) -> dict[str, Any]:
         html_text: str = path.read_text(encoding="utf-8")
         soup: BeautifulSoup = BeautifulSoup(html_text, "html.parser")
         for img in soup.find_all("img"):
-            src: Optional[str] = img.get("src")
+            src: str | None = img.get("src")
             if not src or src.startswith("data:"):
                 continue
             if is_remote(src):
@@ -165,11 +165,11 @@ def process_html_file(path: Path) -> dict[str, Any]:
             else:
                 logger.warning(f"Missing local image: {local_img_path} in {path}")
         for link in soup.find_all("link", rel="stylesheet"):
-            href: Optional[str] = link.get("href")
+            href: str | None = link.get("href")
             if not href:
                 continue
             css_text: str = ""
-            base_url: Optional[str] = None
+            base_url: str | None = None
             css_base_path: Path = path
             if is_remote(href):
                 raw = fetch_remote(href)
@@ -198,7 +198,7 @@ def process_html_file(path: Path) -> dict[str, Any]:
                 style_tag.string = processed_css
                 link.replace_with(style_tag)
         for script in soup.find_all("script"):
-            src: Optional[str] = script.get("src")
+            src: str | None = script.get("src")
             if not src:
                 continue
             script_text: str = ""
@@ -301,7 +301,7 @@ def main() -> int:
     if not targets:
         logger.warning("No HTML or CSS files found to process.")
         return 0
-    logger.info(f"Processing {len(targets)} files across multiple CPU cores...\n")
+    print(f"Processing {len(targets)} files across multiple CPU cores...\n")
     t_loc: int = 0
     t_rem: int = 0
     start_time: float = time.perf_counter()
@@ -318,7 +318,7 @@ def main() -> int:
             t_rem += s["remote"]
             status: str = s["status"]
             if status == "success":
-                logger.info(
+                print(
                     f"[SUCCESS] {display_path} "
                     f"({s['time']:.2f}s) - Embedded: "
                     f"{s['local']} local, {s['remote']} remote"
@@ -328,8 +328,8 @@ def main() -> int:
             else:
                 logger.error(f"[ERROR] {display_path} - {status}")
     total_time: float = time.perf_counter() - start_time
-    logger.info(f"\nBuild Complete in {total_time:.2f}s!")
-    logger.info(f"Total globally embedded resources: {t_loc} local, {t_rem} remote.")
+    print(f"\nBuild Complete in {total_time:.2f}s!")
+    print(f"Total globally embedded resources: {t_loc} local, {t_rem} remote.")
     return 0
 
 

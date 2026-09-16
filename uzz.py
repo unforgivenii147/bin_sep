@@ -8,7 +8,6 @@ per-file success or failure.
 
 from multiprocessing import Pool
 from pathlib import Path
-from typing import List, Tuple, Union
 from zipfile import ZipFile
 
 from loguru import logger
@@ -51,7 +50,7 @@ def main() -> int:
     """Find all wheels in the current directory and extract them in parallel."""
     wheels: list[Path] = list(Path.cwd().glob("*.whl"))
     if not wheels:
-        logger.info("No .whl files found")
+        print("No .whl files found")
         return 0
 
     results: list[tuple[str, bool] | BaseException] = []
@@ -70,7 +69,7 @@ def main() -> int:
         name, success = result
         status = "✓" if success else "✗"
         if success:
-            logger.info(f"{status} {name}")
+            print(f"{status} {name}")
         else:
             logger.error(f"{status} {name}")
 

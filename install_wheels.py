@@ -125,27 +125,27 @@ def main() -> None:
     wheel_files: list[Path] = list(current_dir.glob("*.whl"))
 
     if not wheel_files:
-        logger.info("No .whl files found in current directory.")
+        print("No .whl files found in current directory.")
         return
 
-    logger.info(f"Found {len(wheel_files)} wheel(s) in {current_dir}")
-    logger.info(f"Python version: {sys.version}")
-    logger.info(f"Platform: {platform.platform()}")
-    logger.info("-" * 40)
+    print(f"Found {len(wheel_files)} wheel(s) in {current_dir}")
+    print(f"Python version: {sys.version}")
+    print(f"Platform: {platform.platform()}")
+    print("-" * 40)
 
     install_tasks: list[tuple[Path, bool]] = []
     for wheel in wheel_files:
         is_pure: bool = is_pure_python_wheel(wheel)
         wheel_type: str = get_wheel_type(wheel)
         install_type: str = "USER site-packages" if is_pure else "SYSTEM site-packages"
-        logger.info(f"Analyzing: {wheel.name}")
-        logger.info(f"  Type: {wheel_type}")
-        logger.info(f"  Target: {install_type}")
+        print(f"Analyzing: {wheel.name}")
+        print(f"  Type: {wheel_type}")
+        print(f"  Target: {install_type}")
         install_tasks.append((wheel, is_pure))
 
-    logger.info("=" * 40)
-    logger.info("Starting parallel installation...")
-    logger.info("-" * 40)
+    print("=" * 40)
+    print("Starting parallel installation...")
+    print("-" * 40)
 
     successful: list[Path] = []
     failed: list[tuple[Path, str]] = []
@@ -159,7 +159,7 @@ def main() -> None:
         for async_result in async_results:
             try:
                 wheel_path, success, message = async_result.get()
-                logger.info(message)
+                print(message)
                 if success:
                     successful.append(wheel_path)
                 else:
@@ -168,26 +168,26 @@ def main() -> None:
                 logger.error(f"✗ Error processing wheel: {exc}")
                 failed.append((Path("<unknown>"), str(exc)))
 
-    logger.info("=" * 40)
-    logger.info("INSTALLATION SUMMARY")
-    logger.info("-" * 40)
-    logger.info(f"Total wheels: {len(wheel_files)}")
-    logger.info(f"✓ Successfully installed: {len(successful)}")
-    logger.info(f"✗ Failed: {len(failed)}")
+    print("=" * 40)
+    print("INSTALLATION SUMMARY")
+    print("-" * 40)
+    print(f"Total wheels: {len(wheel_files)}")
+    print(f"✓ Successfully installed: {len(successful)}")
+    print(f"✗ Failed: {len(failed)}")
 
     if successful:
-        logger.info("Successfully installed:")
+        print("Successfully installed:")
         for wheel in successful:
             is_pure = is_pure_python_wheel(wheel)
             location: str = "user site" if is_pure else "system site"
-            logger.info(f"  ✓ {wheel.name} -> {location}")
+            print(f"  ✓ {wheel.name} -> {location}")
 
     if failed:
-        logger.info("Failed installations:")
+        print("Failed installations:")
         for wheel, error in failed:
-            logger.info(f"  ✗ {wheel.name}: {error}")
+            print(f"  ✗ {wheel.name}: {error}")
 
-    logger.info("Done!")
+    print("Done!")
 
 
 if __name__ == "__main__":

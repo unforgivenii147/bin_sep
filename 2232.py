@@ -18,10 +18,11 @@ from __future__ import annotations
 
 import argparse
 import sys
+from collections.abc import Iterable, Sequence
 from lib2to3.refactor import RefactoringTool, get_fixers_from_package
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Any, Iterable, List, Optional, Sequence, Tuple
+from typing import Any, Optional
 
 from loguru import logger
 
@@ -96,8 +97,8 @@ class CustomRefactoringTool(RefactoringTool):
     def __init__(
         self,
         fixers: Iterable[str],
-        explicit: Optional[Iterable[str]] = None,
-        append: Optional[Iterable[str]] = None,
+        explicit: Iterable[str] | None = None,
+        append: Iterable[str] | None = None,
     ) -> None:
         """Initialize the tool with a list of fixers and capture buffers.
 
@@ -214,7 +215,7 @@ def apply_2to3_fixes(path: str) -> tuple[str, bool, str]:
 
 
 def find_python_files(
-    paths: Sequence[str], extensions: Optional[Sequence[str]] = None
+    paths: Sequence[str], extensions: Sequence[str] | None = None
 ) -> list[str]:
     """Find all files matching the given extensions under the provided paths.
 
@@ -253,8 +254,8 @@ def process_files_parallel(paths: Sequence[str]) -> tuple[list[str], list[str]]:
     successful: list[str] = []
     failed: list[str] = []
     total = len(paths)
-    logger.info(f"Processing {total} files using {WORKER_COUNT} workers...")
-    logger.info("-" * 40)
+    print(f"Processing {total} files using {WORKER_COUNT} workers...")
+    print("-" * 40)
 
     pool = Pool(processes=WORKER_COUNT)
     try:
@@ -270,9 +271,9 @@ def process_files_parallel(paths: Sequence[str]) -> tuple[list[str], list[str]]:
                 else:
                     failed.append(result_path)
                     status = "✗"
-                logger.info(f"[{i}/{total}] {status} {Path(result_path).name}")
+                print(f"[{i}/{total}] {status} {Path(result_path).name}")
                 if message != "No changes needed":
-                    logger.info(f"    {message}")
+                    print(f"    {message}")
             except Exception as e:
                 failed.append(path)
                 logger.error(f"[{i}/{total}] ✗ {Path(path).name}")
@@ -326,8 +327,8 @@ def perform_dry_run(paths: Sequence[str]) -> None:
     Args:
         paths: The list of file paths to preview.
     """
-    logger.info(f"\nDRY RUN - Preview of changes using {WORKER_COUNT} workers:")
-    logger.info("-" * 40)
+    print(f"\nDRY RUN - Preview of changes using {WORKER_COUNT} workers:")
+    print("-" * 40)
     files_with_changes = 0
     pool = Pool(processes=WORKER_COUNT)
     try:
@@ -342,20 +343,20 @@ def perform_dry_run(paths: Sequence[str]) -> None:
                 continue
             if has_changes:
                 files_with_changes += 1
-                logger.info(f"\n📝 {Path(result_path).name}:")
-                logger.info(output)
+                print(f"\n📝 {Path(result_path).name}:")
+                print(output)
             else:
-                logger.info(f"✓ {Path(result_path).name}: {output}")
+                print(f"✓ {Path(result_path).name}: {output}")
     finally:
         pool.close()
         pool.join()
-    logger.info(f"\n{'=' * 40}")
-    logger.info(
+    print(f"\n{'=' * 40}")
+    print(
         f"Dry run complete: {files_with_changes} of {len(paths)} files would be changed"
     )
 
 
-def _parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
+def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     """Parse command-line arguments.
 
     Args:
@@ -384,7 +385,7 @@ def _parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
-def main(argv: Optional[Sequence[str]] = None) -> int:
+def main(argv: Sequence[str] | None = None) -> int:
     """Entry point for the script.
 
     Args:
@@ -400,21 +401,21 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         return 1
     # Deduplicate while preserving order
     python_files = list(dict.fromkeys(python_files))
-    logger.info(f"Found {len(python_files)} Python file(s) to process")
+    print(f"Found {len(python_files)} Python file(s) to process")
     if args.dry_run:
         perform_dry_run(python_files)
         return 0
     successful, failed = process_files_parallel(python_files)
-    logger.info("\n" + "=" * 40)
-    logger.info("SUMMARY")
-    logger.info("-" * 40)
-    logger.info(f"Total files processed: {len(python_files)}")
-    logger.info(f"✓ Successful: {len(successful)}")
-    logger.info(f"✗ Failed: {len(failed)}")
+    print("\n" + "=" * 40)
+    print("SUMMARY")
+    print("-" * 40)
+    print(f"Total files processed: {len(python_files)}")
+    print(f"✓ Successful: {len(successful)}")
+    print(f"✗ Failed: {len(failed)}")
     if failed:
-        logger.info("\nFailed files:")
+        print("\nFailed files:")
         for f in failed:
-            logger.info(f"  - {Path(f).name}")
+            print(f"  - {Path(f).name}")
     return 0 if not failed else 1
 
 

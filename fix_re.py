@@ -21,7 +21,7 @@ import sys
 import time
 import tokenize
 from dataclasses import dataclass, field
-from multiprocessing import Pool, cpu_count
+from multiprocessing import Pool
 from pathlib import Path
 from typing import Final
 
@@ -305,7 +305,7 @@ class RegexFixer:
             return (path, True, "No changes needed")
 
         if self.verbose:
-            logger.info(f"Found {len(modifications)} modification(s) in {path.name}")
+            print(f"Found {len(modifications)} modification(s) in {path.name}")
             for mod in modifications:
                 logger.debug(f"  {mod.original} -> {mod.modified}")
 
@@ -387,7 +387,7 @@ class RegexFixer:
                     results.append(result)
                     self._update_stats(result)
                     if self.verbose and i % 10 == 0:
-                        logger.info(f"Progress: {i}/{len(files)}")
+                        print(f"Progress: {i}/{len(files)}")
                 except Exception as e:
                     results.append((files[i - 1], False, f"Error: {e}"))
                     self.stats.errors += 1
@@ -408,10 +408,10 @@ class RegexFixer:
     def print_summary(self, results: list[tuple[Path, bool, str]]) -> None:
         """Emit a human-readable summary of the run."""
         if not results:
-            logger.info("No files processed.")
+            print("No files processed.")
             return
 
-        logger.info("=" * 40)
+        print("=" * 40)
         modified: list[tuple[Path, str]] = []
         unchanged: list[tuple[Path, str]] = []
         errors: list[tuple[Path, str]] = []
@@ -424,12 +424,12 @@ class RegexFixer:
                 unchanged.append((path, message))
 
         if modified:
-            logger.info("📝 Modified files:")
+            print("📝 Modified files:")
             for path, message in modified:
                 rel_path: str = self._get_relative_path(path)
-                logger.info(f"  ✓ {rel_path}")
+                print(f"  ✓ {rel_path}")
                 if self.verbose:
-                    logger.info(f"    {message}")
+                    print(f"    {message}")
 
         if errors:
             logger.error("❌ Errors:")
@@ -437,19 +437,17 @@ class RegexFixer:
                 rel_path = self._get_relative_path(path)
                 logger.error(f"  ✗ {rel_path}: {message}")
 
-        logger.info("=" * 40)
-        logger.info("📊 Summary:")
-        logger.info(f"  Total files:     {self.stats.total_files}")
-        logger.info(f"  Processed:       {self.stats.processed}")
-        logger.info(f"  Modified:        {self.stats.modified}")
-        logger.info(f"  Unchanged:       {self.stats.skipped}")
-        logger.info(f"  Errors:          {self.stats.errors}")
-        logger.info(f"  Time elapsed:    {self.stats.elapsed:.2f}s")
-        logger.info(f"  Workers:         {self.max_workers}")
-        logger.info(
-            f"  Backup:          {('Enabled' if self.create_backup else 'Disabled')}"
-        )
-        logger.info(f"  Dry run:         {('Yes' if self.dry_run else 'No')}")
+        print("=" * 40)
+        print("📊 Summary:")
+        print(f"  Total files:     {self.stats.total_files}")
+        print(f"  Processed:       {self.stats.processed}")
+        print(f"  Modified:        {self.stats.modified}")
+        print(f"  Unchanged:       {self.stats.skipped}")
+        print(f"  Errors:          {self.stats.errors}")
+        print(f"  Time elapsed:    {self.stats.elapsed:.2f}s")
+        print(f"  Workers:         {self.max_workers}")
+        print(f"  Backup:          {('Enabled' if self.create_backup else 'Disabled')}")
+        print(f"  Dry run:         {('Yes' if self.dry_run else 'No')}")
 
     def _get_relative_path(self, path: Path) -> str:
         """Return ``path`` relative to the current working directory if possible."""
@@ -514,17 +512,17 @@ def main() -> int:
         verbose=args.verbose,
     )
 
-    logger.info(f"📁 Collecting Python files from {len(paths)} path(s)...")
+    print(f"📁 Collecting Python files from {len(paths)} path(s)...")
     files: list[Path] = fixer.collect_files(paths)
     if not files:
         logger.warning("No Python files found.")
         return 0
 
-    logger.info(f"✅ Found {len(files)} Python files")
-    logger.info(f"🔧 Processing with {fixer.max_workers} worker(s)")
-    logger.info(f"💾 Backup: {('Enabled' if fixer.create_backup else 'Disabled')}")
+    print(f"✅ Found {len(files)} Python files")
+    print(f"🔧 Processing with {fixer.max_workers} worker(s)")
+    print(f"💾 Backup: {('Enabled' if fixer.create_backup else 'Disabled')}")
     if fixer.dry_run:
-        logger.info("🔍 DRY RUN - No files will be modified")
+        print("🔍 DRY RUN - No files will be modified")
 
     results: list[tuple[Path, bool, str]] = fixer.process_files(files)
     fixer.print_summary(results)

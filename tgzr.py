@@ -12,10 +12,8 @@ from __future__ import annotations
 import multiprocessing
 import shutil
 import tarfile
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable
-
-from loguru import logger
 
 # Number of worker processes used for concurrent deletion.
 _WORKERS: int = 8
@@ -69,16 +67,16 @@ def compress_and_cleanup(root: Path = Path()) -> None:
     archive_name: str = f"{root.name}.tar.gz"
     archive_path: Path = root.parent / archive_name
 
-    logger.info(f"Creating archive: {archive_path}")
+    print(f"Creating archive: {archive_path}")
     with tarfile.open(archive_path, "w:gz") as tar:
         tar.add(root, arcname=root.name)
 
-    logger.info("Archive created. Removing original files...")
+    print("Archive created. Removing original files...")
     items: list[Path] = [
         item for item in root.iterdir() if item.resolve() != archive_path
     ]
     remove_items_fast(items)
-    logger.info("Cleanup complete.")
+    print("Cleanup complete.")
 
 
 if __name__ == "__main__":

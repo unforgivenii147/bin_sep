@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import argparse
-import logging
 import sys
 from collections.abc import Container, Iterable
 from pathlib import Path
@@ -12,7 +11,6 @@ import pdfminer.high_level
 from pdfminer.layout import LAParams, LTTextBox
 from pdfminer.pdfexceptions import PDFValueError
 
-logging.basicConfig()
 OUTPUT_TYPES = ((".htm", "html"), (".html", "html"), (".xml", "xml"), (".tag", "tag"))
 
 

@@ -17,7 +17,7 @@ import tarfile
 from io import BytesIO
 from multiprocessing.pool import AsyncResult, Pool
 from pathlib import Path
-from typing import Any, Dict, Final, List
+from typing import Any, Final, List
 
 import zstandard as zstd
 
@@ -247,12 +247,12 @@ def process_files_async(files: list[Path], operation: str, level: int = 21) -> N
                 res: dict[str, Any] = async_result.get(timeout=300)  # 5 minute timeout
                 if res["status"] == "ok":
                     if operation == "compress":
-                        logger.info(
+                        print(
                             f"  ✓ {Path(res['path']).name}: "
                             f"{fsize(res['original'])} → {fsize(res['compressed'])}"
                         )
                     else:  # decompress
-                        logger.info(f"  ✓ {Path(res['path']).name}")
+                        print(f"  ✓ {Path(res['path']).name}")
                 elif res["status"] == "error":
                     logger.error(
                         f"  ✗ {res['path']}: {res.get('error', 'Unknown error')}"
@@ -296,7 +296,7 @@ def main() -> int:
     initial_size: int = get_dir_size(target)
     mode: str = "decompress" if args.decompress else "compress"
 
-    logger.info(
+    print(
         f"zser - {mode} | {target} | workers={FIXED_WORKERS} | "
         f"size={fsize(initial_size)}"
     )
@@ -304,7 +304,7 @@ def main() -> int:
     if args.decompress:
         files: list[Path] = list(target.glob(f"*{ZST_EXT}"))
         if not files:
-            logger.info("No .zst files found")
+            print("No .zst files found")
             return 0
         process_files_async(files, "decompress")
     else:
@@ -314,10 +314,10 @@ def main() -> int:
                 p for p in target.iterdir() if p.is_dir() and p.name not in SKIP_DIRS
             ]
             for d in dirs:
-                logger.info(f"  dir  {d.name}...")
+                print(f"  dir  {d.name}...")
                 res: dict[str, Any] = compress_dir(d, args.level)
                 if res["status"] == "ok":
-                    logger.info(
+                    print(
                         f"    ✓ {fsize(res['original'])} → {fsize(res['compressed'])}"
                     )
                 elif res["status"] == "error":
@@ -330,10 +330,10 @@ def main() -> int:
         if files:
             process_files_async(files, "compress", args.level)
         else:
-            logger.info("Nothing to compress")
+            print("Nothing to compress")
 
     final_size: int = get_dir_size(target)
-    logger.info(
+    print(
         f"\nFinal size: {fsize(final_size)} (saved {fsize(initial_size - final_size)})"
     )
     return 0

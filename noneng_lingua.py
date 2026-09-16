@@ -10,7 +10,7 @@ import argparse
 import json
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any
 
 from lingua import Language, LanguageDetector, LanguageDetectorBuilder
 from loguru import logger
@@ -68,7 +68,7 @@ SKIP_DIRS: set[str] = {
 BATCH_SIZE: int = 100
 MAX_WORKERS: int = 8
 
-_DETECTOR: Optional[LanguageDetector] = None
+_DETECTOR: LanguageDetector | None = None
 
 
 def _get_detector() -> LanguageDetector:
@@ -103,7 +103,7 @@ def is_english(text: str) -> tuple[bool, float]:
         return (True, 0.0)
 
 
-def _read_file_content(path: Path) -> Optional[str]:
+def _read_file_content(path: Path) -> str | None:
     """Read a file trying several encodings.
 
     Args:
@@ -151,7 +151,7 @@ def _collect_non_english_lines(lines: list[str]) -> list[dict[str, Any]]:
 def analyze_file(
     path: Path,
     detailed: bool = False,
-) -> Optional[dict[str, Any]]:
+) -> dict[str, Any] | None:
     """Analyze a single file for non-English content.
 
     Args:
@@ -212,7 +212,7 @@ def analyze_file(
 
 def _analyze_file_wrapper(
     args: tuple[Path, bool],
-) -> Optional[dict[str, Any]]:
+) -> dict[str, Any] | None:
     """Wrapper for analyze_file to unpack arguments for Pool.apply_async.
 
     Args:

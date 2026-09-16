@@ -21,9 +21,6 @@ def main():
         print("Usage: python script.py <filename>", file=sys.stderr)
         sys.exit(1)
     fname = sys.argv[1]
-    if not os.path.isfile(fname):
-        print(f"Error: File '{fname}' not found", file=sys.stderr)
-        sys.exit(1)
     last_mtime = os.stat(fname).st_mtime
     print(f"Watching '{fname}'... (Press Ctrl+C to exit)\n")
     try:

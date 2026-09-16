@@ -200,7 +200,7 @@ class CodeValidator:
     """Validates Python code before writing to files."""
 
     @staticmethod
-    def validate_python_code(source: str) -> tuple[bool, Optional[str]]:
+    def validate_python_code(source: str) -> tuple[bool, str | None]:
         """Validate Python source code.
 
         Args:
@@ -360,9 +360,8 @@ class MethodConverter:
                     # Replace self.attr with just attr
                     child.value = ast.Name(id=child.attr, ctx=ast.Load())
                     child.attr = ""
-            elif isinstance(child, ast.Name):
-                if child.id == "self":
-                    child.id = "self_removed"  # This should not remain in final code
+            elif isinstance(child, ast.Name) and child.id == "self":
+                child.id = "self_removed"  # This should not remain in final code
 
     @staticmethod
     def _is_class_decorator(decorator: ast.expr) -> bool:
@@ -517,7 +516,7 @@ class EntityVisitor(ast.NodeVisitor):
         self.source_lines = source_lines
         self.path = path
         self.entities: list[Entity] = []
-        self.current_class: Optional[str] = None
+        self.current_class: str | None = None
 
     def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
         """Process regular function definitions."""
@@ -842,7 +841,7 @@ def scan_directory(directory: str) -> tuple[list[Path], list[tuple[str, str]]]:
     return (python_files, archive_members)
 
 
-def write_entity(output_dir: Path, entity: Entity) -> Optional[Path]:
+def write_entity(output_dir: Path, entity: Entity) -> Path | None:
     """Write an entity to a file after validating the code.
 
     Args:
@@ -949,11 +948,11 @@ def main() -> int:
         output_dir = Path("output")
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    logger.info(f"Scanning directory: {Path(args.directory).resolve()}")
-    logger.info(f"Output directory: {output_dir.resolve()}\n")
+    print(f"Scanning directory: {Path(args.directory).resolve()}")
+    print(f"Output directory: {output_dir.resolve()}\n")
 
     python_files, archive_members = scan_directory(args.directory)
-    logger.info(
+    print(
         f"Found {len(python_files):,} Python files and {len(archive_members):,} archive members\n"
     )
 
@@ -977,7 +976,7 @@ def main() -> int:
 
         processed = 0
         for future in as_completed(futures):
-            source_type, source_path = futures[future]
+            _source_type, source_path = futures[future]
             processed += 1
             try:
                 result = future.result()
@@ -995,12 +994,12 @@ def main() -> int:
                 error_count += 1
                 logger.error(f"Error processing {source_path}: {e}")
 
-    logger.info(f"\nExtracted {len(all_entities):,} entities:")
+    print(f"\nExtracted {len(all_entities):,} entities:")
     for etype, count in entity_count.items():
         if count > 0:
-            logger.info(f"  {etype}: {count}")
+            print(f"  {etype}: {count}")
 
-    logger.info("\nValidating and writing entities to output directory...")
+    print("\nValidating and writing entities to output directory...")
     written_count = 0
     skipped_count = 0
     for entity in all_entities:
@@ -1010,14 +1009,14 @@ def main() -> int:
         else:
             skipped_count += 1
 
-    logger.info(f"Saved {written_count}/{len(all_entities)} entities")
+    print(f"Saved {written_count}/{len(all_entities)} entities")
     if skipped_count > 0:
         logger.warning(f"Skipped {skipped_count} invalid entities")
-    logger.info("")
+    print()
 
     write_imports_file(output_dir, all_imports)
-    logger.info("Saved aggregated imports to imports.py")
-    logger.info(f"\nTotal unique imports: {len(all_imports)}")
+    print("Saved aggregated imports to imports.py")
+    print(f"\nTotal unique imports: {len(all_imports)}")
 
     if error_count > 0:
         logger.warning(f"Errors encountered: {error_count}")

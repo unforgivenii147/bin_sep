@@ -111,7 +111,7 @@ def process_file(path: Path) -> Path | None:
         ``path`` if processing failed (so the caller can retry), otherwise
         ``None`` on success or when the file was already English.
     """
-    logger.info(f"  Processing {path.name}...")
+    print(f"  Processing {path.name}...")
     try:
         original: str = path.read_text(encoding="utf-8", errors="ignore")
         if is_english(original):
@@ -122,7 +122,7 @@ def process_file(path: Path) -> Path | None:
 
         if translated.strip() != original.strip():
             safe_overwrite(path, translated)
-            logger.info(f"  ✓ Updated {path.name}")
+            print(f"  ✓ Updated {path.name}")
         return None
     except Exception as exc:
         logger.error(f"  Failed to process {path}: {exc}")
@@ -144,10 +144,10 @@ def process_files_with_retry(files: list[Path]) -> None:
 
     while files_to_process and retry_count < MAX_RETRIES:
         if retry_count > 0:
-            logger.info("=" * 40)
-            logger.info(f"Retry attempt {retry_count}/{MAX_RETRIES}")
-            logger.info(f"Retrying {len(files_to_process)} failed files...")
-            logger.info("=" * 40)
+            print("=" * 40)
+            print(f"Retry attempt {retry_count}/{MAX_RETRIES}")
+            print(f"Retrying {len(files_to_process)} failed files...")
+            print("=" * 40)
             time.sleep(RETRY_DELAY)
 
         failed_files: list[Path] = []
@@ -187,10 +187,10 @@ def main() -> None:
     )
 
     if not files:
-        logger.info("No files found to process.")
+        print("No files found to process.")
         return
 
-    logger.info(f"Found {len(files)} files to process.")
+    print(f"Found {len(files)} files to process.")
     process_files_with_retry(files)
 
 

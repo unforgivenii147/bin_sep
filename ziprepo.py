@@ -31,17 +31,17 @@ def download_repo_zip(
     g = Github(token)
     try:
         repo_full_name = f"{username}/{repo}"
-        logger.info(f"Connecting to repository: {repo_full_name}...")
+        print(f"Connecting to repository: {repo_full_name}...")
         repo_obj = g.get_repo(repo_full_name)
-        logger.info(f"Fetching zipball for branch: {branch}...")
+        print(f"Fetching zipball for branch: {branch}...")
         zip_data = repo_obj.get_zipball(branch)
         size_mb = len(zip_data) / (1024 * 1024)
-        logger.info(f"📦 Download size: {size_mb:.2f} MB ({len(zip_data):,} bytes)")
+        print(f"📦 Download size: {size_mb:.2f} MB ({len(zip_data):,} bytes)")
         if output_name is None:
             output_name = f"{repo}-{branch}.zip"
         out_path = Path(output_name)
         out_path.write_bytes(zip_data)
-        logger.info(f"✅ Successfully downloaded: {out_path.absolute()}")
+        print(f"✅ Successfully downloaded: {out_path.absolute()}")
         return out_path
     except GithubException as e:
         logger.error(f"❌ GitHub Error: {e.data.get('message', str(e))}")

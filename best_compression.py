@@ -416,9 +416,9 @@ def main() -> None:
     if not in_path.exists() or not in_path.is_file():
         print(f"Error: file not found: {in_path}", file=sys.stderr)
         sys.exit(1)
-    logger.info(f"Input: {in_path} ({fsz(in_path.stat().st_size)})")
+    print(f"Input: {in_path} ({fsz(in_path.stat().st_size)})")
     try:
-        logger.info(f"SHA256(input)={file_sha256(in_path)}")
+        print(f"SHA256(input)={file_sha256(in_path)}")
     except Exception:
         logger.warning("Could not compute SHA256")
     with tempfile.TemporaryDirectory(prefix="compress_bench_") as td:
@@ -435,13 +435,13 @@ def main() -> None:
             "zstd",
         ]
         results_single: list[Result] = []
-        logger.info("=== Single-process benchmark ===")
+        print("=== Single-process benchmark ===")
         for algo in single_algos:
-            logger.info(f"Compressing {algo} ...")
+            print(f"Compressing {algo} ...")
             r = run_single(algo, in_path, tmpdir)
             results_single.append(r)
             if r.ok:
-                logger.info(
+                print(
                     f"[{algo}] OK size={fsz(r.out_size)} time={r.elapsed_s:.4f}s out={Path(r.out_path).name}"
                 )
             else:
@@ -449,16 +449,16 @@ def main() -> None:
         mp_algos = ["gz", "bz2", "lzma", "zstd", "brotli", "snappy"]
         chunk_size = 4 * 1024 * 1024
         processes = None
-        logger.info("=== Multiprocessing chunk benchmark (reporting only) ===")
+        print("=== Multiprocessing chunk benchmark (reporting only) ===")
         mp_results: list[Result] = []
         for algo in mp_algos:
-            logger.info(f"MP chunk compress {algo} (chunk_size={fsz(chunk_size)}) ...")
+            print(f"MP chunk compress {algo} (chunk_size={fsz(chunk_size)}) ...")
             r = mp_compress_chunks(
                 algo, in_path, tmpdir, chunk_size=chunk_size, processes=processes
             )
             mp_results.append(r)
             if r.ok:
-                logger.info(
+                print(
                     f"[mp_{algo}] OK size={fsz(r.out_size)} time={r.elapsed_s:.4f}s out={Path(r.out_path).name}"
                 )
             else:
@@ -483,7 +483,7 @@ def main() -> None:
             base_algo = best_overall.algo
         out_final = in_path.with_name(in_path.name + best_ext(base_algo))
         copy_file(Path(best_overall.out_path), out_final)
-        logger.info(f"Saved best output to: {out_final}")
+        print(f"Saved best output to: {out_final}")
 
 
 if __name__ == "__main__":

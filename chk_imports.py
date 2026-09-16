@@ -159,7 +159,7 @@ def process_file(path: Path, autofix: bool) -> ProcessResult:
     details: list[str] = []
     for line_num, _end_line, import_text in misplaced:
         detail = f"  Line {line_num}: {import_text.strip()}"
-        logger.info(detail)
+        print(detail)
         details.append(detail)
 
     if not autofix:
@@ -167,7 +167,7 @@ def process_file(path: Path, autofix: bool) -> ProcessResult:
 
     if autofix_imports(path, misplaced):
         msg = f"  [FIXED] Moved {len(misplaced)} import(s) to top"
-        logger.info(msg)
+        print(msg)
         details.append(msg)
         return True, True, details
 
@@ -252,7 +252,7 @@ def main() -> int:
         logger.warning(f"No .py files found in '{root}'")
         return 0
 
-    logger.info(f"Scanning {len(files)} Python file(s) with {POOL_SIZE} worker(s)...")
+    print(f"Scanning {len(files)} Python file(s) with {POOL_SIZE} worker(s)...")
 
     files_with_issues = 0
     files_fixed = 0
@@ -270,17 +270,17 @@ def main() -> int:
             if was_fixed:
                 files_fixed += 1
 
-    logger.info(HEADER_SEPARATOR)
-    logger.info("Summary:")
-    logger.info(f"  Files with misplaced imports: {files_with_issues}")
+    print(HEADER_SEPARATOR)
+    print("Summary:")
+    print(f"  Files with misplaced imports: {files_with_issues}")
     if args.autofix:
-        logger.info(f"  Files fixed: {files_fixed}")
+        print(f"  Files fixed: {files_fixed}")
     else:
-        logger.info("  Run with -a to autofix")
+        print("  Run with -a to autofix")
 
     if output_file and (files_with_issues > 0 or args.output):
         save_report(report_data, output_file, args.autofix)
-        logger.info(f"  Report saved to: {output_file}")
+        print(f"  Report saved to: {output_file}")
 
     if files_with_issues > 0 and not args.autofix:
         return 1

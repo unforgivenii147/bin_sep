@@ -17,8 +17,8 @@ import multiprocessing
 import re
 import sys
 from collections import defaultdict
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable
 
 from dh import get_files
 from loguru import logger
@@ -213,7 +213,7 @@ def scan_directory(
 
     files_to_process: Iterable[Path] = get_files(directory, ext=extensions)
     files_list: list[Path] = list(files_to_process)
-    logger.info(f"Found {len(files_list)} files to process...")
+    print(f"Found {len(files_list)} files to process...")
 
     if not files_list:
         return packages
@@ -268,19 +268,19 @@ def keep_latest_versions(
             continue
         latest_version, latest_path = latest
 
-        logger.info(f"Package: {pkg_name}")
-        logger.info(f"  Latest version: {latest_version} - {latest_path.name}")
-        logger.info(f"  Total versions found: {len(versions)}")
+        print(f"Package: {pkg_name}")
+        print(f"  Latest version: {latest_version} - {latest_path.name}")
+        print(f"  Total versions found: {len(versions)}")
 
         for version, path in versions:
             if path == latest_path:
                 continue
             if dry_run:
-                logger.info(f"  Would delete: {version} - {path.name}")
+                print(f"  Would delete: {version} - {path.name}")
             else:
                 try:
                     path.unlink()
-                    logger.info(f"  Deleted: {version} - {path.name}")
+                    print(f"  Deleted: {version} - {path.name}")
                     total_deleted += 1
                 except Exception as e:  # noqa: BLE001
                     logger.error(f"  Error deleting {path.name}: {e}")
@@ -366,44 +366,42 @@ def main() -> int:
     else:
         file_type = "wheel"
 
-    logger.info(f"Scanning directory: {scan_dir}")
-    logger.info(f"File type: {file_type}")
+    print(f"Scanning directory: {scan_dir}")
+    print(f"File type: {file_type}")
     if args.dry_run:
-        logger.info("DRY RUN MODE - No files will be deleted")
-    logger.info("-" * 40)
+        print("DRY RUN MODE - No files will be deleted")
+    print("-" * 40)
 
     packages = scan_directory(scan_dir, file_type, args.all)
     if not packages:
-        logger.info("No matching package files found.")
+        print("No matching package files found.")
         return 0
 
     total_versions = sum(len(versions) for versions in packages.values())
-    logger.info(
-        f"\nFound {len(packages)} package(s) with {total_versions} total version(s):"
-    )
+    print(f"\nFound {len(packages)} package(s) with {total_versions} total version(s):")
 
     if args.verbose:
         for pkg_name, versions in packages.items():
-            logger.info(f"\n  {pkg_name}: {len(versions)} version(s)")
+            print(f"\n  {pkg_name}: {len(versions)} version(s)")
             for version, path in versions:
-                logger.info(f"    - {version}: {path.name}")
+                print(f"    - {version}: {path.name}")
     else:
         for pkg_name, versions in packages.items():
-            logger.info(f"  {pkg_name}: {len(versions)} version(s)")
+            print(f"  {pkg_name}: {len(versions)} version(s)")
 
-    logger.info("\n" + "=" * 40)
+    print("\n" + "=" * 40)
     total_deleted, total_kept = keep_latest_versions(packages, args.dry_run)
-    logger.info("\n" + "=" * 40)
+    print("\n" + "=" * 40)
 
     if total_deleted == 0:
-        logger.info("No files to delete. All packages have only one version.")
+        print("No files to delete. All packages have only one version.")
     elif args.dry_run:
-        logger.info(
+        print(
             f"Dry run complete. Would delete {total_deleted} file(s), "
             f"keep {total_kept} file(s)."
         )
     else:
-        logger.info(
+        print(
             f"Cleanup complete. Deleted {total_deleted} file(s), "
             f"kept {total_kept} file(s)."
         )

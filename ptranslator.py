@@ -51,14 +51,14 @@ def get_chunks(text: str, max_len: int = MAX_CHUNK_LEN) -> Generator[str, None, 
 
 def translate_file_task(task: tuple[Path, str, float, Path | None]) -> None:
     path, target_lang, delay, output_dir = task
-    logger.info("[%d] Processing: %s", os.getpid(), path)
+    print("[%d] Processing: %s", os.getpid(), path)
     try:
         content = path.read_text(encoding="utf-8", errors="ignore")
     except Exception as e:
         logger.error("  ✗ Cannot read: %s (%s)", path, e)
         return
     if not content.strip():
-        logger.info("  ⊘ Empty file, skipping: %s", path)
+        print("  ⊘ Empty file, skipping: %s", path)
         return
     translator = GoogleTranslator(source="auto", target=target_lang)
     translated_chunks: list[str] = []
@@ -68,7 +68,7 @@ def translate_file_task(task: tuple[Path, str, float, Path | None]) -> None:
             translated = translator.translate(chunk)
             if translated:
                 preview = translated[:80].replace("\n", " ")
-                logger.info("    [%d/%d] %s...", i, len(chunks), preview)
+                print("    [%d/%d] %s...", i, len(chunks), preview)
                 translated_chunks.append(translated)
             else:
                 translated_chunks.append(chunk)
@@ -81,7 +81,7 @@ def translate_file_task(task: tuple[Path, str, float, Path | None]) -> None:
     if path.suffix.lower() == ".py":
         try:
             ast.parse(translated_text)
-            logger.info("  ✓ Python syntax valid")
+            print("  ✓ Python syntax valid")
         except SyntaxError as e:
             logger.error("  ✗ Syntax error in translated Python, NOT writing: %s", e)
             return
@@ -96,7 +96,7 @@ def translate_file_task(task: tuple[Path, str, float, Path | None]) -> None:
     try:
         out_path.parent.mkdir(parents=True, exist_ok=True)
         out_path.write_text(translated_text, encoding="utf-8")
-        logger.info("  → Written: %s\n", out_path)
+        print("  → Written: %s\n", out_path)
     except Exception as e:
         logger.error("  ✗ Cannot write output: %s (%s)\n", out_path, e)
 
@@ -140,13 +140,13 @@ def main() -> None:
     workers = args.workers or multiprocessing.cpu_count()
     files = collect_files(args.paths)
     if not files:
-        logger.info("No text files found to process.")
+        print("No text files found to process.")
         return
-    logger.info("Found %d text files. Starting %d workers...\n", len(files), workers)
+    print("Found %d text files. Starting %d workers...\n", len(files), workers)
     tasks = [(f, args.target_lang, args.delay, args.output_dir) for f in files]
     with multiprocessing.Pool(processes=workers) as pool:
         pool.map(translate_file_task, tasks)
-    logger.info("\n✓ All files processed.")
+    print("\n✓ All files processed.")
 
 
 if __name__ == "__main__":

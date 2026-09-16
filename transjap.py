@@ -16,7 +16,7 @@ import re
 import sys
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Any, Final, Optional
+from typing import Any, Final
 
 from deep_translator import GoogleTranslator
 from loguru import logger
@@ -36,7 +36,7 @@ def translate_text(text: str) -> str:
         return text
     try:
         translator = GoogleTranslator(source="ja", target="en")
-        translated: Optional[str] = translator.translate(text)
+        translated: str | None = translator.translate(text)
         return translated if translated else text
     except Exception as e:
         logger.error("Translation error: {} for text snippet: {}", e, text[:50])
@@ -54,7 +54,7 @@ class CommentDocstringTransformer(ast.NodeTransformer):
 
     def _process_docstring(self, node: Any) -> None:
         """Translate the docstring attached to the given AST node if it is Japanese."""
-        docstring: Optional[str] = ast.get_docstring(node)
+        docstring: str | None = ast.get_docstring(node)
         if docstring and JAPANESE_PATTERN.search(docstring):
             translated: str = translate_text(docstring)
             if translated != docstring:
@@ -154,7 +154,7 @@ def main() -> None:
         logger.error("Error: Path '{}' does not exist", start_path)
         sys.exit(1)
 
-    logger.info("Scanning for Python files in: {}", start_path)
+    print("Scanning for Python files in: {}", start_path)
 
     py_files: list[Path] = [
         f
@@ -163,10 +163,10 @@ def main() -> None:
     ]
 
     if not py_files:
-        logger.info("No Python files found.")
+        print("No Python files found.")
         return
 
-    logger.info("Found {} Python files. Starting translation...", len(py_files))
+    print("Found {} Python files. Starting translation...", len(py_files))
 
     modified_count: int = 0
 
@@ -177,12 +177,12 @@ def main() -> None:
             try:
                 if async_result.get():
                     modified_count += 1
-                    logger.info("✓ Updated: {}", path)
+                    print("✓ Updated: {}", path)
             except Exception as e:
                 logger.error("Task failed for {}: {}", path, e)
 
-    logger.info("=" * 40)
-    logger.info("Completed! Modified {} out of {} files", modified_count, len(py_files))
+    print("=" * 40)
+    print("Completed! Modified {} out of {} files", modified_count, len(py_files))
 
 
 if __name__ == "__main__":

@@ -163,7 +163,7 @@ def decompress_file(path: Path) -> bool:
         out_path.write_bytes(decompressed)
         original_size = path.stat().st_size
         decompressed_size = out_path.stat().st_size
-        logger.info(
+        print(
             f"  ✓ Decompressed {path.name}: "
             f"{fsz(original_size)} → {fsz(decompressed_size)}"
         )
@@ -315,7 +315,7 @@ async def compress_folder_async(folder_path: Path, output_path: Path) -> bool:
         if compressed_size < original_size:
             await loop.run_in_executor(None, shutil.rmtree, folder_path)
             reduction = (original_size - compressed_size) / original_size * 100
-            logger.info(
+            print(
                 f"  ✓ Compressed archive: {reduction:.1f}% saved "
                 f"({fsz(original_size)} → {fsz(compressed_size)})"
             )
@@ -374,7 +374,7 @@ def compress_file(path: Path) -> tuple[bool, int, int]:
     """
     out_path = path.with_suffix(path.suffix + ".lzma")
     if out_path.exists():
-        logger.info(f"Skipping {path.name} - output already exists")
+        print(f"Skipping {path.name} - output already exists")
         return False, 0, 0
     try:
         original_size = path.stat().st_size
@@ -393,7 +393,7 @@ def compress_file(path: Path) -> tuple[bool, int, int]:
             if compressed_size < original_size:
                 path.unlink()
                 reduction = (original_size - compressed_size) / original_size * 100
-                logger.info(
+                print(
                     f"  ✓ {path.name}: {reduction:.1f}% saved "
                     f"({fsz(original_size)} → {fsz(compressed_size)})"
                 )
@@ -411,21 +411,21 @@ async def process_compress() -> None:
     """Compress all eligible files and directories in the current directory."""
     cwd = Path.cwd()
     TEMP_DIR.mkdir(parents=True, exist_ok=True)
-    logger.info("\n🔧 LZMA Compression Settings:")
-    logger.info("   Format: raw LZMA1 via pylzma")
-    logger.info("   Filter: LZMA1 (preset 9 + extreme)")
-    logger.info("   Dictionary size: 256 MB")
-    logger.info("   Solid compression: Yes (chunk concatenation)")
-    logger.info("   Block size: 4 MB")
-    logger.info(f"   Parallel workers: {MAX_WORKERS}")
-    logger.info(f"   Chunk size: {fsz(CHUNK_SIZE)}")
+    print("\n🔧 LZMA Compression Settings:")
+    print("   Format: raw LZMA1 via pylzma")
+    print("   Filter: LZMA1 (preset 9 + extreme)")
+    print("   Dictionary size: 256 MB")
+    print("   Solid compression: Yes (chunk concatenation)")
+    print("   Block size: 4 MB")
+    print(f"   Parallel workers: {MAX_WORKERS}")
+    print(f"   Chunk size: {fsz(CHUNK_SIZE)}")
 
     dirs_to_compress = get_dirs(cwd)
     if dirs_to_compress:
-        logger.info(f"\n📁 Compressing {len(dirs_to_compress)} directories...")
+        print(f"\n📁 Compressing {len(dirs_to_compress)} directories...")
         for dir_path in dirs_to_compress:
             relative_path = dir_path.relative_to(cwd)
-            logger.info(f"\n  Processing {relative_path}...")
+            print(f"\n  Processing {relative_path}...")
             output_path = dir_path.parent / f"{dir_path.name}.lzma"
             if await compress_folder_async(dir_path, output_path):
                 logger.success(
@@ -437,17 +437,17 @@ async def process_compress() -> None:
 
     files_to_compress = get_files(cwd, mode="compress")
     if not files_to_compress:
-        logger.info("\n📄 No files to compress")
+        print("\n📄 No files to compress")
         return
 
-    logger.info(
+    print(
         f"\n📄 Compressing {len(files_to_compress)} files with LZMA max compression..."
     )
     total_original = 0
     total_compressed = 0
     successful = 0
     for i, path in enumerate(files_to_compress, 1):
-        logger.info(f"\n[{i}/{len(files_to_compress)}] {path.name}")
+        print(f"\n[{i}/{len(files_to_compress)}] {path.name}")
         success, orig_size, comp_size = compress_file(path)
         if success:
             successful += 1
@@ -459,9 +459,9 @@ async def process_compress() -> None:
         savings_percent = savings / total_original * 100
         logger.success(f"\n{'=' * 40}")
         logger.success(f"✅ Compressed {successful}/{len(files_to_compress)} files")
-        logger.info(f"📊 Original size:  {fsz(total_original)}")
-        logger.info(f"📦 Compressed size: {fsz(total_compressed)}")
-        logger.info(f"💾 Space saved:    {fsz(savings)} ({savings_percent:.1f}%)")
+        print(f"📊 Original size:  {fsz(total_original)}")
+        print(f"📦 Compressed size: {fsz(total_compressed)}")
+        print(f"💾 Space saved:    {fsz(savings)} ({savings_percent:.1f}%)")
         logger.success(f"{'=' * 40}")
     elif files_to_compress:
         logger.error("\n❌ No files were successfully compressed")
@@ -472,15 +472,15 @@ async def process_decompress() -> None:
     cwd = Path.cwd()
     files_to_decompress = get_files(cwd, mode="decompress")
     if not files_to_decompress:
-        logger.info("\n📄 No .lzma files to decompress")
+        print("\n📄 No .lzma files to decompress")
         return
 
-    logger.info(f"\n📄 Decompressing {len(files_to_decompress)} LZMA archives...")
+    print(f"\n📄 Decompressing {len(files_to_decompress)} LZMA archives...")
     total_original = 0
     total_decompressed = 0
     successful = 0
     for i, path in enumerate(files_to_decompress, 1):
-        logger.info(f"\n[{i}/{len(files_to_decompress)}] {path.name}")
+        print(f"\n[{i}/{len(files_to_decompress)}] {path.name}")
         try:
             out_path = path.with_suffix("")
             original_size = path.stat().st_size
@@ -517,7 +517,7 @@ async def process_decompress() -> None:
                     f.stat().st_size for f in out_path.rglob("*") if f.is_file()
                 )
             total_decompressed += decompressed_size
-            logger.info(
+            print(
                 f"  ✓ Decompressed {path.name}: "
                 f"{fsz(original_size)} → {fsz(decompressed_size)}"
             )
@@ -531,8 +531,8 @@ async def process_decompress() -> None:
         logger.success(
             f"✅ Decompressed {successful}/{len(files_to_decompress)} archives"
         )
-        logger.info(f"📦 Compressed size:   {fsz(total_original)}")
-        logger.info(f"📊 Decompressed size: {fsz(total_decompressed)}")
+        print(f"📦 Compressed size:   {fsz(total_original)}")
+        print(f"📊 Decompressed size: {fsz(total_decompressed)}")
         logger.success(f"{'=' * 40}")
     elif files_to_decompress:
         logger.error("\n❌ No files were successfully decompressed")

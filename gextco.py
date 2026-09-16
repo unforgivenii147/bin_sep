@@ -142,7 +142,7 @@ def save_entities(
     unique_file = entity_dir / "unique.txt"
     with open(unique_file, "w", encoding="utf-8") as f:
         f.writelines(f"{name}\n" for name in sorted(unique_entities))
-    logger.info(f"Saved {len(unique_entities)} unique {entity_type}")
+    print(f"Saved {len(unique_entities)} unique {entity_type}")
 
 
 def save_imports(output_dir: Path, imports_by_dir: dict[str, set[str]]) -> None:
@@ -154,7 +154,7 @@ def save_imports(output_dir: Path, imports_by_dir: dict[str, set[str]]) -> None:
             output_file = imports_dir / file_name
             with open(output_file, "w", encoding="utf-8") as f:
                 f.writelines(f"{imp}\n" for imp in sorted(imports))
-    logger.info(f"Saved imports for {len(imports_by_dir)} directories")
+    print(f"Saved imports for {len(imports_by_dir)} directories")
 
 
 def main(
@@ -165,14 +165,14 @@ def main(
     if not root_path.exists():
         logger.error(f"Root directory not found: {root_path}")
         sys.exit(1)
-    logger.info(f"Scanning for Python files in {root_path}...")
+    print(f"Scanning for Python files in {root_path}...")
     py_files = find_python_files(root_path)
     if not py_files:
         logger.warning("No Python files found.")
         return
-    logger.info(f"Found {len(py_files)} Python files")
+    print(f"Found {len(py_files)} Python files")
     num_workers = num_workers or cpu_count()
-    logger.info(f"Using {num_workers} workers for parallel processing")
+    print(f"Using {num_workers} workers for parallel processing")
     entities_by_file = defaultdict(list)
     unique_classes = set()
     unique_functions = set()
@@ -187,7 +187,7 @@ def main(
                 unit="file",
             )
         )
-    logger.info("Aggregating results...")
+    print("Aggregating results...")
     for result in results:
         for entity in result.classes:
             entities_by_file["classes"][result.path].append(entity)
@@ -201,7 +201,7 @@ def main(
         dir_name = result.path.parent.name or "root"
         imports_by_dir[dir_name].update(result.imports)
     entities_by_file = {key: dict(val) for key, val in entities_by_file.items()}
-    logger.info(f"Saving results to {output_path}...")
+    print(f"Saving results to {output_path}...")
     output_path.mkdir(parents=True, exist_ok=True)
     save_entities(
         output_path, "class", entities_by_file.get("classes", {}), unique_classes
@@ -213,14 +213,14 @@ def main(
         output_path, "const", entities_by_file.get("constants", {}), unique_constants
     )
     save_imports(output_path, imports_by_dir)
-    logger.info("=" * 40)
-    logger.info("Extraction Summary:")
-    logger.info(f"  Files processed: {len(py_files)}")
-    logger.info(f"  Unique classes: {len(unique_classes)}")
-    logger.info(f"  Unique functions: {len(unique_functions)}")
-    logger.info(f"  Unique constants: {len(unique_constants)}")
-    logger.info(f"  Total imports: {sum(len(v) for v in imports_by_dir.values())}")
-    logger.info("=" * 40)
+    print("=" * 40)
+    print("Extraction Summary:")
+    print(f"  Files processed: {len(py_files)}")
+    print(f"  Unique classes: {len(unique_classes)}")
+    print(f"  Unique functions: {len(unique_functions)}")
+    print(f"  Unique constants: {len(unique_constants)}")
+    print(f"  Total imports: {sum(len(v) for v in imports_by_dir.values())}")
+    print("=" * 40)
 
 
 if __name__ == "__main__":

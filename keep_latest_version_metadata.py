@@ -15,9 +15,9 @@ import re
 import shutil
 import sys
 from collections import defaultdict
+from collections.abc import Iterable
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Iterable
 
 from loguru import logger
 from packaging.version import InvalidVersion, Version
@@ -126,9 +126,9 @@ def find_old_versions(package_files: list[VersionedPath]) -> list[Path]:
     latest: VersionedPath = sorted_files[0]
     old_versions: list[VersionedPath] = sorted_files[1:]
 
-    logger.info(f"  Keeping: {latest[1].name} (v{latest[0]})")
+    print(f"  Keeping: {latest[1].name} (v{latest[0]})")
     for version, path in old_versions:
-        logger.info(f"  Removing: {path.name} (v{version})")
+        print(f"  Removing: {path.name} (v{version})")
 
     return [path for _version, path in old_versions]
 
@@ -163,14 +163,14 @@ def delete_files(
     """
     for path in paths:
         if dry_run:
-            logger.info(f"  [DRY RUN] Would delete: {path.name}")
+            print(f"  [DRY RUN] Would delete: {path.name}")
         elif backup_dir is not None:
             backup_path: Path = backup_dir / path.name
             shutil.move(str(path), str(backup_path))
-            logger.info(f"  Moved to backup: {path.name}")
+            print(f"  Moved to backup: {path.name}")
         else:
             path.unlink()
-            logger.info(f"  Deleted: {path.name}")
+            print(f"  Deleted: {path.name}")
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -232,12 +232,12 @@ def main(argv: list[str] | None = None) -> int:
         if not args.dry_run:
             backup_dir.mkdir(parents=True, exist_ok=True)
 
-    logger.info(f"Scanning directory: {metadata_dir}")
+    print(f"Scanning directory: {metadata_dir}")
     all_files: list[Path] = find_metadata_files(metadata_dir)
-    logger.info(f"Found {len(all_files)} metadata files")
+    print(f"Found {len(all_files)} metadata files")
 
     if not all_files:
-        logger.info("No metadata files found")
+        print("No metadata files found")
         return 0
 
     batch_size: int = max(1, args.batch_size)
@@ -245,7 +245,7 @@ def main(argv: list[str] | None = None) -> int:
         all_files[i : i + batch_size] for i in range(0, len(all_files), batch_size)
     ]
 
-    logger.info(f"Processing {len(batches)} batches using {WORKER_COUNT} workers...")
+    print(f"Processing {len(batches)} batches using {WORKER_COUNT} workers...")
 
     batch_results: list[PackageMap] = []
     with Pool(processes=WORKER_COUNT) as pool:
@@ -256,37 +256,35 @@ def main(argv: list[str] | None = None) -> int:
             try:
                 result: PackageMap = async_result.get()
                 batch_results.append(result)
-                logger.info(f"  Batch {idx + 1}/{len(batches)} completed")
+                print(f"  Batch {idx + 1}/{len(batches)} completed")
             except Exception as e:  # noqa: BLE001
                 logger.exception(f"  Error processing batch {idx + 1}: {e}")
 
-    logger.info("Merging results...")
+    print("Merging results...")
     all_packages: PackageMap = merge_results(batch_results)
-    logger.info(f"Processing {len(all_packages)} unique packages...")
+    print(f"Processing {len(all_packages)} unique packages...")
 
     files_to_delete: list[Path] = []
     for pkg_name, versions in sorted(all_packages.items()):
         if len(versions) > 1:
-            logger.info(f"Package: {pkg_name} ({len(versions)} versions)")
+            print(f"Package: {pkg_name} ({len(versions)} versions)")
             old_files: list[Path] = find_old_versions(versions)
             files_to_delete.extend(old_files)
 
-    logger.info("=" * 40)
-    logger.info("Summary:")
-    logger.info(f"  Total metadata files: {len(all_files)}")
-    logger.info(f"  Unique packages: {len(all_packages)}")
-    logger.info(f"  Files to remove: {len(files_to_delete)}")
+    print("=" * 40)
+    print("Summary:")
+    print(f"  Total metadata files: {len(all_files)}")
+    print(f"  Unique packages: {len(all_packages)}")
+    print(f"  Files to remove: {len(files_to_delete)}")
 
     if files_to_delete:
-        logger.info("=" * 40)
-        logger.info(f"Removing {len(files_to_delete)} old version files...")
+        print("=" * 40)
+        print(f"Removing {len(files_to_delete)} old version files...")
         delete_files(files_to_delete, dry_run=args.dry_run, backup_dir=backup_dir)
         if args.dry_run:
-            logger.info(
-                "This was a dry run. Use without --dry-run to actually delete files."
-            )
+            print("This was a dry run. Use without --dry-run to actually delete files.")
     else:
-        logger.info("No duplicate versions found. All packages have single versions.")
+        print("No duplicate versions found. All packages have single versions.")
 
     return 0
 

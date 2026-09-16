@@ -2,13 +2,10 @@
 from __future__ import annotations
 
 import argparse
-import io
 import re
-import sys
 from pathlib import Path
 
 import cv2
-import imageio.v3 as iio
 import numpy as np
 from PIL import (
     Image,
@@ -19,7 +16,6 @@ from PIL import (
     ImageFont,
     ImageOps,
 )
-from skimage import exposure, restoration, util
 
 RESAMPLING = {
     "nearest": Image.Resampling.NEAREST,

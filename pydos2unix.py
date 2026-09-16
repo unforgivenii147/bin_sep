@@ -4,8 +4,9 @@ from __future__ import annotations
 import argparse
 from multiprocessing import Pool
 from pathlib import Path
+
+from dh import is_binary
 from dos2unix import dos2unix
-from dh import is_binary, get_nobinary
 from loguru import logger
 
 MAX_WORKERS = 8
@@ -102,10 +103,10 @@ def main():
     files_to_process = find_text_files(input_paths)
     if not files_to_process:
         if not args.quiet:
-            logger.info("No text files found to process")
+            print("No text files found to process")
         return 0
     if not args.quiet and (not args.verbose):
-        logger.info(
+        print(
             f"Processing {len(files_to_process)} file(s) with {args.jobs} worker(s)..."
         )
     converted_count = 0
@@ -127,8 +128,8 @@ def main():
                 error_count += 1
         if not args.quiet:
             print()
-            logger.info(f"Converted: {converted_count} file(s)")
-            logger.info(f"Already Unix format: {skipped_count} file(s)")
+            print(f"Converted: {converted_count} file(s)")
+            print(f"Already Unix format: {skipped_count} file(s)")
             if error_count > 0:
                 logger.warning(f"Errors: {error_count} file(s)")
         return 0 if error_count == 0 else 1

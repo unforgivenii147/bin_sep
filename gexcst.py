@@ -27,7 +27,7 @@ import tarfile
 import zipfile
 from multiprocessing import Pool, cpu_count
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import libcst as cst
 from libcst.metadata import MetadataWrapper, PositionProvider
@@ -131,7 +131,7 @@ class EntityExtractor(cst.CSTVisitor):
             }
         )
 
-    def visit_FunctionDef(self, node: cst.FunctionDef) -> Optional[bool]:
+    def visit_FunctionDef(self, node: cst.FunctionDef) -> bool | None:
         """
         Visit a function definition node.
 
@@ -147,7 +147,7 @@ class EntityExtractor(cst.CSTVisitor):
             return False
         return True
 
-    def visit_ClassDef(self, node: cst.ClassDef) -> Optional[bool]:
+    def visit_ClassDef(self, node: cst.ClassDef) -> bool | None:
         """
         Visit a class definition node.
 
@@ -163,7 +163,7 @@ class EntityExtractor(cst.CSTVisitor):
             return False
         return True
 
-    def visit_Assign(self, node: cst.Assign) -> Optional[bool]:
+    def visit_Assign(self, node: cst.Assign) -> bool | None:
         """
         Visit an assignment node to detect constants.
 
@@ -182,7 +182,7 @@ class EntityExtractor(cst.CSTVisitor):
                     self._extract_and_save(node, "constant", target_name)
         return True
 
-    def visit_AnnAssign(self, node: cst.AnnAssign) -> Optional[bool]:
+    def visit_AnnAssign(self, node: cst.AnnAssign) -> bool | None:
         """
         Visit an annotated assignment node to detect constants.
 
@@ -200,7 +200,7 @@ class EntityExtractor(cst.CSTVisitor):
                     self._extract_and_save(node, "constant", target_name)
         return True
 
-    def visit_IndentedBlock(self, node: cst.IndentedBlock) -> Optional[bool]:
+    def visit_IndentedBlock(self, node: cst.IndentedBlock) -> bool | None:
         """Increment scope depth when entering an indented block."""
         self.scope_depth += 1
         return True

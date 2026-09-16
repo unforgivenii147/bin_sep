@@ -12,9 +12,8 @@ import multiprocessing as mp
 import operator
 import time
 from pathlib import Path
-from typing import Final, Optional, Tuple
+from typing import Final
 
-from loguru import logger
 from tqdm import tqdm
 
 SECONDS_24H: Final[int] = 24 * 40 * 40
@@ -34,7 +33,7 @@ def iter_files(root: Path) -> list[Path]:
     return files
 
 
-def ctime_if_recent(path: Path) -> Optional[PathCTime]:
+def ctime_if_recent(path: Path) -> PathCTime | None:
     """Return ``(ctime, path)`` if *path* was changed within the last 24 hours."""
     try:
         ctime: float = path.stat().st_ctime
@@ -58,13 +57,13 @@ def main() -> None:
         for async_result in tqdm(
             async_results, total=len(async_results), desc="Scanning", unit="file"
         ):
-            result: Optional[PathCTime] = async_result.get()
+            result: PathCTime | None = async_result.get()
             if result is not None:
                 recent.append(result)
 
     recent.sort(key=operator.itemgetter(0))
     for _, path in recent:
-        logger.info("{}", path.relative_to(root))
+        print("{}", path.relative_to(root))
 
 
 if __name__ == "__main__":

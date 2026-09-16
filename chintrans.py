@@ -17,7 +17,7 @@ import sys
 import time
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Final, Optional
+from typing import Final
 
 from deep_translator import GoogleTranslator
 from loguru import logger
@@ -67,7 +67,7 @@ def create_chunks(lines: list[str]) -> list[list[str]]:
     return chunks
 
 
-def translate_chunk(chunk: list[str]) -> tuple[list[str], Optional[str]]:
+def translate_chunk(chunk: list[str]) -> tuple[list[str], str | None]:
     """Translate a chunk of lines as a single block, retrying on failure.
 
     Returns a tuple of (original_chunk, translated_text_or_None).
@@ -77,7 +77,7 @@ def translate_chunk(chunk: list[str]) -> tuple[list[str], Optional[str]]:
 
     for attempt in range(RETRY_ATTEMPTS):
         try:
-            result: Optional[str] = translator.translate(chunk_text)
+            result: str | None = translator.translate(chunk_text)
             if result:
                 return (chunk, result)
         except Exception as e:
@@ -114,7 +114,7 @@ def main() -> None:
         return
 
     if not all_lines:
-        logger.info("No lines found in {}", input_path.name)
+        print("No lines found in {}", input_path.name)
         return
 
     chinese_lines: list[str] = [line for line in all_lines if contains_chinese(line)]
@@ -122,7 +122,7 @@ def main() -> None:
         line for line in all_lines if not contains_chinese(line)
     ]
 
-    logger.info(
+    print(
         "Loaded {} lines: {} with Chinese, {} already English/skipped",
         len(all_lines),
         len(chinese_lines),
@@ -130,11 +130,11 @@ def main() -> None:
     )
 
     if not chinese_lines:
-        logger.info("No Chinese lines to translate in {}", input_path.name)
+        print("No Chinese lines to translate in {}", input_path.name)
         return
 
     chunks: list[list[str]] = create_chunks(chinese_lines)
-    logger.info(
+    print(
         "Created {} chunks from {} Chinese lines (max {} chars per chunk)",
         len(chunks),
         len(chinese_lines),
@@ -156,7 +156,7 @@ def main() -> None:
                     for i, original_line in enumerate(original_lines):
                         if i < len(translated_lines):
                             results[original_line] = translated_lines[i]
-                            logger.info("{} → {}", original_line, translated_lines[i])
+                            print("{} → {}", original_line, translated_lines[i])
                         else:
                             logger.error(
                                 "Line count mismatch in chunk, missing translation for: {}",
@@ -180,7 +180,7 @@ def main() -> None:
                     f.write(f"{results[line]}\n")
                 else:
                     f.write(f"{line}\n")
-        logger.info(
+        print(
             "Updated {}: translated {} lines, kept {} lines unchanged",
             input_path.name,
             len(results),

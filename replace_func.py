@@ -20,7 +20,7 @@ import ast
 import sys
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Final, List, Optional, Tuple
+from typing import Final
 
 from loguru import logger
 
@@ -51,7 +51,7 @@ def load_code_block() -> list[str]:
 
 def find_block_range(
     lines: list[str], block_lines: list[str]
-) -> Optional[tuple[int, int]]:
+) -> tuple[int, int] | None:
     """
     Find the range (start, end) of the block in the given lines.
 
@@ -149,7 +149,7 @@ def process_file(path: Path) -> None:
     if already_imports_cprint(tree):
         if new_content != content:
             path.write_text(new_content, encoding="utf-8")
-            logger.info(f"Removed block: {path} (cprint already imported)")
+            print(f"Removed block: {path} (cprint already imported)")
         return
 
     # Otherwise insert the import line
@@ -163,7 +163,7 @@ def process_file(path: Path) -> None:
     body_lines.insert(insert_idx, IMPORT_LINE)
     final_content = "".join(body_lines)
     path.write_text(final_content, encoding="utf-8")
-    logger.info(f"Removed block and added import: {path}")
+    print(f"Removed block and added import: {path}")
 
 
 # ---------------------------------------------------------------------------

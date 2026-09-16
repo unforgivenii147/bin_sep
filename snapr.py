@@ -9,7 +9,7 @@ import shutil
 import sys
 import tarfile
 from pathlib import Path
-from typing import Any, Optional, Tuple
+from typing import Any, Tuple
 
 import cramjam  # type: ignore[import-untyped]
 from loguru import logger
@@ -42,7 +42,7 @@ def compress_file(path: Path, remove_original: bool = True) -> tuple[bool, str]:
         ratio: float = (
             (compressed_size / original_size * 100) if original_size > 0 else 0.0
         )
-        logger.info(
+        print(
             f"Compressed: {path} -> {compressed_path} "
             f"({original_size} -> {compressed_size} bytes, {ratio:.1f}%)"
         )
@@ -73,7 +73,7 @@ def decompress_file(path: Path, remove_original: bool = True) -> tuple[bool, str
             f.write(decompressed_data)
         if remove_original:
             path.unlink()
-        logger.info(
+        print(
             f"Decompressed: {path} -> {output_path} "
             f"({len(compressed_data)} -> {len(decompressed_data)} bytes)"
         )
@@ -125,7 +125,7 @@ def find_files(directory: Path, operation: str, recursive: bool = True) -> list[
     return files
 
 
-def create_tar_archive(directory: Path, remove_original: bool = True) -> Optional[Path]:
+def create_tar_archive(directory: Path, remove_original: bool = True) -> Path | None:
     """Create a tar archive from a directory and optionally remove the original.
 
     Args:
@@ -137,13 +137,13 @@ def create_tar_archive(directory: Path, remove_original: bool = True) -> Optiona
     """
     try:
         tar_path: Path = directory.with_suffix(".tar")
-        logger.info(f"Creating tar archive: {tar_path}")
+        print(f"Creating tar archive: {tar_path}")
         with tarfile.open(tar_path, "w") as tar:
             tar.add(directory, arcname=directory.name)
         if remove_original:
             shutil.rmtree(directory)
-            logger.info(f"Removed original directory: {directory}")
-        logger.info(f"Created tar archive: {tar_path}")
+            print(f"Removed original directory: {directory}")
+        print(f"Created tar archive: {tar_path}")
         return tar_path
     except Exception as e:
         logger.error(f"Error creating tar archive for {directory}: {e!s}")
@@ -163,7 +163,7 @@ def tar_subdirectories(base_dir: Path, remove_original: bool = True) -> list[Pat
     tar_files: list[Path] = []
     for item in base_dir.iterdir():
         if item.is_dir():
-            tar_path: Optional[Path] = create_tar_archive(item, remove_original)
+            tar_path: Path | None = create_tar_archive(item, remove_original)
             if tar_path is not None:
                 tar_files.append(tar_path)
     return tar_files
@@ -188,7 +188,7 @@ def process_files(
         logger.warning(f"No files found to {operation}")
         return 0, 0
 
-    logger.info(f"Processing {len(paths)} files with {POOL_SIZE} workers")
+    print(f"Processing {len(paths)} files with {POOL_SIZE} workers")
     success_count: int = 0
     failure_count: int = 0
 
@@ -291,13 +291,13 @@ def main() -> int:
     operation: str = "compress" if args.compress else "decompress"
     recursive: bool = not args.no_recursive
 
-    logger.info(f"Starting {operation} operation on {base_dir}")
-    logger.info(f"Remove original: {remove_original}, Recursive: {recursive}")
+    print(f"Starting {operation} operation on {base_dir}")
+    print(f"Remove original: {remove_original}, Recursive: {recursive}")
 
     if args.tar and args.compress:
-        logger.info("Tarring subdirectories...")
+        print("Tarring subdirectories...")
         tar_files: list[Path] = tar_subdirectories(base_dir, remove_original)
-        logger.info(f"Created {len(tar_files)} tar archives")
+        print(f"Created {len(tar_files)} tar archives")
 
     files_to_process: list[Path] = find_files(base_dir, operation, recursive)
 
@@ -305,7 +305,7 @@ def main() -> int:
         logger.warning(f"No files found to {operation}")
         return 0
 
-    logger.info(f"Found {len(files_to_process)} files to {operation}")
+    print(f"Found {len(files_to_process)} files to {operation}")
 
     success_count: int
     failure_count: int
@@ -313,8 +313,8 @@ def main() -> int:
         files_to_process, operation, remove_original
     )
 
-    logger.info(f"Completed {operation} operation")
-    logger.info(f"Success: {success_count}, Failed: {failure_count}")
+    print(f"Completed {operation} operation")
+    print(f"Success: {success_count}, Failed: {failure_count}")
 
     return 1 if failure_count > 0 else 0
 

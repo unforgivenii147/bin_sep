@@ -144,27 +144,27 @@ def main() -> int:
     repos_file: Path = Path(args.file)
     output_dir: Path = Path(args.output)
     repos: list[str] = read_repos(repos_file)
-    logger.info(f"Found {len(repos)} repositories to download")
+    print(f"Found {len(repos)} repositories to download")
 
     if args.dry_run:
-        logger.info("\nDry run - would download:")
+        print("\nDry run - would download:")
         for repo in repos:
             if validate_repo_format(repo):
                 user, repo_name = repo.split("/")
                 target: Path = output_dir / user / repo_name
                 status: str = "EXISTS" if target.exists() else "NEW"
-                logger.info(f"  [{status}] {repo} -> {target}")
+                print(f"  [{status}] {repo} -> {target}")
             else:
-                logger.info(f"  [INVALID] {repo}")
+                print(f"  [INVALID] {repo}")
         return 0
 
     successful: int = 0
     failed: int = 0
     skipped: int = 0
-    logger.info(
+    print(
         f"\nDownloading with {NUM_WORKERS} parallel workers to {output_dir.absolute()}"
     )
-    logger.info("-" * 40)
+    print("-" * 40)
 
     with Pool(processes=NUM_WORKERS) as pool:
         results: list[AsyncResult[tuple[str, bool, str]]] = [
@@ -177,10 +177,10 @@ def main() -> int:
                 if success:
                     if "Already exists" in message:
                         skipped += 1
-                        logger.info(f"⏭️  {repo_name}: {message}")
+                        print(f"⏭️  {repo_name}: {message}")
                     else:
                         successful += 1
-                        logger.info(f"✅ {repo_name}: {message}")
+                        print(f"✅ {repo_name}: {message}")
                 else:
                     failed += 1
                     logger.error(f"❌ {repo_name}: {message}")
@@ -189,12 +189,12 @@ def main() -> int:
                 logger.error(f"❌ Unexpected error: {e!s}")
         pool.join()
 
-    logger.info("-" * 40)
-    logger.info("\nSummary:")
-    logger.info(f"  ✅ Successfully downloaded: {successful}")
-    logger.info(f"  ⏭️  Already existed: {skipped}")
-    logger.info(f"  ❌ Failed: {failed}")
-    logger.info(f"  📊 Total: {len(repos)}")
+    print("-" * 40)
+    print("\nSummary:")
+    print(f"  ✅ Successfully downloaded: {successful}")
+    print(f"  ⏭️  Already existed: {skipped}")
+    print(f"  ❌ Failed: {failed}")
+    print(f"  📊 Total: {len(repos)}")
     return 0
 
 

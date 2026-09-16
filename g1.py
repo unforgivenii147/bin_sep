@@ -48,7 +48,7 @@ DEFAULT_CLONE_DEPTH: Final[int] = 1
 GITMODULES_FILENAME: Final[str] = ".gitmodules"
 
 
-def get_github_client(token: Optional[str] = None) -> Github:
+def get_github_client(token: str | None = None) -> Github:
     """Return an authenticated or anonymous GitHub client.
 
     Args:
@@ -104,10 +104,10 @@ def get_repo(repo_url: str, github_client: Github) -> Repository:
     """
     try:
         owner, repo_name = parse_repo_url(repo_url)
-        logger.info(f"Fetching repository: {owner}/{repo_name}")
+        print(f"Fetching repository: {owner}/{repo_name}")
         repo = github_client.get_user(owner).get_repo(repo_name)
         _ = repo.size
-        logger.info(f"Repository found: {repo.full_name}")
+        print(f"Repository found: {repo.full_name}")
         return repo
     except UnknownObjectException:
         raise ValueError(f"Repository not found: {repo_url}")
@@ -127,7 +127,7 @@ def get_repo_size(repo: Repository) -> float:
     try:
         size_kb = repo.size
         size_mb = size_kb / 1024
-        logger.info(f"Repository size: {size_mb:.2f} MB")
+        print(f"Repository size: {size_mb:.2f} MB")
         return size_mb
     except Exception as e:
         logger.error(f"Could not fetch repo size: {e}")
@@ -145,7 +145,7 @@ def get_default_branch(repo: Repository) -> str:
     """
     try:
         default_branch = repo.default_branch
-        logger.info(f"Default branch: {default_branch}")
+        print(f"Default branch: {default_branch}")
         return default_branch
     except Exception as e:
         logger.warning(f"Could not determine default branch: {e}")
@@ -177,7 +177,7 @@ def resolve_clone_target(clone_url: str) -> Path:
     return Path.cwd() / name
 
 
-def clone_repo(clone_url: str, branch: str, depth: Optional[int] = None) -> Path:
+def clone_repo(clone_url: str, branch: str, depth: int | None = None) -> Path:
     """Clone a repository using dulwich.
 
     Args:
@@ -193,7 +193,7 @@ def clone_repo(clone_url: str, branch: str, depth: Optional[int] = None) -> Path
         Exception: If cloning fails.
     """
     depth_msg = f"depth={depth}" if depth is not None else "full history"
-    logger.info(f"Cloning repository from {clone_url} (branch: {branch}, {depth_msg})")
+    print(f"Cloning repository from {clone_url} (branch: {branch}, {depth_msg})")
     target_path = resolve_clone_target(clone_url)
     try:
         porcelain.clone(
@@ -202,7 +202,7 @@ def clone_repo(clone_url: str, branch: str, depth: Optional[int] = None) -> Path
             branch=branch.encode("utf-8"),
             depth=depth,
         )
-        logger.info(f"Clone completed successfully at {target_path}.")
+        print(f"Clone completed successfully at {target_path}.")
         return target_path
     except Exception as e:
         raise Exception(f"[ERROR] Clone failed: {e}")
@@ -256,13 +256,13 @@ def _update_submodules_recursive(repo_root: Path) -> None:
         if not has_submodules(current_root):
             continue
 
-        logger.info(f"Updating submodules in {current_root}...")
+        print(f"Updating submodules in {current_root}...")
         try:
             porcelain.submodule_update(
                 root=str(current_root),
                 recursive=True,
             )
-            logger.info(f"Submodules updated in {current_root}.")
+            print(f"Submodules updated in {current_root}.")
         except NotGitRepository as e:
             raise Exception(f"Submodule update failed in {current_root}: {e}")
         except Exception as e:
@@ -289,12 +289,12 @@ def init_submodules(repo_path: Path) -> None:
         Exception: If submodule update fails.
     """
     if not has_submodules(repo_path):
-        logger.info("No submodules found.")
+        print("No submodules found.")
         return
 
-    logger.info("Submodules found. Initialize and update? (y/n)")
+    print("Submodules found. Initialize and update? (y/n)")
     if input().lower() != "y":
-        logger.info("Submodule initialization skipped.")
+        print("Submodule initialization skipped.")
         return
 
     try:
@@ -356,7 +356,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main(argv: Optional[list[str]] = None) -> int:
+def main(argv: list[str] | None = None) -> int:
     """Entry point for the script.
 
     Args:
@@ -369,13 +369,13 @@ def main(argv: Optional[list[str]] = None) -> int:
     args = parser.parse_args(argv)
 
     repo_url: str = args.repository_url.strip()
-    token: Optional[str] = args.token
-    depth: Optional[int] = DEFAULT_CLONE_DEPTH if args.depth else None
+    token: str | None = args.token
+    depth: int | None = DEFAULT_CLONE_DEPTH if args.depth else None
 
     try:
         github_client = get_github_client(token)
         if token:
-            logger.info(f"Authenticated as: {github_client.get_user().login}")
+            print(f"Authenticated as: {github_client.get_user().login}")
     except GithubException as e:
         logger.error(f"Authentication failed: {e}")
         return 1
@@ -388,7 +388,7 @@ def main(argv: Optional[list[str]] = None) -> int:
 
     size_mb = get_repo_size(repo)
     if not confirm_large_repo(size_mb):
-        logger.info("Aborted by user.")
+        print("Aborted by user.")
         return 0
 
     default_branch = get_default_branch(repo)

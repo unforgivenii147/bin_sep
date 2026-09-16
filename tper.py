@@ -15,7 +15,7 @@ import json
 import multiprocessing
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from deep_translator import GoogleTranslator
 from loguru import logger
@@ -29,7 +29,7 @@ MAX_RETRIES: int = 3
 RETRY_DELAY_SECONDS: float = 0.5
 
 
-def translate_word(word: str) -> Optional[str]:
+def translate_word(word: str) -> str | None:
     """Translate a single word to English, retrying on failure.
 
     Args:
@@ -121,17 +121,17 @@ def main() -> int:
         Process exit code (0 on success).
     """
     words = load_words(INPUT_FILE)
-    logger.info("Loaded {} Persian words", len(words))
+    print("Loaded {} Persian words", len(words))
 
     results = load_existing_results(OUTPUT_FILE)
-    logger.info("Loaded {} existing translations from {}", len(results), OUTPUT_FILE)
+    print("Loaded {} existing translations from {}", len(results), OUTPUT_FILE)
 
     to_translate = [w for w in words if w not in results]
     total_remaining = len(to_translate)
-    logger.info("{} words to translate (skipping already translated)", total_remaining)
+    print("{} words to translate (skipping already translated)", total_remaining)
 
     if total_remaining == 0:
-        logger.info("Nothing to do. Exiting.")
+        print("Nothing to do. Exiting.")
         return 0
 
     new_count = 0
@@ -140,7 +140,7 @@ def main() -> int:
     # Shared counter used by worker callbacks; multiprocessing-safe via Value.
     counter = multiprocessing.Value("i", 0)
 
-    def on_success(word: str, translation: Optional[str]) -> None:
+    def on_success(word: str, translation: str | None) -> None:
         """Handle a completed translation task.
 
         Args:
@@ -151,7 +151,7 @@ def main() -> int:
         if translation:
             results[word] = translation
             new_count += 1
-            logger.info("{} → {}", word, translation)
+            print("{} → {}", word, translation)
         else:
             logger.error("Could not translate: {}", word)
         pbar.update(1)
@@ -159,7 +159,7 @@ def main() -> int:
             counter.value += 1
             current = counter.value
         if current % SAVE_EVERY == 0:
-            logger.info("Saving progress after {} new translations...", new_count)
+            print("Saving progress after {} new translations...", new_count)
             save_results_atomic(results, OUTPUT_FILE)
 
     def on_error(exc: BaseException) -> None:
@@ -183,11 +183,11 @@ def main() -> int:
             pool.close()
             pool.join()
     except KeyboardInterrupt:
-        logger.info("Interrupted by user. Saving progress...")
+        print("Interrupted by user. Saving progress...")
     finally:
         save_results_atomic(results, OUTPUT_FILE)
         pbar.close()
-        logger.info("Translation dictionary saved to {}", OUTPUT_FILE)
+        print("Translation dictionary saved to {}", OUTPUT_FILE)
 
     return 0
 

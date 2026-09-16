@@ -63,10 +63,9 @@ def sort_and_uniq(path: str) -> None:
         temp_path = Path(temp_path_str)
         try:
             with open(fd, "w", encoding="utf-8") as tmp:
-                for line in unique_sorted_lines:
-                    tmp.write(line + "\n")
+                tmp.writelines(line + "\n" for line in unique_sorted_lines)
             temp_path.replace(path)
-            logger.info("Successfully updated '{}'.", path)
+            print("Successfully updated '{}'.", path)
         except Exception:
             temp_path.unlink(missing_ok=True)
             raise
@@ -77,7 +76,7 @@ def sort_and_uniq(path: str) -> None:
 def main() -> None:
     """Entry point: parse CLI args and run :func:`sort_and_uniq`."""
     if len(sys.argv) < 2:
-        logger.info("Usage: python script.py <filename>")
+        print("Usage: python script.py <filename>")
         return
     sort_and_uniq(sys.argv[1])
 

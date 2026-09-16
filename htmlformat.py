@@ -7,9 +7,10 @@ Formats HTML files so every tag starts on a new line.
 import logging
 import multiprocessing as mp
 import sys
+from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterator, List, Optional, Tuple
+from typing import Tuple
 
 try:
     import tree_sitter_html as ts_html
@@ -41,7 +42,7 @@ class ProcessingResult:
 
     path: Path
     success: bool
-    error: Optional[str] = None
+    error: str | None = None
     bytes_processed: int = 0
     tags_formatted: int = 0
     was_modified: bool = False
@@ -207,7 +208,7 @@ class HTMLFormatter:
 
         return edits
 
-    def _get_tag_name(self, element_node: Node, source: str) -> Optional[str]:
+    def _get_tag_name(self, element_node: Node, source: str) -> str | None:
         """Extract tag name from an element node."""
         for child in element_node.children:
             if child.type == "start_tag":
@@ -239,7 +240,7 @@ class HTMLFormatter:
         return "\n".join(result)
 
 
-def read_file_safe(path: Path, max_size: int = MAX_FILE_SIZE) -> Optional[str]:
+def read_file_safe(path: Path, max_size: int = MAX_FILE_SIZE) -> str | None:
     """
     Safely read a file with size limit and encoding detection.
 
@@ -261,7 +262,7 @@ def read_file_safe(path: Path, max_size: int = MAX_FILE_SIZE) -> Optional[str]:
 
         return content
 
-    except (OSError, IOError) as e:
+    except OSError as e:
         logger.error(f"Failed to read {path}: {e}")
         return None
     except Exception as e:
@@ -354,15 +355,14 @@ def process_file(path: Path) -> ProcessingResult:
         was_modified = formatted != content
 
         # Write back if modified
-        if was_modified:
-            if not write_file_atomic(path, formatted):
-                return ProcessingResult(
-                    path=path,
-                    success=False,
-                    error="Failed to write file",
-                    bytes_processed=len(content),
-                    tags_formatted=tag_count,
-                )
+        if was_modified and not write_file_atomic(path, formatted):
+            return ProcessingResult(
+                path=path,
+                success=False,
+                error="Failed to write file",
+                bytes_processed=len(content),
+                tags_formatted=tag_count,
+            )
 
         return ProcessingResult(
             path=path,
@@ -426,14 +426,14 @@ Examples:
         logging.getLogger().setLevel(logging.DEBUG)
 
     # Find all HTML files
-    logger.info("Searching for HTML files...")
+    print("Searching for HTML files...")
     html_files = list(find_html_files(args.paths))
 
     if not html_files:
         logger.warning("No HTML files found")
         return 0
 
-    logger.info(f"Found {len(html_files)} HTML file(s)")
+    print(f"Found {len(html_files)} HTML file(s)")
 
     if args.dry_run:
         for f in html_files:
@@ -458,7 +458,7 @@ Examples:
 
                     if result.was_modified:
                         modified_count += 1
-                        logger.info(f"✓ Formatted: {result.path}")
+                        print(f"✓ Formatted: {result.path}")
                     else:
                         logger.debug(f"✓ Already formatted: {result.path}")
                 else:

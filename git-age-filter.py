@@ -34,8 +34,7 @@ def clean() -> None:
     proc = subprocess.run(
         [AGE_BIN, "-r", pubkey, "-a"],
         input=sys.stdin.buffer.read(),
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        capture_output=True,
     )
     if proc.returncode != 0:
         die(f"age encrypt failed: {proc.stderr.decode(errors='replace')}")
@@ -59,8 +58,7 @@ def smudge() -> None:
     proc = subprocess.run(
         [AGE_BIN, "-d", "-i", AGE_KEY_FILE],
         input=data,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        capture_output=True,
     )
     if proc.returncode != 0:
         die(f"age decrypt failed: {proc.stderr.decode(errors='replace')}")

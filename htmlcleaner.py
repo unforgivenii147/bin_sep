@@ -18,9 +18,10 @@ import html.parser
 import multiprocessing as mp
 import re
 import sys
+from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterator, List, Optional, Tuple
+from typing import List, Tuple
 
 # Configuration
 NUM_WORKERS = 8
@@ -39,7 +40,7 @@ class ExtractionResult:
     success: bool
     css_count: int = 0
     js_count: int = 0
-    error: Optional[str] = None
+    error: str | None = None
 
 
 class HTMLExtractor(html.parser.HTMLParser):
@@ -63,7 +64,7 @@ class HTMLExtractor(html.parser.HTMLParser):
         self.in_script = False
         self.script_has_src = False
 
-    def handle_starttag(self, tag: str, attrs: list[tuple[str, Optional[str]]]):
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]):
         """Handle opening tags."""
         tag_lower = tag.lower()
 

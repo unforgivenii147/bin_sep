@@ -5,7 +5,6 @@ and save the results as JSON in the home folder.
 """
 
 import json
-import os
 import subprocess
 import sys
 from pathlib import Path

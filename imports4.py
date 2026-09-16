@@ -70,9 +70,7 @@ def normalize(name):
 def is_valid_module_name(name):
     if not name or not _IDENT_RE.match(name):
         return False
-    if name.startswith("__") and name.endswith("__"):
-        return False
-    return True
+    return not (name.startswith("__") and name.endswith("__"))
 
 
 PKG_MAP_NORM = {normalize(k): v for k, v in PKG_MAPPING.items()}
@@ -101,13 +99,11 @@ def get_installed_packages(pip_version="pip"):
             stderr=subprocess.STDOUT,
         ).communicate()
     except FileNotFoundError:
-        print(
-            "[!] '{}' not found, skipping installed-package check".format(pip_version)
-        )
+        print(f"[!] '{pip_version}' not found, skipping installed-package check")
         return installed_with_versions, installed
     for raw in stdout.splitlines():
         line = raw.decode("utf-8").strip()
-        if not line or line.startswith("#") or line.startswith("-e"):
+        if not line or line.startswith(("#", "-e")):
             continue
         installed_with_versions.append(line)
         name = line.split("==")[0].split("@")[0].strip()
@@ -171,7 +167,7 @@ def get_project_imports(directory=os.curdir):
                     if mod not in seen:
                         seen.add(mod)
                         modules.append(mod)
-                        print("found {} in {}".format(mod, name))
+                        print(f"found {mod} in {name}")
             elif name.endswith(".ipynb"):
                 try:
                     contents = json.loads(
@@ -187,7 +183,7 @@ def get_project_imports(directory=os.curdir):
                         if mod not in seen:
                             seen.add(mod)
                             modules.append(mod)
-                            print("found {} in {}".format(mod, name))
+                            print(f"found {mod} in {name}")
     return modules
 
 
@@ -202,15 +198,15 @@ def resolve_package_name(import_name):
 def init(args):
     pypi_index = load_pypi_packages(args["pypi_list"])
     print("[i] Loaded {} packages from {}".format(len(pypi_index), args["pypi_list"]))
-    print("[i] Loaded {} import->package mappings".format(len(PKG_MAP_NORM)))
+    print(f"[i] Loaded {len(PKG_MAP_NORM)} import->package mappings")
     target = args["path"] if args["path"] else os.curdir
     local_modules = get_local_modules(target)
-    print("[i] Detected {} local modules/packages".format(len(local_modules)))
+    print(f"[i] Detected {len(local_modules)} local modules/packages")
     modules = get_project_imports(target)
-    print("[i] Found {} unique imports in source".format(len(modules)))
+    print(f"[i] Found {len(modules)} unique imports in source")
     pip_cmd = args["version"] if args["version"] else "pip3"
     _, installed = get_installed_packages(pip_cmd)
-    print("[i] {} packages installed locally".format(len(installed)))
+    print(f"[i] {len(installed)} packages installed locally")
     output_text = []
     skipped_stdlib = []
     skipped_installed = []
@@ -240,7 +236,7 @@ def init(args):
         if pkg_norm in pypi_index:
             if was_mapped:
                 mapped_count += 1
-                print("[→] {} -> {}".format(mod, pkg_name))
+                print(f"[→] {mod} -> {pkg_name}")
                 output_text.append(pkg_name)
             else:
                 output_text.append(mod)
@@ -248,16 +244,16 @@ def init(args):
             output_text.append(mod)
         else:
             missing.append(mod)
-    print("\n[i] Skipped {} stdlib modules".format(len(skipped_stdlib)))
-    print("[i] Skipped {} local modules".format(len(skipped_local)))
-    print("[i] Skipped {} already-installed modules".format(len(skipped_installed)))
-    print("[i] Skipped {} invalid/blocklisted names".format(len(skipped_invalid)))
+    print(f"\n[i] Skipped {len(skipped_stdlib)} stdlib modules")
+    print(f"[i] Skipped {len(skipped_local)} local modules")
+    print(f"[i] Skipped {len(skipped_installed)} already-installed modules")
+    print(f"[i] Skipped {len(skipped_invalid)} invalid/blocklisted names")
     if skipped_invalid:
         preview = ", ".join(sorted(set(skipped_invalid))[:15])
         if len(set(skipped_invalid)) > 15:
             preview += " ..."
-        print("    {}".format(preview))
-    print("[i] Resolved {} renamed packages".format(mapped_count))
+        print(f"    {preview}")
+    print(f"[i] Resolved {mapped_count} renamed packages")
     if missing:
         print(
             "[i] Skipped {} unknown modules: {}".format(
@@ -266,11 +262,7 @@ def init(args):
         )
     unique = sorted(set(output_text))
     if args.get("dry_run"):
-        print(
-            "\n[dry-run] Would write {} packages to requirements.txt:".format(
-                len(unique)
-            )
-        )
+        print(f"\n[dry-run] Would write {len(unique)} packages to requirements.txt:")
         for pkg in unique:
             print("  " + pkg)
         return
@@ -279,7 +271,7 @@ def init(args):
     with open(out_file, "w", encoding="utf-8") as f:
         if unique:
             f.write("\n".join(unique) + "\n")
-    print("\n[✓] Wrote {} packages to {}".format(len(unique), out_file))
+    print(f"\n[✓] Wrote {len(unique)} packages to {out_file}")
 
 
 def main():

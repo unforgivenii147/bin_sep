@@ -62,8 +62,7 @@ def main():
         sys.exit(1)
 
     with open("keys.txt", "w", encoding="utf-8") as f:
-        for name in names:
-            f.write(f"{name}\n")
+        f.writelines(f"{name}\n" for name in names)
 
     print(f"Wrote {len(names)} pkgname values to keys.txt")
 

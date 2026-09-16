@@ -28,11 +28,15 @@ BACKUP_DIR_NAME: Final[str] = "whl_backup"
 POOL_WORKERS: Final[int] = 8
 
 TAG_PATTERNS: Final[tuple[str, ...]] = (
-    r".*?-.*?-.*?-(py3|py2\.py3|py2|cp[0-9]+)-(none|abi[0-9]+|cp[0-9]+m?)-"
-    r"(manylinux[0-9_]+|linux|win_amd64|win32|macosx[0-9_]+)\.whl$",
-    r".*?-.*?-.*?-([a-z0-9]+(?:[\.\-][a-z0-9]+)?)-"
-    r"([a-z0-9]+(?:[\.\-][a-z0-9]+)?)-"
-    r"([a-z0-9_]+(?:[\.\-][a-z0-9_]+)?)\.whl$",
+    (
+        r".*?-.*?-.*?-(py3|py2\.py3|py2|cp[0-9]+)-(none|abi[0-9]+|cp[0-9]+m?)-"
+        r"(manylinux[0-9_]+|linux|win_amd64|win32|macosx[0-9_]+)\.whl$"
+    ),
+    (
+        r".*?-.*?-.*?-([a-z0-9]+(?:[\.\-][a-z0-9]+)?)-"
+        r"([a-z0-9]+(?:[\.\-][a-z0-9]+)?)-"
+        r"([a-z0-9_]+(?:[\.\-][a-z0-9_]+)?)\.whl$"
+    ),
 )
 
 CP3_PATTERN: Final[re.Pattern[str]] = re.compile(r"cp3[0-9]")
@@ -156,7 +160,7 @@ def _process_single_file(
     Returns:
         A tuple (renamed, failed_filename). If succeeded, failed_filename is None.
     """
-    logger.info("[{}] Processing", path.name)
+    print("[{}] Processing", path.name)
     metadata = extract_metadata_from_wheel(path)
     if not metadata:
         return False, path.name
@@ -164,15 +168,15 @@ def _process_single_file(
     if not proper_name:
         return False, path.name
     if proper_name == path.name:
-        logger.info("Already has correct name: {}", path.name)
+        print("Already has correct name: {}", path.name)
         return False, None
     if dry_run:
-        logger.info("Would rename to: {}", proper_name)
+        print("Would rename to: {}", proper_name)
         return True, None
     if backup_dir is not None:
         backup_path = backup_dir / path.name
         shutil.copy2(path, backup_path)
-        logger.info("Backup created: {}", backup_path.name)
+        print("Backup created: {}", backup_path.name)
     try:
         new_path = path.parent / proper_name
         path.rename(new_path)
@@ -202,34 +206,34 @@ def fix_whl_files_by_metadata(
     if not whl_files:
         logger.warning("No .whl files found in {}", directory)
         return 0, []
-    logger.info("Found {} .whl files", len(whl_files))
+    print("Found {} .whl files", len(whl_files))
     renamed_count = 0
     failed_files: list[str] = []
     backup_dir: Path | None = None
     if backup and not dry_run:
         backup_dir = path / BACKUP_DIR_NAME
         backup_dir.mkdir(exist_ok=True)
-        logger.info("Backups will be saved to: {}", backup_dir)
+        print("Backups will be saved to: {}", backup_dir)
     for idx, path in enumerate(whl_files, 1):
-        logger.info("[{}/{}] Processing: {}", idx, len(whl_files), path.name)
+        print("[{}/{}] Processing: {}", idx, len(whl_files), path.name)
         renamed, failed = _process_single_file(path, dry_run, backup_dir)
         if renamed:
             renamed_count += 1
         if failed is not None:
             failed_files.append(failed)
-    logger.info("=" * 40)
-    logger.info("SUMMARY:")
-    logger.info("Total files: {}", len(whl_files))
+    print("=" * 40)
+    print("SUMMARY:")
+    print("Total files: {}", len(whl_files))
     if not dry_run:
-        logger.info("Successfully renamed: {}", renamed_count)
-        logger.info("Failed: {}", len(failed_files))
+        print("Successfully renamed: {}", renamed_count)
+        print("Failed: {}", len(failed_files))
         if failed_files:
-            logger.info("Failed files: {}", ", ".join(failed_files))
+            print("Failed files: {}", ", ".join(failed_files))
     else:
-        logger.info("Would rename: {} files", renamed_count)
-        logger.info("Would skip/error: {}", len(failed_files))
+        print("Would rename: {} files", renamed_count)
+        print("Would skip/error: {}", len(failed_files))
     if dry_run and renamed_count > 0:
-        logger.info("Dry run complete. Run with --execute to apply changes.")
+        print("Dry run complete. Run with --execute to apply changes.")
     return renamed_count, failed_files
 
 
@@ -262,7 +266,7 @@ def batch_fix_with_parallel(directory: str = ".") -> None:
     if not whl_files:
         logger.warning("No .whl files found in {}", directory)
         return
-    logger.info("Processing {} files with {} workers...", len(whl_files), POOL_WORKERS)
+    print("Processing {} files with {} workers...", len(whl_files), POOL_WORKERS)
     results: list[tuple[str, Metadata | None, str | None]] = []
     with Pool(processes=POOL_WORKERS) as pool:
         async_results: list[Any] = [
@@ -273,12 +277,12 @@ def batch_fix_with_parallel(directory: str = ".") -> None:
                 results.append(ar.get())
             except Exception as e:  # noqa: BLE001
                 logger.error("Error processing file: {}", e)
-    logger.info("Extracted information:")
+    print("Extracted information:")
     for old_name, metadata, proper_name in results:
         if metadata is None:
             logger.warning("{} -> <no metadata>", old_name)
         else:
-            logger.info(
+            print(
                 "{} -> {} {} -> {}",
                 old_name,
                 metadata["name"],
@@ -339,7 +343,7 @@ def main() -> int:
     parser = _build_arg_parser()
     args = parser.parse_args()
     if args.info_only:
-        logger.info("Extracting wheel information (no renaming):")
+        print("Extracting wheel information (no renaming):")
         batch_fix_with_parallel(args.directory)
     else:
         fix_whl_files_by_metadata(

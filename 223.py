@@ -4,10 +4,10 @@
 from __future__ import annotations
 
 import sys
+from collections.abc import Iterable, Sequence
 from lib2to3.refactor import RefactoringTool, get_fixers_from_package
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Iterable, List, Sequence, Tuple
 
 WORKERS = 8
 

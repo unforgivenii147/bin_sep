@@ -20,9 +20,9 @@ from __future__ import annotations
 
 import argparse
 from collections import defaultdict
+from collections.abc import Iterable, Iterator
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Iterable, Iterator
 
 from loguru import logger
 from xxhash import xxh64
@@ -179,7 +179,7 @@ def main() -> None:
 
     root = Path.cwd()
 
-    logger.info("Phase 1: Scanning files and grouping by size...")
+    print("Phase 1: Scanning files and grouping by size...")
     size_groups: defaultdict[int, list[Path]] = defaultdict(list)
     total_files = 0
     for f in iter_files(root, args.recursive, args.follow_symlinks, args.min_size):
@@ -194,16 +194,16 @@ def main() -> None:
         s: lst for s, lst in size_groups.items() if len(lst) > 1
     }
     if not candidates:
-        logger.info(f"Scanned {total_files} files. No potential duplicates found.")
+        print(f"Scanned {total_files} files. No potential duplicates found.")
         return
 
     candidate_count = sum(len(v) for v in candidates.values())
-    logger.info(
+    print(
         f"Phase 1 complete: {candidate_count} files in "
         f"{len(candidates)} size-groups to examine."
     )
 
-    logger.info("Phase 2: Quick hash comparison...")
+    print("Phase 2: Quick hash comparison...")
     quick_groups: defaultdict[tuple[int, str], list[Path]] = defaultdict(list)
 
     with Pool(processes=POOL_WORKERS) as pool:
@@ -223,16 +223,16 @@ def main() -> None:
         group for group in quick_groups.values() if len(group) > 1
     ]
     if not need_full:
-        logger.info("No duplicates found after quick hash comparison.")
+        print("No duplicates found after quick hash comparison.")
         return
 
     full_candidates = sum(len(g) for g in need_full)
-    logger.info(
+    print(
         f"Phase 2 complete: {full_candidates} files in "
         f"{len(need_full)} groups need full hash."
     )
 
-    logger.info("Phase 3: Full hash comparison...")
+    print("Phase 3: Full hash comparison...")
     full_groups: defaultdict[str, list[tuple[Path, tuple[int, int] | None]]] = (
         defaultdict(list)
     )
@@ -251,9 +251,9 @@ def main() -> None:
             except Exception as e:  # noqa: BLE001
                 logger.warning(f"Skipping {fpath}: {e}")
 
-    logger.info("Phase 4: Processing results...")
+    print("Phase 4: Processing results...")
     to_delete: list[Path] = []
-    for _h, entries in full_groups.items():
+    for entries in full_groups.values():
         if len(entries) < 2:
             continue
         inode_map: defaultdict[tuple[int, int] | None, list[Path]] = defaultdict(list)
@@ -268,23 +268,23 @@ def main() -> None:
                 to_delete.append(rep)
 
     if not to_delete:
-        logger.info("No duplicate files found.")
+        print("No duplicate files found.")
         return
 
-    logger.info(f"\nFound {len(to_delete)} duplicate files to delete.")
+    print(f"\nFound {len(to_delete)} duplicate files to delete.")
     if args.dry_run:
-        logger.info("DRY RUN - Files that would be deleted:")
+        print("DRY RUN - Files that would be deleted:")
     else:
-        logger.info("Files to be deleted:")
+        print("Files to be deleted:")
     for p_del in to_delete:
         try:
             rel_path = p_del.relative_to(cwd)
         except ValueError:
             rel_path = p_del
-        logger.info(f"  {rel_path}")
+        print(f"  {rel_path}")
 
     if args.dry_run:
-        logger.info(f"\nDry-run complete. {len(to_delete)} files would be deleted.")
+        print(f"\nDry-run complete. {len(to_delete)} files would be deleted.")
         return
 
     removed = 0
@@ -297,9 +297,9 @@ def main() -> None:
             freed_space += size
             removed += 1
             try:
-                logger.info(f"Deleted: {p_del.relative_to(cwd)} ({size:,} bytes)")
+                print(f"Deleted: {p_del.relative_to(cwd)} ({size:,} bytes)")
             except ValueError:
-                logger.info(f"Deleted: {p_del} ({size:,} bytes)")
+                print(f"Deleted: {p_del} ({size:,} bytes)")
         except OSError as e:
             failed += 1
             try:
@@ -307,14 +307,14 @@ def main() -> None:
             except ValueError:
                 logger.error(f"Failed: {p_del} - {e}")
 
-    logger.info("\nSummary:")
-    logger.info(f"  Files scanned: {total_files}")
-    logger.info(f"  Duplicates found: {len(to_delete)}")
-    logger.info(f"  Successfully deleted: {removed}")
+    print("\nSummary:")
+    print(f"  Files scanned: {total_files}")
+    print(f"  Duplicates found: {len(to_delete)}")
+    print(f"  Successfully deleted: {removed}")
     if failed:
-        logger.info(f"  Failed to delete: {failed}")
+        print(f"  Failed to delete: {failed}")
     if freed_space:
-        logger.info(
+        print(
             f"  Space freed: {freed_space:,} bytes ({freed_space / 1024 / 1024:.2f} MB)"
         )
 

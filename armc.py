@@ -134,11 +134,9 @@ def main() -> None:
     args = parser.parse_args()
     targets = collect_python_files(args.paths)
     if not targets:
-        logger.info("No Python files found to process.")
+        print("No Python files found to process.")
         return
-    logger.info(
-        f"Dispatched {len(targets)} target files to 8 multiprocessing workers..."
-    )
+    print(f"Dispatched {len(targets)} target files to 8 multiprocessing workers...")
     async_results = []
     with mp.Pool(processes=8) as pool:
         for path in targets:
@@ -156,15 +154,15 @@ def main() -> None:
         if res.modified:
             total_modified += 1
             total_removed += res.removed_count
-            logger.info(f"Modified: {res.path} | Removed comments: {res.removed_count}")
+            print(f"Modified: {res.path} | Removed comments: {res.removed_count}")
             if res.unremoved_count > 0:
                 logger.warning(
                     f"Lingering comments detected in {res.path}: {res.unremoved_count} remain."
                 )
-    logger.info("--- Execution Summary ---")
-    logger.info(f"Total files scanned:  {len(targets)}")
-    logger.info(f"Files modified:        {total_modified}")
-    logger.info(f"Comments stripped:     {total_removed}")
+    print("--- Execution Summary ---")
+    print(f"Total files scanned:  {len(targets)}")
+    print(f"Files modified:        {total_modified}")
+    print(f"Comments stripped:     {total_removed}")
 
 
 if __name__ == "__main__":

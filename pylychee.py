@@ -17,9 +17,10 @@ import mimetypes
 import re
 import urllib.error
 import urllib.request
+from collections.abc import Iterable
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Final, Iterable, Optional
+from typing import Final
 from urllib.parse import unquote, urldefrag
 
 from loguru import logger
@@ -82,7 +83,7 @@ def _read_bytes(path: Path) -> bytes:
     return path.read_bytes()
 
 
-def _local_target_resolve(base_dir: Path, u: str) -> Optional[Path]:
+def _local_target_resolve(base_dir: Path, u: str) -> Path | None:
     """Resolve a local reference relative to base_dir, returning None on absolute paths."""
     s = u.strip()
     if not s:
@@ -144,10 +145,9 @@ def _replace_html(html: str, file_dir: Path, timeout: int) -> tuple[str, list[st
         if not target or target.startswith(("#", "data:")):
             return m.group(0)
         if _is_remote(target):
-            if _is_imageish(target):
-                if not _http_check(target, timeout):
-                    removals.append(f"REMOTE_UNAVAILABLE_IMAGE {attr}={raw}")
-                    return f"{attr}={q}{q}"
+            if _is_imageish(target) and not _http_check(target, timeout):
+                removals.append(f"REMOTE_UNAVAILABLE_IMAGE {attr}={raw}")
+                return f"{attr}={q}{q}"
             return m.group(0)
         if _is_local_ref(target):
             local_path = _local_target_resolve(file_dir, target)
@@ -176,10 +176,9 @@ def _replace_md(md: str, file_dir: Path, timeout: int) -> tuple[str, list[str]]:
         if not url or url.startswith(("#", "data:")):
             return match.group(0)
         if _is_remote(url):
-            if _is_imageish(url):
-                if not _http_check(url, timeout):
-                    removals.append(f"REMOTE_UNAVAILABLE_IMAGE_MD {url}")
-                    return ""
+            if _is_imageish(url) and not _http_check(url, timeout):
+                removals.append(f"REMOTE_UNAVAILABLE_IMAGE_MD {url}")
+                return ""
             return match.group(0)
         if _is_local_ref(url) and _is_imageish(url):
             local_path = _local_target_resolve(file_dir, url)
@@ -200,10 +199,9 @@ def _replace_md(md: str, file_dir: Path, timeout: int) -> tuple[str, list[str]]:
         if not url or url.startswith(("#", "data:")):
             return match.group(0)
         if _is_remote(url):
-            if _is_imageish(url):
-                if not _http_check(url, timeout):
-                    removals.append(f"REMOTE_UNAVAILABLE_IMAGE_MD_LINK {url}")
-                    return match.group(0).replace(f"({url})", "()")
+            if _is_imageish(url) and not _http_check(url, timeout):
+                removals.append(f"REMOTE_UNAVAILABLE_IMAGE_MD_LINK {url}")
+                return match.group(0).replace(f"({url})", "()")
             return match.group(0)
         if _is_local_ref(url):
             local_path = _local_target_resolve(file_dir, url)
@@ -280,7 +278,7 @@ def main() -> int:
                 all_reports.extend(r)
 
     for line in all_reports:
-        logger.info(line)
+        print(line)
 
     return 0
 

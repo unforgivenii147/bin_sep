@@ -17,7 +17,7 @@ import tarfile
 from multiprocessing import Pool
 from multiprocessing.pool import AsyncResult
 from pathlib import Path
-from typing import Final, Optional
+from typing import Final
 
 from loguru import logger
 
@@ -50,7 +50,7 @@ def decompress_file(path: Path) -> bool:
         out_path.write_bytes(decompressed_data)
         original_size: int = path.stat().st_size
         decompressed_size: int = out_path.stat().st_size
-        logger.info(
+        print(
             f"  ✓ Decompressed {path.name}: {fsz(original_size)} → {fsz(decompressed_size)}"
         )
         path.unlink()
@@ -98,7 +98,7 @@ def compress_chunked(in_path: Path, out_path: Path, file_size: int, pool: Pool) 
                 mm[i * CHUNK_SIZE_SMALL : min((i + 1) * CHUNK_SIZE_SMALL, file_size)]
                 for i in range(chunk_count)
             ]
-            results: list[Optional[bytes]] = [None] * chunk_count
+            results: list[bytes | None] = [None] * chunk_count
             async_results: list[AsyncResult[tuple[int, bytes]]] = [
                 pool.apply_async(_compress_chunk_star, ((chunk, idx),))
                 for idx, chunk in enumerate(chunks)
@@ -152,12 +152,12 @@ def compress_tar_to_gz(tar_path: Path, gz_path: Path, pool: Pool) -> bool:
             if gz_size < tar_size:
                 tar_path.unlink()
                 reduction: float = (tar_size - gz_size) / tar_size * 100
-                logger.info(
+                print(
                     f"  ✓ Compressed archive: {reduction:.1f}% saved ({fsz(tar_size)} → {fsz(gz_size)})"
                 )
                 return True
             else:
-                logger.info("  ✗ Archive compression didn't save space, keeping .tar")
+                print("  ✗ Archive compression didn't save space, keeping .tar")
                 gz_path.unlink()
                 return False
         return False
@@ -174,16 +174,14 @@ async def compress_folder_async(
     tar_path: Path = Path(output_base_name + ".tar")
     gz_path: Path = Path(output_base_name + ".tar.gz")
     try:
-        logger.info("  Creating tar archive...")
+        print("  Creating tar archive...")
         success: bool = await loop.run_in_executor(
             None, create_tar_archive, folder_path, tar_path
         )
         if not success or not tar_path.exists():
             logger.error("  Failed to create tar archive")
             return False
-        logger.info(
-            f"  Compressing tar archive with gzip (level {GZIP_COMPRESS_LEVEL})..."
-        )
+        print(f"  Compressing tar archive with gzip (level {GZIP_COMPRESS_LEVEL})...")
         if await loop.run_in_executor(
             None, compress_tar_to_gz, tar_path, gz_path, pool
         ):
@@ -204,7 +202,7 @@ def compress_file(path: Path, pool: Pool) -> tuple[bool, int, int]:
     """Compress a single file to .gz, returning success and size stats."""
     out_path: Path = path.with_suffix(path.suffix + ".gz")
     if out_path.exists():
-        logger.info(f"Skipping {path.name} - output already exists")
+        print(f"Skipping {path.name} - output already exists")
         return False, 0, 0
     try:
         original_size: int = path.stat().st_size
@@ -225,14 +223,12 @@ def compress_file(path: Path, pool: Pool) -> tuple[bool, int, int]:
                 reduction: float = (
                     (original_size - compressed_size) / original_size * 100
                 )
-                logger.info(
+                print(
                     f"  ✓ {path.name}: {reduction:.1f}% saved ({fsz(original_size)} → {fsz(compressed_size)})"
                 )
                 return True, original_size, compressed_size
             else:
-                logger.info(
-                    f"  ✗ {path.name}: No space saved, removing compressed file"
-                )
+                print(f"  ✗ {path.name}: No space saved, removing compressed file")
                 out_path.unlink()
                 return False, 0, 0
         else:
@@ -293,19 +289,19 @@ def extract_tar_archive(tar_path: Path, extract_dir: Path) -> bool:
         return False
 
 
-async def process_compress(files: Optional[list[Path]] = None) -> None:
+async def process_compress(files: list[Path] | None = None) -> None:
     """Compress directories and files in the current working directory."""
     cwd: Path = Path.cwd()
     with Pool(processes=MAX_WORKERS) as pool:
         dirs_to_compress: list[Path] = get_dirs(cwd)
         if dirs_to_compress:
-            logger.info(f"\n📁 Compressing {len(dirs_to_compress)} directories...")
+            print(f"\n📁 Compressing {len(dirs_to_compress)} directories...")
             for dir_path in sorted(dirs_to_compress):
                 relative_path: Path = dir_path.relative_to(cwd)
-                logger.info(f"\n  Processing {relative_path}...")
+                print(f"\n  Processing {relative_path}...")
                 archive_path: str = str(dir_path.parent / dir_path.name)
                 if await compress_folder_async(dir_path, archive_path, pool):
-                    logger.info(
+                    print(
                         f"  ✓ Successfully compressed {relative_path} to {dir_path.name}.tar.gz"
                     )
                 else:
@@ -313,14 +309,14 @@ async def process_compress(files: Optional[list[Path]] = None) -> None:
         files_to_compress: list[Path] = (
             list(files) if files else get_files(cwd, mode="compress")
         )
-        logger.info(
+        print(
             f"\n📄 Compressing {len(files_to_compress)} files with gzip max compression..."
         )
         total_original: int = 0
         total_compressed: int = 0
         successful: int = 0
         for i, path in enumerate(sorted(files_to_compress), 1):
-            logger.info(f"\n[{i}/{len(files_to_compress)}] {path.name}")
+            print(f"\n[{i}/{len(files_to_compress)}] {path.name}")
             success: bool
             orig_size: int
             comp_size: int
@@ -332,35 +328,35 @@ async def process_compress(files: Optional[list[Path]] = None) -> None:
         if successful > 0:
             savings: int = total_original - total_compressed
             savings_percent: float = savings / total_original * 100
-            logger.info(f"\n{'=' * 40}")
-            logger.info(f"✅ Compressed {successful}/{len(files_to_compress)} files")
-            logger.info(f"📊 Original size:  {fsz(total_original)}")
-            logger.info(f"📦 Compressed size: {fsz(total_compressed)}")
-            logger.info(f"💾 Space saved:    {fsz(savings)} ({savings_percent:.1f}%)")
-            logger.info(f"{'=' * 40}")
+            print(f"\n{'=' * 40}")
+            print(f"✅ Compressed {successful}/{len(files_to_compress)} files")
+            print(f"📊 Original size:  {fsz(total_original)}")
+            print(f"📦 Compressed size: {fsz(total_compressed)}")
+            print(f"💾 Space saved:    {fsz(savings)} ({savings_percent:.1f}%)")
+            print(f"{'=' * 40}")
         elif files_to_compress:
             logger.error("\n❌ No files were successfully compressed")
 
 
-async def process_decompress(files: Optional[list[Path]] = None) -> None:
+async def process_decompress(files: list[Path] | None = None) -> None:
     """Decompress .tar.gz archives and .gz files in the current working directory."""
     cwd: Path = Path.cwd()
     archives: list[Path] = (
         list(files) if files else [p for p in cwd.glob("*.tar.gz") if p.is_file()]
     )
     if archives:
-        logger.info(f"\n📦 Decompressing {len(archives)} archives...")
+        print(f"\n📦 Decompressing {len(archives)} archives...")
         for archive in sorted(archives):
-            logger.info(f"\n  Decompressing {archive.name}...")
-            tar_path: Optional[Path] = None
+            print(f"\n  Decompressing {archive.name}...")
+            tar_path: Path | None = None
             try:
                 tar_path = archive.with_suffix("")
-                logger.info("    Decompressing gzip...")
+                print("    Decompressing gzip...")
                 with gzip.open(archive, "rb") as f_in:
                     tar_data: bytes = f_in.read()
                 tar_path.write_bytes(tar_data)
                 extract_dir: str = archive.stem
-                logger.info(f"    Extracting tar to {extract_dir}/...")
+                print(f"    Extracting tar to {extract_dir}/...")
                 loop: asyncio.AbstractEventLoop = asyncio.get_running_loop()
                 success: bool = await loop.run_in_executor(
                     None, extract_tar_archive, tar_path, Path(extract_dir)
@@ -368,7 +364,7 @@ async def process_decompress(files: Optional[list[Path]] = None) -> None:
                 if success:
                     tar_path.unlink()
                     archive.unlink()
-                    logger.info(f"  ✓ Extracted {archive.name} to {extract_dir}/")
+                    print(f"  ✓ Extracted {archive.name} to {extract_dir}/")
                 else:
                     logger.error(f"  ✗ Failed to extract {archive.name}")
             except Exception as e:  # noqa: BLE001
@@ -377,19 +373,19 @@ async def process_decompress(files: Optional[list[Path]] = None) -> None:
                     tar_path.unlink()
     files_to_decompress: list[Path] = get_files(cwd, mode="decompress")
     if not files_to_decompress:
-        logger.info("\n📄 No .gz files to decompress")
+        print("\n📄 No .gz files to decompress")
         return
     files_to_decompress = [
         p for p in files_to_decompress if p.suffixes != [".tar", ".gz"]
     ]
     if not files_to_decompress:
         return
-    logger.info(f"\n📄 Decompressing {len(files_to_decompress)} gzip files...")
+    print(f"\n📄 Decompressing {len(files_to_decompress)} gzip files...")
     total_original: int = 0
     total_decompressed: int = 0
     successful: int = 0
     for i, path in enumerate(sorted(files_to_decompress), 1):
-        logger.info(f"\n[{i}/{len(files_to_decompress)}] {path.name}")
+        print(f"\n[{i}/{len(files_to_decompress)}] {path.name}")
         original_size: int = path.stat().st_size
         total_original += original_size
         if decompress_file(path):
@@ -398,11 +394,11 @@ async def process_decompress(files: Optional[list[Path]] = None) -> None:
             if out_path.exists():
                 total_decompressed += out_path.stat().st_size
     if successful > 0:
-        logger.info(f"\n{'=' * 40}")
-        logger.info(f"✅ Decompressed {successful}/{len(files_to_decompress)} files")
-        logger.info(f"📦 Compressed size:   {fsz(total_original)}")
-        logger.info(f"📊 Decompressed size: {fsz(total_decompressed)}")
-        logger.info(f"{'=' * 40}")
+        print(f"\n{'=' * 40}")
+        print(f"✅ Decompressed {successful}/{len(files_to_decompress)} files")
+        print(f"📦 Compressed size:   {fsz(total_original)}")
+        print(f"📊 Decompressed size: {fsz(total_decompressed)}")
+        print(f"{'=' * 40}")
     elif files_to_decompress:
         logger.error("\n❌ No files were successfully decompressed")
 
@@ -440,7 +436,7 @@ def main() -> None:
     else:
         files = get_files(cwd)
     if not files:
-        logger.info("no files found")
+        print("no files found")
         sys.exit(0)
     try:
         asyncio.run(main_async(files, mode))

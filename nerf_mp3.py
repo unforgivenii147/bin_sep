@@ -273,22 +273,22 @@ def print_final_summary(stats: list[ConversionStats], total_duration: float) -> 
     total_new = sum(s.new_size for s in successful)
     total_saved = total_original - total_new
 
-    logger.info("─" * 40)
-    logger.info(f"<bold>Conversion Summary</bold>")
-    logger.info("─" * 40)
-    logger.info(f"Total files: {len(stats)}")
+    print("─" * 40)
+    print(f"<bold>Conversion Summary</bold>")
+    print("─" * 40)
+    print(f"Total files: {len(stats)}")
     logger.opt(colors=True).info(f"<green>Successful:</green> {len(successful)}")
     logger.opt(colors=True).info(f"<red>Failed:</red> {len(failed)}")
     if successful:
-        logger.info("<bold>Space saved:</bold>")
-        logger.info(f"  Before: {fsz(total_original)}")
-        logger.info(f"  After:  {fsz(total_new)}")
+        print("<bold>Space saved:</bold>")
+        print(f"  Before: {fsz(total_original)}")
+        print(f"  After:  {fsz(total_new)}")
         logger.opt(colors=True).info(
             f"  Saved:  <green>{fsz(total_saved)} "
             f"({total_saved / total_original * BITRATE_PERCENT_DIVISOR:.1f}%)</green>"
         )
-    logger.info(f"<bold>Total time:</bold> {format_duration(total_duration)}")
-    logger.info("─" * 40)
+    print(f"<bold>Total time:</bold> {format_duration(total_duration)}")
+    print("─" * 40)
 
 
 # ---------------------------------------------------------------------------
@@ -331,7 +331,7 @@ def process_directory(directory: Path) -> None:
         logger.warning(f"No MP3 files found in {directory}")
         return
 
-    logger.info(f"<bold>Found {len(mp3_files)} MP3 file(s) in {directory}</bold>\n")
+    print(f"<bold>Found {len(mp3_files)} MP3 file(s) in {directory}</bold>\n")
 
     stats: list[ConversionStats] = []
     start_time = time.time()
@@ -398,14 +398,14 @@ Examples:
 
     check_ffmpeg()
 
-    logger.info("<bold>MP3 Bitrate Halver</bold>")
-    logger.info(f"<dim>Using {NUM_WORKERS} parallel worker(s)</dim>\n")
+    print("<bold>MP3 Bitrate Halver</bold>")
+    print(f"<dim>Using {NUM_WORKERS} parallel worker(s)</dim>\n")
 
     directories: list[Path] = args.directories
     for directory in directories:
         process_directory(directory)
         if len(directories) > 1:
-            logger.info("")
+            print()
 
     return 0
 

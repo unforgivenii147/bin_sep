@@ -65,14 +65,14 @@ class PackageStateManager:
                     name: PackageInfo.from_dict(data)
                     for name, data in raw_state.items()
                 }
-                logger.info(
+                print(
                     f"✓ Resumed state: {len(self.state)} packages loaded from {self.state_file}"
                 )
             except (json.JSONDecodeError, KeyError) as e:
                 logger.error(f"✗ Failed to load state: {e}. Starting fresh.")
                 self.state = {}
         else:
-            logger.info("📁 No existing state file. Starting fresh.")
+            print("📁 No existing state file. Starting fresh.")
 
     def save_state(self) -> None:
         state_dict = {name: pkg.to_dict() for name, pkg in self.state.items()}
@@ -151,23 +151,23 @@ def _is_upgradable(installed: str, latest: str) -> bool:
 
 
 def main() -> None:
-    logger.info("=" * 40)
-    logger.info("🚀 PyPI Package Update Checker (Multiprocessing Enabled)")
-    logger.info("=" * 40)
+    print("=" * 40)
+    print("🚀 PyPI Package Update Checker (Multiprocessing Enabled)")
+    print("=" * 40)
     state_manager = PackageStateManager()
     installed = get_installed_packages()
     all_package_names = [name for name, _ in installed]
     pending = state_manager.get_pending_packages(all_package_names)
     already_checked = len(all_package_names) - len(pending)
-    logger.info(f"📊 Status: {already_checked} checked, {len(pending)} pending")
+    print(f"📊 Status: {already_checked} checked, {len(pending)} pending")
     if not pending:
-        logger.info("✓ All packages already checked. Skipping PyPI queries.")
+        print("✓ All packages already checked. Skipping PyPI queries.")
     else:
         pending_packages = [
             (name, next(v for n, v in installed if n == name)) for name in pending
         ]
         num_workers = min(cpu_count(), 8)
-        logger.info(f"🔄 Spawning {num_workers} workers to query PyPI...")
+        print(f"🔄 Spawning {num_workers} workers to query PyPI...")
         with Pool(processes=num_workers) as pool:
             results = pool.starmap(
                 query_pypi,
@@ -176,7 +176,7 @@ def main() -> None:
             )
         for pkg_info in results:
             state_manager.update_package(pkg_info)
-        logger.info(f"✓ Completed {len(results)} PyPI queries")
+        print(f"✓ Completed {len(results)} PyPI queries")
     state_manager.save_state()
     upgradable = state_manager.get_upgradable_packages()
     if upgradable:
@@ -186,22 +186,22 @@ def main() -> None:
                 f"{pkg.pkgname}=={pkg.latest_version}\n"
                 for pkg in sorted(upgradable, key=lambda x: x.pkgname)
             )
-        logger.info(f"📝 {len(upgradable)} upgradable packages saved to {req_file}")
+        print(f"📝 {len(upgradable)} upgradable packages saved to {req_file}")
     else:
-        logger.info("✓ All packages are up-to-date!")
-    logger.info("=" * 40)
-    logger.info("📈 SUMMARY")
-    logger.info(f"   Total packages: {len(state_manager.state)}")
-    logger.info(f"   Upgradable: {len(upgradable)}")
-    logger.info(f"   Up-to-date: {len(state_manager.state) - len(upgradable)}")
-    logger.info("=" * 40)
+        print("✓ All packages are up-to-date!")
+    print("=" * 40)
+    print("📈 SUMMARY")
+    print(f"   Total packages: {len(state_manager.state)}")
+    print(f"   Upgradable: {len(upgradable)}")
+    print(f"   Up-to-date: {len(state_manager.state) - len(upgradable)}")
+    print("=" * 40)
 
 
 if __name__ == "__main__":
     try:
         raise SystemExit(main())
     except KeyboardInterrupt:
-        logger.info("\n⏹ Interrupted by user. State saved.")
+        print("\n⏹ Interrupted by user. State saved.")
         sys.exit(0)
     except Exception as e:
         logger.error(f"✗ Fatal error: {e}", exc_info=True)

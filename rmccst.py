@@ -252,7 +252,7 @@ def _log_result(result: tuple[Path, int, int, bool, str | None]) -> None:
     """
     path, comments_removed, docstrings_removed, written, error = result
     if written:
-        logger.info(
+        print(
             "{}: removed {} comments, {} docstrings",
             path,
             comments_removed,
@@ -274,7 +274,7 @@ def main() -> None:
     input_paths: list[Path] = args.paths or [Path(".")]
     files = iter_python_files_from_paths(input_paths)
     if not files:
-        logger.info("No Python files found to process.")
+        print("No Python files found to process.")
         return
 
     with multiprocessing.Pool(processes=POOL_SIZE) as pool:

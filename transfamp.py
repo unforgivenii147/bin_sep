@@ -75,7 +75,7 @@ def translate_file(file_path: Path) -> TranslateResult:
         else:
             translations = dict(zip(original_lines, translated_lines, strict=False))
 
-        logger.info(f"✅ Translated: {file_path.name} ({len(translations)} words)")
+        print(f"✅ Translated: {file_path.name} ({len(translations)} words)")
         return file_path, translations
     except Exception as exc:
         logger.error(f"❌ Error processing {file_path.name}: {exc}")
@@ -107,7 +107,7 @@ def save_translation(
     output_path.write_text(
         json.dumps(translations, ensure_ascii=False, indent=2), encoding="utf-8"
     )
-    logger.info(f"💾 Saved: {output_path.name}")
+    print(f"💾 Saved: {output_path.name}")
     return output_path
 
 
@@ -118,14 +118,12 @@ def main() -> None:
 
     if not text_files:
         logger.error("❌ No .txt files found in the current directory")
-        logger.info(
-            "   If your files have a different extension, modify the glob pattern"
-        )
+        print("   If your files have a different extension, modify the glob pattern")
         return
 
-    logger.info(f"📚 Found {len(text_files)} file(s) to translate")
-    logger.info(f"🚀 Starting translation with {MAX_WORKERS} parallel workers")
-    logger.info("-" * 40)
+    print(f"📚 Found {len(text_files)} file(s) to translate")
+    print(f"🚀 Starting translation with {MAX_WORKERS} parallel workers")
+    print("-" * 40)
 
     start_time: float = time.time()
     successful: int = 0
@@ -149,13 +147,13 @@ def main() -> None:
 
     elapsed_time: float = time.time() - start_time
 
-    logger.info("=" * 40)
-    logger.info("✨ Translation complete!")
-    logger.info(f"   ✅ Successful: {successful} files")
+    print("=" * 40)
+    print("✨ Translation complete!")
+    print(f"   ✅ Successful: {successful} files")
     if failed > 0:
         logger.warning(f"   ❌ Failed: {failed} files")
-    logger.info(f"   ⏱️  Time elapsed: {elapsed_time:.2f} seconds")
-    logger.info(f"   📁 Output directory: {OUTPUT_DIR.absolute()}")
+    print(f"   ⏱️  Time elapsed: {elapsed_time:.2f} seconds")
+    print(f"   📁 Output directory: {OUTPUT_DIR.absolute()}")
 
 
 if __name__ == "__main__":

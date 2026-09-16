@@ -134,7 +134,7 @@ def remove_from_repos_file(path: Path, repos_to_remove: set[str]) -> None:
     ]
     with open(path, "w") as f:
         f.write("\n".join(updated_repos) + "\n" if updated_repos else "")
-    logger.info(f"\nRemoved {len(repos_to_remove)} repos from {path}")
+    print(f"\nRemoved {len(repos_to_remove)} repos from {path}")
 
 
 def parse_args() -> argparse.Namespace:
@@ -183,24 +183,24 @@ def main() -> int:
     output_dir: Path = Path(args.output)
     repos: list[str] = read_repos(repos_file)
 
-    logger.info(f"Found {len(repos)} repositories to clone")
-    logger.info(f"Max repo size: {args.max_size}MB")
+    print(f"Found {len(repos)} repositories to clone")
+    print(f"Max repo size: {args.max_size}MB")
 
     if args.dry_run:
-        logger.info("\nDry run - checking sizes:")
+        print("\nDry run - checking sizes:")
         for repo in repos:
             if validate_repo_format(repo):
                 user, repo_name = repo.split("/")
                 target: Path = output_dir / user / repo_name
                 is_small, size = check_repo_size(repo)
                 if target.exists():
-                    logger.info(f"  [EXISTS] {repo} -> {target}")
+                    print(f"  [EXISTS] {repo} -> {target}")
                 elif not is_small:
-                    logger.info(f"  [TOO LARGE] {repo} ({fsz(size)})")
+                    print(f"  [TOO LARGE] {repo} ({fsz(size)})")
                 else:
-                    logger.info(f"  [OK] {repo} -> {target} ({fsz(size)})")
+                    print(f"  [OK] {repo} -> {target} ({fsz(size)})")
             else:
-                logger.info(f"  [INVALID] {repo}")
+                print(f"  [INVALID] {repo}")
         return 0
 
     successful: int = 0
@@ -208,10 +208,10 @@ def main() -> int:
     skipped: int = 0
     successfully_cloned: set[str] = set()
 
-    logger.info(
+    print(
         f"\nCloning with {DEFAULT_WORKERS} parallel workers to {output_dir.absolute()}"
     )
-    logger.info("-" * 40)
+    print("-" * 40)
 
     with Pool(processes=DEFAULT_WORKERS) as pool:
         async_results = [
@@ -223,11 +223,11 @@ def main() -> int:
                 if success:
                     if "Already exists" in message:
                         skipped += 1
-                        logger.info(f"⏭️  {repo}: {message}")
+                        print(f"⏭️  {repo}: {message}")
                         successfully_cloned.add(repo)
                     else:
                         successful += 1
-                        logger.info(f"✅ {repo}: {message}")
+                        print(f"✅ {repo}: {message}")
                         successfully_cloned.add(repo)
                 else:
                     failed += 1
@@ -239,15 +239,15 @@ def main() -> int:
     if not args.no_cleanup and successfully_cloned:
         remove_from_repos_file(repos_file, successfully_cloned)
 
-    logger.info("-" * 40)
-    logger.info("\nSummary:")
-    logger.info(f"  ✅ Successfully cloned: {successful}")
-    logger.info(f"  ⏭️  Already existed: {skipped}")
-    logger.info(f"  ❌ Failed: {failed}")
-    logger.info(f"  📊 Total processed: {len(repos)}")
+    print("-" * 40)
+    print("\nSummary:")
+    print(f"  ✅ Successfully cloned: {successful}")
+    print(f"  ⏭️  Already existed: {skipped}")
+    print(f"  ❌ Failed: {failed}")
+    print(f"  📊 Total processed: {len(repos)}")
     if not args.no_cleanup and successfully_cloned:
         remaining: int = len(read_repos(repos_file))
-        logger.info(f"  📝 Remaining in {repos_file}: {remaining}")
+        print(f"  📝 Remaining in {repos_file}: {remaining}")
 
     return 0
 

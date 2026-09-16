@@ -425,9 +425,9 @@ def main() -> None:
     if not (args.move or args.copy):
         parser.error("one of --move or --copy required")
     root = Path.cwd()
-    logger.info("scanning for Python sources under {}", root)
+    print("scanning for Python sources under {}", root)
     sources = list(iter_python_sources(root))
-    logger.info("found {} candidate sources", len(sources))
+    print("found {} candidate sources", len(sources))
     tasks = [(str(s.path), str(s.relpath), s.text, s.origin) for s in sources]
     extracted_map: dict[str, list[tuple[SourceFile, dict]]] = {}
     with Pool(processes=args.jobs) as pool:
@@ -443,7 +443,7 @@ def main() -> None:
                 h = it["hash"]
                 extracted_map.setdefault(h, []).append((srcfile, it))
     dups = {h: lst for h, lst in extracted_map.items() if len(lst) >= args.min_occurs}
-    logger.info(
+    print(
         "found {} duplicated code blocks (occurring >= {})", len(dups), args.min_occurs
     )
     ensure_utils_dir()
@@ -523,9 +523,9 @@ def main() -> None:
     append_unique_to_file(FUNC_FILE, funcs_to_write, seen_func_hashes)
     append_unique_to_file(CLASS_FILE, classes_to_write, seen_class_hashes)
     append_unique_to_file(CONST_FILE, consts_to_write, seen_const_hashes)
-    logger.info("written utils files under {}", UTILS_DIR)
+    print("written utils files under {}", UTILS_DIR)
     if args.move:
-        logger.info(
+        print(
             "applying move modifications to original files ({} targets)",
             len(modifications),
         )
@@ -551,10 +551,10 @@ def main() -> None:
                     tf.write(new_text)
                     tmpname = tf.name
                 Path(tmpname).replace(p)
-                logger.info("updated {}", p)
+                print("updated {}", p)
             except Exception as exc:
                 logger.exception("failed to modify {}: {}", src_path, exc)
-    logger.info("done")
+    print("done")
 
 
 if __name__ == "__main__":

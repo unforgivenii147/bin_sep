@@ -192,7 +192,7 @@ def _write_utils_files(utils_dir: Path, new: dict[str, list[_Def]]) -> None:
             if write_header:
                 fh.write(f"# {typ.capitalize()} definitions\n\n")
             fh.writelines(d.source_code + "\n\n" for d in new[typ])
-        logger.info("Added {} definition(s) to {}", len(new[typ]), fname)
+        print("Added {} definition(s) to {}", len(new[typ]), fname)
 
 
 def _move_definitions(groups: dict[str, list[_Def]]) -> None:
@@ -234,7 +234,7 @@ def _move_definitions(groups: dict[str, list[_Def]]) -> None:
                 )
                 continue
             Path(path).write_text(new_source, encoding="utf-8")
-            logger.info("Removed {} duplicate definition(s) from {}", len(hashes), path)
+            print("Removed {} duplicate definition(s) from {}", len(hashes), path)
         except Exception as exc:
             logger.error("Failed to process {} for moving: {}", path, exc)
 
@@ -255,8 +255,8 @@ def main() -> None:
     )
     args = parser.parse_args()
     action = "copy" if args.copy else "move"
-    logger.info("Action: {}", action)
-    logger.info("Scanning for Python files …")
+    print("Action: {}", action)
+    print("Scanning for Python files …")
     files = _find_files(".")
     file_jobs: list[tuple[str, str]] = []
     for path, source in files:
@@ -267,7 +267,7 @@ def main() -> None:
                 logger.error("Failed to read {}: {}", path, exc)
                 continue
         file_jobs.append((path, source))
-    logger.info("Found {} file(s) to process", len(file_jobs))
+    print("Found {} file(s) to process", len(file_jobs))
     all_defs: list[_Def] = []
     with concurrent.futures.ProcessPoolExecutor() as executor:
         futures = {
@@ -284,16 +284,16 @@ def main() -> None:
     for d in all_defs:
         groups.setdefault(d.content_hash, []).append(d)
     duplicate_groups = {h: defs for h, defs in groups.items() if len(defs) > 1}
-    logger.info("Found {} duplicate group(s)", len(duplicate_groups))
+    print("Found {} duplicate group(s)", len(duplicate_groups))
     if not duplicate_groups:
-        logger.info("No duplicates – nothing to do.")
+        print("No duplicates – nothing to do.")
         return
     utils_dir = Path("utils")
     existing = _read_existing_utils(utils_dir) if utils_dir.exists() else {}
     new_entries = _new_utils_entries(duplicate_groups, existing)
     total_new = sum(len(lst) for lst in new_entries.values())
     if total_new == 0:
-        logger.info("All duplicates are already present in utils/ – nothing to add.")
+        print("All duplicates are already present in utils/ – nothing to add.")
         return
     _write_utils_files(utils_dir, new_entries)
     if action == "move":

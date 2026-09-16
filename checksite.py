@@ -4,7 +4,6 @@ from __future__ import annotations
 import random
 import string
 import sys
-import traceback
 from importlib.machinery import SourceFileLoader
 from pathlib import Path
 
@@ -49,8 +48,7 @@ def site_packages_dirs() -> list[Path]:
 def iter_py_files(roots: list[Path]):
     for root in roots:
         logger.debug(f"Scanning {root}")
-        for py in root.rglob("*.py"):
-            yield py
+        yield from root.rglob("*.py")
 
 
 def check_file(file: Path) -> bool:
@@ -76,10 +74,10 @@ if __name__ == "__main__":
         if not roots:
             logger.error("No site-packages directories found.")
             sys.exit(2)
-        logger.info(f"Site-packages roots: {[str(r) for r in roots]}")
+        print(f"Site-packages roots: {[str(r) for r in roots]}")
         files = list(iter_py_files(roots))
 
-    logger.info(f"Checking {len(files)} file(s)...")
+    print(f"Checking {len(files)} file(s)...")
 
     has_failure = False
     ok = 0
@@ -94,5 +92,5 @@ if __name__ == "__main__":
             has_failure = True
             fail += 1
 
-    logger.info(f"Done. OK={ok} FAIL={fail} TOTAL={ok + fail}")
+    print(f"Done. OK={ok} FAIL={fail} TOTAL={ok + fail}")
     sys.exit(1 if has_failure else 0)

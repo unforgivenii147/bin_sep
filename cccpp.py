@@ -22,9 +22,9 @@ from __future__ import annotations
 
 import argparse
 import sys
+from collections.abc import Iterable, Iterator, Sequence
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Iterable, Iterator, Optional, Sequence
 
 import tree_sitter_c
 import tree_sitter_cpp
@@ -121,7 +121,7 @@ def get_comment_info(content: bytes, ext: str) -> list[dict[str, object]]:
 def strip_comments(
     content: bytes,
     ext: str,
-    selected_ranges: Optional[list[tuple[int, int]]] = None,
+    selected_ranges: list[tuple[int, int]] | None = None,
 ) -> tuple[bytes, int]:
     """Return ``content`` with the given (or all) comment ranges removed."""
     if selected_ranges is None:
@@ -154,33 +154,33 @@ def process_file_interactive(path: Path, base: Path) -> tuple[str, int, str]:
         if not comment_info:
             return rel, 0, ""
         selected_ranges: list[tuple[int, int]] = []
-        logger.info("=" * 40)
-        logger.info(f"File: {rel}")
-        logger.info(f"Found {len(comment_info)} comment(s)")
-        logger.info("=" * 40)
+        print("=" * 40)
+        print(f"File: {rel}")
+        print(f"Found {len(comment_info)} comment(s)")
+        print("=" * 40)
         for i, info in enumerate(comment_info, 1):
             start = int(info["start"])  # type: ignore[arg-type]
             end = int(info["end"])  # type: ignore[arg-type]
             start_line = int(info["start_line"])  # type: ignore[arg-type]
             end_line = int(info["end_line"])  # type: ignore[arg-type]
             context = str(info["context"])
-            logger.info(f"\nComment {i}/{len(comment_info)}")
-            logger.info(f"Lines: {start_line}-{end_line}")
-            logger.info("Context:")
-            logger.info("-" * 40)
-            logger.info(context)
-            logger.info("-" * 40)
+            print(f"\nComment {i}/{len(comment_info)}")
+            print(f"Lines: {start_line}-{end_line}")
+            print("Context:")
+            print("-" * 40)
+            print(context)
+            print("-" * 40)
             while True:
                 response: str = input("Remove ? [y/n/q]: ").lower().strip()
                 if response in ("y", "yes"):
                     selected_ranges.append((start, end))
-                    logger.info("✓ Will remove")
+                    print("✓ Will remove")
                     break
                 if response in ("n", "no"):
-                    logger.info("✗ Will keep")
+                    print("✗ Will keep")
                     break
                 if response in ("q", "quit"):
-                    logger.info("\nQuitting interactive mode for this file...")
+                    print("\nQuitting interactive mode for this file...")
                     if selected_ranges:
                         new_content, count = strip_comments(
                             content, ext, selected_ranges
@@ -254,7 +254,7 @@ def _run_batch(files: Sequence[Path], base: Path) -> tuple[int, int, int]:
             total_comments += count
             if count > 0:
                 files_changed += 1
-            logger.info(f"{rel}: {count} comment(s) removed")
+            print(f"{rel}: {count} comment(s) removed")
     return total_comments, files_changed, errors
 
 
@@ -263,7 +263,7 @@ def _run_interactive(files: Sequence[Path], base: Path) -> tuple[int, int, int]:
     total_comments: int = 0
     files_changed: int = 0
     errors: int = 0
-    logger.info(f"Interactive mode: processing {len(files)} file(s)")
+    print(f"Interactive mode: processing {len(files)} file(s)")
     for path in files:
         rel, count, err = process_file_interactive(path, base)
         if err:
@@ -273,9 +273,9 @@ def _run_interactive(files: Sequence[Path], base: Path) -> tuple[int, int, int]:
         total_comments += count
         if count > 0:
             files_changed += 1
-            logger.info(f"\n{rel}: {count} comment(s) removed")
+            print(f"\n{rel}: {count} comment(s) removed")
         else:
-            logger.info(f"\n{rel}: no comments removed")
+            print(f"\n{rel}: no comments removed")
     return total_comments, files_changed, errors
 
 
@@ -307,7 +307,7 @@ def main() -> int:
         total_comments, files_changed, errors = _run_interactive(files, base)
     else:
         total_comments, files_changed, errors = _run_batch(files, base)
-    logger.info(
+    print(
         f"\nSummary: {files_changed}/{len(files)} file(s) changed, "
         f"{total_comments} comment(s) removed, {errors} error(s)."
     )

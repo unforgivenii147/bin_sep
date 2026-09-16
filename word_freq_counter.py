@@ -49,7 +49,7 @@ def collect_text_files(directory: Path | None = None) -> list[Path]:
     if directory is None:
         directory = Path.cwd()
     text_files: list[Path] = get_nobinary(directory)
-    logger.info(f"Found {len(text_files)} text files to process")
+    print(f"Found {len(text_files)} text files to process")
     return text_files
 
 
@@ -108,7 +108,7 @@ def save_results_json(counter: Counter[str], output_file: Path) -> None:
     }
     with open(output_file, "w", encoding="utf-8") as f:
         json.dump(results, f, indent=2, ensure_ascii=False)
-    logger.info(f"Results saved to {output_file}")
+    print(f"Results saved to {output_file}")
 
 
 def main() -> int:
@@ -118,7 +118,7 @@ def main() -> int:
         Process exit code (0 on success).
     """
     directory: Path = Path.cwd()
-    logger.info(f"Starting word frequency analysis in {directory}")
+    print(f"Starting word frequency analysis in {directory}")
 
     text_files: list[Path] = collect_text_files(directory)
     if not text_files:
@@ -126,7 +126,7 @@ def main() -> int:
         save_results_json(Counter(), OUTPUT_FILE)
         return 0
 
-    logger.info(f"Processing {len(text_files)} files using parallel processing...")
+    print(f"Processing {len(text_files)} files using parallel processing...")
     total_counter: Counter[str] = process_files_parallel(text_files)
 
     unique_words: int = len(total_counter)
@@ -134,17 +134,17 @@ def main() -> int:
 
     save_results_json(total_counter, OUTPUT_FILE)
 
-    logger.info("Analysis complete!")
-    logger.info(f"Total words found: {total_words}")
-    logger.info(f"Unique words found: {unique_words}")
+    print("Analysis complete!")
+    print(f"Total words found: {total_words}")
+    print(f"Unique words found: {unique_words}")
 
-    logger.info("=" * 40)
-    logger.info("Top 10 Most Common Words:")
-    logger.info("-" * 40)
+    print("=" * 40)
+    print("Top 10 Most Common Words:")
+    print("-" * 40)
     for word, count in total_counter.most_common(10):
-        logger.info(f"{word:<20} {count:>8}")
-    logger.info("-" * 40)
-    logger.info(f"Full results saved to: {OUTPUT_FILE.absolute()}")
+        print(f"{word:<20} {count:>8}")
+    print("-" * 40)
+    print(f"Full results saved to: {OUTPUT_FILE.absolute()}")
 
     return 0
 

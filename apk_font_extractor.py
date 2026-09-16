@@ -18,7 +18,6 @@ import sys
 import zipfile
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
 
 from fontTools.ttLib import TTFont
 from loguru import logger
@@ -69,7 +68,7 @@ class APKFontExtractor:
         self.output_dir: Path = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.processed_fonts: dict[str, Path] = {}
-        logger.info(
+        print(
             "Initialized APKFontExtractor output_dir={} workers={}",
             self.output_dir,
             WORKERS,
@@ -88,7 +87,7 @@ class APKFontExtractor:
                 for apk_path in path.rglob("*.apk"):
                     apk_files.append(apk_path)
                     logger.debug("Found APK file: {}", apk_path)
-        logger.info("Found {} APK file(s) to process", len(apk_files))
+        print("Found {} APK file(s) to process", len(apk_files))
         return apk_files
 
     # -- extraction --------------------------------------------------------
@@ -135,9 +134,9 @@ class APKFontExtractor:
 
     # -- metadata ----------------------------------------------------------
 
-    def _get_font_metadata(self, font_data: bytes) -> Optional[FontInfo]:
+    def _get_font_metadata(self, font_data: bytes) -> FontInfo | None:
         """Parse font metadata from raw bytes. Returns None on failure."""
-        font: Optional[TTFont] = None
+        font: TTFont | None = None
         try:
             font = TTFont(io=None, fontData=font_data)  # type: ignore[arg-type]
 
@@ -245,7 +244,7 @@ class APKFontExtractor:
             if not output_path.exists():
                 return new_filename
             if self._is_same_font(output_path, source_apk, font_data):
-                logger.info("Font already exists: {}", new_filename)
+                print("Font already exists: {}", new_filename)
                 return new_filename
             counter += 1
 
@@ -266,7 +265,7 @@ class APKFontExtractor:
 
     def _save_font(
         self, font_data: bytes, filename: str, source_apk: Path
-    ) -> Optional[Path]:
+    ) -> Path | None:
         """Write font data to disk, resolving filename collisions."""
         final_filename = self._handle_duplicate_filename(
             filename, source_apk, font_data
@@ -274,7 +273,7 @@ class APKFontExtractor:
         output_path = self.output_dir / final_filename
         try:
             output_path.write_bytes(font_data)
-            logger.info("Saved font: {}", final_filename)
+            print("Saved font: {}", final_filename)
             self.processed_fonts[f"{source_apk.name}-{len(font_data)}"] = output_path
             return output_path
         except Exception as exc:  # noqa: BLE001
@@ -285,7 +284,7 @@ class APKFontExtractor:
 
     def _process_apk(self, apk_path: Path) -> int:
         """Extract and save every supported font found in ``apk_path``."""
-        logger.info("Processing APK: {}", apk_path.name)
+        print("Processing APK: {}", apk_path.name)
         fonts = self._extract_fonts_from_apk(apk_path)
         extracted_count = 0
 
@@ -304,12 +303,12 @@ class APKFontExtractor:
             if self._save_font(font_data, filename, apk_path) is not None:
                 extracted_count += 1
 
-        logger.info("Extracted {} font(s) from {}", extracted_count, apk_path.name)
+        print("Extracted {} font(s) from {}", extracted_count, apk_path.name)
         return extracted_count
 
     # -- driver ------------------------------------------------------------
 
-    def process(self, input_paths: Optional[list[Path]] = None) -> int:
+    def process(self, input_paths: list[Path] | None = None) -> int:
         """Process all discovered APKs using a fixed multiprocessing pool."""
         if input_paths is None:
             input_paths = [Path.cwd()]
@@ -342,7 +341,7 @@ class APKFontExtractor:
         except Exception as exc:  # noqa: BLE001
             logger.error("Error in parallel processing: {}", exc)
 
-        logger.info("Total fonts extracted: {}", total_extracted)
+        print("Total fonts extracted: {}", total_extracted)
         return total_extracted
 
 
@@ -416,12 +415,12 @@ def main() -> int:
             input_paths=list(args.inputs) if args.inputs else None
         )
         if total_fonts > 0:
-            logger.info("Successfully extracted {} font(s)", total_fonts)
+            print("Successfully extracted {} font(s)", total_fonts)
         else:
             logger.warning("No fonts were extracted")
         return 0
     except KeyboardInterrupt:
-        logger.info("Interrupted by user")
+        print("Interrupted by user")
         return 130
     except Exception as exc:  # noqa: BLE001
         logger.error("Fatal error: {}", exc)

@@ -151,7 +151,7 @@ def convert_whl_to_tarxz(path: Path, remove_original: bool = False) -> Conversio
         output_path = path.with_suffix(".tar.xz")
         if output_path.exists():
             output_path = get_unique_path(output_path)
-            logger.info(f"Target exists, using: {output_path.name}")
+            print(f"Target exists, using: {output_path.name}")
         converted_count = 0
         failed_members: list[str] = []
         with zipfile.ZipFile(path, "r") as zip_file:
@@ -178,7 +178,7 @@ def convert_whl_to_tarxz(path: Path, remove_original: bool = False) -> Conversio
             if remove_original:
                 try:
                     path.unlink()
-                    logger.info(f"Removed original: {path.name}")
+                    print(f"Removed original: {path.name}")
                 except Exception as e:
                     logger.error(f"Failed to remove original file {path.name}: {e}")
                     return (
@@ -213,7 +213,7 @@ def convert_tarxz_to_whl(path: Path, remove_original: bool = False) -> Conversio
         output_path = path.parent / f"{stem}.whl"
         if output_path.exists():
             output_path = get_unique_path(output_path)
-            logger.info(f"Target exists, using: {output_path.name}")
+            print(f"Target exists, using: {output_path.name}")
         converted_count = 0
         with (
             tarfile.open(path, "r:xz") as tar_file,
@@ -249,7 +249,7 @@ def convert_tarxz_to_whl(path: Path, remove_original: bool = False) -> Conversio
             if remove_original:
                 try:
                     path.unlink()
-                    logger.info(f"Removed original: {path.name}")
+                    print(f"Removed original: {path.name}")
                 except Exception as e:
                     logger.error(f"Failed to remove original file {path.name}: {e}")
                     return (
@@ -280,10 +280,10 @@ def process_file(path: Path, remove_original: bool = False) -> ConversionResult:
     if not path.exists():
         return False, f"File not found: {path}", None
     if path.suffix.lower() == ".whl":
-        logger.info(f"Converting wheel to tar.xz: {path.name}")
+        print(f"Converting wheel to tar.xz: {path.name}")
         return convert_whl_to_tarxz(path, remove_original)
     elif path.suffix == ".xz" and (path.stem.endswith(".tar") or ".tar." in str(path)):
-        logger.info(f"Converting tar.xz to wheel: {path.name}")
+        print(f"Converting tar.xz to wheel: {path.name}")
         return convert_tarxz_to_whl(path, remove_original)
     else:
         return (
@@ -420,7 +420,7 @@ def collect_convertible_files(paths: list[str], recursive: bool) -> list[Path]:
         elif path.is_dir():
             found = find_convertible_files(path, recursive)
             convertible_files.extend(found)
-            logger.info(f"Found {len(found)} convertible files in {path}")
+            print(f"Found {len(found)} convertible files in {path}")
         else:
             logger.error(f"Invalid path: {path}")
     return convertible_files
@@ -530,14 +530,14 @@ def main() -> int:
 
     if not convertible_files:
         if args.paths == ["."]:
-            logger.info("No .whl or .tar.xz files found in current directory")
+            print("No .whl or .tar.xz files found in current directory")
         else:
             logger.error("No convertible files found")
         return 1
 
-    logger.info(f"Processing {len(convertible_files)} file(s)")
+    print(f"Processing {len(convertible_files)} file(s)")
     if args.remove_original:
-        logger.info("Original files will be removed after successful conversion")
+        print("Original files will be removed after successful conversion")
 
     results = run_conversions(convertible_files, args.remove_original)
     return print_results(results, args.remove_original, args.verbose)
@@ -547,7 +547,7 @@ if __name__ == "__main__":
     try:
         raise SystemExit(main())
     except KeyboardInterrupt:
-        logger.info("\nInterrupted by user")
+        print("\nInterrupted by user")
         sys.exit(130)
     except Exception as e:
         logger.error(f"Fatal error: {e}\n{traceback.format_exc()}")

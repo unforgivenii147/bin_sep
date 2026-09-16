@@ -113,10 +113,10 @@ def process_notebooks(paths: list[Path]) -> None:
     """
     notebook_files: set[Path] = find_notebook_files(paths)
     if not notebook_files:
-        logger.info("No .ipynb files found to process.")
+        print("No .ipynb files found to process.")
         return
 
-    logger.info(f"Found {len(notebook_files)} notebook(s) to process...")
+    print(f"Found {len(notebook_files)} notebook(s) to process...")
 
     ordered: list[Path] = sorted(notebook_files)
     results: list[StripResult] = []
@@ -134,7 +134,7 @@ def process_notebooks(paths: list[Path]) -> None:
                 if path.is_relative_to(Path.cwd())
                 else path
             )
-            logger.info(f"{status} {relative_path}: {message}")
+            print(f"{status} {relative_path}: {message}")
 
     successful: int = sum(1 for _, success, _ in results if success)
     failed: int = len(results) - successful
@@ -142,7 +142,7 @@ def process_notebooks(paths: list[Path]) -> None:
     if failed > 0:
         logger.warning(f"Processed: {successful} succeeded, {failed} failed")
     else:
-        logger.info(f"Successfully processed {successful} notebook(s)")
+        print(f"Successfully processed {successful} notebook(s)")
 
 
 def main() -> None:

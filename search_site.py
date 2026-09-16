@@ -107,8 +107,7 @@ if __name__ == "__main__":
 
     out_file = f"{KEYWORD}_urls.txt"
     with open(out_file, "w", encoding="utf-8") as f:
-        for u in sorted(urls):
-            f.write(u + "\n")
+        f.writelines(u + "\n" for u in sorted(urls))
 
     print(f"Found {len(urls)} URLs")
     print(f"Saved to {out_file}")

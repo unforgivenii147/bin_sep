@@ -10,7 +10,7 @@ import argparse
 import multiprocessing
 from multiprocessing.pool import AsyncResult, Pool
 from pathlib import Path
-from typing import Final, Union
+from typing import Final
 
 import libcst as cst
 from loguru import logger
@@ -168,10 +168,10 @@ def main() -> int:
 
     py_files = collect_python_files(args.paths)
     if not py_files:
-        logger.info("No Python files found.")
+        print("No Python files found.")
         return 0
 
-    logger.info(f"Found {len(py_files)} Python files to process...")
+    print(f"Found {len(py_files)} Python files to process...")
 
     total_comments = 0
     total_docstrings = 0
@@ -195,14 +195,14 @@ def main() -> int:
                     f"{comments:>2} comments, {docstrings:>2} docstrings"
                 )
             else:
-                logger.info(f"{path.name:<30} (no changes)")
+                print(f"{path.name:<30} (no changes)")
 
-    logger.info("=" * 40)
+    print("=" * 40)
     logger.success("Finished!")
-    logger.info(f"Files processed   : {processed}")
-    logger.info(f"Comments removed  : {total_comments}")
-    logger.info(f"Docstrings removed: {total_docstrings}")
-    logger.info("-" * 40)
+    print(f"Files processed   : {processed}")
+    print(f"Comments removed  : {total_comments}")
+    print(f"Docstrings removed: {total_docstrings}")
+    print("-" * 40)
     return 0
 
 

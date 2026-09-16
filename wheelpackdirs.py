@@ -70,7 +70,7 @@ def main() -> int:
         logger.warning("No directories found")
         return 1
 
-    logger.info(
+    print(
         "Processing {} directories using {} workers",
         len(directories),
         POOL_SIZE,
@@ -87,7 +87,7 @@ def main() -> int:
         for directory, async_result in async_results:
             try:
                 success, message = async_result.get()
-                logger.info(message)
+                print(message)
                 if success:
                     success_count += 1
                 else:
@@ -96,7 +96,7 @@ def main() -> int:
                 logger.error("✗ {}: Exception - {}", directory.name, e)
                 fail_count += 1
 
-    logger.info("Done: {} successful, {} failed", success_count, fail_count)
+    print("Done: {} successful, {} failed", success_count, fail_count)
     return 0 if fail_count == 0 else 1
 
 

@@ -134,7 +134,7 @@ def main() -> int:
     search_paths_arg = sys.argv[2:] if len(sys.argv) > 2 else ["."]
     try:
         target_line = validate_input_line(target_line)
-        logger.info(f"Target line: {target_line!r}")
+        print(f"Target line: {target_line!r}")
     except ValueError as e:
         logger.error(f"Invalid input: {e}")
         return 1
@@ -143,19 +143,19 @@ def main() -> int:
         try:
             path = Path(path_str).resolve()
             search_paths.append(path)
-            logger.info(f"Search path: {path}")
+            print(f"Search path: {path}")
         except (ValueError, OSError) as e:
             logger.error(f"Invalid path {path_str}: {e}")
             return 1
-    logger.info("Scanning for .gitignore files...")
+    print("Scanning for .gitignore files...")
     gitignore_files = find_gitignore_files(search_paths)
     if not gitignore_files:
         logger.warning("No .gitignore files found")
         return 0
-    logger.info(f"Found {len(gitignore_files)} .gitignore file(s)")
+    print(f"Found {len(gitignore_files)} .gitignore file(s)")
     tasks = [(path, target_line) for path in gitignore_files]
     num_workers = min(4, cpu_count() or 1)
-    logger.info(f"Using {num_workers} worker(s)")
+    print(f"Using {num_workers} worker(s)")
     results = []
     try:
         with Pool(processes=num_workers) as pool:
@@ -170,19 +170,19 @@ def main() -> int:
     modified = sum(1 for r in results if r.modified)
     skipped = successful - modified
     failed = len(results) - successful
-    logger.info("=" * 40)
-    logger.info("SUMMARY")
-    logger.info("=" * 40)
-    logger.info(f"Total files processed: {len(results)}")
-    logger.info(f"Successfully processed: {successful}")
-    logger.info(f"Files modified: {modified}")
-    logger.info(f"Files skipped (already exist): {skipped}")
-    logger.info(f"Failed: {failed}")
+    print("=" * 40)
+    print("SUMMARY")
+    print("=" * 40)
+    print(f"Total files processed: {len(results)}")
+    print(f"Successfully processed: {successful}")
+    print(f"Files modified: {modified}")
+    print(f"Files skipped (already exist): {skipped}")
+    print(f"Failed: {failed}")
     if failed > 0:
-        logger.info("\nFailed files:")
+        print("\nFailed files:")
         for result in results:
             if not result.success:
-                logger.info(f"  {result.path}: {result.message}")
+                print(f"  {result.path}: {result.message}")
     return 0 if failed == 0 else 1
 
 

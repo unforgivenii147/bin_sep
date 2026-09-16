@@ -10,7 +10,6 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple
 
 import libcst as cst
 from libcst import MetadataWrapper
@@ -48,7 +47,7 @@ class EntityExtractor(cst.CSTTransformer):
         self.current_class: str = ""
         self.module_imports: list[str] = []
         self.constants: set[str] = set()
-        self.wrapper: Optional[MetadataWrapper] = None
+        self.wrapper: MetadataWrapper | None = None
 
     def set_wrapper(self, wrapper: MetadataWrapper) -> None:
         """Attach a MetadataWrapper so that positions can be resolved."""
@@ -325,7 +324,7 @@ def process_entity_extraction(input_paths: list[Path], output_base: Path) -> Non
     if not py_files:
         logger.warning("No Python files found to process.")
         return
-    logger.info(f"Found {len(py_files)} Python files to process")
+    print(f"Found {len(py_files)} Python files to process")
     output_base.mkdir(parents=True, exist_ok=True)
 
     total_stats: dict[str, int] = {}
@@ -343,20 +342,20 @@ def process_entity_extraction(input_paths: list[Path], output_base: Path) -> Non
                         total_stats[entity_type] = (
                             total_stats.get(entity_type, 0) + count
                         )
-                    logger.info(f"✓ Processed {path.name}: {stats}")
+                    print(f"✓ Processed {path.name}: {stats}")
                 else:
-                    logger.info(f"✗ No entities found in {path.name}")
+                    print(f"✗ No entities found in {path.name}")
             except Exception as e:
                 logger.error(f"✗ Failed to process {path.name}: {e}")
 
-    logger.info("=" * 40)
-    logger.info("Extraction Summary:")
+    print("=" * 40)
+    print("Extraction Summary:")
     for entity_type, count in sorted(total_stats.items()):
-        logger.info(f"  {entity_type}: {count}")
-    logger.info("=" * 40)
+        print(f"  {entity_type}: {count}")
+    print("=" * 40)
 
 
-def parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     """Parse command-line arguments."""
     parser = argparse.ArgumentParser(
         description="Extract entities (functions, classes, constants) from Python files."
@@ -375,7 +374,7 @@ def parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
-def main(argv: Optional[list[str]] = None) -> int:
+def main(argv: list[str] | None = None) -> int:
     """Entry point: parse arguments and run entity extraction."""
     args = parse_args(argv)
 

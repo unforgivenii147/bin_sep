@@ -242,8 +242,8 @@ def report_summary(summary: Summary) -> None:
     Args:
         summary: The aggregated :class:`Summary` to report.
     """
-    logger.info("=" * 60)
-    logger.info(
+    print("=" * 60)
+    print(
         f"Summary: {summary.total} file(s), "
         f"{summary.succeeded} succeeded, {summary.failed} failed"
     )
@@ -251,8 +251,8 @@ def report_summary(summary: Summary) -> None:
     for outcome in Outcome:
         count = counts.get(outcome)
         if count:
-            logger.info(f"  {outcome.value:<22} {count}")
-    logger.info("=" * 60)
+            print(f"  {outcome.value:<22} {count}")
+    print("=" * 60)
 
 
 # --------------------------------------------------------------------------- #
@@ -324,7 +324,7 @@ def main(argv: list[str] | None = None) -> int:
         logger.warning(f"No Python files found in {directory}")
         return 0
 
-    logger.info(
+    print(
         f"Found {len(files)} Python file(s) in {directory} "
         f"(recursive={recursive}, timeout={timeout}s, workers={WORKER_COUNT})"
     )

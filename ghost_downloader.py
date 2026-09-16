@@ -20,10 +20,8 @@ The script must:
 from __future__ import annotations
 
 import argparse
-import sys
 from multiprocessing.pool import ApplyResult, Pool
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
 
 import requests
 from loguru import logger
@@ -103,7 +101,7 @@ def download_chunk(
     return part_filename, start_byte
 
 
-def _resolve_filename(url: str, output: Optional[str]) -> str:
+def _resolve_filename(url: str, output: str | None) -> str:
     """Derive the output filename from the CLI or the URL."""
     if output:
         return output
@@ -176,21 +174,21 @@ def main() -> int:
         )
         num_chunks = 1
 
-    logger.info(f"Target File: {filename}")
+    print(f"Target File: {filename}")
     if total_size:
-        logger.info(f"File Size: {total_size / (1024 * 1024):.2f} MB")
+        print(f"File Size: {total_size / (1024 * 1024):.2f} MB")
     else:
-        logger.info("File Size: Unknown")
-    logger.info(f"Thread Slices: {num_chunks}")
+        print("File Size: Unknown")
+    print(f"Thread Slices: {num_chunks}")
 
     if num_chunks == 1:
         _single_stream_download(url, headers, filename, total_size)
         return 0
 
     chunk_size: int = total_size // num_chunks
-    part_files: list[Optional[str]] = [None] * num_chunks
+    part_files: list[str | None] = [None] * num_chunks
 
-    logger.info("Slicing chunks and initializing network connections...")
+    print("Slicing chunks and initializing network connections...")
 
     pool: Pool = Pool(processes=POOL_WORKERS)
     try:
@@ -231,7 +229,7 @@ def main() -> int:
         pool.close()
         pool.join()
 
-    logger.info("Assembling downloaded slices into final file...")
+    print("Assembling downloaded slices into final file...")
     final_path: Path = Path(filename)
     with final_path.open("wb") as final_file:
         for part_file in part_files:

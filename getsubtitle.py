@@ -27,7 +27,7 @@ def download_subtitles_advanced(mkv_path, output_dir=None):
         output_dir.mkdir(parents=True, exist_ok=True)
     try:
         video = scan_video(mkv_path)
-        logger.info(f"Processing: {video.name}")
+        print(f"Processing: {video.name}")
     except Exception as e:
         logger.error(f"Error scanning: {e}")
         return False
@@ -41,7 +41,7 @@ def download_subtitles_advanced(mkv_path, output_dir=None):
             return False
         subtitle_path = output_dir / f"{mkv_path.stem}.en.srt"
         save_subtitles(video, video_subtitles, single=True, path=subtitle_path)
-        logger.info(f"✓ Subtitles saved: {subtitle_path}")
+        print(f"✓ Subtitles saved: {subtitle_path}")
         return True
     except Exception as e:
         logger.error(f"Error: {e}")

@@ -12,7 +12,7 @@ Usage:
 import argparse
 import ast
 from pathlib import Path
-from typing import Dict, List, Set
+from typing import Dict
 
 from loguru import logger
 
@@ -52,11 +52,10 @@ def extract_definitions(path: Path) -> dict[str, list[str]]:
                     if name.isupper() and not name.startswith("_"):
                         definitions["constants"].append(name)
 
-        elif isinstance(node, ast.AnnAssign):
-            if isinstance(node.target, ast.Name):
-                name = node.target.id
-                if name.isupper() and not name.startswith("_"):
-                    definitions["constants"].append(name)
+        elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
+            name = node.target.id
+            if name.isupper() and not name.startswith("_"):
+                definitions["constants"].append(name)
 
     return definitions
 
@@ -105,7 +104,7 @@ def extract_exports_from_init(init_path: Path) -> set[str]:
     return exported
 
 
-def check_directory(directory: Path = None) -> dict[str, dict[str, list[str]]]:
+def check_directory(directory: Path | None = None) -> dict[str, dict[str, list[str]]]:
     """
     Check all Python files in directory against __init__.py exports.
 
@@ -122,7 +121,7 @@ def check_directory(directory: Path = None) -> dict[str, dict[str, list[str]]]:
         logger.error(f"No __init__.py found in {directory}")
         return {}
 
-    logger.info(f"Reading exports from {init_path}")
+    print(f"Reading exports from {init_path}")
     exported = extract_exports_from_init(init_path)
     logger.debug(f"Found {len(exported)} exported names: {sorted(exported)}")
 
@@ -368,7 +367,7 @@ def main():
     )
 
     directory = args.directory.resolve()
-    logger.info(f"Checking package definitions in: {directory}")
+    print(f"Checking package definitions in: {directory}")
 
     missing = check_directory(directory)
 
@@ -399,16 +398,16 @@ def main():
     if args.autofix:
         print()
         if args.dry_run:
-            logger.info("Dry-run mode enabled — no files will be modified")
+            print("Dry-run mode enabled — no files will be modified")
         else:
-            logger.info("Autofix enabled — updating __init__.py")
+            print("Autofix enabled — updating __init__.py")
 
         init_path = directory / "__init__.py"
         success = autofix_init(init_path, missing, dry_run=args.dry_run)
         return 0 if success else 1
     else:
         print()
-        logger.info("Run with -a to automatically add these to __init__.py")
+        print("Run with -a to automatically add these to __init__.py")
         return 1
 
 

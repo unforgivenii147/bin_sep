@@ -125,12 +125,12 @@ def _process_files_impl(
     files: list[Path] = get_files_to_process(root_dir, compress)
     if not files:
         action: str = "compress" if compress else "decompress"
-        logger.info(f"No files found to {action}")
+        print(f"No files found to {action}")
         return
 
     action = "Compressing" if compress else "Decompressing"
-    logger.info(f"{action} {len(files)} files with {NUM_WORKERS} workers...")
-    logger.info(f"Preset: {preset}, Threads: {threads}")
+    print(f"{action} {len(files)} files with {NUM_WORKERS} workers...")
+    print(f"Preset: {preset}, Threads: {threads}")
 
     total_success: int = 0
     total_failed: int = 0
@@ -154,7 +154,7 @@ def _process_files_impl(
             path, success, message = result.get()
             completed += 1
             pct: float = completed / total * 40
-            logger.info(f"[{pct:5.1f}%] {completed}/{total}")
+            print(f"[{pct:5.1f}%] {completed}/{total}")
             if success:
                 total_success += 1
                 status: str = "✓"
@@ -162,11 +162,11 @@ def _process_files_impl(
                 total_failed += 1
                 status = "✗"
             rel_path: Path = path.relative_to(root_dir)
-            logger.info(f"{status} {rel_path}: {message}")
+            print(f"{status} {rel_path}: {message}")
 
-    logger.info("─" * 40)
-    logger.info(f"Total successful: {total_success}")
-    logger.info(f"Total failed: {total_failed}")
+    print("─" * 40)
+    print(f"Total successful: {total_success}")
+    print(f"Total failed: {total_failed}")
 
 
 def process_files(

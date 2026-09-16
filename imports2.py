@@ -267,7 +267,7 @@ class PythonImportExtractor:
                         )
                         packages.add(package_name.replace("-", "_"))
                         packages.add(package_name.replace("_", "-"))
-            logger.info(f"Loaded {len(packages)} pip packages")
+            print(f"Loaded {len(packages)} pip packages")
             return packages
         except Exception as e:
             logger.error(f"Error loading pip packages: {e}")
@@ -473,18 +473,18 @@ def main():
     args = parser.parse_args()
     if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
-    logger.info(f"Scanning directory: {args.directory}")
+    print(f"Scanning directory: {args.directory}")
     extractor = PythonImportExtractor(args.pip_file)
-    logger.info("Identifying local modules...")
+    print("Identifying local modules...")
     extractor._identify_local_modules(args.directory)
-    logger.info(f"Found {len(extractor.local_modules)} local modules")
-    logger.info("Finding Python files...")
+    print(f"Found {len(extractor.local_modules)} local modules")
+    print("Finding Python files...")
     python_files = find_python_files(args.directory)
-    logger.info(f"Found {len(python_files)} Python files/archives")
+    print(f"Found {len(python_files)} Python files/archives")
     if not python_files:
         logger.warning("No Python files found")
         return
-    logger.info(f"Processing files with {args.workers} workers...")
+    print(f"Processing files with {args.workers} workers...")
     all_packages = defaultdict(set)
     with Pool(args.workers) as pool:
         results = pool.map(process_single_file, [(f, extractor) for f in python_files])
@@ -492,18 +492,18 @@ def main():
         for package in packages:
             all_packages[package].add(str(path))
     sorted_packages = sorted(all_packages.keys())
-    logger.info(f"Found {len(sorted_packages)} unique packages")
+    print(f"Found {len(sorted_packages)} unique packages")
     output_path = Path(args.output)
     with output_path.open("w") as f:
         for package in sorted_packages:
             print(f" -  {package}")
             f.write(f"{package}\n")
-    logger.info(f"Requirements written to {args.output}")
+    print(f"Requirements written to {args.output}")
     if args.verbose:
-        logger.info("\nPackages found:")
+        print("\nPackages found:")
         for package in sorted_packages:
             sources = all_packages[package]
-            logger.info(f"  {package} (found in {len(sources)} file(s))")
+            print(f"  {package} (found in {len(sources)} file(s))")
 
 
 if __name__ == "__main__":

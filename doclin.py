@@ -16,10 +16,11 @@ from __future__ import annotations
 
 import re
 import sys
+from collections.abc import Sequence
 from dataclasses import dataclass
 from multiprocessing.pool import AsyncResult, Pool
 from pathlib import Path
-from typing import Final, List, Optional, Sequence, Tuple
+from typing import Final
 
 from dh import fsz
 from loguru import logger
@@ -209,7 +210,7 @@ def remove_image_lines_md(content: str) -> tuple[str, int]:
     return result, removed_count
 
 
-def process_file(path: Path) -> Optional[FileStats]:
+def process_file(path: Path) -> FileStats | None:
     """Clean a single RST/Markdown file, returning stats if modified."""
     try:
         with open(path, "r", encoding="utf-8") as f:
@@ -268,12 +269,12 @@ def collect_files(directories: Sequence[Path]) -> list[Path]:
 def print_stats(all_stats: Sequence[FileStats], base_path: Path) -> None:
     """Log per-file and aggregate removal statistics."""
     if not all_stats:
-        logger.info("✨ No image references found to remove!")
+        print("✨ No image references found to remove!")
         return
 
-    logger.info("=" * 40)
-    logger.info("📊 IMAGE REFERENCE REMOVAL REPORT")
-    logger.info("-" * 40)
+    print("=" * 40)
+    print("📊 IMAGE REFERENCE REMOVAL REPORT")
+    print("-" * 40)
 
     total_lines_before: int = 0
     total_lines_after: int = 0
@@ -289,20 +290,18 @@ def print_stats(all_stats: Sequence[FileStats], base_path: Path) -> None:
         size_change: int = stats.size_before - stats.size_after
         change_symbol: str = "↓" if size_change > 0 else "→"
 
-        logger.info(f"📄 {rel_path}")
-        logger.info(f"   ├─ Image references removed: {stats.removed_refs}")
-        logger.info(
+        print(f"📄 {rel_path}")
+        print(f"   ├─ Image references removed: {stats.removed_refs}")
+        print(
             f"   ├─ Lines: {stats.lines_before} → {stats.lines_after} "
             f"({stats.removed_lines:+d})"
         )
-        logger.info(
+        print(
             f"   ├─ Size: {fsz(stats.size_before)} → {fsz(stats.size_after)} "
             f"({change_symbol} {fsz(abs(size_change))})"
         )
         if stats.size_before > 0:
-            logger.info(
-                f"   └─ Reduction: {(size_change / stats.size_before * 100):.1f}%"
-            )
+            print(f"   └─ Reduction: {(size_change / stats.size_before * 100):.1f}%")
 
         total_lines_before += stats.lines_before
         total_lines_after += stats.lines_after
@@ -310,25 +309,25 @@ def print_stats(all_stats: Sequence[FileStats], base_path: Path) -> None:
         total_size_after += stats.size_after
         total_removed_refs += stats.removed_refs
 
-    logger.info("=" * 40)
-    logger.info("📈 SUMMARY")
-    logger.info("-" * 40)
-    logger.info(f"Files modified: {len(all_stats)}")
-    logger.info(f"Total image references removed: {total_removed_refs}")
-    logger.info(
+    print("=" * 40)
+    print("📈 SUMMARY")
+    print("-" * 40)
+    print(f"Files modified: {len(all_stats)}")
+    print(f"Total image references removed: {total_removed_refs}")
+    print(
         f"Total lines: {total_lines_before} → {total_lines_after} "
         f"({total_lines_before - total_lines_after:+d})"
     )
-    logger.info(
+    print(
         f"Total size: {fsz(total_size_before)} → {fsz(total_size_after)} "
         f"({fsz(total_size_before - total_size_after)} saved)"
     )
     if total_size_before > 0:
-        logger.info(
+        print(
             f"Overall reduction: "
             f"{((total_size_before - total_size_after) / total_size_before * 100):.1f}%"
         )
-    logger.info("-" * 40)
+    print("-" * 40)
 
 
 # ---------------------------------------------------------------------------
@@ -341,35 +340,35 @@ def main() -> int:
     argv: list[str] = sys.argv[1:]
     directories: list[Path] = [Path(arg) for arg in argv] if argv else [Path.cwd()]
 
-    logger.info("🔍 Scanning for .rst and .md files...")
+    print("🔍 Scanning for .rst and .md files...")
     files: list[Path] = collect_files(directories)
-    logger.info(f"Found {len(files)} files to process")
+    print(f"Found {len(files)} files to process")
     if not files:
-        logger.info("No .rst or .md files found in the specified directories.")
+        print("No .rst or .md files found in the specified directories.")
         return 0
 
-    logger.info(f"⚡ Processing files in parallel with {POOL_SIZE} workers...")
+    print(f"⚡ Processing files in parallel with {POOL_SIZE} workers...")
 
     stats_list: list[FileStats] = []
     completed: int = 0
     total: int = len(files)
 
     with Pool(processes=POOL_SIZE) as pool:
-        async_results: list[tuple[AsyncResult[Optional[FileStats]], Path]] = [
+        async_results: list[tuple[AsyncResult[FileStats | None], Path]] = [
             (pool.apply_async(process_file, (file,)), file) for file in files
         ]
         for result, file in async_results:
             completed += 1
             try:
-                stats: Optional[FileStats] = result.get()
+                stats: FileStats | None = result.get()
                 if stats is not None:
                     stats_list.append(stats)
             except Exception as e:  # noqa: BLE001
                 logger.error(f"Error processing {file}: {e}")
             if completed % 10 == 0 or completed == total:
-                logger.info(f"  Progress: {completed}/{total} files processed")
+                print(f"  Progress: {completed}/{total} files processed")
 
-    logger.info(f"✅ Processed {total} files")
+    print(f"✅ Processed {total} files")
 
     base_path: Path = Path.cwd()
     stats_list.sort(key=lambda x: str(x.path))

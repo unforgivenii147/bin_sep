@@ -23,7 +23,7 @@ import sys
 import tarfile
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
-from typing import Final, List, Optional, Tuple
+from typing import Final, Tuple
 
 import zstandard as zstd
 from dh import fsz
@@ -100,7 +100,7 @@ def compress_chunked(in_path: Path, out_path: Path, file_size: int) -> bool:
                     for i, chunk in enumerate(chunks)
                 }
 
-                results: list[Optional[bytes]] = [None] * chunk_count
+                results: list[bytes | None] = [None] * chunk_count
                 for future in as_completed(futures):
                     idx = futures[future]
                     results[idx] = future.result()
@@ -153,7 +153,7 @@ def compress_file(path: Path) -> tuple[bool, int, int]:
     """
     out_path = path.with_suffix(path.suffix + ".zst")
     if out_path.exists():
-        logger.info(f"Skipping {path.name} - output already exists")
+        print(f"Skipping {path.name} - output already exists")
         return (False, 0, 0)
 
     try:
@@ -172,14 +172,12 @@ def compress_file(path: Path) -> tuple[bool, int, int]:
             if compressed_size < original_size:
                 path.unlink()
                 reduction = (original_size - compressed_size) / original_size * 100
-                logger.info(
+                print(
                     f"  ✓ {path.name}: {reduction:.1f}% saved ({fsz(original_size)} → {fsz(compressed_size)})"
                 )
                 return (True, original_size, compressed_size)
             else:
-                logger.info(
-                    f"  ✗ {path.name}: No space saved, removing compressed file"
-                )
+                print(f"  ✗ {path.name}: No space saved, removing compressed file")
                 out_path.unlink()
                 return (False, 0, 0)
     except Exception as e:
@@ -209,7 +207,7 @@ def decompress_file(path: Path) -> bool:
 
         original_size = path.stat().st_size
         decompressed_size = out_path.stat().st_size
-        logger.info(
+        print(
             f"  ✓ Decompressed {path.name}: {fsz(original_size)} → {fsz(decompressed_size)}"
         )
         path.unlink()
@@ -255,14 +253,14 @@ async def compress_folder_async(folder_path: Path, output_base_name: str) -> boo
     zst_path = Path(f"{output_base_name}.tar.zst")
 
     try:
-        logger.info(f"  Creating tar archive for {folder_path.name}...")
+        print(f"  Creating tar archive for {folder_path.name}...")
         success = await loop.run_in_executor(
             None, create_tar_archive, folder_path, tar_path
         )
         if not success or not tar_path.exists():
             return False
 
-        logger.info("  Compressing tar archive with Zstandard...")
+        print("  Compressing tar archive with Zstandard...")
         tar_size = tar_path.stat().st_size
 
         if tar_size < CHUNK_SIZE:
@@ -279,13 +277,13 @@ async def compress_folder_async(folder_path: Path, output_base_name: str) -> boo
             if zst_size < tar_size:
                 tar_path.unlink()
                 reduction = (tar_size - zst_size) / tar_size * 100
-                logger.info(
+                print(
                     f"  ✓ Compressed archive: {reduction:.1f}% saved ({fsz(tar_size)} → {fsz(zst_size)})"
                 )
                 await loop.run_in_executor(None, shutil.rmtree, folder_path)
                 return True
             else:
-                logger.info("  ✗ Archive compression didn't save space")
+                print("  ✗ Archive compression didn't save space")
                 zst_path.unlink()
         return False
     except Exception as e:
@@ -298,12 +296,12 @@ async def process_compress() -> None:
     Process compression of all files and directories in the current working directory.
     """
     cwd = Path.cwd()
-    logger.info(f"\n🔧 Zstandard Compression Settings (Level {ZSTD_LEVEL})")
+    print(f"\n🔧 Zstandard Compression Settings (Level {ZSTD_LEVEL})")
 
     # Compress directories
     dirs = [p for p in cwd.iterdir() if p.is_dir() and p.name not in SKIP_DIRS]
     if dirs:
-        logger.info(f"\n📁 Compressing {len(dirs)} directories...")
+        print(f"\n📁 Compressing {len(dirs)} directories...")
         for d in sorted(dirs):
             await compress_folder_async(d, str(d))
 
@@ -317,13 +315,13 @@ async def process_compress() -> None:
     ]
 
     if files:
-        logger.info(f"\n📄 Compressing {len(files)} files...")
+        print(f"\n📄 Compressing {len(files)} files...")
         total_orig = 0
         total_comp = 0
         successful = 0
 
         for i, f in enumerate(sorted(files), 1):
-            logger.info(f"[{i}/{len(files)}] {f.name}")
+            print(f"[{i}/{len(files)}] {f.name}")
             success, o_sz, c_sz = compress_file(f)
             if success:
                 successful += 1
@@ -332,7 +330,7 @@ async def process_compress() -> None:
 
         if successful > 0:
             saved = total_orig - total_comp
-            logger.info(
+            print(
                 f"\n{'=' * 40}\n✅ Compressed {successful} files\n📊 Saved "
                 f"{fsz(saved)} ({saved / total_orig * 100:.1f}%)\n{'=' * 40}"
             )
@@ -347,9 +345,9 @@ async def process_decompress() -> None:
     # Decompress tar archives
     archives = list(cwd.glob("*.tar.zst"))
     if archives:
-        logger.info(f"\n📦 Decompressing {len(archives)} archives...")
+        print(f"\n📦 Decompressing {len(archives)} archives...")
         for arch in sorted(archives):
-            logger.info(f"  Processing {arch.name}...")
+            print(f"  Processing {arch.name}...")
             tar_path = arch.with_suffix("")
             try:
                 dctx = zstd.ZstdDecompressor()
@@ -362,14 +360,14 @@ async def process_decompress() -> None:
 
                 tar_path.unlink()
                 arch.unlink()
-                logger.info(f"  ✓ Extracted to {extract_dir}/")
+                print(f"  ✓ Extracted to {extract_dir}/")
             except Exception as e:
                 logger.error(f"  ✗ Failed to decompress {arch.name}: {e}")
 
     # Decompress individual files
     zst_files = [p for p in cwd.glob("*.zst") if not p.name.endswith(".tar.zst")]
     if zst_files:
-        logger.info(f"\n📄 Decompressing {len(zst_files)} files...")
+        print(f"\n📄 Decompressing {len(zst_files)} files...")
         for f in sorted(zst_files):
             decompress_file(f)
 
@@ -388,7 +386,7 @@ def main() -> None:
     try:
         asyncio.run(process_decompress() if args.decompress else process_compress())
     except KeyboardInterrupt:
-        logger.info("\nInterrupted by user")
+        print("\nInterrupted by user")
 
 
 if __name__ == "__main__":

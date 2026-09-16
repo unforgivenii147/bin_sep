@@ -1,6 +1,5 @@
 #!/data/data/com.termux/files/home/.local/bin/python
 import argparse
-import json
 import logging
 import os
 import random
@@ -272,7 +271,7 @@ def main() -> None:
         return
 
     if not all_lines:
-        logger.info("No non-empty lines found in %s", input_path.name)
+        print("No non-empty lines found in %s", input_path.name)
         cache.close()
         return
 
@@ -287,7 +286,7 @@ def main() -> None:
         to_translate_raw = [line for line in all_lines]
         skipped_lines = []
 
-    logger.info(
+    print(
         "Loaded %d lines: %d flagged for translation, %d skipped",
         len(all_lines),
         len(to_translate_raw),
@@ -295,7 +294,7 @@ def main() -> None:
     )
 
     if not to_translate_raw:
-        logger.info("No lines to translate for source_lang=%s", source_lang)
+        print("No lines to translate for source_lang=%s", source_lang)
         cache.close()
         return
 
@@ -307,7 +306,7 @@ def main() -> None:
             seen.add(l)
             to_translate_unique.append(l)
 
-    logger.info(
+    print(
         "Deduplicated: %d unique lines to translate (from %d total flagged)",
         len(to_translate_unique),
         len(to_translate_raw),
@@ -315,7 +314,7 @@ def main() -> None:
 
     # Fetch cached translations for unique lines
     cached = cache.get_many(to_translate_unique, source_lang, target_lang)
-    logger.info("Cache hit: %d/%d", len(cached), len(to_translate_unique))
+    print("Cache hit: %d/%d", len(cached), len(to_translate_unique))
 
     # Build initial results dict from cache
     results: dict[str, str] = dict(cached)
@@ -327,7 +326,7 @@ def main() -> None:
         # Create chunks for remaining lines
         chunks = create_chunks(remaining_to_translate, args.max_chunk_size)
         num_workers = min(max(1, args.max_workers), len(chunks))
-        logger.info(
+        print(
             "Created %d chunk(s) from %d remaining lines (max %d chars per chunk), using %d worker(s)",
             len(chunks),
             len(remaining_to_translate),
@@ -385,7 +384,7 @@ def main() -> None:
                                     )
                                     results[line] = line
                                     to_cache[line] = line
-                        logger.info(
+                        print(
                             "Translated chunk %d/%d (sample: '%s' → '%s')",
                             completed,
                             total,
@@ -424,9 +423,9 @@ def main() -> None:
             # Save newly translated items to cache
             if to_cache:
                 cache.set_many(to_cache, source_lang, target_lang)
-                logger.info("Saved %d new translations to cache", len(to_cache))
+                print("Saved %d new translations to cache", len(to_cache))
     else:
-        logger.info("Nothing left to translate after cache lookup.")
+        print("Nothing left to translate after cache lookup.")
 
     # Create output file named {input_stem}_{target}{input_suffix}, do NOT overwrite source file
     output_path = input_path.with_name(
@@ -442,7 +441,7 @@ def main() -> None:
                     translated_count += 1
                 else:
                     f.write(f"{line}\n")
-        logger.info(
+        print(
             "Wrote %s: translated %d lines, kept %d lines unchanged",
             output_path.name,
             translated_count,

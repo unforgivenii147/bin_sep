@@ -43,15 +43,15 @@ def translate_file(path: Path) -> None:
         logger.warning("Skipping unreadable file %s: %s", path, e)
         return
     if not NON_ENGLISH_PATTERN.search(content):
-        logger.info("No non-English content found in %s, skipping.", path.name)
+        print("No non-English content found in %s, skipping.", path.name)
         return
-    logger.info("Translating: %s", path.name)
+    print("Translating: %s", path.name)
     translated_chunks = [translate_text(chunk) for chunk in chunk_text(content)]
     translated_content = "\n\n".join(translated_chunks)
     new_path = path.parent / f"translated_{path.name}"
     try:
         new_path.write_text(translated_content, encoding="utf-8")
-        logger.info("✓ Saved as: %s", new_path.name)
+        print("✓ Saved as: %s", new_path.name)
     except Exception as e:
         logger.error("Error writing to %s: %s", new_path, e)
 

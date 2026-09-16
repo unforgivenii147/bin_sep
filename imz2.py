@@ -145,13 +145,12 @@ def extract_from_ast(code: str, path_hint: str | None = None) -> dict[str, set[s
                     isinstance(val.value, ast.Name)
                     and val.value.id == "importlib"
                     and val.attr == "import_module"
+                ) and (
+                    node.args
+                    and isinstance(node.args[0], ast.Constant)
+                    and isinstance(node.args[0].value, str)
                 ):
-                    if (
-                        node.args
-                        and isinstance(node.args[0], ast.Constant)
-                        and isinstance(node.args[0].value, str)
-                    ):
-                        result["dynamic"].add(node.args[0].value.split(".", 1)[0])
+                    result["dynamic"].add(node.args[0].value.split(".", 1)[0])
 
     return result
 
@@ -284,9 +283,9 @@ def process_raw(path: str) -> dict[str, list[str]]:
         return process_ipynb(p)
     if p.suffix == "" and p.is_file():
         return process_noext_python_script(p)
-    if name.endswith(".zip") or name.endswith(".whl"):
+    if name.endswith((".zip", ".whl")):
         return process_zip_file(p)
-    if name.endswith(".tar.gz") or name.endswith(".tgz") or name.endswith(".tar.xz"):
+    if name.endswith((".tar.gz", ".tgz", ".tar.xz")):
         return process_tar_file(p)
 
     return {"imports": [], "star_modules": [], "dynamic": [], "relative": []}
@@ -418,13 +417,9 @@ def scan_sources(ignore_dirs: set[str]) -> list[str]:
             lower = f.lower()
 
             if (
-                lower.endswith(".py")
-                or lower.endswith(".ipynb")
-                or lower.endswith(".whl")
-                or lower.endswith(".zip")
-                or lower.endswith(".tar.gz")
-                or lower.endswith(".tgz")
-                or lower.endswith(".tar.xz")
+                lower.endswith(
+                    (".py", ".ipynb", ".whl", ".zip", ".tar.gz", ".tgz", ".tar.xz")
+                )
                 or Path(fp).suffix == ""
             ):
                 out.append(fp)
@@ -479,7 +474,7 @@ def main() -> None:
     project_map = build_project_module_map(sources)
     set(project_map.keys())
 
-    project_top_only = {k.split(".", 1)[0] for k in project_map.keys()}
+    project_top_only = {k.split(".", 1)[0] for k in project_map}
 
     cache_path = Path(args.cache_file)
     cache = (

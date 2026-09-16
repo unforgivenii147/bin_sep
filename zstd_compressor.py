@@ -19,7 +19,7 @@ import io
 import tarfile
 from multiprocessing import Pool
 from pathlib import Path
-from typing import BinaryIO, List, Union
+from typing import BinaryIO
 
 import zstandard as zstd
 from loguru import logger
@@ -50,7 +50,7 @@ def compress_stream(input_stream: BinaryIO, output_path: Path) -> bool:
                     break
                 compressor.write(chunk)
             compressor.close()
-        logger.info(f"Compressed: {output_path.name}")
+        print(f"Compressed: {output_path.name}")
         return True
     except Exception as e:
         logger.error(f"Error compressing to {output_path.name}: {e}")
@@ -77,7 +77,7 @@ def decompress_stream(input_path: Path, output_path: Path) -> bool:
                 if not chunk:
                     break
                 f_out.write(chunk)
-        logger.info(f"Decompressed: {output_path.name}")
+        print(f"Decompressed: {output_path.name}")
         return True
     except Exception as e:
         logger.error(f"Error decompressing {input_path.name}: {e}")
@@ -101,7 +101,7 @@ def process_directory(dir_path: Path) -> None:
             import shutil
 
             shutil.rmtree(dir_path)
-            logger.info(f"Removed original directory: {dir_path.name}")
+            print(f"Removed original directory: {dir_path.name}")
     except Exception as e:
         logger.error(f"Failed to archive directory {dir_path.name}: {e}")
 
@@ -118,7 +118,7 @@ def process_file(path: Path) -> None:
         with open(path, "rb") as f_in:
             if compress_stream(f_in, output_zst):
                 path.unlink()
-                logger.info(f"Removed original file: {path.name}")
+                print(f"Removed original file: {path.name}")
     except Exception as e:
         logger.error(f"Failed to compress file {path.name}: {e}")
 
@@ -139,14 +139,14 @@ def decompress_file(zst_path: Path) -> None:
                 with tarfile.open(fileobj=tar_buffer, mode="r") as tar:
                     tar.extractall(path=output_dir.parent)
                 zst_path.unlink()
-                logger.info(f"Removed archive: {zst_path.name}")
+                print(f"Removed archive: {zst_path.name}")
         except Exception as e:
             logger.error(f"Failed to decompress tar archive {zst_path.name}: {e}")
     elif zst_path.suffix == ".zst":
         output_file = zst_path.with_suffix("")
         if decompress_stream(zst_path, output_file):
             zst_path.unlink()
-            logger.info(f"Removed archive: {zst_path.name}")
+            print(f"Removed archive: {zst_path.name}")
     else:
         logger.warning(f"Skipping non-zst file: {zst_path.name}")
 
@@ -209,8 +209,8 @@ def main() -> int:
             logger.warning("No files or subdirectories found to compress.")
             return 0
 
-        logger.info(f"Found {len(subdirs)} subdirs and {len(files)} files to compress.")
-        logger.info(f"Starting parallel Zstandard compression (Level: {ZSTD_LEVEL})...")
+        print(f"Found {len(subdirs)} subdirs and {len(files)} files to compress.")
+        print(f"Starting parallel Zstandard compression (Level: {ZSTD_LEVEL})...")
 
         items: list[Path] = subdirs + files
         with Pool(processes=WORKER_COUNT) as pool:
@@ -223,13 +223,13 @@ def main() -> int:
             logger.warning("No .zst or .tar.zst files found to decompress.")
             return 0
 
-        logger.info(f"Found {len(archives)} archives to decompress.")
-        logger.info("Starting parallel decompression...")
+        print(f"Found {len(archives)} archives to decompress.")
+        print("Starting parallel decompression...")
 
         with Pool(processes=WORKER_COUNT) as pool:
             pool.starmap(process_item, [(archive, mode) for archive in archives])
 
-    logger.info("All operations completed successfully!")
+    print("All operations completed successfully!")
     return 0
 
 

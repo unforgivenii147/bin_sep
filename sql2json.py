@@ -27,16 +27,15 @@ from __future__ import annotations
 import argparse
 import codecs
 import json
-import logging
-import multiprocessing as mp
 import os
 import re
-import sys
 import tempfile
 from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
+from multiprocessing import Pool, freeze_support
 from pathlib import Path
 from typing import Any
+
 
 WORKERS = 8
 READ_CHUNK_BYTES = 1024 * 1024  # 1 MiB
@@ -485,11 +484,6 @@ def worker(payload: tuple[Job, str, bool]) -> Result:
 
 def main() -> int:
     args = parse_args()
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(levelname)s: %(message)s",
-    )
-
     files = discover_sql_files(args.inputs)
     if not files:
         logging.error("No .sql files found.")
@@ -513,21 +507,21 @@ def main() -> int:
     total_rows = 0
 
     # imap_unordered returns results as each independently processed file finishes.
-    with mp.Pool(processes=WORKERS) as pool:
+    with Pool(processes=WORKERS) as pool:
         for result in pool.imap_unordered(worker, payloads, chunksize=chunksize):
             if result.error is not None:
                 failures += 1
                 logging.error("%s: %s", result.source, result.error)
             else:
                 total_rows += result.rows
-                logging.info(
+                print(
                     "%s -> %s (%d rows)",
                     result.source,
                     result.destination,
                     result.rows,
                 )
 
-    logging.info(
+    print(
         "Completed: %d file(s), %d row(s), %d failure(s).",
         len(files),
         total_rows,
@@ -537,5 +531,5 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    mp.freeze_support()
+    freeze_support()
     raise SystemExit(main())

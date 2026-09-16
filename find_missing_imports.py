@@ -529,7 +529,7 @@ def main() -> None:
 
     py_files = list(root_dir.glob("**/*.py"))
     if not py_files:
-        logger.info(f"No Python files found in {root_dir}")
+        print(f"No Python files found in {root_dir}")
         sys.exit(0)
 
     total_missing = 0
@@ -553,10 +553,10 @@ def main() -> None:
                 else:
                     logger.error("  ✗ Failed to fix")
 
-    logger.info(f"{'─' * 40}")
-    logger.info(f"Total missing imports found: {total_missing}")
+    print(f"{'─' * 40}")
+    print(f"Total missing imports found: {total_missing}")
     if args.autofix:
-        logger.info(f"Files fixed: {fixed_files}")
+        print(f"Files fixed: {fixed_files}")
 
     sys.exit(1 if total_missing > 0 else 0)
 

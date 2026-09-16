@@ -125,17 +125,17 @@ class ProgressDisplay:
         sys.stdout.write("\n")
         sys.stdout.flush()
         logger.success("Compression complete!")
-        logger.info("Files processed: {}/{}", self.processed_files, self.total_files)
+        print("Files processed: {}/{}", self.processed_files, self.total_files)
         if self.total_size > 0:
             orig_mb = self.total_size / (1024 * 1024)
             comp_mb = self.compressed_size / (1024 * 1024)
             savings = (1.0 - self.compressed_size / self.total_size) * 100.0
-            logger.info("Original size: {:.2f} MB", orig_mb)
-            logger.info("Compressed size: {:.2f} MB", comp_mb)
-            logger.info("Savings: {:.1f}%", savings)
-            logger.info("Time: {:.1f} seconds", elapsed)
+            print("Original size: {:.2f} MB", orig_mb)
+            print("Compressed size: {:.2f} MB", comp_mb)
+            print("Savings: {:.1f}%", savings)
+            print("Time: {:.1f} seconds", elapsed)
             if elapsed > 0:
-                logger.info(
+                print(
                     "Average speed: {:.1f} MB/s",
                     self.total_size / (1024 * 1024) / elapsed,
                 )
@@ -287,8 +287,8 @@ def main() -> int:
 
     if len(sys.argv) != 2:
         logger.error("Usage: python {} <threshold_in_bytes>", sys.argv[0])
-        logger.info("Example: python {} 1048576  # > 1MB", sys.argv[0])
-        logger.info("Example: python {} 5242880  # > 5MB", sys.argv[0])
+        print("Example: python {} 1048576  # > 1MB", sys.argv[0])
+        print("Example: python {} 5242880  # > 5MB", sys.argv[0])
         return 1
 
     try:
@@ -302,8 +302,8 @@ def main() -> int:
         return 1
 
     threshold_str = _format_threshold(threshold)
-    logger.info("Compressing files larger than {}", threshold_str)
-    logger.info("Scanning current directory...")
+    print("Compressing files larger than {}", threshold_str)
+    print("Scanning current directory...")
 
     current_dir = Path.cwd()
     files_to_compress = _collect_files(current_dir, threshold)
@@ -329,7 +329,7 @@ def main() -> int:
             ]
             for result in async_results:
                 try:
-                    ok, path, comp_path, size = result.get()
+                    _ok, path, comp_path, size = result.get()
                 except Exception as exc:  # noqa: BLE001
                     logger.error("Error processing file: {}", exc)
                     continue
@@ -346,9 +346,9 @@ def main() -> int:
     sys.stdout.write("\n")
     sys.stdout.flush()
     logger.success("Compression complete!")
-    logger.info("Files processed: {}/{}", processed, len(files_to_compress))
+    print("Files processed: {}/{}", processed, len(files_to_compress))
     elapsed = time.time() - _start_time
-    logger.info("Time: {:.1f} seconds", elapsed)
+    print("Time: {:.1f} seconds", elapsed)
     return 0
 
 

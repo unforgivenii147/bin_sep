@@ -59,7 +59,7 @@ def should_include_file(path: Path) -> bool:
 
 def process_dist_info(dist_info_dir: Path) -> bool:
     record_path = dist_info_dir / "RECORD"
-    logger.info("Processing %s", record_path)
+    print("Processing %s", record_path)
     if not record_path.exists():
         logger.error("RECORD not found: %s", record_path)
         return False
@@ -104,7 +104,7 @@ def process_dist_info(dist_info_dir: Path) -> bool:
         )
     try:
         record_path.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
-        logger.info("Updated %s", record_path)
+        print("Updated %s", record_path)
     except Exception:
         logger.exception("Failed to write %s", record_path)
         return False
@@ -130,7 +130,7 @@ def main() -> None:
     if not dist_info_dirs:
         logger.warning("you should run this script from a site packages folder.")
         sys.exit(0)
-    logger.info("Found %d distribution(s)", len(dist_info_dirs))
+    print("Found %d distribution(s)", len(dist_info_dirs))
     updated = 0
     failed = 0
     with multiprocessing.Pool(processes=8) as pool:
@@ -139,7 +139,7 @@ def main() -> None:
                 updated += 1
             else:
                 failed += 1
-    logger.info(f"Summary: {updated} updated, {failed} failed")
+    print(f"Summary: {updated} updated, {failed} failed")
 
 
 if __name__ == "__main__":

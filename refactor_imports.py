@@ -14,7 +14,7 @@ import json
 from multiprocessing import Pool
 from multiprocessing.pool import AsyncResult
 from pathlib import Path
-from typing import Any, Final, Optional, cast
+from typing import Any, Final, cast
 
 import astor  # type: ignore[import-untyped]
 from loguru import logger
@@ -25,12 +25,12 @@ DUPLICATE_THRESHOLD: Final[int] = 2
 
 DefinitionKey = tuple[str, str, str]
 DefinitionsMap = collections.defaultdict[DefinitionKey, list[str]]
-SourceMap = dict[DefinitionKey, Optional[str]]
+SourceMap = dict[DefinitionKey, str | None]
 FileMap = dict[str, list[str]]
 Task = tuple[Path, list[str]]
 
 
-def get_source(node: ast.AST, content: str) -> Optional[str]:
+def get_source(node: ast.AST, content: str) -> str | None:
     """
     Return the source segment that produced ``node``.
 
@@ -44,7 +44,7 @@ def get_source(node: ast.AST, content: str) -> Optional[str]:
     return ast.get_source_segment(content, node)
 
 
-def normalize_source(source: Optional[str]) -> str:
+def normalize_source(source: str | None) -> str:
     """
     Normalize source text for duplicate comparison by stripping trailing
     whitespace on each line and trimming surrounding whitespace.
@@ -103,7 +103,7 @@ def _collect_definitions(
 
     for node in tree.body:
         if isinstance(node, (ast.FunctionDef, ast.ClassDef)):
-            source: Optional[str] = get_source(node, content)
+            source: str | None = get_source(node, content)
             norm: str = normalize_source(source)
             key: DefinitionKey = (type(node).__name__, node.name, norm)
             definitions[key].append(str(file_path))
@@ -169,7 +169,7 @@ def write_repeated_json(repeated: list[dict[str, Any]]) -> None:
     REPEATED_JSON_PATH.write_text(
         json.dumps(repeated, indent=2, ensure_ascii=False), encoding="utf-8"
     )
-    logger.info(f"Wrote {len(repeated)} entries to {REPEATED_JSON_PATH}")
+    print(f"Wrote {len(repeated)} entries to {REPEATED_JSON_PATH}")
 
 
 def load_refactoring_maps() -> FileMap:
@@ -219,7 +219,7 @@ class ASTStripper(ast.NodeTransformer):
 
     def visit_FunctionDef(  # type: ignore[override]
         self, node: ast.FunctionDef
-    ) -> Optional[ast.FunctionDef]:
+    ) -> ast.FunctionDef | None:
         """Remove the function if its name is targeted; otherwise recurse."""
         if node.name in self.target_names:
             self.removed_something = True
@@ -228,7 +228,7 @@ class ASTStripper(ast.NodeTransformer):
 
     def visit_AsyncFunctionDef(  # type: ignore[override]
         self, node: ast.AsyncFunctionDef
-    ) -> Optional[ast.AsyncFunctionDef]:
+    ) -> ast.AsyncFunctionDef | None:
         """Remove the async function if its name is targeted; otherwise recurse."""
         if node.name in self.target_names:
             self.removed_something = True
@@ -237,7 +237,7 @@ class ASTStripper(ast.NodeTransformer):
 
     def visit_ClassDef(  # type: ignore[override]
         self, node: ast.ClassDef
-    ) -> Optional[ast.ClassDef]:
+    ) -> ast.ClassDef | None:
         """Remove the class if its name is targeted; otherwise recurse."""
         if node.name in self.target_names:
             self.removed_something = True
@@ -246,7 +246,7 @@ class ASTStripper(ast.NodeTransformer):
 
     def visit_Assign(  # type: ignore[override]
         self, node: ast.Assign
-    ) -> Optional[ast.Assign]:
+    ) -> ast.Assign | None:
         """Remove the assignment if any target name matches; otherwise recurse."""
         for target in node.targets:
             if isinstance(target, ast.Name) and target.id in self.target_names:
@@ -281,7 +281,7 @@ def refactor_single_file(file_path: Path, objects_to_remove: list[str]) -> bool:
     ast.fix_missing_locations(modified_tree)
 
     if not stripper.removed_something:
-        logger.info(f"➖ No matching structural nodes found inside {file_path.name}")
+        print(f"➖ No matching structural nodes found inside {file_path.name}")
         return False
 
     import_names: str = ", ".join(sorted(objects_to_remove))
@@ -307,7 +307,7 @@ def refactor_single_file(file_path: Path, objects_to_remove: list[str]) -> bool:
 
     try:
         file_path.write_text("".join(lines), encoding="utf-8")
-        logger.info(
+        print(
             f"✅ Refactored {file_path.name}: Stripped {objects_to_remove} "
             f"-> added 'dh' import"
         )
@@ -322,7 +322,7 @@ def main() -> None:
     Analyze the project for duplicated definitions, write ``repeated.json``,
     then refactor every local file listed in it in parallel.
     """
-    logger.info("🔎 Analyzing Python files for duplicated definitions...")
+    print("🔎 Analyzing Python files for duplicated definitions...")
     repeated: list[dict[str, Any]] = analyze_files()
 
     if not repeated:
@@ -345,10 +345,10 @@ def main() -> None:
     ]
 
     if not tasks:
-        logger.info("No matching files found in the current directory to refactor.")
+        print("No matching files found in the current directory to refactor.")
         return
 
-    logger.info(
+    print(
         f"🚀 Found {len(tasks)} files to clean structural code from. "
         f"Starting parallel processing..."
     )
@@ -364,7 +364,7 @@ def main() -> None:
             except Exception as exc:
                 logger.error(f"❌ Worker raised: {exc}")
 
-    logger.info("🎉 Structural refactoring complete! All duplicate bodies stripped.")
+    print("🎉 Structural refactoring complete! All duplicate bodies stripped.")
 
 
 if __name__ == "__main__":

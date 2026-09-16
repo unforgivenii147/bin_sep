@@ -80,7 +80,7 @@ def convert_one(src: Path, target: str, remove_src: bool) -> ConvResult:
         res.error = f"stat failed: {exc}"
         res.seconds = time.perf_counter() - start
         return res
-    logger.info(f"processing ... {src.name}")
+    print(f"processing ... {src.name}")
     dst: Path = src.with_suffix(f".{target}")
     if dst == src:
         res.skipped_reason = "source already matches target format"
@@ -141,8 +141,8 @@ def print_report(results: list[ConvResult]) -> None:
         f"{'FILE':<{name_w}}  {'STATUS':<6}  {'SIZE (in->out)':<18}  "
         f"{'RATIO':<7}  {'TIME':<7}  NOTE"
     )
-    logger.info(header)
-    logger.info("-" * len(header))
+    print(header)
+    print("-" * len(header))
     ok: int = 0
     skipped: int = 0
     failed: int = 0
@@ -160,31 +160,31 @@ def print_report(results: list[ConvResult]) -> None:
             size_str: str = f"{fsz(r.src_size)}->{fsz(r.dst_size)}"
             status: str = "OK*" if r.removed_src else "OK"
             note: str = r.error or ""
-            logger.info(
+            print(
                 f"{name:<{name_w}}  {status:<6}  {size_str:<18}  "
                 f"{ratio:5.1f}%  {r.seconds:5.2f}s  {note}"
             )
         elif r.skipped_reason:
             skipped += 1
-            logger.info(
+            print(
                 f"{name:<{name_w}}  {'SKIP':<6}  {'-':<18}  {'-':<7}  "
                 f"{r.seconds:5.2f}s  {r.skipped_reason}"
             )
         else:
             failed += 1
-            logger.info(
+            print(
                 f"{name:<{name_w}}  {'FAIL':<6}  {'-':<18}  {'-':<7}  "
                 f"{r.seconds:5.2f}s  {r.error}"
             )
-    logger.info("-" * len(header))
-    logger.info(f"Total: {len(results)}  ok={ok}  skipped={skipped}  failed={failed}")
+    print("-" * len(header))
+    print(f"Total: {len(results)}  ok={ok}  skipped={skipped}  failed={failed}")
     if total_in:
-        logger.info(
+        print(
             f"Size:  {fsz(total_in)} -> {fsz(total_out)} "
             f"({total_out / total_in * 40:.1f}% of original)"
         )
     if any(r.removed_src for r in results):
-        logger.info("(* = original file removed)")
+        print("(* = original file removed)")
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -233,14 +233,14 @@ def main(argv: list[str] | None = None) -> int:
         f for f in files if f.suffix.lower().lstrip(".") == args.target
     ]
     if already_target:
-        logger.info(
+        print(
             f"Skipping {len(already_target)} file(s) already in .{args.target} format."
         )
     files = [f for f in files if f not in already_target]
     if not files:
-        logger.info("No convertible font files found.")
+        print("No convertible font files found.")
         return 0
-    logger.info(
+    print(
         f"Converting {len(files)} file(s) -> .{args.target} with "
         f"{POOL_SIZE} worker(s)...\n"
     )

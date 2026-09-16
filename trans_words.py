@@ -133,9 +133,9 @@ def process_file(file_path: Path) -> None:
     Args:
         file_path: Path to the source ``.txt`` file.
     """
-    logger.info(f"Processing: {file_path.name}")
+    print(f"Processing: {file_path.name}")
     chunks: list[Chunk] = chunk_file(file_path)
-    logger.info(f"Total chunks: {len(chunks)}")
+    print(f"Total chunks: {len(chunks)}")
 
     translations: list[TranslationRecord] = []
 
@@ -151,7 +151,7 @@ def process_file(file_path: Path) -> None:
             if result is not None:
                 translations.append(result)
             completed += 1
-            logger.info(f"Progress ({file_path.name}): {completed}/{len(chunks)}")
+            print(f"Progress ({file_path.name}): {completed}/{len(chunks)}")
 
     output_file: Path = file_path.with_suffix(".json")
     try:
@@ -161,7 +161,7 @@ def process_file(file_path: Path) -> None:
         output_file.write_text(
             json.dumps(output_data, ensure_ascii=False, indent=2), encoding="utf-8"
         )
-        logger.info(f"✓ JSON output saved to: {output_file.name}")
+        print(f"✓ JSON output saved to: {output_file.name}")
     except Exception as exc:
         logger.error(f"Error saving JSON output for {file_path}: {exc}")
 
@@ -195,7 +195,7 @@ def main() -> None:
     files: list[Path] = get_input_files(input_paths)
 
     if not files:
-        logger.info("No text files found to process.")
+        print("No text files found to process.")
         return
 
     for file_path in files:

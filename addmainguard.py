@@ -16,9 +16,10 @@ from __future__ import annotations
 import argparse
 import re
 import sys
+from collections.abc import Sequence
 from multiprocessing.pool import AsyncResult, Pool
 from pathlib import Path
-from typing import Final, Literal, Sequence, TypedDict
+from typing import Final, Literal, TypedDict
 
 from loguru import logger
 
@@ -207,9 +208,9 @@ def main() -> int:
     directory = Path(args.directory).resolve()
     exclude_patterns: tuple[str, ...] = DEFAULT_EXCLUDES + tuple(args.exclude)
 
-    logger.info(f"📂 Scanning: {directory}")
-    logger.info(f"🚫 Excluding: {', '.join(exclude_patterns)}")
-    logger.info(f"⚡ Using {POOL_SIZE} parallel workers")
+    print(f"📂 Scanning: {directory}")
+    print(f"🚫 Excluding: {', '.join(exclude_patterns)}")
+    print(f"⚡ Using {POOL_SIZE} parallel workers")
 
     py_files = find_python_files(directory, exclude_patterns)
     total = len(py_files)
@@ -218,7 +219,7 @@ def main() -> int:
         logger.warning("⚠️  No Python files found!")
         return 0
 
-    logger.info(f"📄 Found {total} Python files")
+    print(f"📄 Found {total} Python files")
 
     results: dict[str, list[Path | tuple[Path, str]]] = {
         "skipped": [],
@@ -240,7 +241,7 @@ def main() -> int:
             result: ProcessResult = ar.get()
             completed += 1
             if completed % 10 == 0 or completed == total:
-                logger.info(f"⏳ Processing: {completed}/{total}")
+                print(f"⏳ Processing: {completed}/{total}")
 
             status = result["status"]
             path = result["path"]
@@ -265,13 +266,13 @@ def main() -> int:
         would_add = len(results["would_add"])
         errors = len(results["errors"])
 
-        logger.info("📊 Results:")
-        logger.info(f"  ✅ Already had guard: {has_guard}")
+        print("📊 Results:")
+        print(f"  ✅ Already had guard: {has_guard}")
         if args.dry_run:
-            logger.info(f"  🔍 Would add guard: {would_add}")
+            print(f"  🔍 Would add guard: {would_add}")
         else:
-            logger.info(f"  ➕ Added guard: {added}")
-        logger.info(f"  ❌ Errors: {errors}")
+            print(f"  ➕ Added guard: {added}")
+        print(f"  ❌ Errors: {errors}")
 
         if errors > 0:
             logger.error("❌ Errors encountered:")
@@ -279,11 +280,11 @@ def main() -> int:
                 logger.error(f"  {path}: {error}")
 
         if args.dry_run and would_add > 0:
-            logger.info(f"🔍 Dry run complete: Would have modified {would_add} files")
-            logger.info("   Run without --dry-run to apply changes")
+            print(f"🔍 Dry run complete: Would have modified {would_add} files")
+            print("   Run without --dry-run to apply changes")
     else:
         missing = len(results["missing"])
-        logger.info(f"📋 Found {missing} files without the main guard:")
+        print(f"📋 Found {missing} files without the main guard:")
         for path in sorted(results["missing"]):  # type: ignore[arg-type]
             path_obj = Path(path)
             try:
@@ -294,18 +295,16 @@ def main() -> int:
                 )
             except ValueError:
                 rel_path = path_obj
-            logger.info(f"  {rel_path}")
+            print(f"  {rel_path}")
         if missing > 0:
-            logger.info(
+            print(
                 f"💡 Run with -a to add the guard: python {sys.argv[0]} {args.directory} -a"
             )
         else:
-            logger.info("✅ All Python files have the main guard!")
+            print("✅ All Python files have the main guard!")
 
     if args.add and not args.dry_run and results["added"]:
-        logger.info(
-            f"✅ Successfully added main guard to {len(results['added'])} files"
-        )
+        print(f"✅ Successfully added main guard to {len(results['added'])} files")
 
     return 0
 

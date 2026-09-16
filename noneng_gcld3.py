@@ -10,16 +10,15 @@ writes findings and errors to an output report file.
 from __future__ import annotations
 
 import argparse
+from collections.abc import Iterable
 from datetime import datetime
-from multiprocessing import Pool, cpu_count
+from multiprocessing import Pool
 from pathlib import Path
-from typing import Iterable, Optional
 
 import gcld3
-from loguru import logger
 
 # Module-level detector instance. Created once per worker process.
-_DETECTOR: Optional[gcld3.NNetLanguageIdentifier] = None
+_DETECTOR: gcld3.NNetLanguageIdentifier | None = None
 
 TEXT_EXTENSIONS: set[str] = {
     ".txt",
@@ -70,7 +69,7 @@ FIXED_WORKERS: int = 8
 
 # Type aliases
 LineFinding = tuple[int, str, str, float]
-FileResult = tuple[Path, Optional[list[LineFinding]], Optional[str]]
+FileResult = tuple[Path, list[LineFinding] | None, str | None]
 
 
 def _get_detector() -> gcld3.NNetLanguageIdentifier:
@@ -86,7 +85,7 @@ def is_likely_text_file(path: Path) -> bool:
     return path.suffix.lower() in TEXT_EXTENSIONS
 
 
-def detect_language(text: str) -> tuple[Optional[str], Optional[float], bool]:
+def detect_language(text: str) -> tuple[str | None, float | None, bool]:
     """Detect the language of a text snippet.
 
     Returns a tuple of (language_code, probability, is_reliable). For blank
@@ -114,7 +113,7 @@ def process_file(path: Path) -> FileResult:
         return path, None, f"Cannot access file: {exc}"
 
     try:
-        content: Optional[list[str]] = None
+        content: list[str] | None = None
         for encoding in ("utf-8", "latin-1", "cp1252"):
             try:
                 with open(path, "r", encoding=encoding) as handle:
@@ -231,16 +230,16 @@ def main() -> int:
     if args.extensions:
         extensions.update(args.extensions)
 
-    logger.info(f"Scanning directory: {args.directory}")
+    print(f"Scanning directory: {args.directory}")
     text_files = find_text_files(args.directory, extensions)
-    logger.info(f"Found {len(text_files)} text files to process")
+    print(f"Found {len(text_files)} text files to process")
 
     non_english_results: list[tuple[Path, list[LineFinding]]] = []
     errors: list[tuple[Path, str]] = []
     files_with_findings = 0
     total_non_eng_lines = 0
 
-    logger.info(f"Processing files using {FIXED_WORKERS} workers...")
+    print(f"Processing files using {FIXED_WORKERS} workers...")
     pool = Pool(processes=FIXED_WORKERS)
     try:
         async_results = [pool.apply_async(process_file, (f,)) for f in text_files]
@@ -249,7 +248,7 @@ def main() -> int:
         for async_result in async_results:
             completed += 1
             if completed % 100 == 0 or completed == total:
-                logger.info(f"Progress: {completed}/{total} files processed")
+                print(f"Progress: {completed}/{total} files processed")
             path, results, error = async_result.get()
             if error:
                 errors.append((path, error))
@@ -262,7 +261,7 @@ def main() -> int:
         pool.join()
 
     output_path = Path(args.output)
-    logger.info(f"Generating report: {output_path}")
+    print(f"Generating report: {output_path}")
     write_report(
         output_path=output_path,
         directory=args.directory,
@@ -273,14 +272,14 @@ def main() -> int:
         errors=errors,
     )
 
-    logger.info("=" * 40)
-    logger.info("Scan complete!")
-    logger.info(f"Files scanned: {len(text_files)}")
-    logger.info(f"Files with non-English content: {files_with_findings}")
-    logger.info(f"Total non-English lines found: {total_non_eng_lines}")
-    logger.info(f"Errors: {len(errors)}")
-    logger.info(f"Report saved to: {output_path.resolve()}")
-    logger.info("=" * 40)
+    print("=" * 40)
+    print("Scan complete!")
+    print(f"Files scanned: {len(text_files)}")
+    print(f"Files with non-English content: {files_with_findings}")
+    print(f"Total non-English lines found: {total_non_eng_lines}")
+    print(f"Errors: {len(errors)}")
+    print(f"Report saved to: {output_path.resolve()}")
+    print("=" * 40)
     return 0
 
 

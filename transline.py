@@ -17,10 +17,11 @@ import json
 import re
 import signal
 import sys
+from collections.abc import Iterable
 from datetime import datetime
 from multiprocessing.pool import AsyncResult, Pool
 from pathlib import Path
-from typing import Any, Final, Iterable
+from typing import Any, Final
 
 from deep_translator import GoogleTranslator
 from dh import get_nobinary
@@ -187,7 +188,7 @@ def drop_progress(path: Path) -> None:
 def process_file(path: Path) -> bool:
     """Translate every Chinese segment in ``path``; returns True on success."""
     global _interrupted
-    logger.info("📄 Processing: {}", path)
+    print("📄 Processing: {}", path)
     try:
         text, enc = read_text(path)
     except Exception as e:
@@ -202,7 +203,7 @@ def process_file(path: Path) -> bool:
             line_segments[i] = segments
 
     if not line_segments:
-        logger.info("✅ No Chinese characters found — skipping")
+        print("✅ No Chinese characters found — skipping")
         drop_progress(path)
         return True
 
@@ -218,16 +219,14 @@ def process_file(path: Path) -> bool:
 
     completed_segments: int = total_segments - len(tasks)
     if completed_segments > 0:
-        logger.info(
+        print(
             "🔄 Resuming: {}/{} segments already cached",
             completed_segments,
             total_segments,
         )
 
     if tasks and not _interrupted:
-        logger.info(
-            "⚡ Launching {} processes for {} segments...", POOL_SIZE, len(tasks)
-        )
+        print("⚡ Launching {} processes for {} segments...", POOL_SIZE, len(tasks))
         pool: Pool = Pool(processes=POOL_SIZE)
         try:
             async_results: list[
@@ -243,7 +242,7 @@ def process_file(path: Path) -> bool:
                 done[l_idx][s, e] = result_text
                 completed_segments += 1
                 status = "✓" if success else "❌ Failed"
-                logger.info(
+                print(
                     "[{:>4}/{}] {} line {}",
                     completed_segments,
                     total_segments,
@@ -276,7 +275,7 @@ def process_file(path: Path) -> bool:
     try:
         path.write_text("".join(out_content), encoding=enc, errors="replace")
         drop_progress(path)
-        logger.info("✅ Done.")
+        print("✅ Done.")
         return True
     except Exception as e:
         logger.error("Failed to write output: {}", e)
@@ -298,7 +297,7 @@ def main() -> int:
     if _interrupted:
         logger.warning("⚠️  Stopped early. Run again to resume.")
         return 130
-    logger.info("✅ All files processed successfully.")
+    print("✅ All files processed successfully.")
     return 0
 
 

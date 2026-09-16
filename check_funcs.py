@@ -6,7 +6,7 @@ that are not exported in __init__.py
 
 import ast
 from pathlib import Path
-from typing import Dict, List, Set
+from typing import Dict
 
 from loguru import logger
 
@@ -51,11 +51,10 @@ def extract_definitions(path: Path) -> dict[str, list[str]]:
 
         # Augmented assignments (e.g., counter += 1) - skip, not constants
         # AnnAssign (type-annotated) constants
-        elif isinstance(node, ast.AnnAssign):
-            if isinstance(node.target, ast.Name):
-                name = node.target.id
-                if name.isupper() and not name.startswith("_"):
-                    definitions["constants"].append(name)
+        elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
+            name = node.target.id
+            if name.isupper() and not name.startswith("_"):
+                definitions["constants"].append(name)
 
     return definitions
 
@@ -110,7 +109,7 @@ def extract_exports_from_init(init_path: Path) -> set[str]:
     return exported
 
 
-def check_directory(directory: Path = None) -> dict[str, dict[str, list[str]]]:
+def check_directory(directory: Path | None = None) -> dict[str, dict[str, list[str]]]:
     """
     Check all Python files in directory against __init__.py exports.
 
@@ -127,7 +126,7 @@ def check_directory(directory: Path = None) -> dict[str, dict[str, list[str]]]:
         logger.error(f"No __init__.py found in {directory}")
         return {}
 
-    logger.info(f"Reading exports from {init_path}")
+    print(f"Reading exports from {init_path}")
     exported = extract_exports_from_init(init_path)
     logger.debug(f"Found {len(exported)} exported names: {sorted(exported)}")
 
@@ -174,7 +173,7 @@ def main():
     )
 
     directory = Path.cwd()
-    logger.info(f"Checking package definitions in: {directory}")
+    print(f"Checking package definitions in: {directory}")
 
     missing = check_directory(directory)
 

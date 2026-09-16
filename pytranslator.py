@@ -163,7 +163,7 @@ def process_file(path: Path) -> bool:
             inner = tok.string.lstrip("#").strip()
             if is_non_english(inner):
                 translated = translate_text(inner)
-                logger.info("  [comment] %s -> %s", inner, translated)
+                print("  [comment] %s -> %s", inner, translated)
                 replacements.append((start_offset, end_offset, f"# {translated}"))
         elif tok.type == tokenize.STRING:
             is_print = (tok.start[0], tok.start[1]) in print_pos
@@ -183,7 +183,7 @@ def process_file(path: Path) -> bool:
                 if isinstance(inner, str) and is_non_english(inner):
                     translated = translate_text(inner)
                     label = "docstring" if is_doc else "print-str"
-                    logger.info("  [%s] %s -> %s", label, inner, translated)
+                    print("  [%s] %s -> %s", label, inner, translated)
                     escaped = translated.replace("\\", "\\\\").replace(
                         quote, f"\\{quote}"
                     )
@@ -210,7 +210,7 @@ def worker(path_str: str) -> None:
     path = Path(path_str)
     try:
         if process_file(path):
-            logger.info("[updated] %s", path)
+            print("[updated] %s", path)
     except Exception as e:
         logger.error("[failed] %s: %s", path, e)
 
@@ -222,14 +222,12 @@ def main() -> None:
         if not any(part in SKIP_DIRS for part in p.parts)
     ]
     if not files:
-        logger.info("No Python files found.")
+        print("No Python files found.")
         return
-    logger.info(
-        "Found %d files. Processing with %d workers...", len(files), MAX_WORKERS
-    )
+    print("Found %d files. Processing with %d workers...", len(files), MAX_WORKERS)
     with multiprocessing.Pool(processes=MAX_WORKERS) as pool:
         pool.map(worker, files)
-    logger.info("Done.")
+    print("Done.")
 
 
 if __name__ == "__main__":

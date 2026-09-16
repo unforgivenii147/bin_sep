@@ -22,9 +22,10 @@ import lzma
 import shutil
 import tarfile
 import time
+from collections.abc import Callable
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Any, Callable, TypedDict
+from typing import Any, TypedDict
 
 from dh import fsz
 from loguru import logger
@@ -173,13 +174,13 @@ def tar_subdir(subdir: Path, dry_run: bool, verbose: bool) -> Path | None:
     tar_path = subdir.parent / (subdir.name + ".tar")
     if dry_run:
         if verbose:
-            logger.info(f"  [dry-run] would tar {subdir}/ → {tar_path.name}")
+            print(f"  [dry-run] would tar {subdir}/ → {tar_path.name}")
         return tar_path
     try:
         with tarfile.open(tar_path, "w") as tf:
             tf.add(subdir, arcname=subdir.name)
         if verbose:
-            logger.info(
+            print(
                 f"  tarred {subdir.name}/ → {tar_path.name} "
                 f"({fsz(tar_path.stat().st_size)})"
             )
@@ -193,12 +194,12 @@ def remove_subdir(subdir: Path, dry_run: bool, verbose: bool) -> None:
     """Recursively delete the given subdirectory (unless `dry_run`)."""
     if dry_run:
         if verbose:
-            logger.info(f"  [dry-run] would remove {subdir}/")
+            print(f"  [dry-run] would remove {subdir}/")
         return
     try:
         shutil.rmtree(subdir)
         if verbose:
-            logger.info(f"  removed original dir: {subdir.name}/")
+            print(f"  removed original dir: {subdir.name}/")
     except Exception as exc:  # noqa: BLE001
         logger.warning(f"  WARNING — could not remove {subdir}: {exc}")
 
@@ -217,10 +218,10 @@ def run_parallel(
         ]
         for ar in async_results:
             res: TaskResult = ar.get()
-            logger.info(res["line"])
+            print(res["line"])
             if res.get("msg"):
                 if res["ok"]:
-                    logger.info(res["msg"])
+                    print(res["msg"])
                 else:
                     logger.error(res["msg"])
             if res["ok"]:
@@ -240,11 +241,11 @@ def do_compress(
             "⚠ lzmamt not found — falling back to stdlib lzma "
             "(single-threaded per file)."
         )
-        logger.info("  Install with: pip install lzmamt\n")
+        print("  Install with: pip install lzmamt\n")
     if tar_subdirs:
         subdirs = [p for p in root.iterdir() if p.is_dir()]
         if verbose:
-            logger.info(f"Taring {len(subdirs)} subdirectory/ies …")
+            print(f"Taring {len(subdirs)} subdirectory/ies …")
         tar_paths: list[tuple[Path, Path]] = []
         for sd in subdirs:
             tp = tar_subdir(sd, dry_run, verbose)
@@ -253,7 +254,7 @@ def do_compress(
         tar_files = [tp for _, tp in tar_paths]
         if tar_files:
             if verbose:
-                logger.info(
+                print(
                     f"Compressing {len(tar_files)} .tar archive(s) "
                     f"at level {LEVEL_LARGE} …"
                 )
@@ -278,7 +279,7 @@ def do_compress(
         loose = [p for p in root.iterdir() if p.is_file() and p.suffix != LZMA_EXT]
         if loose:
             if verbose:
-                logger.info(f"Compressing {len(loose)} loose file(s) …")
+                print(f"Compressing {len(loose)} loose file(s) …")
             run_parallel(
                 loose,
                 compress_file,
@@ -291,10 +292,10 @@ def do_compress(
     else:
         files = [p for p in root.rglob("*") if p.is_file() and p.suffix != LZMA_EXT]
         if not files:
-            logger.info("No files to compress.")
+            print("No files to compress.")
             return
         if verbose:
-            logger.info(
+            print(
                 f"Compressing {len(files)} file(s) with {WORKERS} processes "
                 f"× {threads} lzma threads each …"
             )
@@ -304,10 +305,10 @@ def do_compress(
             {"dry_run": dry_run, "verbose": verbose, "threads": threads},
         )
         elapsed = time.perf_counter() - start
-        logger.info(f"\nDone — {ok} compressed, {err} error(s) [{elapsed:.2f}s]")
+        print(f"\nDone — {ok} compressed, {err} error(s) [{elapsed:.2f}s]")
         return
     elapsed = time.perf_counter() - start
-    logger.info(f"\nDone [{elapsed:.2f}s]")
+    print(f"\nDone [{elapsed:.2f}s]")
 
 
 def do_decompress(root: Path, dry_run: bool, verbose: bool, threads: int) -> None:
@@ -315,17 +316,17 @@ def do_decompress(root: Path, dry_run: bool, verbose: bool, threads: int) -> Non
     start = time.perf_counter()
     files = [p for p in root.rglob("*") if p.is_file() and p.suffix == LZMA_EXT]
     if not files:
-        logger.info("No .xz files found.")
+        print("No .xz files found.")
         return
     if verbose:
-        logger.info(f"Decompressing {len(files)} file(s) with {WORKERS} workers …")
+        print(f"Decompressing {len(files)} file(s) with {WORKERS} workers …")
     ok, err = run_parallel(
         files,
         decompress_file,
         {"dry_run": dry_run, "verbose": verbose, "threads": threads},
     )
     elapsed = time.perf_counter() - start
-    logger.info(f"\nDone — {ok} decompressed, {err} error(s) [{elapsed:.2f}s]")
+    print(f"\nDone — {ok} decompressed, {err} error(s) [{elapsed:.2f}s]")
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -369,14 +370,14 @@ def main() -> int:
         parser.error(f"Not a directory: {root}")
     compress: bool = args.compress or not args.decompress
     if args.dry_run:
-        logger.info("[dry-run mode — no files will be modified]")
+        print("[dry-run mode — no files will be modified]")
     if args.verbose or args.dry_run:
         backend = "lzmamt" if HAS_LZMAMT else "stdlib lzma (single-thread fallback)"
-        logger.info(f"Root    : {root}")
-        logger.info(f"Mode    : {'compress' if compress else 'decompress'}")
-        logger.info(f"Backend : {backend}")
-        logger.info(f"Threads : {args.threads} (lzma) × {WORKERS} processes")
-        logger.info("")
+        print(f"Root    : {root}")
+        print(f"Mode    : {'compress' if compress else 'decompress'}")
+        print(f"Backend : {backend}")
+        print(f"Threads : {args.threads} (lzma) × {WORKERS} processes")
+        print()
     if compress:
         do_compress(
             root,

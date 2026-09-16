@@ -11,7 +11,7 @@ from __future__ import annotations
 import sys
 from multiprocessing.pool import AsyncResult, Pool
 from pathlib import Path
-from typing import List, Set, Tuple
+from typing import Set
 
 from loguru import logger
 
@@ -19,13 +19,13 @@ try:
     import pycurl  # type: ignore[import-untyped]
 
     HAS_PYCURL: bool = True
-    logger.info("Using pycurl backend")
+    print("Using pycurl backend")
 except ImportError:
     HAS_PYCURL = False
     try:
         import requests
 
-        logger.info("pycurl not available → falling back to requests")
+        print("pycurl not available → falling back to requests")
     except ImportError:
         logger.error("Neither pycurl nor requests is installed!")
         logger.error("Run: pip install pycurl requests")
@@ -81,8 +81,7 @@ def download_file(url: str, path: Path, timeout: int = DEFAULT_TIMEOUT) -> bool:
             )
             response.raise_for_status()
             with open(path, "wb") as f:
-                for chunk in response.iter_content(chunk_size=8192):
-                    f.write(chunk)
+                f.writelines(response.iter_content(chunk_size=8192))
         logger.success(f"Downloaded (requests): {path.name}")
         return True
     except Exception as e:
@@ -164,10 +163,10 @@ def main() -> int:
     original_lines, download_tasks = parse_urls_file(URLS_FILE)
 
     if not download_tasks:
-        logger.info("No valid URLs found in urls.txt")
+        print("No valid URLs found in urls.txt")
         return 0
 
-    logger.info(f"Found {len(download_tasks)} files to download.\n")
+    print(f"Found {len(download_tasks)} files to download.\n")
 
     successful_urls: set[str] = set()
     results: list[tuple[str, AsyncResult[bool]]] = []
@@ -188,13 +187,11 @@ def main() -> int:
 
     removed_count: int = update_urls_file(URLS_FILE, original_lines, successful_urls)
 
-    logger.info("=" * 40)
-    logger.info("Download session completed!")
-    logger.info(f"✅ Successfully downloaded : {removed_count} files")
-    logger.info(
-        f"❌ Remaining in urls.txt   : {len(download_tasks) - removed_count} files"
-    )
-    logger.info("-" * 40)
+    print("=" * 40)
+    print("Download session completed!")
+    print(f"✅ Successfully downloaded : {removed_count} files")
+    print(f"❌ Remaining in urls.txt   : {len(download_tasks) - removed_count} files")
+    print("-" * 40)
 
     return 0
 

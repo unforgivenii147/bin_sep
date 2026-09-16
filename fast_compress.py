@@ -18,9 +18,9 @@ import argparse
 import fnmatch
 import json
 import sys
+from collections.abc import Iterator
 from multiprocessing.pool import AsyncResult, Pool
 from pathlib import Path
-from typing import Iterator
 
 import zstandard as zstd
 from dh import fsz
@@ -301,13 +301,13 @@ def iter_files(base_dir: Path, compress: bool) -> Iterator[Path]:
     if skipped_symlinks > 0:
         logger.warning("Skipped {} symlinks", skipped_symlinks)
     if skipped_media > 0:
-        logger.info("Skipped {} media/binary files (already compressed)", skipped_media)
+        print("Skipped {} media/binary files (already compressed)", skipped_media)
     if skipped_extensions > 0:
-        logger.info("Skipped {} files with unwanted extensions", skipped_extensions)
+        print("Skipped {} files with unwanted extensions", skipped_extensions)
     if skipped_editable > 0:
-        logger.info("Skipped {} editable package directories", skipped_editable)
+        print("Skipped {} editable package directories", skipped_editable)
     if skipped_dirs > 0:
-        logger.info("Skipped {} excluded directories", skipped_dirs)
+        print("Skipped {} excluded directories", skipped_dirs)
 
 
 def compress_file(
@@ -383,11 +383,11 @@ def process_stream(
     remove_original: bool,
 ) -> None:
     """Walk base_dir and compress or decompress eligible files in parallel."""
-    logger.info(
+    print(
         "{} files (streaming)...",
         "Compressing" if compress else "Decompressing",
     )
-    logger.info("Remove original files: {}", "Yes" if remove_original else "No")
+    print("Remove original files: {}", "Yes" if remove_original else "No")
 
     stats = SpaceStats()
     total_submitted = 0
@@ -447,11 +447,11 @@ def process_stream(
 
     if compress and (stats.original_size > 0 or stats.compressed_size > 0):
         saved, ratio, percent_saved = stats.get_savings()
-        logger.info("📊 Compression Statistics:")
-        logger.info("   Original size:  {}", fsz(stats.original_size))
-        logger.info("   Compressed size: {}", fsz(stats.compressed_size))
-        logger.info("   Space saved:    {} ({:.1f}%)", fsz(saved), percent_saved)
-        logger.info("   Compression ratio: {:.1f}%", ratio)
+        print("📊 Compression Statistics:")
+        print("   Original size:  {}", fsz(stats.original_size))
+        print("   Compressed size: {}", fsz(stats.compressed_size))
+        print("   Space saved:    {} ({:.1f}%)", fsz(saved), percent_saved)
+        print("   Compression ratio: {:.1f}%", ratio)
 
     if skipped > 0:
         logger.warning("Skipped {} files (already exist or invalid format)", skipped)
@@ -471,7 +471,7 @@ def process_stream(
                 success_count,
             )
             if remove_original:
-                logger.info("   Original files have been removed.")
+                print("   Original files have been removed.")
         else:
             logger.warning("No files were processed.")
 
@@ -514,7 +514,7 @@ def main() -> int:
 
     if not args.compress and not args.decompress:
         args.compress = True
-        logger.info("No action specified, defaulting to compression mode")
+        print("No action specified, defaulting to compression mode")
 
     base_dir = Path(args.dir).resolve()
     if not base_dir.exists():
@@ -526,13 +526,13 @@ def main() -> int:
 
     remove_original = not args.keep
 
-    logger.info("Working directory: {}", base_dir)
-    logger.info("Mode: {}", "Compression" if args.compress else "Decompression")
-    logger.info("Pool workers: {}", POOL_WORKERS)
+    print("Working directory: {}", base_dir)
+    print("Mode: {}", "Compression" if args.compress else "Decompression")
+    print("Pool workers: {}", POOL_WORKERS)
     if args.compress:
-        logger.info("Compression level: {}", args.level)
-    logger.info("Keep original files: {}", "Yes" if args.keep else "No")
-    logger.info("Scanning directory tree...")
+        print("Compression level: {}", args.level)
+    print("Keep original files: {}", "Yes" if args.keep else "No")
+    print("Scanning directory tree...")
 
     process_stream(base_dir, args.compress, args.level, remove_original)
     return 0

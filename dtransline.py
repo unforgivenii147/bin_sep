@@ -49,7 +49,7 @@ def translate_text(
 
 
 def process_file(path: Path) -> None:
-    logger.info("Processing: %s", path)
+    print("Processing: %s", path)
     try:
         content = path.read_text(encoding="utf-8", errors="ignore")
         lines = content.splitlines(keepends=True)
@@ -64,14 +64,14 @@ def process_file(path: Path) -> None:
                 new_lines.append(f"{leading_ws}{translated}{trailing_ws}")
                 translated_count += 1
                 if translated_count % 10 == 0:
-                    logger.info("  Progress: %d lines translated", translated_count)
+                    print("  Progress: %d lines translated", translated_count)
             else:
                 new_lines.append(line)
         if translated_count == 0:
-            logger.info("  No non-English lines found, skipping.")
+            print("  No non-English lines found, skipping.")
             return
         path.write_text("".join(new_lines), encoding="utf-8", errors="ignore")
-        logger.info("  ✓ Completed: %d lines translated", translated_count)
+        print("  ✓ Completed: %d lines translated", translated_count)
     except Exception as e:
         logger.error("  ✗ Error processing %s: %s", path, e)
 
@@ -116,18 +116,16 @@ def main() -> None:
                     ):
                         files_to_process.append(fp)
     if not files_to_process:
-        logger.info("No files to process.")
+        print("No files to process.")
         return
-    logger.info(
-        "Found %d files. Using %d workers...", len(files_to_process), args.workers
-    )
+    print("Found %d files. Using %d workers...", len(files_to_process), args.workers)
     if args.workers == 1:
         for fp in files_to_process:
             worker(fp)
     else:
         with mp.Pool(processes=args.workers) as pool:
             pool.map(worker, files_to_process)
-    logger.info("\n✓ All translations completed!")
+    print("\n✓ All translations completed!")
 
 
 if __name__ == "__main__":

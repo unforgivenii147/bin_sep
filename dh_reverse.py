@@ -321,18 +321,18 @@ def main(argv: list[str] | None = None) -> int:
         logger.error(f"dh package not found at {dh_path}")
         return 1
 
-    logger.info(f"Loading dh functions from {dh_path}...")
+    print(f"Loading dh functions from {dh_path}...")
     dh_functions = load_dh_functions(dh_path)
-    logger.info(f"Loaded {len(dh_functions)} functions from dh package\n")
+    print(f"Loaded {len(dh_functions)} functions from dh package\n")
 
     target_files = collect_target_files(args.paths)
     if not target_files:
-        logger.info("No Python files found to process.")
+        print("No Python files found to process.")
         return 0
 
-    logger.info(f"Processing {len(target_files)} Python files...\n")
+    print(f"Processing {len(target_files)} Python files...\n")
     mode = "DRY RUN" if not args.apply else "APPLYING CHANGES"
-    logger.info(f"Mode: {mode}\n")
+    print(f"Mode: {mode}\n")
 
     updated_count = 0
     work_items: list[tuple[Path, dict[str, tuple[str, str]], bool, bool]] = [
@@ -349,15 +349,15 @@ def main(argv: list[str] | None = None) -> int:
     for result in async_results:
         _path, updated, message = result.get()
         if message:
-            logger.info(message)
+            print(message)
         if updated:
             updated_count += 1
 
-    logger.info("=" * 40)
+    print("=" * 40)
     if args.apply:
-        logger.info(f"Updated {updated_count} files")
+        print(f"Updated {updated_count} files")
     else:
-        logger.info(f"Would update {updated_count} files (use -a/--apply to apply)")
+        print(f"Would update {updated_count} files (use -a/--apply to apply)")
     return 0
 
 

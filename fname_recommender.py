@@ -202,35 +202,35 @@ def report_stats(stats_list: list[FileStats], cwd: Path, apply: bool) -> None:
     errors = sum(1 for s in stats_list if s.error)
     mode = "APPLY" if apply else "DRY RUN"
 
-    logger.info("=" * 78)
-    logger.info(f"  Mode: {mode}")
-    logger.info(
+    print("=" * 78)
+    print(f"  Mode: {mode}")
+    print(
         f"  Total files: {len(stats_list)} | Meaningful: {meaningful} | Unnamed: {unnamed}"
     )
-    logger.info(f"  Errors: {errors} | Renamed: {renamed}")
-    logger.info("=" * 78)
+    print(f"  Errors: {errors} | Renamed: {renamed}")
+    print("=" * 78)
 
     if unnamed > 0:
-        logger.info("UNNAMED FILES:")
+        print("UNNAMED FILES:")
         for stats in stats_list:
             if not stats.has_meaning:
                 try:
                     rel_path = stats.path.relative_to(cwd)
                 except ValueError:
                     rel_path = stats.path
-                logger.info(f"  📄 {rel_path}")
-                logger.info(f"     Current: {stats.current_name}")
+                print(f"  📄 {rel_path}")
+                print(f"     Current: {stats.current_name}")
                 if stats.suggestion:
-                    logger.info(f"     Suggest: {stats.suggestion}")
+                    print(f"     Suggest: {stats.suggestion}")
                 else:
-                    logger.info("     Suggest: (no suggestion available)")
+                    print("     Suggest: (no suggestion available)")
                 if stats.error:
-                    logger.info(f"     Error:   {stats.error}")
+                    print(f"     Error:   {stats.error}")
                 elif stats.renamed:
-                    logger.info(f"     ✓ Renamed to: {stats.suggestion}")
+                    print(f"     ✓ Renamed to: {stats.suggestion}")
 
     if errors > 0:
-        logger.info("FILES WITH ERRORS:")
+        print("FILES WITH ERRORS:")
         for stats in stats_list:
             if stats.error:
                 try:

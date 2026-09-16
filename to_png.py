@@ -7,11 +7,10 @@ files are deleted on success. Files are processed via a fixed
 multiprocessing.Pool of 8 workers. Logging via loguru.
 """
 
-import sys
 from multiprocessing import Pool
 from multiprocessing.pool import AsyncResult
 from pathlib import Path
-from typing import Any, Callable, Final, Optional
+from typing import Any, Final
 
 from dh import fsz, gsz, is_image  # type: ignore[import-untyped]
 from loguru import logger
@@ -49,8 +48,8 @@ except ImportError:
 
 if not _CV2_AVAILABLE:
     try:
-        import skimage.io as _skio
         import numpy as _np2
+        import skimage.io as _skio
 
         skio = _skio
         np = _np2
@@ -265,10 +264,10 @@ def main() -> None:
     files: list[Path] = gather_images(Path())
 
     if not files:
-        logger.info("No image files detected.")
+        print("No image files detected.")
         return
 
-    logger.info(f"Converting {len(files)} files...")
+    print(f"Converting {len(files)} files...")
 
     changed_count: int = 0
     with Pool(processes=MAX_WORKERS) as pool:
@@ -283,17 +282,17 @@ def main() -> None:
                 continue
             if ok:
                 changed_count += 1
-                logger.info(f"✓ {message}")
+                print(f"✓ {message}")
             else:
                 logger.warning(f"✗ {message}")
 
-    logger.info(f"Done. {changed_count} files modified.")
+    print(f"Done. {changed_count} files modified.")
 
     delta: int = gsz(".") - start_size
     if delta < 0:
-        logger.info(f"size reduced: - {fsz(delta)}")
+        print(f"size reduced: - {fsz(delta)}")
     else:
-        logger.info(f"size increased: + {fsz(delta)}")
+        print(f"size increased: + {fsz(delta)}")
 
 
 if __name__ == "__main__":

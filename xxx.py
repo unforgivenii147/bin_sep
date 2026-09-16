@@ -169,10 +169,10 @@ def main() -> int:
     cwd: Path = Path.cwd()
     archives: list[Path] = find_archives(cwd)
     if not archives:
-        logger.info("No archives found in current directory")
+        print("No archives found in current directory")
         return 0
 
-    logger.info(f"Found {len(archives)} archive(s)\n--- Checking integrity ---")
+    print(f"Found {len(archives)} archive(s)\n--- Checking integrity ---")
 
     valid_archives: list[Path] = []
     with Pool(processes=MAX_WORKERS) as pool:
@@ -182,7 +182,7 @@ def main() -> int:
         for archive, (is_valid, message) in zip(
             archives, _collect_results(check_results)
         ):
-            logger.info(message)
+            print(message)
             if is_valid:
                 valid_archives.append(archive)
 
@@ -190,14 +190,14 @@ def main() -> int:
         logger.warning("No valid archives to extract")
         return 0
 
-    logger.info(f"\n--- Extracting {len(valid_archives)} valid archive(s) ---")
+    print(f"\n--- Extracting {len(valid_archives)} valid archive(s) ---")
     failed: list[Path] = []
     with Pool(processes=MAX_WORKERS) as pool:
         extract_results: list[ApplyResult[tuple[Path, bool, str]]] = [
             pool.apply_async(extract_archive, (archive,)) for archive in valid_archives
         ]
         for path, success, message in _collect_extract_results(extract_results):
-            logger.info(message)
+            print(message)
             if not success:
                 failed.append(path)
 

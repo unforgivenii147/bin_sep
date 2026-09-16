@@ -13,7 +13,7 @@ from __future__ import annotations
 import multiprocessing
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Union
 
 import numpy as np
 import pytesseract
@@ -59,7 +59,7 @@ def deskew(image: np.ndarray) -> np.ndarray:
     return image
 
 
-def preprocess_image_cv2(img_path: Path) -> Optional[np.ndarray]:
+def preprocess_image_cv2(img_path: Path) -> np.ndarray | None:
     """
     Preprocess an image using OpenCV.
 
@@ -85,7 +85,7 @@ def preprocess_image_cv2(img_path: Path) -> Optional[np.ndarray]:
     return deskew(cleaned)
 
 
-def preprocess_image_pillow(img_path: Path) -> Optional["Image.Image"]:
+def preprocess_image_pillow(img_path: Path) -> Image.Image | None:
     """
     Preprocess an image using Pillow as a fallback.
 
@@ -111,7 +111,7 @@ def preprocess_image_pillow(img_path: Path) -> Optional["Image.Image"]:
         return None
 
 
-def preprocess_image(img_path: Path) -> Optional[ImageType]:
+def preprocess_image(img_path: Path) -> ImageType | None:
     """
     Preprocess an image using OpenCV if available, otherwise Pillow.
 
@@ -219,12 +219,12 @@ def process() -> None:
     image_files = get_image_files()
     total_images = len(image_files)
     if total_images == 0:
-        logger.info("No images found to process.")
+        print("No images found to process.")
         return
 
-    logger.info(f"📊 Found {total_images} images to process")
-    logger.info(f"⚡ Using {POOL_SIZE} workers for parallel processing")
-    logger.info("🔄 Processing images in-place...\n")
+    print(f"📊 Found {total_images} images to process")
+    print(f"⚡ Using {POOL_SIZE} workers for parallel processing")
+    print("🔄 Processing images in-place...\n")
 
     processed_count = 0
     error_count = 0
@@ -249,7 +249,7 @@ def process() -> None:
                     error_count += 1
                     status = "❌"
                 relative = path.relative_to(BASE_DIR)
-                logger.info(
+                print(
                     f"{status} [{processed_count + error_count}/{total_images}] {relative}"
                 )
                 if result.get("error"):
@@ -263,19 +263,19 @@ def process() -> None:
         pool.close()
         pool.join()
 
-    logger.info("=" * 40)
-    logger.info("📊 Processing Summary:")
-    logger.info(f"   ✅ Successfully processed: {processed_count} images")
-    logger.info(f"   ❌ Errors: {error_count} images")
-    logger.info(f"   📁 Total images: {total_images}")
+    print("=" * 40)
+    print("📊 Processing Summary:")
+    print(f"   ✅ Successfully processed: {processed_count} images")
+    print(f"   ❌ Errors: {error_count} images")
+    print(f"   📁 Total images: {total_images}")
     if processed_count > 0:
         size_reduction = (
             (total_before - total_after) / total_before * 100 if total_before > 0 else 0
         )
-        logger.info(f"   📦 Total size before: {total_before / (1024 * 1024):.2f} MB")
-        logger.info(f"   📦 Total size after: {total_after / (1024 * 1024):.2f} MB")
-        logger.info(f"   📉 Size reduction: {size_reduction:.1f}%")
-    logger.info("-" * 40)
+        print(f"   📦 Total size before: {total_before / (1024 * 1024):.2f} MB")
+        print(f"   📦 Total size after: {total_after / (1024 * 1024):.2f} MB")
+        print(f"   📉 Size reduction: {size_reduction:.1f}%")
+    print("-" * 40)
 
 
 def main() -> None:
@@ -286,7 +286,7 @@ def main() -> None:
     try:
         input()
     except KeyboardInterrupt:
-        logger.info("\n❌ Cancelled by user.")
+        print("\n❌ Cancelled by user.")
         sys.exit(0)
     process()
 

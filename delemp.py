@@ -21,9 +21,10 @@ from __future__ import annotations
 
 import argparse
 import mmap
+from collections.abc import Sequence
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Final, Sequence
+from typing import Final
 
 from binaryornot.check import is_binary
 from loguru import logger

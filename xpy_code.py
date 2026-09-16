@@ -15,8 +15,6 @@ from multiprocessing.pool import AsyncResult
 from pathlib import Path
 from typing import Final
 
-from loguru import logger
-
 TARGET_NAMES: Final[frozenset[str]] = frozenset({"PKGINFO", "METADATA", "PKG-INFO"})
 TARGET_EXTENSIONS: Final[frozenset[str]] = frozenset({".md", ".txt", ".html"})
 
@@ -197,10 +195,10 @@ def main() -> None:
 
     target_files: list[Path] = find_target_files(input_paths)
     if not target_files:
-        logger.info("No target files found.")
+        print("No target files found.")
         return
 
-    logger.info(f"Found {len(target_files)} target files. Processing...")
+    print(f"Found {len(target_files)} target files. Processing...")
 
     results: list[ProcessResult] = []
 
@@ -211,11 +209,11 @@ def main() -> None:
         for async_res in async_results:
             file_path, saved = async_res.get()
             results.append((file_path, saved))
-            logger.info(f"  ✓ {file_path}: {len(saved)} block(s) extracted")
+            print(f"  ✓ {file_path}: {len(saved)} block(s) extracted")
 
     total_blocks: int = sum(len(saved) for _, saved in results)
-    logger.info(f"Done! Extracted {total_blocks} Python block(s) to '{OUTPUT_DIR}/'")
-    logger.info("Reference headers in each file indicate the source.")
+    print(f"Done! Extracted {total_blocks} Python block(s) to '{OUTPUT_DIR}/'")
+    print("Reference headers in each file indicate the source.")
 
 
 if __name__ == "__main__":

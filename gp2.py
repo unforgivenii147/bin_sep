@@ -7,8 +7,7 @@ from datetime import datetime
 from pathlib import Path
 
 from dotenv import load_dotenv
-from git import Repo
-from git import exc as GitExc
+from git import Repo, exc as GitExc
 
 load_dotenv(Path.home() / ".env")
 GITHUB_USERNAME = "unforgivenii147"

@@ -73,8 +73,7 @@ def ensure_age_key() -> str:
         # age-keygen writes private key (with public key as comment) to file
         out = subprocess.run(
             [which("age-keygen") or "age-keygen", "-o", AGE_KEY],
-            stderr=subprocess.PIPE,
-            stdout=subprocess.PIPE,
+            capture_output=True,
         )
         if out.returncode != 0:
             print(out.stderr.decode(), file=sys.stderr)

@@ -197,15 +197,11 @@ def discover_files(directories: list[str]) -> tuple[list[Path], int]:
 
 def print_header() -> None:
     """Log the application header banner."""
-    logger.info(
-        f"{ANSI.CYAN}╔════════════════════════════════════════════╗{ANSI.RESET}"
-    )
-    logger.info(
+    print(f"{ANSI.CYAN}╔════════════════════════════════════════════╗{ANSI.RESET}")
+    print(
         f"{ANSI.CYAN}║{ANSI.RESET}         Blank Line Remover              {ANSI.CYAN}║{ANSI.RESET}"
     )
-    logger.info(
-        f"{ANSI.CYAN}╚════════════════════════════════════════════╝{ANSI.RESET}"
-    )
+    print(f"{ANSI.CYAN}╚════════════════════════════════════════════╝{ANSI.RESET}")
 
 
 def print_directory_list(directories: list[str]) -> None:
@@ -215,9 +211,9 @@ def print_directory_list(directories: list[str]) -> None:
     Args:
         directories: List of directory paths as strings.
     """
-    logger.info("Processing directories:")
+    print("Processing directories:")
     for dir_str in directories:
-        logger.info(f"  {ANSI.DIM}•{ANSI.RESET} {Path(dir_str).resolve()}")
+        print(f"  {ANSI.DIM}•{ANSI.RESET} {Path(dir_str).resolve()}")
 
 
 def print_mode(remove_spaces: bool) -> None:
@@ -228,16 +224,16 @@ def print_mode(remove_spaces: bool) -> None:
         remove_spaces: If True, whitespace-only lines are also removed.
     """
     if remove_spaces:
-        logger.info(
+        print(
             f"Mode: {ANSI.BOLD}Remove blank lines and whitespace-only lines{ANSI.RESET}"
         )
     else:
-        logger.info(f"Mode: {ANSI.BOLD}Remove blank lines only{ANSI.RESET}")
+        print(f"Mode: {ANSI.BOLD}Remove blank lines only{ANSI.RESET}")
 
 
 def print_separator() -> None:
     """Log a horizontal separator line."""
-    logger.info(f"{ANSI.CYAN}{'─' * 40}{ANSI.RESET}")
+    print(f"{ANSI.CYAN}{'─' * 40}{ANSI.RESET}")
 
 
 def print_results(stats: ProcessingStats, show_binary: bool = False) -> None:
@@ -256,34 +252,32 @@ def print_results(stats: ProcessingStats, show_binary: bool = False) -> None:
     errors: list[FileResult] = [r for r in stats.results if r.status == "error"]
 
     if processed:
-        logger.info(f"{ANSI.GREEN}✓ Modified files:{ANSI.RESET}")
+        print(f"{ANSI.GREEN}✓ Modified files:{ANSI.RESET}")
         for result in sorted(processed, key=lambda r: r.path):
             try:
                 rel_path = result.path.relative_to(Path.cwd())
             except ValueError:
                 rel_path = result.path
-            logger.info(f"  {ANSI.GREEN}●{ANSI.RESET} {rel_path}")
-            logger.info(
+            print(f"  {ANSI.GREEN}●{ANSI.RESET} {rel_path}")
+            print(
                 f"    {ANSI.DIM}Lines: {result.total_lines}  →  Removed: {result.removed_lines}{ANSI.RESET}"
             )
 
     if unchanged:
-        logger.info(f"{ANSI.DIM}○ Unchanged files (no blank lines):{ANSI.RESET}")
+        print(f"{ANSI.DIM}○ Unchanged files (no blank lines):{ANSI.RESET}")
         for result in sorted(unchanged, key=lambda r: r.path)[:MAX_PREVIEW_FILES]:
             try:
                 rel_path = result.path.relative_to(Path.cwd())
             except ValueError:
                 rel_path = result.path
-            logger.info(f"  {ANSI.DIM}○ {rel_path}{ANSI.RESET}")
+            print(f"  {ANSI.DIM}○ {rel_path}{ANSI.RESET}")
         if len(unchanged) > MAX_PREVIEW_FILES:
-            logger.info(
+            print(
                 f"  {ANSI.DIM}... and {len(unchanged) - MAX_PREVIEW_FILES} more{ANSI.RESET}"
             )
 
     if skipped_binary:
-        logger.info(
-            f"{ANSI.YELLOW}⊘ Skipped binary files: {len(skipped_binary)}{ANSI.RESET}"
-        )
+        print(f"{ANSI.YELLOW}⊘ Skipped binary files: {len(skipped_binary)}{ANSI.RESET}")
         preview: list[FileResult] = (
             skipped_binary
             if show_binary
@@ -294,14 +288,14 @@ def print_results(stats: ProcessingStats, show_binary: bool = False) -> None:
                 rel_path = result.path.relative_to(Path.cwd())
             except ValueError:
                 rel_path = result.path
-            logger.info(f"  {ANSI.YELLOW}⊘ {rel_path}{ANSI.RESET}")
+            print(f"  {ANSI.YELLOW}⊘ {rel_path}{ANSI.RESET}")
         if not show_binary and len(skipped_binary) > MAX_PREVIEW_FILES:
-            logger.info(
+            print(
                 f"  {ANSI.YELLOW}... and {len(skipped_binary) - MAX_PREVIEW_FILES} more binary files{ANSI.RESET}"
             )
 
     if errors:
-        logger.info(f"{ANSI.RED}✗ Errors:{ANSI.RESET}")
+        print(f"{ANSI.RED}✗ Errors:{ANSI.RESET}")
         for result in sorted(errors, key=lambda r: r.path):
             try:
                 rel_path = result.path.relative_to(Path.cwd())
@@ -319,22 +313,18 @@ def print_summary(stats: ProcessingStats) -> None:
         stats: Aggregated processing statistics.
     """
     print_separator()
-    logger.info(f"{ANSI.BOLD}Summary:{ANSI.RESET}")
-    logger.info(
-        f"  Total files found:     {ANSI.BOLD}{stats.total_files:,}{ANSI.RESET}"
-    )
-    logger.info(f"  Text files processed:  {ANSI.BOLD}{stats.text_files:,}{ANSI.RESET}")
-    logger.info(
-        f"  Binary files skipped:  {ANSI.BOLD}{stats.binary_files:,}{ANSI.RESET}"
-    )
-    logger.info(
+    print(f"{ANSI.BOLD}Summary:{ANSI.RESET}")
+    print(f"  Total files found:     {ANSI.BOLD}{stats.total_files:,}{ANSI.RESET}")
+    print(f"  Text files processed:  {ANSI.BOLD}{stats.text_files:,}{ANSI.RESET}")
+    print(f"  Binary files skipped:  {ANSI.BOLD}{stats.binary_files:,}{ANSI.RESET}")
+    print(
         f"  Files modified:        {ANSI.BOLD}{ANSI.GREEN}{stats.files_modified:,}{ANSI.RESET}"
     )
-    logger.info(
+    print(
         f"  Lines removed:         {ANSI.BOLD}{ANSI.GREEN}{stats.lines_removed:,}{ANSI.RESET}"
     )
     if stats.errors_count > 0:
-        logger.info(
+        print(
             f"  Errors:                {ANSI.BOLD}{ANSI.RED}{stats.errors_count:,}{ANSI.RESET}"
         )
     print_separator()
@@ -382,15 +372,15 @@ def main() -> int:
     print_directory_list(args.directories)
     print_mode(args.space)
 
-    logger.info("Scanning for files... ")
+    print("Scanning for files... ")
     files, _skipped_dirs = discover_files(args.directories)
-    logger.info(f"Done! Found {ANSI.BOLD}{len(files):,}{ANSI.RESET} files.")
+    print(f"Done! Found {ANSI.BOLD}{len(files):,}{ANSI.RESET} files.")
 
     if not files:
         logger.warning(f"{ANSI.YELLOW}No files found to process.{ANSI.RESET}")
         return 0
 
-    logger.info(
+    print(
         f"Processing files...\n(Using {ANSI.BOLD}{NUM_WORKERS}{ANSI.RESET} worker processes)"
     )
 
@@ -425,14 +415,14 @@ def main() -> int:
 
     elapsed: float = time.time() - start_time
 
-    logger.info(
+    print(
         f"  {ANSI.GREEN}Progress: Complete!{ANSI.RESET} ({ANSI.BOLD}{stats.text_files:,}{ANSI.RESET} text, {ANSI.BOLD}{stats.binary_files:,}{ANSI.RESET} binary)"
     )
 
     print_separator()
     print_results(stats, args.show_binary)
     print_summary(stats)
-    logger.info(f"Completed in {ANSI.DIM}{elapsed:.2f}s{ANSI.RESET}")
+    print(f"Completed in {ANSI.DIM}{elapsed:.2f}s{ANSI.RESET}")
 
     return 0 if stats.errors_count == 0 else 1
 

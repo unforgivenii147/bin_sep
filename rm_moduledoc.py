@@ -82,7 +82,7 @@ def clean_single_file(path: Path) -> None:
         return
 
     if not lines:
-        logger.info("Skipped empty file: {}", path.name)
+        print("Skipped empty file: {}", path.name)
         return
 
     pattern: re.Pattern[str] = _build_pattern(path.name)
@@ -96,7 +96,7 @@ def clean_single_file(path: Path) -> None:
             break
 
     if removed_index is None:
-        logger.info(
+        print(
             "No automated docstring in top {} lines of: {}",
             SCAN_LIMIT,
             path.name,
@@ -141,7 +141,7 @@ def main() -> int:
         logger.warning("No Python files found in the current directory.")
         return 0
 
-    logger.info(
+    print(
         "Scanning the top {} lines of {} files with {} workers...",
         SCAN_LIMIT,
         len(py_files),

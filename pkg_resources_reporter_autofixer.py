@@ -15,10 +15,10 @@ from __future__ import annotations
 import argparse
 import re
 import sys
+from collections.abc import Iterator, Sequence
 from dataclasses import dataclass, field
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Iterator, List, Optional, Sequence, Tuple
 
 from loguru import logger
 
@@ -297,7 +297,7 @@ def _build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main(argv: Optional[Sequence[str]] = None) -> int:
+def main(argv: Sequence[str] | None = None) -> int:
     """Entry point: scan (and optionally autofix) ``pkg_resources`` usages."""
     parser = _build_parser()
     args = parser.parse_args(argv)
@@ -305,7 +305,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     root = Path.cwd()
     files: list[Path] = list(iter_python_files(root))
     if not files:
-        logger.info("no .py files found")
+        print("no .py files found")
         return 0
 
     total_findings = 0
@@ -330,20 +330,20 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             continue
         files_with_findings += 1
         if not args.quiet:
-            logger.info(f"== {rep.path} ==")
+            print(f"== {rep.path} ==")
         for f in rep.findings:
             total_findings += 1
             tag = "AUTOFIX" if f.autofixable else "MANUAL"
             if not args.quiet:
-                logger.info(f"  {f.lineno}:{f.col}  [{tag}] ({f.kind})  {f.pattern!r}")
-                logger.info(f"      | {f.line.strip()}")
+                print(f"  {f.lineno}:{f.col}  [{tag}] ({f.kind})  {f.pattern!r}")
+                print(f"      | {f.line.strip()}")
 
-    logger.info(f"scanned files      : {len(files)}")
-    logger.info(f"files with findings: {files_with_findings}")
-    logger.info(f"total findings     : {total_findings}")
+    print(f"scanned files      : {len(files)}")
+    print(f"files with findings: {files_with_findings}")
+    print(f"total findings     : {total_findings}")
 
     if args.autofix:
-        logger.info("--autofix enabled--")
+        print("--autofix enabled--")
         with Pool(processes=POOL_SIZE) as pool:
             targets: list[Path] = [r.path for r in reports if r.has_findings]
             async_results = [pool.apply_async(autofix_file, (p,)) for p in targets]
@@ -355,15 +355,15 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                     continue
                 if changed:
                     autofixed_files += 1
-                    logger.info(f"  fixed: {p}")
+                    print(f"  fixed: {p}")
                     for n in notes:
-                        logger.info(f"      - {n}")
+                        print(f"      - {n}")
                 else:
                     if notes:
-                        logger.info(f"  no-op: {p}")
+                        print(f"  no-op: {p}")
                         for n in notes:
-                            logger.info(f"      - {n}")
-        logger.info(f"files autofixed    : {autofixed_files}")
+                            print(f"      - {n}")
+        print(f"files autofixed    : {autofixed_files}")
 
     return 0 if total_findings == 0 or not args.autofix else 1
 

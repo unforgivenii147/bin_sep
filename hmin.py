@@ -28,11 +28,12 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from collections.abc import Iterable
 from dataclasses import dataclass
 from multiprocessing import Pool
 from multiprocessing.pool import AsyncResult
 from pathlib import Path
-from typing import Any, Final, Iterable
+from typing import Any, Final
 
 from loguru import logger
 
@@ -210,8 +211,8 @@ class HTMLMinifier:
             return
 
         total_files = len(html_files)
-        logger.info(f"Found {total_files} HTML file(s) to minify")
-        logger.info("=" * 40)
+        print(f"Found {total_files} HTML file(s) to minify")
+        print("=" * 40)
 
         successful = 0
         failed = 0
@@ -308,9 +309,9 @@ class HTMLMinifier:
         minified_mb = total_minified / (1024 * 1024)
         saved_mb = total_saved / (1024 * 1024)
 
-        logger.info("=" * 40)
-        logger.info("Summary")
-        logger.info("=" * 40)
+        print("=" * 40)
+        print("Summary")
+        print("=" * 40)
         logger.opt(colors=True).info(f"<white>Files processed:  {total}</white>")
         logger.opt(colors=True).info(f"<green>✓ Successful:     {successful}</green>")
         if failed > 0:
@@ -324,7 +325,7 @@ class HTMLMinifier:
         logger.opt(colors=True).info(
             f"<green>Total saved:      {saved_mb:.2f} MB ({overall_ratio:.1f}%)</green>"
         )
-        logger.info("=" * 40)
+        print("=" * 40)
 
 
 def _configure_logger(no_color: bool) -> None:

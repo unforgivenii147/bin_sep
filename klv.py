@@ -9,7 +9,7 @@ import sys
 from collections import defaultdict
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from loguru import logger
 from packaging import version as pkg_version
@@ -20,7 +20,7 @@ WHEEL_EXTENSION: str = ".whl"
 DEB_EXTENSION: str = ".deb"
 
 
-def parse_wheel_version(filename: str) -> Optional[tuple[str, str]]:
+def parse_wheel_version(filename: str) -> tuple[str, str] | None:
     """
     Parse a wheel filename into package name and version.
 
@@ -57,7 +57,7 @@ def parse_wheel_version(filename: str) -> Optional[tuple[str, str]]:
     return None
 
 
-def parse_deb_version(filename: str) -> Optional[tuple[str, str]]:
+def parse_deb_version(filename: str) -> tuple[str, str] | None:
     """
     Parse a deb filename into package name and version.
 
@@ -105,7 +105,7 @@ def compare_versions(ver1: str, ver2: str) -> int:
             return 0
 
 
-def process_file(path: Path, file_type: str) -> Optional[tuple[str, str, Path]]:
+def process_file(path: Path, file_type: str) -> tuple[str, str, Path] | None:
     """
     Process a single package file and extract its name and version.
 
@@ -119,7 +119,7 @@ def process_file(path: Path, file_type: str) -> Optional[tuple[str, str, Path]]:
     try:
         filename: str = path.name
         if file_type == "wheel" and filename.endswith(WHEEL_EXTENSION):
-            parsed: Optional[tuple[str, str]] = parse_wheel_version(filename)
+            parsed: tuple[str, str] | None = parse_wheel_version(filename)
             if parsed:
                 pkg_name, version = parsed
                 return pkg_name, version, path
@@ -133,7 +133,7 @@ def process_file(path: Path, file_type: str) -> Optional[tuple[str, str, Path]]:
     return None
 
 
-def _process_file_wrapper(args: tuple[Path, str]) -> Optional[tuple[str, str, Path]]:
+def _process_file_wrapper(args: tuple[Path, str]) -> tuple[str, str, Path] | None:
     """
     Wrapper for process_file to be used with multiprocessing.Pool.apply_async.
 
@@ -174,7 +174,7 @@ def scan_directory(
     for ext in extensions:
         files_to_process.extend(directory.rglob(f"*{ext}"))
 
-    logger.info(f"Found {len(files_to_process)} files to process...")
+    print(f"Found {len(files_to_process)} files to process...")
 
     tasks: list[tuple[Path, str]] = []
     for path in files_to_process:
@@ -188,7 +188,7 @@ def scan_directory(
             pool.apply_async(_process_file_wrapper, (task,)) for task in tasks
         ]
         for async_result in async_results:
-            result: Optional[tuple[str, str, Path]] = async_result.get()
+            result: tuple[str, str, Path] | None = async_result.get()
             if result:
                 pkg_name, version, path = result
                 packages[pkg_name].append((version, path))
@@ -198,7 +198,7 @@ def scan_directory(
 
 def get_latest_version(
     versions: list[tuple[str, Path]],
-) -> Optional[tuple[str, Path]]:
+) -> tuple[str, Path] | None:
     """
     Get the latest version from a list of (version, path) tuples.
 
@@ -234,22 +234,22 @@ def keep_latest_versions(
     for pkg_name, versions in packages.items():
         if len(versions) <= 1:
             continue
-        latest: Optional[tuple[str, Path]] = get_latest_version(versions)
+        latest: tuple[str, Path] | None = get_latest_version(versions)
         if latest is None:
             continue
         latest_version, latest_path = latest
-        logger.info(f"\nPackage: {pkg_name}")
-        logger.info(f"  Latest version: {latest_version} - {latest_path.name}")
-        logger.info(f"  Total versions found: {len(versions)}")
+        print(f"\nPackage: {pkg_name}")
+        print(f"  Latest version: {latest_version} - {latest_path.name}")
+        print(f"  Total versions found: {len(versions)}")
         for version, path in versions:
             if path == latest_path:
                 continue
             if dry_run:
-                logger.info(f"  Would delete: {version} - {path.name}")
+                print(f"  Would delete: {version} - {path.name}")
             else:
                 try:
                     path.unlink()
-                    logger.info(f"  Deleted: {version} - {path.name}")
+                    print(f"  Deleted: {version} - {path.name}")
                     total_deleted += 1
                 except Exception as e:
                     logger.error(f"  Error deleting {path.name}: {e}")
@@ -310,37 +310,37 @@ def main() -> int:
     else:
         file_type = "wheel"
 
-    logger.info(f"Scanning directory: {scan_dir}")
-    logger.info(f"File type: {file_type}")
+    print(f"Scanning directory: {scan_dir}")
+    print(f"File type: {file_type}")
     if args.dry_run:
-        logger.info("DRY RUN MODE - No files will be deleted")
-    logger.info("-" * 40)
+        print("DRY RUN MODE - No files will be deleted")
+    print("-" * 40)
 
     packages: dict[str, list[tuple[str, Path]]] = scan_directory(
         scan_dir, file_type, args.all
     )
 
     if not packages:
-        logger.info("No matching package files found.")
+        print("No matching package files found.")
         return 0
 
-    logger.info(f"\nFound {len(packages)} package(s):")
+    print(f"\nFound {len(packages)} package(s):")
     for pkg_name, versions in packages.items():
-        logger.info(f"  {pkg_name}: {len(versions)} version(s)")
+        print(f"  {pkg_name}: {len(versions)} version(s)")
         if args.verbose and len(versions) > 1:
             for version, path in versions:
-                logger.info(f"    - {version}: {path.name}")
+                print(f"    - {version}: {path.name}")
 
-    logger.info("\n" + "=" * 40)
+    print("\n" + "=" * 40)
     total_deleted: int = keep_latest_versions(packages, args.dry_run)
-    logger.info("\n" + "=" * 40)
+    print("\n" + "=" * 40)
 
     if total_deleted == 0:
-        logger.info("No files to delete. All packages have only one version.")
+        print("No files to delete. All packages have only one version.")
     elif args.dry_run:
-        logger.info(f"Dry run complete. Would delete {total_deleted} file(s).")
+        print(f"Dry run complete. Would delete {total_deleted} file(s).")
     else:
-        logger.info(f"Cleanup complete. Deleted {total_deleted} file(s).")
+        print(f"Cleanup complete. Deleted {total_deleted} file(s).")
 
     return 0
 

@@ -182,7 +182,7 @@ def save_log(file_mapping: dict[str, str], log_path: Path) -> None:
     log_path.parent.mkdir(parents=True, exist_ok=True)
     with open(log_path, "w") as f:
         json.dump(file_mapping, f, indent=2)
-    logger.info(f"📋 Log saved to: {log_path}")
+    print(f"📋 Log saved to: {log_path}")
 
 
 def cleanup_empty_dirs(root: Path) -> None:
@@ -236,21 +236,21 @@ def main() -> int:
 
     try:
         if args.reverse:
-            logger.info(f"🔄 Reversing move operation from log: {args.log}")
+            print(f"🔄 Reversing move operation from log: {args.log}")
             _file_mapping, results = reverse_move(args.log)
-            logger.info(f"✅ Reversed {len(results)} files")
+            print(f"✅ Reversed {len(results)} files")
             cleanup_empty_dirs(TESTS_DIR)
         else:
-            logger.info(f"🔍 Searching for test files in: {args.dir}")
+            print(f"🔍 Searching for test files in: {args.dir}")
             test_files: list[Path] = find_test_files(args.dir)
             if not test_files:
                 logger.warning("❌ No test files found.")
                 return 0
-            logger.info(f"📦 Found {len(test_files)} test file(s)")
-            logger.info(f"📍 Destination: {TESTS_DIR}")
+            print(f"📦 Found {len(test_files)} test file(s)")
+            print(f"📍 Destination: {TESTS_DIR}")
             file_mapping, _results = move_files_parallel(test_files, args.dir)
             save_log(file_mapping, args.log)
-            logger.info(f"✅ Moved {len(file_mapping)} file(s)")
+            print(f"✅ Moved {len(file_mapping)} file(s)")
     except FileNotFoundError as e:
         logger.error(f"❌ Error: {e}")
         return 1

@@ -51,9 +51,12 @@ def extract_definitions(path: Path) -> dict[str, Any] | None:
                 if isinstance(target, ast.Name) and target.id.isupper():
                     constants[target.id] = hash_node(node)
 
-        elif isinstance(node, ast.AnnAssign):
-            if isinstance(node.target, ast.Name) and node.target.id.isupper():
-                constants[node.target.id] = hash_node(node)
+        elif (
+            isinstance(node, ast.AnnAssign)
+            and isinstance(node.target, ast.Name)
+            and node.target.id.isupper()
+        ):
+            constants[node.target.id] = hash_node(node)
 
     return {
         "file": str(path),

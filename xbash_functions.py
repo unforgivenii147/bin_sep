@@ -274,24 +274,24 @@ def main() -> int:
     args = parser.parse_args()
 
     if IS_TERMUX:
-        logger.info("Running in Termux environment (using {} workers)", POOL_WORKERS)
+        print("Running in Termux environment (using {} workers)", POOL_WORKERS)
 
     if args.inputs:
         input_paths: list[Path] = args.inputs
     else:
         input_paths = [Path(".")]
 
-    logger.info("Searching for shell scripts...")
+    print("Searching for shell scripts...")
     include_extensionless = not args.sh_only
     sh_files = find_sh_files(input_paths, include_extensionless)
 
     if not sh_files:
-        logger.info("No shell scripts found to process.")
+        print("No shell scripts found to process.")
         if not args.sh_only:
-            logger.info("Tip: Use --sh-only to only process .sh files")
+            print("Tip: Use --sh-only to only process .sh files")
         return 0
 
-    logger.info("Found {} shell script(s) to process:", len(sh_files))
+    print("Found {} shell script(s) to process:", len(sh_files))
     if args.verbose:
         for path in sorted(sh_files):
             logger.debug("  - {}", path)
@@ -308,14 +308,14 @@ def main() -> int:
     use_extension = not args.no_extension
 
     if args.no_parallel or len(sh_files) == 1:
-        logger.info("Processing files sequentially...")
+        print("Processing files sequentially...")
         for sh_file in sorted(sh_files):
             saved = process_file(sh_file, args.output, use_extension)
             total_functions += len(saved)
             if args.verbose or saved:
-                logger.info("  {}: extracted {} function(s)", sh_file, len(saved))
+                print("  {}: extracted {} function(s)", sh_file, len(saved))
     else:
-        logger.info("Processing files in parallel with {} workers...", POOL_WORKERS)
+        print("Processing files in parallel with {} workers...", POOL_WORKERS)
         tasks: list[tuple[Path, Path, bool]] = [
             (sh_file, args.output, use_extension) for sh_file in sh_files
         ]
@@ -329,13 +329,11 @@ def main() -> int:
                     saved = async_result.get()
                     total_functions += len(saved)
                     if args.verbose or saved:
-                        logger.info(
-                            "  {}: extracted {} function(s)", sh_file, len(saved)
-                        )
+                        print("  {}: extracted {} function(s)", sh_file, len(saved))
                 except Exception as exc:  # noqa: BLE001
                     logger.error("Error processing {}: {}", sh_file, exc)
 
-    logger.info(
+    print(
         "\nDone! Extracted {} function(s) to '{}'",
         total_functions,
         args.output.absolute(),

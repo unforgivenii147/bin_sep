@@ -79,7 +79,7 @@ def memory_efficient_file_finder(
                 except (OSError, FileNotFoundError):
                     continue
     except KeyboardInterrupt:
-        logger.info("Traversal interrupted by user")
+        print("Traversal interrupted by user")
         raise
     except Exception as e:
         logger.error(f"Unexpected error during traversal: {e}")
@@ -129,9 +129,9 @@ def validate_extensions(
     if not root_path.exists():
         logger.error(f"Root directory {root_dir} does not exist")
         return {}
-    logger.info(f"Starting filesystem traversal from {root_dir}...")
-    logger.info(f"Looking for extensions: {sorted(TXT_EXT)}")
-    logger.info(f"Using {num_workers} worker processes")
+    print(f"Starting filesystem traversal from {root_dir}...")
+    print(f"Looking for extensions: {sorted(TXT_EXT)}")
+    print(f"Using {num_workers} worker processes")
     print()
     progress = SpinnerProgressReporter(verbose=verbose)
     matching_files = list(
@@ -144,7 +144,7 @@ def validate_extensions(
         )
     )
     print()
-    logger.info(f"Found {len(matching_files)} files with target extensions")
+    print(f"Found {len(matching_files)} files with target extensions")
     if not matching_files:
         logger.warning("No files found with specified extensions")
         return {
@@ -155,7 +155,7 @@ def validate_extensions(
             "mismatches": [],
             "by_extension": {},
         }
-    logger.info("Checking file types (parallel processing)...")
+    print("Checking file types (parallel processing)...")
     with Pool(num_workers) as pool:
         results = pool.map(check_file, matching_files)
     text_count = 0

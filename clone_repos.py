@@ -132,10 +132,10 @@ def main() -> None:
     output_dir: Path = Path(args.output)
 
     repos: list[str] = read_repos(repos_file)
-    logger.info(f"Found {len(repos)} repositories to clone")
+    print(f"Found {len(repos)} repositories to clone")
 
     if args.dry_run:
-        logger.info("\nDry run - would clone:")
+        print("\nDry run - would clone:")
         for repo in repos:
             if validate_repo_format(repo):
                 parts: list[str] = repo.split("/")
@@ -143,17 +143,17 @@ def main() -> None:
                 repo_name: str = parts[1]
                 target: Path = output_dir / user / repo_name
                 status: str = "EXISTS" if target.exists() else "NEW"
-                logger.info(f"  [{status}] {repo} -> {target}")
+                print(f"  [{status}] {repo} -> {target}")
             else:
-                logger.info(f"  [INVALID] {repo}")
+                print(f"  [INVALID] {repo}")
         return
 
     successful: int = 0
     failed: int = 0
     skipped: int = 0
 
-    logger.info(f"\nCloning with 8 parallel workers to {output_dir.absolute()}")
-    logger.info("-" * 40)
+    print(f"\nCloning with 8 parallel workers to {output_dir.absolute()}")
+    print("-" * 40)
 
     with Pool(processes=8) as pool:
         async_results: list[AsyncResult[tuple[str, bool, str]]] = [
@@ -166,23 +166,23 @@ def main() -> None:
                 if success:
                     if "Already exists" in message:
                         skipped += 1
-                        logger.info(f"⏭️  {repo}: {message}")
+                        print(f"⏭️  {repo}: {message}")
                     else:
                         successful += 1
-                        logger.info(f"✅ {repo}: {message}")
+                        print(f"✅ {repo}: {message}")
                 else:
                     failed += 1
-                    logger.info(f"❌ {repo}: {message}")
+                    print(f"❌ {repo}: {message}")
             except Exception as e:
                 failed += 1
                 logger.error(f"❌ {repo}: Unexpected error: {e!s}")
 
-    logger.info("-" * 40)
-    logger.info("\nSummary:")
-    logger.info(f"  ✅ Successfully cloned: {successful}")
-    logger.info(f"  ⏭️  Already existed: {skipped}")
-    logger.info(f"  ❌ Failed: {failed}")
-    logger.info(f"  📊 Total: {len(repos)}")
+    print("-" * 40)
+    print("\nSummary:")
+    print(f"  ✅ Successfully cloned: {successful}")
+    print(f"  ⏭️  Already existed: {skipped}")
+    print(f"  ❌ Failed: {failed}")
+    print(f"  📊 Total: {len(repos)}")
 
 
 if __name__ == "__main__":
