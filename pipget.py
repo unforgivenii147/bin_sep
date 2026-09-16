@@ -358,7 +358,7 @@ def process_package(
         return (True, True)
 
     print(f"Download URL: {url}")
-    ok = download_file_with_retry(url, filename, referer=mirror_base + "/")
+    ok = download_file_with_retry(url, filename)
     return (ok, False)
 
 

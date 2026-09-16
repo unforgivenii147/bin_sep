@@ -1,0 +1,31 @@
+{
+  "filename": "20commonwords.py",
+  "filepath": "/data/data/com.termux/files/home/bin/20commonwords.py",
+  "tools": {
+    "mypy": {
+      "exit_code": 1,
+      "has_errors": true,
+      "output": "20commonwords.py:27: \u001b[1m\u001b[31merror:\u001b(B\u001b[m Incompatible types in assignment (expression has type \u001b(B\u001b[m\u001b[1m\"list[str]\"\u001b(B\u001b[m, variable has type \u001b(B\u001b[m\u001b[1m\"set[str]\"\u001b(B\u001b[m)  \u001b(B\u001b[m\u001b[33m[assignment]\u001b(B\u001b[m\n20commonwords.py:28: \u001b[1m\u001b[31merror:\u001b(B\u001b[m Incompatible return value type (got \u001b(B\u001b[m\u001b[1m\"set[str]\"\u001b(B\u001b[m, expected \u001b(B\u001b[m\u001b[1m\"list[str]\"\u001b(B\u001b[m)  \u001b(B\u001b[m\u001b[33m[return-value]\u001b(B\u001b[m\n20commonwords.py:49: \u001b[1m\u001b[31merror:\u001b(B\u001b[m \u001b(B\u001b[m\u001b[1m\"main\"\u001b(B\u001b[m does not return a value (it only ever returns None)  \u001b(B\u001b[m\u001b[33m[func-returns-value]\u001b(B\u001b[m\n\u001b[1m\u001b[31mFound 3 errors in 1 file (checked 1 source file)\u001b(B\u001b[m"
+    },
+    "ruff": {
+      "exit_code": 0,
+      "has_errors": false,
+      "output": "\u001b[1;32mAll checks passed!\u001b[0m"
+    },
+    "ty": {
+      "exit_code": 0,
+      "has_errors": false,
+      "output": "All checks passed!"
+    },
+    "pyrefly": {
+      "exit_code": 0,
+      "has_errors": false,
+      "output": "WARN PYTHONPATH environment variable is set to `/data/data/com.termux/files/home/.local/lib/python3.12/site-packages`. Checks in other environments may not include these paths.\n INFO 0 errors"
+    },
+    "pylint": {
+      "exit_code": 0,
+      "has_errors": false,
+      "output": "No output."
+    }
+  }
+}

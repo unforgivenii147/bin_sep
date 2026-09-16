@@ -1,718 +1,599 @@
 #!/data/data/com.termux/files/home/.local/bin/python
-"""
-Unused Import Analyzer & Autofixer for Python Codebases.
+from __future__ import annotations
 
-Scans Python files (.py) and package archives (.whl, .tar.zst) for unused imports using
-AST analysis and optional multiprocessing. Can automatically strip unused import statements
-in-place or run in dry-run mode.
-"""
-
-import argparse
 import ast
-import multiprocessing
 import re
 import sys
 import tarfile
-import tempfile
 import zipfile
+from argparse import ArgumentParser, RawDescriptionHelpFormatter
 from dataclasses import dataclass, field
+from multiprocessing import Pool
 from pathlib import Path
 
-# --- ANSI Color Formatting Constants ---
-RESET = "\x1b[0m"
-BOLD = "\x1b[1m"
-YELLOW = "\x1b[33m"
-RED = "\x1b[31m"
-CYAN = "\x1b[36m"
-GREEN = "\x1b[32m"
+try:
+    import zstandard as zstd
+
+    HAS_ZSTD = True
+except ImportError:
+    HAS_ZSTD = False
 
 
 @dataclass
 class UnusedImport:
-    """Represents a single instance of unused imported names at a specific line."""
-
     lineno: int
     col_offset: int
     statement: str
-    names: list[str]
+    unused_names: list[str]
+    module_path: str = ""
 
 
 @dataclass
 class FileReport:
-    """Holds analysis results for a single source file or archive entry."""
-
     path: str
-    unused: list[UnusedImport] = field(default_factory=list)
+    unused_imports: list[UnusedImport] = field(default_factory=list)
     error: str | None = None
+    file_size: int = 0
 
 
-def _dotted(name: str, asname: str | None) -> tuple[str, str]:
-    """
-    Extracts the root bound identifier and the full imported name.
+class Colors:
+    BOLD = "\x1b[1m"
+    CYAN = "\x1b[36m"
+    YELLOW = "\x1b[33m"
+    RED = "\x1b[31m"
+    GREEN = "\x1b[32m"
+    RESET = "\x1b[0m"
 
-    Example:
-        'os.path' -> bound: 'os', full: 'os.path'
-        'typing.Tuple' as 'T' -> bound: 'T', full: 'T'
-    """
-    bound = asname if asname else name.split(".")[0]
-    full = asname if asname else name
-    return bound, full
-
-
-def _collect_names(node: ast.AST) -> set[str]:
-    """
-    Walks an AST node and collects all referenced variable and module identifiers.
-
-    Handles Name nodes, Attribute access (e.g., `os.path`), Subscripts (`Tuple[int]`),
-    and type hint annotations.
-    """
-    names: set[str] = set()
-    for child in ast.walk(node):
-        # 1. Standard variable/identifier access
-        if isinstance(child, ast.Name):
-            names.add(child.id)
-
-        # 2. Attribute access chain (e.g. `foo.bar.baz` -> root is `foo`)
-        elif isinstance(child, ast.Attribute):
-            root = child
-            while isinstance(root, ast.Attribute):
-                root = root.value
-            if isinstance(root, ast.Name):
-                names.add(root.id)
-
-        # 3. Explicitly resolve subscript roots (e.g. `Tuple[int]` -> `Tuple`)
-        elif isinstance(child, ast.Subscript):
-            root = child.value
-            while isinstance(root, ast.Attribute):
-                root = root.value
-            if isinstance(root, ast.Name):
-                names.add(root.id)
-
-    return names
+    @classmethod
+    def disable(cls):
+        for attr in dir(cls):
+            if not attr.startswith("_") and attr != "disable":
+                setattr(cls, attr, "")
 
 
-def _collect_annotation_names(tree: ast.AST) -> set[str]:
-    """
-    Specifically targets and collects identifiers used in Type Annotations.
+class ImportVisitor(ast.NodeVisitor):
+    def __init__(self):
+        self.imports: dict[str, tuple[int, int, str]] = {}
+        self.type_checking_imports: set[str] = set()
+        self.future_imports: set[str] = set()
+        self.all_export: set[str] = set()
+        self.star_imports: set[str] = set()
+        self._in_type_checking = False
 
-    Includes function arguments, return types, variable annotations, type aliases
-    (Python 3.12+ `type` statements), and ClassVar / TypeVar bounds.
-    """
-    names: set[str] = set()
+    def visit_If(self, node: ast.If):
+        # Detect if TYPE_CHECKING: blocks
+        is_tc = False
+        if isinstance(node.test, ast.Name) and node.test.id == "TYPE_CHECKING":
+            is_tc = True
+        elif isinstance(node.test, ast.Attribute) and node.test.attr == "TYPE_CHECKING":
+            is_tc = True
 
-    for node in ast.walk(tree):
-        # Variable Annotations: `x: Tuple[int, str] = ...`
-        if isinstance(node, ast.AnnAssign) and node.annotation:
-            names |= _collect_names(node.annotation)
+        prev_tc = self._in_type_checking
+        if is_tc:
+            self._in_type_checking = True
+            for child in node.body:
+                self.visit(child)
+            self._in_type_checking = prev_tc
+            for child in node.orelse:
+                self.visit(child)
+        else:
+            self.generic_visit(node)
 
-        # Function Argument & Return Annotations: `def foo(x: Final[int]) -> Tuple:`
-        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-            if node.returns:
-                names |= _collect_names(node.returns)
-            for arg in node.args.posonlyargs + node.args.args + node.args.kwonlyargs:
-                if arg.annotation:
-                    names |= _collect_names(arg.annotation)
-            if node.args.vararg and node.args.vararg.annotation:
-                names |= _collect_names(node.args.vararg.annotation)
-            if node.args.kwarg and node.args.kwarg.annotation:
-                names |= _collect_names(node.args.kwarg.annotation)
+    def visit_ImportFrom(self, node: ast.ImportFrom):
+        if node.module == "__future__":
+            for alias in node.names:
+                self.future_imports.add(alias.asname or alias.name)
+            self.generic_visit(node)
+            return
 
-        # Python 3.12+ Type Alias statements: `type MyType = Tuple[int, str]`
-        elif hasattr(ast, "TypeAlias") and isinstance(node, ast.TypeAlias):
-            names |= _collect_names(node.value)
+        if node.names[0].name == "*":
+            module_name = node.module or ""
+            self.star_imports.add(module_name)
+            self.generic_visit(node)
+            return
 
-    return names
+        statement = self._build_import_statement(node)
+        for alias in node.names:
+            name = alias.asname or alias.name
+            if self._in_type_checking:
+                self.type_checking_imports.add(name)
+            else:
+                self.imports[name] = (node.lineno, node.col_offset, statement)
+        self.generic_visit(node)
 
+    def visit_Import(self, node: ast.Import):
+        statement = self._build_import_statement(node)
+        for alias in node.names:
+            name = alias.asname or alias.name.split(".")[0]
+            if self._in_type_checking:
+                self.type_checking_imports.add(name)
+            else:
+                self.imports[name] = (node.lineno, node.col_offset, statement)
+        self.generic_visit(node)
 
-def _collect_string_uses(tree: ast.AST) -> set[str]:
-    """
-    Extracts valid identifier tokens from string literals (e.g. forward references in type annotations).
-    """
-    tokens: set[str] = set()
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Constant) and isinstance(node.value, str):
-            # Split strings on standard non-identifier delimiters used in annotations/docstrings
-            for tok in re.split(r"[,.;:\s\[\](){}\"\'<>|~]+", node.value):
-                tok = tok.strip()
-                if tok and tok.isidentifier():
-                    tokens.add(tok)
-    return tokens
-
-
-def _collect_all_names(tree: ast.AST) -> set[str]:
-    """Extracts module exports defined in `__all__ = [...]` lists or tuples."""
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Assign):
-            for target in node.targets:
-                if isinstance(target, ast.Name) and target.id == "__all__":
-                    if isinstance(node.value, (ast.List, ast.Tuple)):
-                        names = set()
-                        for elt in node.value.elts:
-                            if isinstance(elt, ast.Constant) and isinstance(
-                                elt.value, str
-                            ):
-                                names.add(elt.value)
-                        return names
-    return set()
-
-
-def _is_under_type_checking(
-    node: ast.Import | ast.ImportFrom,
-    tree: ast.Module,
-) -> bool:
-    """Checks if an import statement is conditionally wrapped under `if TYPE_CHECKING:`."""
-    parent: dict[int, ast.AST] = {}
-    for parent_node in ast.walk(tree):
-        for child in ast.iter_child_nodes(parent_node):
-            parent[id(child)] = parent_node
-    current = parent.get(id(node))
-    while current is not None:
-        if isinstance(current, ast.If):
-            test = current.test
-            if (isinstance(test, ast.Name) and test.id == "TYPE_CHECKING") or (
-                isinstance(test, ast.Attribute) and test.attr == "TYPE_CHECKING"
+    def visit_Assign(self, node: ast.Assign):
+        for target in node.targets:
+            if (
+                isinstance(target, ast.Name)
+                and target.id == "__all__"
+                and isinstance(node.value, (ast.List, ast.Tuple, ast.Set))
             ):
-                return True
-        current = parent.get(id(current))
-    return False
+                for elt in node.value.elts:
+                    if isinstance(elt, ast.Constant) and isinstance(elt.value, str):
+                        self.all_export.add(elt.value)
+        self.generic_visit(node)
+
+    @staticmethod
+    def _build_import_statement(node) -> str:
+        try:
+            return ast.unparse(node)
+        except Exception:
+            return "<import statement>"
 
 
-def _is_module_used_in_docstring(
-    tree: ast.Module,
-    module_name: str,
-) -> bool:
-    """Checks if a module name is mentioned in the module's docstring."""
-    docstring = ast.get_docstring(tree)
-    return bool(docstring and module_name in docstring)
+class NameVisitor(ast.NodeVisitor):
+    def __init__(self):
+        self.used_names: set[str] = set()
+
+    def visit_Name(self, node: ast.Name):
+        self.used_names.add(node.id)
+        self.generic_visit(node)
+
+    def visit_Attribute(self, node: ast.Attribute):
+        if isinstance(node.value, ast.Name):
+            self.used_names.add(node.value.id)
+        self.generic_visit(node)
+
+    def visit_Constant(self, node: ast.Constant):
+        if isinstance(node.value, str):
+            identifiers = re.findall(r"\b[a-zA-Z_][a-zA-Z0-9_]*\b", node.value)
+            self.used_names.update(identifiers)
+        self.generic_visit(node)
 
 
-def _get_re_export_names(tree: ast.AST) -> set[str]:
-    """Extracts imported names that are explicitly re-exported via `__all__`."""
-    re_exports = set()
-    __all__names = _collect_all_names(tree)
-    for node in ast.walk(tree):
-        if isinstance(node, (ast.Import, ast.ImportFrom)):
-            for alias in node.names:
-                name = alias.asname or alias.name.split(".")[0]
-                if name in __all__names:
-                    re_exports.add(name)
-    return re_exports
-
-
-def analyse_source(source: str, display_path: str) -> FileReport:
-    """
-    Parses Python source code and determines which imports are unused.
-
-    Returns a FileReport object detailing unused imports and syntax errors.
-    """
-    report = FileReport(path=display_path)
+def analyze_imports(
+    source: str, path: str = ""
+) -> tuple[list[UnusedImport], str | None]:
     try:
-        tree = ast.parse(source, filename=display_path)
-    except SyntaxError as exc:
-        report.error = f"SyntaxError: {exc}"
-        return report
+        tree = ast.parse(source)
+    except SyntaxError as e:
+        return ([], f"Syntax error: {e}")
+    except Exception as e:
+        return ([], f"Parse error: {e}")
 
-    lines = source.splitlines()
-    used_names: set[str] = set()
-    import_nodes: list[ast.Import | ast.ImportFrom] = []
+    import_visitor = ImportVisitor()
+    import_visitor.visit(tree)
 
-    # 1. Collect standard usage nodes vs import nodes
-    for node in ast.walk(tree):
-        if isinstance(node, (ast.Import, ast.ImportFrom)):
-            import_nodes.append(node)
-        else:
-            used_names |= _collect_names(node)
+    name_visitor = NameVisitor()
+    name_visitor.visit(tree)
+    used_names = name_visitor.used_names
 
-    # 2. Collect specialized usage nodes (Annotations, Strings, Re-exports)
-    used_names |= _collect_annotation_names(tree)
-    used_names |= _collect_string_uses(tree)
-    re_exports = _get_re_export_names(tree)
-    used_names |= re_exports
+    unused: list[UnusedImport] = []
+    seen_lines: set[int] = set()
 
-    is_init = display_path.endswith("__init__.py")
-
-    # 3. Inspect import nodes for unused names
-    for node in import_nodes:
-        # Ignore `from __future__ import ...`
-        if isinstance(node, ast.ImportFrom) and node.module == "__future__":
+    for imported_name, (
+        lineno,
+        col_offset,
+        statement,
+    ) in import_visitor.imports.items():
+        if imported_name in import_visitor.future_imports:
             continue
-        # Ignore conditional type checking imports
-        if _is_under_type_checking(node, tree):
+        if imported_name in import_visitor.type_checking_imports:
             continue
-        # Ignore modules referenced inside docstrings
-        if (
-            isinstance(node, ast.ImportFrom)
-            and node.module
-            and _is_module_used_in_docstring(tree, node.module)
-        ):
+        if imported_name in import_visitor.all_export:
+            continue
+        if imported_name in import_visitor.star_imports:
             continue
 
-        unused_names: list[str] = []
-
-        if isinstance(node, ast.Import):
-            for alias in node.names:
-                bound, _full = _dotted(alias.name, alias.asname)
-                if bound not in used_names and (not is_init or bound not in re_exports):
-                    unused_names.append(alias.asname or alias.name)
-
-        elif isinstance(node, ast.ImportFrom):
-            # Skip relative imports inside __init__.py files
-            if is_init and node.level and node.level > 0:
-                continue
-            for alias in node.names:
-                if alias.name == "*":
-                    break
-                bound, _full = _dotted(alias.name, alias.asname)
-                if bound not in used_names and (not is_init or bound not in re_exports):
-                    unused_names.append(alias.asname or alias.name)
-
-        if unused_names:
-            raw_line = lines[node.lineno - 1] if node.lineno <= len(lines) else ""
-            report.unused.append(
-                UnusedImport(
-                    lineno=node.lineno,
-                    col_offset=node.col_offset,
-                    statement=raw_line.strip(),
-                    names=unused_names,
+        if imported_name not in used_names:
+            if lineno not in seen_lines:
+                unused.append(
+                    UnusedImport(
+                        lineno=lineno,
+                        col_offset=col_offset,
+                        statement=statement,
+                        unused_names=[imported_name],
+                        module_path=path,
+                    )
                 )
-            )
-
-    return report
-
-
-def _remove_names_from_import(line: str, names_to_remove: set[str]) -> str | None:
-    """
-    Removes specified unused names from a single line import statement.
-
-    Returns modified string or None if the entire import line becomes empty.
-    """
-    stripped = line.strip()
-
-    # Handle `import X, Y as Z`
-    if stripped.startswith("import ") and not stripped.startswith("from "):
-        parts = stripped[len("import ") :].split(",")
-        kept = []
-        for part in parts:
-            part = part.strip()
-            if not part:
-                continue
-            if " as " in part:
-                alias = part.split(" as ")[1].strip()
-                check_name = alias
+                seen_lines.add(lineno)
             else:
-                check_name = part.split(".")[0]
-            if check_name not in names_to_remove:
-                kept.append(part)
-        if not kept:
-            return None
-        indent = line[: len(line) - len(line.lstrip())]
-        return indent + "import " + ", ".join(kept) + "\n"
+                for u in unused:
+                    if u.lineno == lineno:
+                        u.unused_names.append(imported_name)
+                        break
 
-    # Handle `from X import Y, Z` or `from X import (Y, Z)`
-    if stripped.startswith("from ") and " import " in stripped:
-        prefix, import_part = stripped.split(" import ", 1)
-        if import_part.strip().startswith("("):
-            paren_content = import_part.strip()[1:].removesuffix(")")
-            parts = paren_content.split(",")
-            is_parenthesized = True
-        else:
-            parts = import_part.split(",")
-            is_parenthesized = False
-
-        kept = []
-        for part in parts:
-            part = part.strip()
-            if not part:
-                continue
-            if " as " in part:
-                alias = part.split(" as ")[1].strip()
-                check_name = alias
-            else:
-                check_name = part.strip()
-            if check_name not in names_to_remove:
-                kept.append(part)
-
-        if not kept:
-            return None
-
-        indent = line[: len(line) - len(line.lstrip())]
-        if is_parenthesized:
-            return indent + prefix + " import (" + ", ".join(kept) + ")\n"
-        else:
-            return indent + prefix + " import " + ", ".join(kept) + "\n"
-
-    return line
+    return (unused, None)
 
 
-def fix_source(source: str, report: FileReport) -> str | None:
-    """Applies auto-fixes to python source code by stripping reported unused imports."""
-    if not report.unused:
-        return None
-
-    lines = source.splitlines(keepends=True)
-    removals: dict[int, set[str]] = {}
-
-    for ui in report.unused:
-        removals.setdefault(ui.lineno, set()).update(ui.names)
-
-    new_lines: list[str] = []
-    for idx, line in enumerate(lines, start=1):
-        if idx in removals:
-            replacement = _remove_names_from_import(line, removals[idx])
-            if replacement is None:
-                continue
-            new_lines.append(replacement)
-        else:
-            new_lines.append(line)
-
-    return "".join(new_lines)
-
-
-def _process_file(args: tuple) -> FileReport:
-    """Worker wrapper to read and analyse a single file on disk."""
-    path_str, display_path = args
+def process_py_file(path: str) -> FileReport:
+    path_obj = Path(path)
     try:
-        source = Path(path_str).read_text(encoding="utf-8", errors="replace")
-    except OSError as exc:
-        return FileReport(path=display_path, error=str(exc))
-    return analyse_source(source, display_path)
+        with open(path, "r", encoding="utf-8", errors="replace") as f:
+            source = f.read()
+        file_size = len(source.encode("utf-8"))
+    except PermissionError:
+        return FileReport(str(path_obj), error="Permission denied")
+    except Exception as e:
+        return FileReport(str(path_obj), error=f"Read error: {e}")
+
+    unused, error = analyze_imports(source, str(path_obj))
+    return FileReport(
+        path=str(path_obj), unused_imports=unused, error=error, file_size=file_size
+    )
 
 
-def _process_source_tuple(args: tuple) -> FileReport:
-    """Worker wrapper to process in-memory source extracted from archives."""
-    source, display_path = args
-    return analyse_source(source, display_path)
-
-
-def _extract_py_from_whl(archive: Path) -> list[tuple[str, str]]:
-    """Extracts Python source files from a .whl (zip format) file."""
-    results = []
+def extract_py_files_from_wheel(wheel_path: str) -> dict[str, str]:
+    result: dict[str, str] = {}
     try:
-        with zipfile.ZipFile(archive) as zf:
-            for name in zf.namelist():
-                if name.endswith(".py"):
+        with zipfile.ZipFile(wheel_path, "r") as whl:
+            for member in whl.namelist():
+                if member.endswith(".py"):
                     try:
-                        source = zf.read(name).decode("utf-8", errors="replace")
-                        results.append((source, f"{archive}::{name}"))
+                        content = whl.read(member).decode("utf-8", errors="replace")
+                        virtual_path = f"{Path(wheel_path).name}::{member}"
+                        result[virtual_path] = content
                     except Exception:
                         pass
-    except zipfile.BadZipFile as exc:
-        results.append(("", f"{archive}::ERROR:{exc}"))
-    return results
+    except Exception:
+        pass
+    return result
 
 
-def _extract_py_from_tar_zst(archive: Path) -> list[tuple[str, str]]:
-    """Extracts Python source files from a .tar.zst archive file."""
-    results: list[tuple[str, str]] = []
+def extract_py_files_from_tar_zst(archive_path: str) -> dict[str, str]:
+    result: dict[str, str] = {}
     try:
-        import zstandard
-    except ImportError:
-        results.append(
-            (
-                "",
-                f"{archive}::ERROR: install zstandard to read .tar.zst archives",
-            )
-        )
-        return results
+        if HAS_ZSTD:
+            with open(archive_path, "rb") as f:
+                dctx = zstd.ZstdDecompressor()
+                with (
+                    dctx.stream_reader(f) as reader,
+                    tarfile.open(fileobj=reader, mode="r|") as tar,
+                ):
+                    for member in tar:
+                        if member.isfile() and member.name.endswith(".py"):
+                            try:
+                                f_obj = tar.extractfile(member)
+                                if f_obj:
+                                    content = f_obj.read().decode(
+                                        "utf-8", errors="replace"
+                                    )
+                                    virtual_path = (
+                                        f"{Path(archive_path).name}::{member.name}"
+                                    )
+                                    result[virtual_path] = content
+                            except Exception:
+                                pass
+        else:
+            try:
+                with tarfile.open(archive_path, "r:*") as tar:
+                    for member in tar:
+                        if member.isfile() and member.name.endswith(".py"):
+                            try:
+                                f_obj = tar.extractfile(member)
+                                if f_obj:
+                                    content = f_obj.read().decode(
+                                        "utf-8", errors="replace"
+                                    )
+                                    virtual_path = (
+                                        f"{Path(archive_path).name}::{member.name}"
+                                    )
+                                    result[virtual_path] = content
+                            except Exception:
+                                pass
+            except Exception:
+                pass
+    except Exception:
+        pass
+    return result
 
-    try:
-        with archive.open("rb") as fh:
-            dctx = zstandard.ZstdDecompressor()
-            with tempfile.TemporaryFile() as tmp:
-                dctx.copy_stream(fh, tmp)
-                tmp.seek(0)
-                with tarfile.open(fileobj=tmp, mode="r:") as tf:
-                    for member in tf.getmembers():
-                        if not member.name.endswith(".py") or not member.isfile():
-                            continue
-                        try:
-                            extracted = tf.extractfile(member)
-                            if extracted is None:
-                                continue
-                            source = extracted.read().decode(
-                                "utf-8",
-                                errors="replace",
-                            )
-                            results.append((source, f"{archive}::{member.name}"))
-                        except Exception:
-                            pass
-    except Exception as exc:
-        results.append(("", f"{archive}::ERROR:{exc}"))
-    return results
+
+def process_archive_member(virtual_path: str, source: str) -> FileReport:
+    unused, error = analyze_imports(source, virtual_path)
+    return FileReport(
+        path=virtual_path,
+        unused_imports=unused,
+        error=error,
+        file_size=len(source.encode("utf-8")),
+    )
 
 
-def _coloured(text: str, code: str, use_colour: bool) -> str:
-    """Wraps text with ANSI terminal color codes if color output is enabled."""
-    return f"{code}{text}{RESET}" if use_colour else text
+def _process_py_file_worker(path: str) -> FileReport:
+    return process_py_file(path)
 
 
-def print_report(reports: list[FileReport], verbose: bool, use_colour: bool) -> int:
-    """Prints scan findings formatted for human terminal consumption."""
-    total = 0
-    files_with_issues: list[FileReport] = [r for r in reports if r.unused or r.error]
+def _process_archive_worker(args: tuple[str, str]) -> FileReport:
+    virtual_path, source = args
+    return process_archive_member(virtual_path, source)
 
-    if not files_with_issues:
-        print(_coloured("✓ No unused imports found.", GREEN, use_colour))
-        return 0
 
-    for report in files_with_issues:
-        if report.error:
-            print(_coloured(f"ERROR  {report.path}: {report.error}", RED, use_colour))
+def discover_files(
+    paths: list[str], exclude_patterns: list[str]
+) -> tuple[list[str], list[tuple[str, str]]]:
+    py_files: list[str] = []
+    archive_members: list[tuple[str, str]] = []
+    exclude_regexes = [re.compile(p) for p in exclude_patterns]
+
+    def should_exclude(path: str) -> bool:
+        return any(regex.search(path) for regex in exclude_regexes)
+
+    for path_str in paths:
+        path = Path(path_str)
+        if not path.exists():
+            print(f"⚠ Path not found: {path_str}", file=sys.stderr)
+            continue
+        if path.is_file():
+            if path.suffix == ".py" and not should_exclude(str(path)):
+                py_files.append(str(path))
+            elif path.suffix == ".whl":
+                for vpath, source in extract_py_files_from_wheel(str(path)).items():
+                    if not should_exclude(vpath):
+                        archive_members.append((vpath, source))
+            elif path.suffix == ".zst" or path.name.endswith(".tar.zst"):
+                for vpath, source in extract_py_files_from_tar_zst(str(path)).items():
+                    if not should_exclude(vpath):
+                        archive_members.append((vpath, source))
+        elif path.is_dir():
+            for py_file in path.rglob("*.py"):
+                if not should_exclude(str(py_file)):
+                    py_files.append(str(py_file))
+            for whl_file in path.rglob("*.whl"):
+                for vpath, source in extract_py_files_from_wheel(str(whl_file)).items():
+                    if not should_exclude(vpath):
+                        archive_members.append((vpath, source))
+            for tar_file in path.rglob("*.tar.zst"):
+                for vpath, source in extract_py_files_from_tar_zst(
+                    str(tar_file)
+                ).items():
+                    if not should_exclude(vpath):
+                        archive_members.append((vpath, source))
+
+    return (py_files, archive_members)
+
+
+def remove_unused_imports(source: str, unused: list[UnusedImport]) -> tuple[str, bool]:
+    lines = source.split("\n")
+    unused_by_line: dict[int, set[str]] = {}
+
+    for u in unused:
+        if u.lineno not in unused_by_line:
+            unused_by_line[u.lineno] = set()
+        unused_by_line[u.lineno].update(u.unused_names)
+
+    for lineno in sorted(unused_by_line.keys(), reverse=True):
+        idx = lineno - 1
+        if idx < 0 or idx >= len(lines):
+            continue
+        line = lines[idx]
+        unused_names = unused_by_line[lineno]
+
+        try:
+            tree = ast.parse(line)
+            node = tree.body[0] if tree.body else None
+        except Exception:
             continue
 
-        first = True
-        for ui in report.unused:
-            total += 1
-            label = (
-                _coloured(report.path, BOLD, use_colour)
-                if first
-                else " " * len(report.path)
+        if not isinstance(node, (ast.Import, ast.ImportFrom)):
+            continue
+
+        new_line = _reconstruct_import_line(node, unused_names, line)
+        if new_line is None:
+            del lines[idx]
+        else:
+            lines[idx] = new_line
+
+    result = "\n".join(lines)
+    try:
+        ast.parse(result)
+    except SyntaxError:
+        return (source, False)
+    return (result, True)
+
+
+def _reconstruct_import_line(
+    node: ast.Import | ast.ImportFrom, unused_names: set[str], original_line: str
+) -> str | None:
+    indent = original_line[: len(original_line) - len(original_line.lstrip())]
+
+    if isinstance(node, ast.Import):
+        names_to_keep = [
+            alias
+            for alias in node.names
+            if (alias.asname or alias.name.split(".")[0]) not in unused_names
+        ]
+        if not names_to_keep:
+            return None
+        parts = [
+            f"{alias.name} as {alias.asname}" if alias.asname else alias.name
+            for alias in names_to_keep
+        ]
+        return f"{indent}import {', '.join(parts)}"
+
+    elif isinstance(node, ast.ImportFrom):
+        names_to_keep = [
+            alias
+            for alias in node.names
+            if (alias.asname or alias.name) not in unused_names
+        ]
+        if not names_to_keep:
+            return None
+        module = node.module or ""
+        level = "." * node.level if node.level else ""
+        parts = [
+            f"{alias.name} as {alias.asname}" if alias.asname else alias.name
+            for alias in names_to_keep
+        ]
+        return f"{indent}from {level}{module} import {', '.join(parts)}"
+
+    return original_line
+
+
+def autofix_file(
+    path: str, unused: list[UnusedImport], dry_run: bool = False
+) -> tuple[bool, str | None]:
+    if "::" in path:
+        return (False, "Cannot autofix inside packed archives")
+
+    try:
+        with open(path, "r", encoding="utf-8", errors="replace") as f:
+            source = f.read()
+    except Exception as e:
+        return (False, f"Read error: {e}")
+
+    modified, success = remove_unused_imports(source, unused)
+    if not success:
+        return (False, "Result failed to parse")
+
+    if dry_run:
+        return (True, None)
+
+    try:
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(modified)
+    except Exception as e:
+        return (False, f"Write error: {e}")
+
+    return (True, None)
+
+
+def print_report(
+    reports: list[FileReport],
+    use_color: bool = True,
+    verbose: bool = False,
+    dry_run: bool = False,
+    autofix: bool = False,
+):
+    if not use_color:
+        Colors.disable()
+
+    total_unused = 0
+    files_with_issues = 0
+    fixed_count = 0
+    skipped_count = 0
+
+    for report in reports:
+        if report.error:
+            print(f"{Colors.RED}✗ {report.path} — {report.error}{Colors.RESET}")
+            continue
+
+        if not report.unused_imports:
+            if verbose:
+                print(f"{Colors.GREEN}✓{Colors.RESET} {report.path}")
+            continue
+
+        files_with_issues += 1
+        print(f"\n{Colors.BOLD}{report.path}{Colors.RESET}")
+
+        for unused in report.unused_imports:
+            total_unused += 1
+            print(
+                f"  line {Colors.CYAN}{unused.lineno:>5}{Colors.RESET}  "
+                f"{Colors.YELLOW}{unused.statement}{Colors.RESET}"
             )
-            lineno_str = _coloured(f"line {ui.lineno:>4}", CYAN, use_colour)
-            stmt_str = _coloured(ui.statement, YELLOW, use_colour)
-            names_note = ""
+            names_str = ", ".join(unused.unused_names)
+            print(f"{'':20}[unused: {names_str}]")
 
-            if len(ui.names) < len(ui.statement.split(",")):
-                names_note = (
-                    "  [unused: "
-                    + _coloured(", ".join(ui.names), RED, use_colour)
-                    + "]"
-                )
-
-            print(f"{label}  -->  {lineno_str}  {stmt_str}{names_note}")
-            first = False
+        if autofix:
+            if dry_run:
+                print(f"  [dry-run] would fix {report.path}")
+            else:
+                success, error = autofix_file(report.path, report.unused_imports)
+                if success:
+                    print(f"  {Colors.GREEN}fixed{Colors.RESET} {report.path}")
+                    fixed_count += 1
+                else:
+                    print(
+                        f"  {Colors.RED}SKIP{Colors.RESET} autofix on {report.path} — {error}"
+                    )
+                    skipped_count += 1
 
     print()
-    print(
-        _coloured(
-            f"Found {total} unused import(s) across {len(files_with_issues)} file(s).",
-            BOLD,
-            use_colour,
-        )
-    )
-    return total
+    print(f"Found {total_unused} unused import(s) across {files_with_issues} file(s).")
+    if autofix:
+        print(f"Fixed {fixed_count} file(s).")
+        if skipped_count:
+            print(f"Skipped {skipped_count} file(s).")
 
 
-def collect_tasks(
-    paths: list[Path], exclude_patterns: list[str] | None = None
-) -> tuple[list[tuple[str, str]], list[tuple[str, str]]]:
-    """Walks directories and files to discover Python scripts and supported archives."""
-    file_tasks: list[tuple[str, str]] = []
-    source_tasks: list[tuple[str, str]] = []
-
-    if exclude_patterns is None:
-        exclude_patterns = []
-
-    exclude_re = re.compile(r"|".join(exclude_patterns)) if exclude_patterns else None
-
-    for path in paths:
-        if path.is_file():
-            if exclude_re and exclude_re.search(str(path)):
-                continue
-            suffix = path.suffix.lower()
-            name = path.name.lower()
-            if suffix == ".py":
-                file_tasks.append((str(path), str(path)))
-            elif suffix == ".whl":
-                source_tasks.extend(_extract_py_from_whl(path))
-            elif name.endswith(".tar.zst"):
-                source_tasks.extend(_extract_py_from_tar_zst(path))
-
-        elif path.is_dir():
-            for p in path.rglob("*"):
-                if not p.is_file():
-                    continue
-                if exclude_re and exclude_re.search(str(p)):
-                    continue
-                suffix = p.suffix.lower()
-                name = p.name.lower()
-                if suffix == ".py":
-                    file_tasks.append((str(p), str(p)))
-                elif suffix == ".whl":
-                    source_tasks.extend(_extract_py_from_whl(p))
-                elif name.endswith(".tar.zst"):
-                    source_tasks.extend(_extract_py_from_tar_zst(p))
-        else:
-            print(f"Warning: '{path}' does not exist, skipping.", file=sys.stderr)
-
-    return file_tasks, source_tasks
-
-
-def run(
-    paths: list[Path],
-    workers: int,
-    autofix: bool,
-    dry_run: bool,
-    verbose: bool = True,
-    exclude: list[str] | None = None,
-) -> int:
-    """Core execution engine managing multiprocessing scan tasks and applying auto-fixes."""
-    use_colour = sys.stdout.isatty()
-    file_tasks, source_tasks = collect_tasks(paths, exclude)
-
-    print(
-        f"  {len(file_tasks)} .py file(s), {len(source_tasks)} archive member(s) queued.\n"
-    )
-
-    reports: list[FileReport] = []
-
-    with multiprocessing.Pool(processes=workers) as pool:
-        if file_tasks:
-            results = pool.imap_unordered(_process_file, file_tasks)
-            for i, report in enumerate(results, 1):
-                reports.append(report)
-                if i % 10 == 0 or i == len(file_tasks):
-                    print(f"  Processed {i}/{len(file_tasks)} files...", end="\r")
-            if file_tasks:
-                print(f"  Processed {len(file_tasks)}/{len(file_tasks)} files.    ")
-
-        if source_tasks:
-            reports.extend(pool.map(_process_source_tuple, source_tasks))
-
-    reports.sort(key=lambda r: r.path)
-    total = print_report(reports, verbose=verbose, use_colour=use_colour)
-
-    # Perform Autofix routines if requested
-    if autofix and total > 0:
-        fixed_count = 0
-        for report in reports:
-            if not report.unused or report.error:
-                continue
-            if "::" in report.path:
-                print(f"  skip autofix for archive member: {report.path}")
-                continue
-
-            p = Path(report.path)
-            try:
-                source = p.read_text(encoding="utf-8", errors="replace")
-            except OSError as exc:
-                print(f"  cannot read {p}: {exc}", file=sys.stderr)
-                continue
-
-            new_source = fix_source(source, report)
-            if new_source is None:
-                continue
-
-            # Verify that modification yields valid syntax
-            try:
-                ast.parse(new_source, filename=str(p))
-            except SyntaxError as exc:
-                print(
-                    f"  {_coloured('SKIP', RED, use_colour)} autofix on {p} — result failed to parse: {exc}",
-                    file=sys.stderr,
-                )
-                continue
-
-            if dry_run:
-                print(f"  {_coloured('[dry-run]', CYAN, use_colour)} would fix {p}")
-                fixed_count += 1
-                continue
-
-            p.write_text(new_source, encoding="utf-8")
-            fixed_count += 1
-            print(f"  {_coloured('fixed', GREEN, use_colour)} {p}")
-
-        action = "would fix" if dry_run else "fixed"
-        print(f"\n{action.capitalize()} {fixed_count} file(s).")
-    elif dry_run and total == 0:
-        print("Nothing to fix.")
-
-    return 1 if total > 0 else 0
-
-
-def build_parser() -> argparse.ArgumentParser:
-    """Configures command-line argument parser flags."""
-    parser = argparse.ArgumentParser(
-        description="Report (and optionally remove) unused imports in Python files.",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Examples:
-  %(prog)s
-  %(prog)s src/
-  %(prog)s file1.py file2.py
-  %(prog)s -a
-  %(prog)s -a --dry-run
-  %(prog)s --workers 8
-  %(prog)s --exclude "test_.*"
-""",
+def main():
+    parser = ArgumentParser(
+        description="Detect and optionally remove unused imports from Python files and archives.",
+        formatter_class=RawDescriptionHelpFormatter,
+        epilog=(
+            "\nExamples:\n"
+            "  python unused_imports.py\n"
+            "  python unused_imports.py src/main.py\n"
+            "  python unused_imports.py src/ --autofix\n"
+            "  python unused_imports.py src/ --dry-run\n"
+            '  python unused_imports.py src/ --exclude "test_.*"'
+        ),
     )
     parser.add_argument(
         "paths",
         nargs="*",
         default=["."],
-        help="Files and/or directories to scan (default: current directory)",
+        help="File or directory paths to analyze (default: current directory)",
     )
     parser.add_argument(
-        "-a",
-        "--autofix",
-        action="store_true",
-        help="Remove unused imports in-place",
+        "-a", "--autofix", action="store_true", help="Remove unused imports in-place"
     )
     parser.add_argument(
         "--dry-run",
         action="store_true",
-        help="Show what would be changed without writing files",
+        help="Preview changes without writing (enables --autofix)",
     )
     parser.add_argument(
         "-v",
         "--verbose",
         action="store_true",
-        help="Print extra progress and per-name details",
+        help="Detailed output including files with 0 issues",
     )
     parser.add_argument(
-        "--workers",
-        type=int,
-        default=8,
-        metavar="N",
-        help="Number of parallel worker processes (default: 8)",
+        "--workers", type=int, default=8, help="Number of parallel workers (default: 8)"
     )
     parser.add_argument(
         "--exclude",
         action="append",
-        metavar="PATTERN",
-        help="Exclude files/directories matching regex pattern (can be used multiple times)",
+        default=[],
+        help="Regex pattern to exclude files (repeatable)",
     )
     parser.add_argument(
-        "--no-color", action="store_true", help="Disable colored output"
+        "--no-color", action="store_true", help="Disable ANSI color codes"
     )
-    return parser
 
-
-def main() -> None:
-    """CLI entry point."""
-    parser = build_parser()
     args = parser.parse_args()
-
-    paths = [Path(p).resolve() for p in args.paths]
-    valid_paths: list[Path] = []
-    for p in paths:
-        if p.exists():
-            valid_paths.append(p)
-        else:
-            print(f"Warning: '{p}' does not exist, skipping.", file=sys.stderr)
-
-    if not valid_paths:
-        parser.error("No valid files or directories to scan.")
-
-    if args.dry_run and not args.autofix:
+    if args.dry_run:
         args.autofix = True
 
-    if args.no_color:
-        global RESET, BOLD, YELLOW, RED, CYAN, GREEN
-        RESET = BOLD = YELLOW = RED = CYAN = GREEN = ""
+    py_files, archive_members = discover_files(args.paths, args.exclude)
+    if not py_files and not archive_members:
+        print("No Python files found to analyze.", file=sys.stderr)
+        return 1
 
-    sys.exit(
-        run(
-            paths=valid_paths,
-            workers=args.workers,
-            autofix=args.autofix,
-            dry_run=args.dry_run,
-            verbose=args.verbose,
-            exclude=args.exclude,
+    if args.verbose:
+        print(f"Scanning {len(args.paths)} path(s) with {args.workers} worker(s) …\n")
+        print(
+            f"  {len(py_files)} .py file(s), {len(archive_members)} archive member(s) queued.\n"
         )
+
+    reports: list[FileReport] = []
+    with Pool(processes=args.workers) as pool:
+        if py_files:
+            reports.extend(pool.map(_process_py_file_worker, py_files))
+        if archive_members:
+            reports.extend(pool.map(_process_archive_worker, archive_members))
+
+    print_report(
+        reports,
+        use_color=not args.no_color,
+        verbose=args.verbose,
+        dry_run=args.dry_run,
+        autofix=args.autofix,
     )
+
+    has_unused = any(r.unused_imports for r in reports)
+    return 1 if has_unused else 0
 
 
 if __name__ == "__main__":
-    multiprocessing.freeze_support()
     raise SystemExit(main())

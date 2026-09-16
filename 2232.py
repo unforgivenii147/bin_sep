@@ -22,7 +22,7 @@ from collections.abc import Iterable, Sequence
 from lib2to3.refactor import RefactoringTool, get_fixers_from_package
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from loguru import logger
 
