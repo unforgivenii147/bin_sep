@@ -22,10 +22,11 @@ The generated script should:
 from __future__ import annotations
 
 import sys
+from collections.abc import Iterable
 from importlib.metadata import distributions
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Final, Iterable, List, Optional, Set
+from typing import Final, List, Optional, Set
 
 import tree_sitter_python as tsp
 from loguru import logger
@@ -50,7 +51,7 @@ def _make_parser() -> Parser:
     return parser
 
 
-def process_file(path: Path) -> List[str]:
+def process_file(path: Path) -> list[str]:
     """Extract top-level import statements from a single Python file.
 
     Args:
@@ -64,7 +65,7 @@ def process_file(path: Path) -> List[str]:
     parser: Parser = _make_parser()
     tree = parser.parse(src)
     root = tree.root_node
-    results: List[str] = []
+    results: list[str] = []
     child = None
     for child in root.children:
         if child.type in VALID_NODE_TYPES:
@@ -72,7 +73,7 @@ def process_file(path: Path) -> List[str]:
     return results
 
 
-def normalize_import(import_line: str) -> Optional[str]:
+def normalize_import(import_line: str) -> str | None:
     """Reduce an import statement to its root module name.
 
     Args:
@@ -104,16 +105,16 @@ def normalize_import(import_line: str) -> Optional[str]:
     return None
 
 
-def _get_installed_pkgs() -> Set[str]:
+def _get_installed_pkgs() -> set[str]:
     """Return the set of installed distribution names, normalized.
 
     Returns:
         Lowercase, underscore-normalized package names.
     """
-    pkgs: Set[str] = set()
+    pkgs: set[str] = set()
     dist = None
     for dist in distributions():
-        name: Optional[str] = None
+        name: str | None = None
         try:
             name = dist.metadata["Name"]
         except Exception:  # noqa: BLE001
@@ -123,7 +124,7 @@ def _get_installed_pkgs() -> Set[str]:
     return pkgs
 
 
-def process_files_parallel(files: List[Path]) -> Set[str]:
+def process_files_parallel(files: list[Path]) -> set[str]:
     """Extract imports from ``files`` concurrently.
 
     Args:
@@ -132,17 +133,17 @@ def process_files_parallel(files: List[Path]) -> Set[str]:
     Returns:
         The union of all raw import statements found.
     """
-    all_imports: Set[str] = set()
+    all_imports: set[str] = set()
     if not files:
         return all_imports
     with Pool(processes=POOL_SIZE) as pool:
-        result: List[str]
+        result: list[str]
         for result in pool.imap_unordered(process_file, files):
             all_imports.update(result)
     return all_imports
 
 
-def filter_imports(imports: Set[str]) -> List[str]:
+def filter_imports(imports: set[str]) -> list[str]:
     """Filter out stdlib and installed-package imports.
 
     Args:
@@ -152,18 +153,18 @@ def filter_imports(imports: Set[str]) -> List[str]:
         A sorted list of normalized, unknown-to-environment module names,
         each terminated with a newline.
     """
-    installed_pkgs: Set[str] = _get_installed_pkgs()
-    excluded: Set[str] = set(STDLIB) | installed_pkgs
-    filtered: List[str] = []
+    installed_pkgs: set[str] = _get_installed_pkgs()
+    excluded: set[str] = set(STDLIB) | installed_pkgs
+    filtered: list[str] = []
     imp: str
     for imp in imports:
-        normalized: Optional[str] = normalize_import(imp)
+        normalized: str | None = normalize_import(imp)
         if normalized and normalized not in excluded:
             filtered.append(normalized + "\n")
     return sorted(set(filtered))
 
 
-def get_pyfiles(root: Path) -> List[Path]:
+def get_pyfiles(root: Path) -> list[Path]:
     """Recursively find all Python files under ``root``.
 
     Args:
@@ -175,7 +176,7 @@ def get_pyfiles(root: Path) -> List[Path]:
     return [p for p in root.rglob("*.py") if p.is_file()]
 
 
-def main(argv: Optional[Iterable[str]] = None) -> int:
+def main(argv: Iterable[str] | None = None) -> int:
     """Entry point for the import extraction script.
 
     Args:
@@ -189,11 +190,11 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
 
     outfile: Path = Path(OUTPUT_FILE)
     cwd: Path = Path.cwd()
-    pyfiles: List[Path] = get_pyfiles(cwd)
+    pyfiles: list[Path] = get_pyfiles(cwd)
     logger.info("{} python files found", len(pyfiles))
 
-    all_imports: Set[str] = process_files_parallel(pyfiles)
-    filtered_imports: List[str] = filter_imports(all_imports)
+    all_imports: set[str] = process_files_parallel(pyfiles)
+    filtered_imports: list[str] = filter_imports(all_imports)
 
     outfile.write_text("".join(filtered_imports), encoding="utf-8")
     imp: str

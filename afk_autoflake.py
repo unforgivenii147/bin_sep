@@ -101,9 +101,7 @@ if __name__ == "__main__":
         if files:
             with mp.Pool(processes=8) as pool:
                 results = [
-                    pool.apply_async(
-                        check_or_fix_imports, (f, args.autofix, args.diff)
-                    )
+                    pool.apply_async(check_or_fix_imports, (f, args.autofix, args.diff))
                     for f in files
                 ]
                 for r in results:

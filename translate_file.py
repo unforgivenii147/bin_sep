@@ -24,9 +24,10 @@ from __future__ import annotations
 
 import re
 import sys
+from collections.abc import Iterable
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Final, Iterable, List, Optional
+from typing import Final, List, Optional
 
 from deep_translator import GoogleTranslator
 from loguru import logger
@@ -82,10 +83,10 @@ def process_file(file_path: Path) -> str:
     """
     try:
         content: str = file_path.read_text(encoding="utf-8")
-        lines: List[str] = content.splitlines(keepends=True)
+        lines: list[str] = content.splitlines(keepends=True)
         translator: GoogleTranslator = GoogleTranslator(source="auto", target="en")
         modified: bool = False
-        new_lines: List[str] = []
+        new_lines: list[str] = []
 
         line: str
         for line in lines:
@@ -93,7 +94,7 @@ def process_file(file_path: Path) -> str:
             if stripped and is_foreign_line(stripped):
                 try:
                     translated_raw: object = translator.translate(stripped)
-                    translated: Optional[str] = (
+                    translated: str | None = (
                         translated_raw if isinstance(translated_raw, str) else None
                     )
                     if translated:
@@ -117,7 +118,7 @@ def process_file(file_path: Path) -> str:
         return f"Error processing {file_path}: {exc}"
 
 
-def _collect_files(root: Path) -> List[Path]:
+def _collect_files(root: Path) -> list[Path]:
     """Collect candidate files under ``root`` matching ``FILE_PATTERNS``.
 
     Args:
@@ -126,7 +127,7 @@ def _collect_files(root: Path) -> List[Path]:
     Returns:
         A list of file paths that are not inside skipped or hidden directories.
     """
-    files: List[Path] = []
+    files: list[Path] = []
     pattern: str
     for pattern in FILE_PATTERNS:
         path: Path
@@ -138,7 +139,7 @@ def _collect_files(root: Path) -> List[Path]:
     return files
 
 
-def main(argv: Optional[Iterable[str]] = None) -> int:
+def main(argv: Iterable[str] | None = None) -> int:
     """Entry point for the translation script.
 
     Args:
@@ -151,7 +152,7 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
     _ = list(argv) if argv is not None else sys.argv[1:]
 
     cwd: Path = Path(".")
-    files_to_process: List[Path] = _collect_files(cwd)
+    files_to_process: list[Path] = _collect_files(cwd)
 
     if not files_to_process:
         logger.info("No files found to process.")

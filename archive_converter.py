@@ -40,13 +40,12 @@ import sys
 import tarfile
 import tempfile
 import zipfile
+from collections.abc import Iterable, Iterator
 from multiprocessing import Pool
 from pathlib import Path
 from typing import (
     BinaryIO,
     Final,
-    Iterable,
-    Iterator,
     List,
     Optional,
     Tuple,
@@ -97,12 +96,12 @@ ALLOWED_TO_FORMATS: Final[frozenset[str]] = frozenset(
     }
 )
 
-Entry = Tuple[str, bytes]
-ConvertArgs = Tuple[str, str]  # (src_path, target_ext)
-ConvertResult = Tuple[str, int, bool, str]  # (src, delta, ok, message)
+Entry = tuple[str, bytes]
+ConvertArgs = tuple[str, str]  # (src_path, target_ext)
+ConvertResult = tuple[str, int, bool, str]  # (src, delta, ok, message)
 
 
-def detect_ext(path: Path) -> Optional[str]:
+def detect_ext(path: Path) -> str | None:
     """Return the canonical extension that ``path`` matches, if any.
 
     Args:
@@ -164,7 +163,7 @@ def _open_tar_input(path: Path, ext: str) -> Iterator[BinaryIO]:
     elif ext == ".tar.7z":
         with py7zr.SevenZipFile(str(path), mode="r") as archive:
             members = archive.readall()
-            for _name, bio in members.items():
+            for bio in members.values():
                 yield io.BytesIO(bio.read())
                 return
         raise ValueError(f"empty 7z archive: {path}")
@@ -197,16 +196,18 @@ def iter_entries(path: Path, ext: str) -> Iterator[Entry]:
         return
 
     if ext in TAR_FAMILY:
-        with _open_tar_input(path, ext) as stream:
-            with tarfile.open(fileobj=stream, mode="r|") as tf:
-                member: tarfile.TarInfo
-                for member in tf:
-                    if not member.isfile():
-                        continue
-                    fobj = tf.extractfile(member)
-                    if fobj is None:
-                        continue
-                    yield member.name, fobj.read()
+        with (
+            _open_tar_input(path, ext) as stream,
+            tarfile.open(fileobj=stream, mode="r|") as tf,
+        ):
+            member: tarfile.TarInfo
+            for member in tf:
+                if not member.isfile():
+                    continue
+                fobj = tf.extractfile(member)
+                if fobj is None:
+                    continue
+                yield member.name, fobj.read()
         return
 
     raise ValueError(f"unsupported input extension: {ext}")
@@ -248,27 +249,25 @@ def _write_tar(entries: Iterable[Entry], dst: Path, ext: str) -> int:
         ValueError: If ``ext`` is not a supported tar-family target.
     """
     if ext == ".tar.gz":
-        with gzip.open(dst, "wb") as f:
-            with tarfile.open(fileobj=f, mode="w|") as tf:
-                return _add_tar_entries(tf, entries)
+        with gzip.open(dst, "wb") as f, tarfile.open(fileobj=f, mode="w|") as tf:
+            return _add_tar_entries(tf, entries)
     if ext == ".tar.bz2":
-        with bz2.open(dst, "wb") as f:
-            with tarfile.open(fileobj=f, mode="w|") as tf:
-                return _add_tar_entries(tf, entries)
+        with bz2.open(dst, "wb") as f, tarfile.open(fileobj=f, mode="w|") as tf:
+            return _add_tar_entries(tf, entries)
     if ext == ".tar.xz":
-        with lzma.open(dst, "wb", preset=9) as f:
-            with tarfile.open(fileobj=f, mode="w|") as tf:
-                return _add_tar_entries(tf, entries)
+        with (
+            lzma.open(dst, "wb", preset=9) as f,
+            tarfile.open(fileobj=f, mode="w|") as tf,
+        ):
+            return _add_tar_entries(tf, entries)
     if ext == ".tar.zst":
         cctx: zstd.ZstdCompressor = zstd.ZstdCompressor(level=9)
-        with dst.open("wb") as f_raw:
-            with cctx.stream_writer(f_raw) as writer:
-                with tarfile.open(fileobj=writer, mode="w|") as tf:  # type: ignore[arg-type]
-                    return _add_tar_entries(tf, entries)
-    if ext == ".tar.lz4":
-        with lz4.frame.open(dst, "wb") as f:
-            with tarfile.open(fileobj=f, mode="w|") as tf:
+        with dst.open("wb") as f_raw, cctx.stream_writer(f_raw) as writer:
+            with tarfile.open(fileobj=writer, mode="w|") as tf:  # type: ignore[arg-type]
                 return _add_tar_entries(tf, entries)
+    if ext == ".tar.lz4":
+        with lz4.frame.open(dst, "wb") as f, tarfile.open(fileobj=f, mode="w|") as tf:
+            return _add_tar_entries(tf, entries)
     if ext == ".tar.br":
         buf: io.BytesIO = io.BytesIO()
         with tarfile.open(fileobj=buf, mode="w|") as tf:
@@ -282,15 +281,12 @@ def _write_tar(entries: Iterable[Entry], dst: Path, ext: str) -> int:
         dst.write_bytes(bytes(cramjam.snappy.compress(buf.getvalue())))
         return total
     if ext == ".tar.7z":
-        tmp_path: Optional[Path] = None
+        tmp_path: Path | None = None
         try:
-            with tempfile.NamedTemporaryFile(
-                suffix=".tar", delete=False
-            ) as tmp:
+            with tempfile.NamedTemporaryFile(suffix=".tar", delete=False) as tmp:
                 tmp_path = Path(tmp.name)
-            with tmp_path.open("wb") as f:
-                with tarfile.open(fileobj=f, mode="w|") as tf:
-                    total = _add_tar_entries(tf, entries)
+            with tmp_path.open("wb") as f, tarfile.open(fileobj=f, mode="w|") as tf:
+                total = _add_tar_entries(tf, entries)
             with py7zr.SevenZipFile(str(dst), mode="w") as archive:
                 archive.write(str(tmp_path), arcname="archive.tar")
             return total
@@ -343,7 +339,7 @@ def convert_one(args: ConvertArgs) -> ConvertResult:
     src_str, target_ext = args
     src: Path = Path(src_str)
 
-    input_ext: Optional[str] = detect_ext(src)
+    input_ext: str | None = detect_ext(src)
     if input_ext is None:
         return (src_str, 0, False, f"unsupported input format: {src.name}")
 
@@ -382,7 +378,7 @@ def convert_one(args: ConvertArgs) -> ConvertResult:
         return (src_str, 0, False, f"error: {exc}")
 
 
-def _collect_inputs(args: List[str]) -> List[Path]:
+def _collect_inputs(args: list[str]) -> list[Path]:
     """Resolve CLI path arguments into a list of convertible archives.
 
     Args:
@@ -392,7 +388,7 @@ def _collect_inputs(args: List[str]) -> List[Path]:
     Returns:
         A list of supported archive file paths.
     """
-    candidates: List[Path] = []
+    candidates: list[Path] = []
     if not args:
         candidates.extend(Path.cwd().iterdir())
     else:
@@ -404,7 +400,7 @@ def _collect_inputs(args: List[str]) -> List[Path]:
             else:
                 candidates.append(p)
 
-    files: List[Path] = []
+    files: list[Path] = []
     p: Path
     for p in candidates:
         if not p.is_file():
@@ -441,17 +437,12 @@ def _build_parser() -> argparse.ArgumentParser:
         A configured ``argparse.ArgumentParser``.
     """
     parser = argparse.ArgumentParser(
-        description=(
-            "Convert archives between tar-compressed and zip-based formats."
-        )
+        description=("Convert archives between tar-compressed and zip-based formats.")
     )
     parser.add_argument(
         "inputs",
         nargs="*",
-        help=(
-            "Input archive files or directories "
-            "(default: current directory)"
-        ),
+        help=("Input archive files or directories (default: current directory)"),
     )
     parser.add_argument(
         "-t",
@@ -463,7 +454,7 @@ def _build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main(argv: Optional[Iterable[str]] = None) -> int:
+def main(argv: Iterable[str] | None = None) -> int:
     """Entry point for the archive conversion CLI.
 
     Args:
@@ -478,17 +469,15 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
     )
 
     target_ext: str = args.to
-    files: List[Path] = _collect_inputs(list(args.inputs))
+    files: list[Path] = _collect_inputs(list(args.inputs))
     if not files:
         logger.warning("No convertible archives found.")
         return 0
 
-    logger.info(
-        "Found {} archive(s); converting to {}", len(files), target_ext
-    )
+    logger.info("Found {} archive(s); converting to {}", len(files), target_ext)
 
-    tasks: List[ConvertArgs] = [(str(p), target_ext) for p in files]
-    results: List[ConvertResult] = []
+    tasks: list[ConvertArgs] = [(str(p), target_ext) for p in files]
+    results: list[ConvertResult] = []
 
     with Pool(processes=POOL_SIZE) as pool:
         result: ConvertResult

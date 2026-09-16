@@ -24,9 +24,10 @@ from __future__ import annotations
 
 import re
 import sys
+from collections.abc import Iterable
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Iterable, List, Optional, Set, Tuple
+from typing import List, Optional, Set, Tuple
 
 from loguru import logger
 from tqdm import tqdm
@@ -37,7 +38,7 @@ TRAILING_CHARS: str = ".,;:!?)'\"`"
 URLS_FILENAME: str = "urls.txt"
 GITLINKS_FILENAME: str = "gitlinks.txt"
 
-EXCLUDE_DIRS: Set[str] = {
+EXCLUDE_DIRS: set[str] = {
     ".git",
     "__pycache__",
     ".venv",
@@ -52,7 +53,7 @@ URL_PATTERN: re.Pattern[str] = re.compile(
     r'https?://[^\s<>r"{}|\^`\[\]]*', re.IGNORECASE
 )
 
-GIT_DOMAINS: Set[str] = {
+GIT_DOMAINS: set[str] = {
     "github.com",
     "gitlab.com",
     "gitea.io",
@@ -63,7 +64,7 @@ GIT_DOMAINS: Set[str] = {
     "gogs.io",
 }
 
-UrlPair = Tuple[Set[str], Set[str]]
+UrlPair = tuple[set[str], set[str]]
 
 
 def is_git_url(url: str) -> bool:
@@ -93,8 +94,8 @@ def extract_urls_from_file(file_path: Path) -> UrlPair:
         A tuple ``(regular_urls, git_urls)`` of unique URL strings. Both sets
         are empty for oversized, unreadable, or failing files.
     """
-    regular_urls: Set[str] = set()
-    git_urls: Set[str] = set()
+    regular_urls: set[str] = set()
+    git_urls: set[str] = set()
 
     try:
         if file_path.stat().st_size > MAX_FILE_SIZE_BYTES:
@@ -119,7 +120,7 @@ def extract_urls_from_file(file_path: Path) -> UrlPair:
     return regular_urls, git_urls
 
 
-def _collect_files(root: Path) -> List[Path]:
+def _collect_files(root: Path) -> list[Path]:
     """Return all regular files under ``root`` outside excluded directories.
 
     Args:
@@ -128,7 +129,7 @@ def _collect_files(root: Path) -> List[Path]:
     Returns:
         A list of candidate file paths.
     """
-    files: List[Path] = []
+    files: list[Path] = []
     path: Path
     for path in root.rglob("*"):
         if not path.is_file():
@@ -150,7 +151,7 @@ def _write_lines(path: Path, lines: Iterable[str]) -> None:
         f.writelines(line + "\n" for line in lines)
 
 
-def main(argv: Optional[Iterable[str]] = None) -> int:
+def main(argv: Iterable[str] | None = None) -> int:
     """Entry point for the URL extraction script.
 
     Args:
@@ -163,7 +164,7 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
     _ = list(argv) if argv is not None else sys.argv[1:]
 
     current_dir: Path = Path.cwd()
-    all_files: List[Path] = _collect_files(current_dir)
+    all_files: list[Path] = _collect_files(current_dir)
 
     if not all_files:
         logger.info("No files found to process.")
@@ -171,8 +172,8 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
 
     logger.info("Found {} files to process...", len(all_files))
 
-    all_regular_urls: Set[str] = set()
-    all_git_urls: Set[str] = set()
+    all_regular_urls: set[str] = set()
+    all_git_urls: set[str] = set()
 
     with Pool(processes=POOL_SIZE) as pool:
         result: UrlPair
@@ -186,8 +187,8 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
             all_regular_urls.update(regular_urls)
             all_git_urls.update(git_urls)
 
-    sorted_regular: List[str] = sorted(all_regular_urls)
-    sorted_git: List[str] = sorted(all_git_urls)
+    sorted_regular: list[str] = sorted(all_regular_urls)
+    sorted_git: list[str] = sorted(all_git_urls)
 
     urls_file: Path = current_dir / URLS_FILENAME
     gitlinks_file: Path = current_dir / GITLINKS_FILENAME
@@ -196,9 +197,7 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
     _write_lines(gitlinks_file, sorted_git)
 
     logger.info("Extraction complete!")
-    logger.info(
-        "  Regular URLs: {} -> {}", len(sorted_regular), urls_file.name
-    )
+    logger.info("  Regular URLs: {} -> {}", len(sorted_regular), urls_file.name)
     logger.info("  Git URLs: {} -> {}", len(sorted_git), gitlinks_file.name)
 
     return 0

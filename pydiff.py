@@ -21,9 +21,10 @@ The generated script should:
 from __future__ import annotations
 
 import sys
+from collections.abc import Iterable, Sequence
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Final, Iterable, List, Optional, Sequence, Tuple
+from typing import Final, List, Optional, Tuple
 
 from loguru import logger
 
@@ -50,8 +51,8 @@ CODE_EXT: Final[frozenset[str]] = frozenset(
     }
 )
 
-FileLines = Tuple[Path, List[str]]
-DiffChunkArgs = Tuple[List[str], "frozenset[str]", str]
+FileLines = tuple[Path, list[str]]
+DiffChunkArgs = tuple[list[str], "frozenset[str]", str]
 
 
 def count_lines(path: Path) -> int:
@@ -66,7 +67,7 @@ def count_lines(path: Path) -> int:
     return path.read_bytes().count(b"\n") + 1
 
 
-def strip_indentation(lines: Sequence[str]) -> List[str]:
+def strip_indentation(lines: Sequence[str]) -> list[str]:
     """Strip leading and trailing spaces/tabs from every line.
 
     Args:
@@ -89,13 +90,13 @@ def read_file_task(path: Path) -> FileLines:
         each line is stripped of leading/trailing spaces and tabs.
     """
     text: str = path.read_text(encoding="utf-8", errors="ignore")
-    lines: List[str] = text.splitlines(keepends=False)
+    lines: list[str] = text.splitlines(keepends=False)
     if path.suffix.lower() in CODE_EXT:
         lines = strip_indentation(lines)
     return path, lines
 
 
-def filter_diff_chunk(args: DiffChunkArgs) -> List[str]:
+def filter_diff_chunk(args: DiffChunkArgs) -> list[str]:
     """Filter a chunk of lines by membership in ``exclude_set``.
 
     Args:
@@ -112,7 +113,7 @@ def filter_diff_chunk(args: DiffChunkArgs) -> List[str]:
     return [p for p in chunk if p in exclude_set]
 
 
-def _chunked(lines: List[str], size: int) -> List[List[str]]:
+def _chunked(lines: list[str], size: int) -> list[list[str]]:
     """Split ``lines`` into contiguous chunks of at most ``size`` items.
 
     Args:
@@ -136,38 +137,35 @@ def report_diff_lines(path1: Path, path2: Path) -> None:
     lines2_count: int = count_lines(path2)
 
     with Pool(processes=POOL_SIZE) as pool:
-        file_map: dict[Path, List[str]] = {}
+        file_map: dict[Path, list[str]] = {}
         path: Path
-        lines: List[str]
+        lines: list[str]
         for path, lines in pool.imap_unordered(read_file_task, [path1, path2]):
             file_map[path] = lines
 
-    lines1: List[str] = file_map[path1]
-    lines2: List[str] = file_map[path2]
+    lines1: list[str] = file_map[path1]
+    lines2: list[str] = file_map[path2]
 
     set1: set[str] = set(lines1)
     set2: set[str] = set(lines2)
 
-    only_in_first: List[str]
-    if (
-        lines1_count > LARGE_FILE_THRESHOLD
-        and lines2_count > LARGE_FILE_THRESHOLD
-    ):
+    only_in_first: list[str]
+    if lines1_count > LARGE_FILE_THRESHOLD and lines2_count > LARGE_FILE_THRESHOLD:
         chunk_size: int = max(MIN_CHUNK_SIZE, len(lines1) // POOL_SIZE)
-        chunks: List[List[str]] = _chunked(lines1, chunk_size)
+        chunks: list[list[str]] = _chunked(lines1, chunk_size)
         frozen2: frozenset[str] = frozenset(set2)
-        args_list: List[DiffChunkArgs] = [
+        args_list: list[DiffChunkArgs] = [
             (chunk, frozen2, "only_in_first") for chunk in chunks
         ]
         only_in_first = []
         with Pool(processes=POOL_SIZE) as pool:
-            partial: List[str]
+            partial: list[str]
             for partial in pool.imap_unordered(filter_diff_chunk, args_list):
                 only_in_first.extend(partial)
     else:
         only_in_first = [p for p in lines1 if p not in set2]
 
-    only_in_second: List[str] = [p for p in lines2 if p not in set1]
+    only_in_second: list[str] = [p for p in lines2 if p not in set1]
     common_count: int = len(set1 & set2)
 
     line: str
@@ -191,7 +189,7 @@ def report_diff_lines(path1: Path, path2: Path) -> None:
     )
 
 
-def main(argv: Optional[Iterable[str]] = None) -> int:
+def main(argv: Iterable[str] | None = None) -> int:
     """Entry point for the file-diff script.
 
     Args:
@@ -200,7 +198,7 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
     Returns:
         Process exit code (0 on success, 1 on invalid arguments).
     """
-    args: List[str] = list(argv) if argv is not None else sys.argv[1:]
+    args: list[str] = list(argv) if argv is not None else sys.argv[1:]
     if len(args) != 2:
         logger.error("Usage: python difflines.py <file1> <file2>")
         return 1

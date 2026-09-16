@@ -42,38 +42,54 @@ except ImportError:
 # ---------- Codec registry ----------
 # name -> (extension, compress_fn(data, level) -> bytes, decompress_fn(bytes) -> bytes, max_level or None)
 CODECS = {
-    "snappy":  (".sz",
-                lambda d, l: bytes(cj.snappy.compress(d)),
-                lambda d: bytes(cj.snappy.decompress(d)),
-                None),
-    "lz4":     (".lz4",
-                lambda d, l: bytes(cj.lz4.compress(d)),
-                lambda d: bytes(cj.lz4.decompress(d)),
-                None),
-    "gzip":    (".gz",
-                lambda d, l: bytes(cj.gzip.compress(d, level=l)),
-                lambda d: bytes(cj.gzip.decompress(d)),
-                9),
-    "deflate": (".deflate",
-                lambda d, l: bytes(cj.deflate.compress(d, level=l)),
-                lambda d: bytes(cj.deflate.decompress(d)),
-                9),
-    "bzip2":   (".bz2",
-                lambda d, l: bytes(cj.bzip2.compress(d, level=l)),
-                lambda d: bytes(cj.bzip2.decompress(d)),
-                9),
-    "xz":      (".xz",
-                lambda d, l: bytes(cj.xz.compress(d, level=l)),
-                lambda d: bytes(cj.xz.decompress(d)),
-                9),
-    "zstd":    (".zst",
-                lambda d, l: bytes(cj.zstd.compress(d, level=l)),
-                lambda d: bytes(cj.zstd.decompress(d)),
-                22),
-    "brotli":  (".br",
-                lambda d, l: bytes(cj.brotli.compress(d, level=l)),
-                lambda d: bytes(cj.brotli.decompress(d)),
-                11),
+    "snappy": (
+        ".sz",
+        lambda d, l: bytes(cj.snappy.compress(d)),
+        lambda d: bytes(cj.snappy.decompress(d)),
+        None,
+    ),
+    "lz4": (
+        ".lz4",
+        lambda d, l: bytes(cj.lz4.compress(d)),
+        lambda d: bytes(cj.lz4.decompress(d)),
+        None,
+    ),
+    "gzip": (
+        ".gz",
+        lambda d, l: bytes(cj.gzip.compress(d, level=l)),
+        lambda d: bytes(cj.gzip.decompress(d)),
+        9,
+    ),
+    "deflate": (
+        ".deflate",
+        lambda d, l: bytes(cj.deflate.compress(d, level=l)),
+        lambda d: bytes(cj.deflate.decompress(d)),
+        9,
+    ),
+    "bzip2": (
+        ".bz2",
+        lambda d, l: bytes(cj.bzip2.compress(d, level=l)),
+        lambda d: bytes(cj.bzip2.decompress(d)),
+        9,
+    ),
+    "xz": (
+        ".xz",
+        lambda d, l: bytes(cj.xz.compress(d, level=l)),
+        lambda d: bytes(cj.xz.decompress(d)),
+        9,
+    ),
+    "zstd": (
+        ".zst",
+        lambda d, l: bytes(cj.zstd.compress(d, level=l)),
+        lambda d: bytes(cj.zstd.decompress(d)),
+        22,
+    ),
+    "brotli": (
+        ".br",
+        lambda d, l: bytes(cj.brotli.compress(d, level=l)),
+        lambda d: bytes(cj.brotli.decompress(d)),
+        11,
+    ),
 }
 
 DEFAULT_ALGO = "snappy"
@@ -83,6 +99,7 @@ EXT_TO_ALGO = {ext: name for name, (ext, _, _, _) in CODECS.items()}
 
 
 # ---------- Compress ----------
+
 
 def compress_file(path: Path, algo: str, level, keep: bool, dry_run: bool) -> dict:
     ext, comp_fn, decomp_fn, _ = CODECS[algo]
@@ -150,8 +167,7 @@ def compress_file(path: Path, algo: str, level, keep: bool, dry_run: bool) -> di
         return result
 
     result["out_bytes"] = len(compressed)
-    result["ratio"] = (result["in_bytes"] / len(compressed)
-                       if compressed else None)
+    result["ratio"] = result["in_bytes"] / len(compressed) if compressed else None
     result["ok"] = True
 
     if not keep:
@@ -165,6 +181,7 @@ def compress_file(path: Path, algo: str, level, keep: bool, dry_run: bool) -> di
 
 
 # ---------- Decompress ----------
+
 
 def decompress_file(path: Path, algo: str, keep: bool, dry_run: bool) -> dict:
     ext, comp_fn, decomp_fn, level = CODECS[algo]
@@ -186,7 +203,7 @@ def decompress_file(path: Path, algo: str, keep: bool, dry_run: bool) -> dict:
         result["error"] = f"file does not end with {ext}"
         return result
 
-    out_path = path.with_name(path.name[:-len(ext)])
+    out_path = path.with_name(path.name[: -len(ext)])
     result["output"] = str(out_path)
 
     try:
@@ -217,7 +234,9 @@ def decompress_file(path: Path, algo: str, keep: bool, dry_run: bool) -> dict:
 
     # Verify round-trip re-compress BEFORE writing
     try:
-        recompressed = comp_fn(restored, level) if level is not None else comp_fn(restored, None)
+        recompressed = (
+            comp_fn(restored, level) if level is not None else comp_fn(restored, None)
+        )
         rechecked = decomp_fn(recompressed)
         if rechecked != restored:
             result["error"] = "round-trip mismatch (refusing to write)"
@@ -239,8 +258,7 @@ def decompress_file(path: Path, algo: str, keep: bool, dry_run: bool) -> dict:
         return result
 
     result["out_bytes"] = len(restored)
-    result["ratio"] = (len(restored) / result["in_bytes"]
-                       if result["in_bytes"] else None)
+    result["ratio"] = len(restored) / result["in_bytes"] if result["in_bytes"] else None
     result["ok"] = True
 
     if not keep:
@@ -255,17 +273,22 @@ def decompress_file(path: Path, algo: str, keep: bool, dry_run: bool) -> dict:
 
 # ---------- Path collection ----------
 
+
 def collect_files_for_compress(root: Path, skip_suffixes):
     if root.is_file():
         return [] if root.suffix.lower() in skip_suffixes else [root]
     if root.is_dir():
-        return [p for p in sorted(root.rglob("*"))
-                if p.is_file() and p.suffix.lower() not in skip_suffixes]
+        return [
+            p
+            for p in sorted(root.rglob("*"))
+            if p.is_file() and p.suffix.lower() not in skip_suffixes
+        ]
     return []
 
 
 def collect_files_for_decompress(root: Path, algo_filter):
     """Collect files whose suffix maps to a known codec (or the one in algo_filter)."""
+
     def matches(p: Path) -> bool:
         if algo_filter is not None:
             return p.name.endswith(CODECS[algo_filter][0])
@@ -274,8 +297,7 @@ def collect_files_for_decompress(root: Path, algo_filter):
     if root.is_file():
         return [root] if matches(root) else []
     if root.is_dir():
-        return [p for p in sorted(root.rglob("*"))
-                if p.is_file() and matches(p)]
+        return [p for p in sorted(root.rglob("*")) if p.is_file() and matches(p)]
     return []
 
 
@@ -291,6 +313,7 @@ def detect_algo(path: Path, forced: str):
 
 # ---------- Main ----------
 
+
 def main():
     parser = argparse.ArgumentParser(
         description=__doc__,
@@ -299,25 +322,46 @@ def main():
     parser.add_argument("path", type=Path, help="File or folder to process")
 
     mode = parser.add_mutually_exclusive_group()
-    mode.add_argument("-c", "--compress", dest="mode", action="store_const",
-                      const="compress",
-                      help="Compress files (default)")
-    mode.add_argument("-d", "--decompress", dest="mode", action="store_const",
-                      const="decompress",
-                      help="Decompress files")
+    mode.add_argument(
+        "-c",
+        "--compress",
+        dest="mode",
+        action="store_const",
+        const="compress",
+        help="Compress files (default)",
+    )
+    mode.add_argument(
+        "-d",
+        "--decompress",
+        dest="mode",
+        action="store_const",
+        const="decompress",
+        help="Decompress files",
+    )
     parser.set_defaults(mode="compress")
 
-    parser.add_argument("-a", "--algo", default=None,
-                        choices=sorted(CODECS.keys()),
-                        help=f"cramjam algorithm "
-                             f"(compress default: {DEFAULT_ALGO}; "
-                             f"decompress default: auto by extension)")
-    parser.add_argument("-k", "--keep", action="store_true",
-                        help="Keep the original files")
-    parser.add_argument("--dry-run", action="store_true",
-                        help="Show what would happen, don't write or delete")
-    parser.add_argument("--skip-existing", action="store_true",
-                        help="Skip files whose output already exists")
+    parser.add_argument(
+        "-a",
+        "--algo",
+        default=None,
+        choices=sorted(CODECS.keys()),
+        help=f"cramjam algorithm "
+        f"(compress default: {DEFAULT_ALGO}; "
+        f"decompress default: auto by extension)",
+    )
+    parser.add_argument(
+        "-k", "--keep", action="store_true", help="Keep the original files"
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Show what would happen, don't write or delete",
+    )
+    parser.add_argument(
+        "--skip-existing",
+        action="store_true",
+        help="Skip files whose output already exists",
+    )
     args = parser.parse_args()
 
     if not args.path.exists():
@@ -328,8 +372,17 @@ def main():
         algo = args.algo or DEFAULT_ALGO
         ext, _, _, level = CODECS[algo]
 
-        skip_suffixes = {".gz", ".bz2", ".xz", ".zst", ".br", ".lz4", ".sz",
-                         ".deflate", ".tmp"}
+        skip_suffixes = {
+            ".gz",
+            ".bz2",
+            ".xz",
+            ".zst",
+            ".br",
+            ".lz4",
+            ".sz",
+            ".deflate",
+            ".tmp",
+        }
         files = collect_files_for_compress(args.path, skip_suffixes)
         if not files:
             print("No input files to compress.", file=sys.stderr)
@@ -339,10 +392,11 @@ def main():
         print(f"Mode     : compress")
         print(f"Algorithm: {algo}{level_str}")
         print(f"Target   : {args.path}")
-        print(f"Files    : {len(files)}"
-              + ("  [dry-run]" if args.dry_run else "")
-              + ("  [keep originals]" if args.keep
-                 else "  [originals will be deleted]"))
+        print(
+            f"Files    : {len(files)}"
+            + ("  [dry-run]" if args.dry_run else "")
+            + ("  [keep originals]" if args.keep else "  [originals will be deleted]")
+        )
         print()
 
         total_in = total_out = 0
@@ -372,8 +426,10 @@ def main():
 
             ratio = f"{r['ratio']:.2f}x" if r["ratio"] else "?"
             flag = "  (kept original)" if not r["removed"] else ""
-            print(f"  OK    {path}  ->  {r['output']}  "
-                  f"[{r['in_bytes']:,} -> {r['out_bytes']:,} B, {ratio}]{flag}")
+            print(
+                f"  OK    {path}  ->  {r['output']}  "
+                f"[{r['in_bytes']:,} -> {r['out_bytes']:,} B, {ratio}]{flag}"
+            )
 
         print()
         if args.dry_run:
@@ -382,8 +438,10 @@ def main():
 
         print(f"Done. ok={n_ok}  failed={n_fail}  originals_removed={n_removed}")
         if total_in:
-            print(f"Total: {total_in:,} B -> {total_out:,} B "
-                  f"({total_in / total_out:.2f}x)")
+            print(
+                f"Total: {total_in:,} B -> {total_out:,} B "
+                f"({total_in / total_out:.2f}x)"
+            )
 
     else:  # decompress
         algo_filter = args.algo
@@ -396,10 +454,15 @@ def main():
         print(f"Mode     : decompress")
         print(f"Algorithm: {algo_filter if algo_filter else 'auto by extension'}")
         print(f"Target   : {args.path}")
-        print(f"Files    : {len(files)}"
-              + ("  [dry-run]" if args.dry_run else "")
-              + ("  [keep originals]" if args.keep
-                 else "  [compressed files will be deleted]"))
+        print(
+            f"Files    : {len(files)}"
+            + ("  [dry-run]" if args.dry_run else "")
+            + (
+                "  [keep originals]"
+                if args.keep
+                else "  [compressed files will be deleted]"
+            )
+        )
         print()
 
         total_in = total_out = 0
@@ -413,7 +476,7 @@ def main():
                 continue
 
             ext = CODECS[algo][0]
-            expected_out = path.with_name(path.name[:-len(ext)])
+            expected_out = path.with_name(path.name[: -len(ext)])
 
             if args.skip_existing and expected_out.exists():
                 print(f"  SKIP  {path}  (output exists)")
@@ -438,19 +501,25 @@ def main():
 
             ratio = f"{r['ratio']:.2f}x" if r["ratio"] else "?"
             flag = "  (kept original)" if not r["removed"] else ""
-            print(f"  OK    {path}  ->  {r['output']}  [{algo}]  "
-                  f"[{r['in_bytes']:,} -> {r['out_bytes']:,} B, {ratio}]{flag}")
+            print(
+                f"  OK    {path}  ->  {r['output']}  [{algo}]  "
+                f"[{r['in_bytes']:,} -> {r['out_bytes']:,} B, {ratio}]{flag}"
+            )
 
         print()
         if args.dry_run:
             print(f"Dry run complete. {len(files)} file(s) would be decompressed.")
             return
 
-        print(f"Done. ok={n_ok}  failed={n_fail}  skipped={n_skipped}  "
-              f"originals_removed={n_removed}")
+        print(
+            f"Done. ok={n_ok}  failed={n_fail}  skipped={n_skipped}  "
+            f"originals_removed={n_removed}"
+        )
         if total_in:
-            print(f"Total: {total_in:,} B -> {total_out:,} B "
-                  f"({total_out / total_in:.2f}x)")
+            print(
+                f"Total: {total_in:,} B -> {total_out:,} B "
+                f"({total_out / total_in:.2f}x)"
+            )
 
 
 if __name__ == "__main__":

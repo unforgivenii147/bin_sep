@@ -20,10 +20,11 @@ The generated script should:
 from __future__ import annotations
 
 import sys
+from collections.abc import Iterable, Sequence
 from multiprocessing import Pool
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from typing import Iterable, List, Optional, Sequence
+from typing import List, Optional
 
 from loguru import logger
 
@@ -50,7 +51,7 @@ COMMENT_MAP: dict[str, str] = {
 }
 
 
-def process_chunk(lines: Sequence[str], comment_char: str) -> List[str]:
+def process_chunk(lines: Sequence[str], comment_char: str) -> list[str]:
     """Prefix non-blank, non-already-commented lines with ``comment_char``.
 
     Args:
@@ -60,7 +61,7 @@ def process_chunk(lines: Sequence[str], comment_char: str) -> List[str]:
     Returns:
         A new list of lines with the requested prefix applied.
     """
-    processed: List[str] = []
+    processed: list[str] = []
     line: str
     for line in lines:
         stripped: str = line.lstrip()
@@ -71,7 +72,7 @@ def process_chunk(lines: Sequence[str], comment_char: str) -> List[str]:
     return processed
 
 
-def _parse_args(argv: Sequence[str]) -> tuple[Path, int, Optional[int]]:
+def _parse_args(argv: Sequence[str]) -> tuple[Path, int, int | None]:
     """Parse CLI arguments into (path, start_line, end_line).
 
     Args:
@@ -85,9 +86,7 @@ def _parse_args(argv: Sequence[str]) -> tuple[Path, int, Optional[int]]:
         SystemExit: If the arguments are invalid or the file does not exist.
     """
     if not 3 <= len(argv) <= 4:
-        logger.error(
-            "Usage: python commentout.py <filename> <start_line> [end_line]"
-        )
+        logger.error("Usage: python commentout.py <filename> <start_line> [end_line]")
         raise SystemExit(1)
 
     file_path: Path = Path(argv[1])
@@ -97,7 +96,7 @@ def _parse_args(argv: Sequence[str]) -> tuple[Path, int, Optional[int]]:
 
     try:
         start_line: int = int(argv[2])
-        end_line: Optional[int] = int(argv[3]) if len(argv) == 4 else None
+        end_line: int | None = int(argv[3]) if len(argv) == 4 else None
     except ValueError:
         logger.error("Line numbers must be integers.")
         raise SystemExit(1)
@@ -112,7 +111,7 @@ def _resolve_comment_char(file_path: Path) -> str:
     extensions.
     """
     ext: str = file_path.suffix.lower()
-    comment_char: Optional[str] = COMMENT_MAP.get(ext)
+    comment_char: str | None = COMMENT_MAP.get(ext)
     if comment_char is None:
         logger.warning(
             "Unknown extension {}. Using default '{}' as comment char.",
@@ -123,7 +122,7 @@ def _resolve_comment_char(file_path: Path) -> str:
     return comment_char
 
 
-def main(argv: Optional[Iterable[str]] = None) -> int:
+def main(argv: Iterable[str] | None = None) -> int:
     """Entry point: comment out a line range within a source file.
 
     Args:
@@ -132,10 +131,10 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
     Returns:
         Process exit code (0 on success).
     """
-    args: List[str] = list(argv) if argv is not None else sys.argv
+    args: list[str] = list(argv) if argv is not None else sys.argv
     file_path: Path
     start_line: int
-    end_line: Optional[int]
+    end_line: int | None
     file_path, start_line, end_line = _parse_args(args)
     comment_char: str = _resolve_comment_char(file_path)
 
@@ -153,8 +152,8 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
 
         with Pool(processes=POOL_SIZE) as pool:
             while True:
-                raw: List[str] = [infile.readline() for _ in range(CHUNK_SIZE)]
-                lines: List[str] = [line for line in raw if line]
+                raw: list[str] = [infile.readline() for _ in range(CHUNK_SIZE)]
+                lines: list[str] = [line for line in raw if line]
                 if not lines:
                     break
 
@@ -168,9 +167,9 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
                         if end_line is not None
                         else len(lines)
                     )
-                    prefix: List[str] = lines[:prefix_count]
-                    target_block: List[str] = lines[prefix_count:suffix_start]
-                    suffix: List[str] = lines[suffix_start:]
+                    prefix: list[str] = lines[:prefix_count]
+                    target_block: list[str] = lines[prefix_count:suffix_start]
+                    suffix: list[str] = lines[suffix_start:]
 
                     async_result = pool.apply_async(
                         process_chunk, (target_block, comment_char)

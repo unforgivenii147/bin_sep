@@ -23,9 +23,10 @@ standalone Python scripts. The generated script should:
 from __future__ import annotations
 
 import sys
+from collections.abc import Iterable, Sequence
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Iterable, List, Optional, Sequence
+from typing import List, Optional
 
 import nbformat
 from loguru import logger
@@ -48,8 +49,8 @@ def strip_magics(source: str) -> str:
     ``# [MAGIC] ...`` comment, and backslash line continuations that follow
     are also commented out.
     """
-    lines: List[str] = source.split("\n")
-    result: List[str] = []
+    lines: list[str] = source.split("\n")
+    result: list[str] = []
     i: int = 0
     while i < len(lines):
         line: str = lines[i]
@@ -68,10 +69,10 @@ def strip_magics(source: str) -> str:
 
 def nb2py(notebook: NotebookNode) -> str:
     """Convert a parsed notebook into a standalone Python script."""
-    imports: List[str] = []
-    os_mods: List[str] = []
-    sys_mods: List[str] = []
-    main_code: List[str] = []
+    imports: list[str] = []
+    os_mods: list[str] = []
+    sys_mods: list[str] = []
+    main_code: list[str] = []
 
     cell: NotebookNode
     for cell in notebook.cells:
@@ -116,7 +117,7 @@ def nb2py(notebook: NotebookNode) -> str:
     return f"{imports_str}if __name__ == '__main__':\n{main_indented}"
 
 
-def process_file(path: Path) -> Optional[str]:
+def process_file(path: Path) -> str | None:
     """Convert a single ``.ipynb`` file to a sibling ``.py`` file.
 
     Args:
@@ -138,7 +139,7 @@ def process_file(path: Path) -> Optional[str]:
     return f"Exported → {fo.name}"
 
 
-def _collect_files(args: Sequence[str]) -> List[Path]:
+def _collect_files(args: Sequence[str]) -> list[Path]:
     """Resolve CLI arguments into a list of ``.ipynb`` files.
 
     Args:
@@ -151,7 +152,7 @@ def _collect_files(args: Sequence[str]) -> List[Path]:
     if not args:
         return list(Path.cwd().rglob("*.ipynb"))
 
-    files: List[Path] = []
+    files: list[Path] = []
     arg: str
     for arg in args:
         p: Path = Path(arg)
@@ -162,7 +163,7 @@ def _collect_files(args: Sequence[str]) -> List[Path]:
     return files
 
 
-def main(argv: Optional[Iterable[str]] = None) -> int:
+def main(argv: Iterable[str] | None = None) -> int:
     """Entry point: convert notebooks to Python scripts in parallel.
 
     Args:
@@ -171,20 +172,22 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
     Returns:
         Process exit code (0 on success).
     """
-    args: List[str] = list(argv) if argv is not None else sys.argv[1:]
-    files: List[Path] = _collect_files(args)
+    args: list[str] = list(argv) if argv is not None else sys.argv[1:]
+    files: list[Path] = _collect_files(args)
 
     if not files:
         logger.info("No .ipynb files found")
         return 0
 
-    logger.info("Found {} notebook(s) to convert using {} workers", len(files), POOL_SIZE)
+    logger.info(
+        "Found {} notebook(s) to convert using {} workers", len(files), POOL_SIZE
+    )
 
     with Pool(processes=POOL_SIZE) as pool:
         results = [pool.apply_async(process_file, (f,)) for f in files]
-        result: "AsyncResult[Optional[str]]"  # noqa: F821
+        result: AsyncResult[str | None]  # noqa: F821
         for result in results:
-            message: Optional[str] = result.get()
+            message: str | None = result.get()
             if message:
                 logger.info("{}", message)
 

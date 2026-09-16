@@ -22,9 +22,10 @@ import shutil
 import subprocess
 import sys
 from collections import defaultdict
+from collections.abc import Iterable
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import xxhash
 from loguru import logger
@@ -33,7 +34,7 @@ POOL_SIZE: int = 8
 HASH_CHUNK_SIZE: int = 8192
 DEFAULT_ROOT: str = "."
 
-FileHashResult = Tuple[Path, Optional[str]]
+FileHashResult = tuple[Path, str | None]
 
 
 def get_file_hash(filepath: Path) -> FileHashResult:
@@ -61,7 +62,7 @@ def get_file_hash(filepath: Path) -> FileHashResult:
         return filepath, None
 
 
-def _find_candidates(root: Path) -> List[Path]:
+def _find_candidates(root: Path) -> list[Path]:
     """Return files whose size is shared by at least one other file.
 
     Args:
@@ -70,7 +71,7 @@ def _find_candidates(root: Path) -> List[Path]:
     Returns:
         A list of candidate file paths for content hashing.
     """
-    size_map: Dict[int, List[Path]] = defaultdict(list)
+    size_map: dict[int, list[Path]] = defaultdict(list)
     path: Path
     for path in root.rglob("*"):
         if path.is_file() and not path.is_symlink():
@@ -79,15 +80,15 @@ def _find_candidates(root: Path) -> List[Path]:
             except OSError:
                 continue
 
-    candidates: List[Path] = []
-    paths: List[Path]
+    candidates: list[Path] = []
+    paths: list[Path]
     for paths in size_map.values():
         if len(paths) > 1:
             candidates.extend(paths)
     return candidates
 
 
-def _hash_files(files: List[Path]) -> Dict[str, List[Path]]:
+def _hash_files(files: list[Path]) -> dict[str, list[Path]]:
     """Hash ``files`` in parallel and group paths by digest.
 
     Args:
@@ -96,7 +97,7 @@ def _hash_files(files: List[Path]) -> Dict[str, List[Path]]:
     Returns:
         A mapping of hex digest to the list of files sharing that digest.
     """
-    hash_map: Dict[str, List[Path]] = defaultdict(list)
+    hash_map: dict[str, list[Path]] = defaultdict(list)
     if not files:
         return hash_map
 
@@ -109,7 +110,7 @@ def _hash_files(files: List[Path]) -> Dict[str, List[Path]]:
     return hash_map
 
 
-def _delete_file(path: Path) -> Optional[int]:
+def _delete_file(path: Path) -> int | None:
     """Delete or trash ``path`` and return its size in bytes.
 
     Args:
@@ -143,22 +144,22 @@ def remove_duplicates(root_dir: str, dry_run: bool = True) -> None:
     root: Path = Path(root_dir)
     logger.info("Scanning directory tree...")
 
-    files_to_hash: List[Path] = _find_candidates(root)
+    files_to_hash: list[Path] = _find_candidates(root)
     logger.info("Hashing {} potential duplicate files...", len(files_to_hash))
 
-    hash_map: Dict[str, List[Path]] = _hash_files(files_to_hash)
+    hash_map: dict[str, list[Path]] = _hash_files(files_to_hash)
 
     total_freed: int = 0
     duplicates_found: int = 0
 
     file_hash: str
-    paths: List[Path]
-    for file_hash, paths in hash_map.items():
+    paths: list[Path]
+    for paths in hash_map.values():
         if len(paths) <= 1:
             continue
         duplicates_found += len(paths) - 1
         paths.sort(key=lambda p: (p.stat().st_mtime, str(p)))
-        to_delete: List[Path] = paths[1:]
+        to_delete: list[Path] = paths[1:]
         p: Path
         for p in to_delete:
             try:
@@ -169,7 +170,7 @@ def remove_duplicates(root_dir: str, dry_run: bool = True) -> None:
                     logger.info("Would delete: {} ({} bytes)", p, file_size)
                     total_freed += file_size
                 else:
-                    freed: Optional[int] = _delete_file(p)
+                    freed: int | None = _delete_file(p)
                     if freed is not None:
                         total_freed += freed
                         logger.info("Deleted: {}", p)
@@ -181,13 +182,11 @@ def remove_duplicates(root_dir: str, dry_run: bool = True) -> None:
     if not dry_run:
         logger.info("Total disk space freed: {:.2f} MB", total_freed / (1024 * 1024))
     else:
-        logger.info(
-            "Potential space to free: {:.2f} MB", total_freed / (1024 * 1024)
-        )
+        logger.info("Potential space to free: {:.2f} MB", total_freed / (1024 * 1024))
         logger.info("Run with dry_run=False to actually delete files.")
 
 
-def main(argv: Optional[Iterable[str]] = None) -> int:
+def main(argv: Iterable[str] | None = None) -> int:
     """Entry point for the duplicate-file cleanup script.
 
     Args:
@@ -196,7 +195,7 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
     Returns:
         Process exit code (0 on success).
     """
-    args: List[str] = list(argv) if argv is not None else sys.argv[1:]
+    args: list[str] = list(argv) if argv is not None else sys.argv[1:]
     target_dir: str = args[0] if args else DEFAULT_ROOT
 
     logger.info("DRY RUN - No files will be deleted")

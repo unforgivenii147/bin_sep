@@ -296,7 +296,7 @@ def run_parallel(
 
     pool = Pool(processes=WORKERS)
     print(type(pool))
-    input('press any key to continue...')
+    input("press any key to continue...")
     try:
         for path in tasks:
             pool.apply_async(

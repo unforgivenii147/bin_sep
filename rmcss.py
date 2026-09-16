@@ -21,17 +21,18 @@ from __future__ import annotations
 import argparse
 import re
 import sys
+from collections.abc import Iterable, Iterator
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Iterable, Iterator, Optional, Set, Tuple
+from typing import Optional, Set, Tuple
 
 from loguru import logger
 
 COMMENT_PATTERN: re.Pattern[str] = re.compile(r"<!--.*?-->", re.DOTALL)
-DEFAULT_EXTENSIONS: Tuple[str, ...] = (".html", ".htm", ".css")
+DEFAULT_EXTENSIONS: tuple[str, ...] = (".html", ".htm", ".css")
 POOL_SIZE: int = 8
 
-FileResult = Tuple[Path, bool, Optional[str]]
+FileResult = tuple[Path, bool, str | None]
 
 
 def remove_comments_from_file(file_path: Path) -> FileResult:
@@ -55,7 +56,7 @@ def remove_comments_from_file(file_path: Path) -> FileResult:
         return (file_path, False, str(exc))
 
 
-def find_files(directory: Path, extensions: Set[str]) -> Iterator[Path]:
+def find_files(directory: Path, extensions: set[str]) -> Iterator[Path]:
     """Yield files under ``directory`` whose suffix matches ``extensions``.
 
     Args:
@@ -113,7 +114,7 @@ def _build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main(argv: Optional[Iterable[str]] = None) -> int:
+def main(argv: Iterable[str] | None = None) -> int:
     """Entry point for the comment-removal CLI.
 
     Args:
@@ -127,7 +128,7 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
         list(argv) if argv is not None else None
     )
 
-    extensions: Set[str] = {_normalize_extension(ext) for ext in args.extensions}
+    extensions: set[str] = {_normalize_extension(ext) for ext in args.extensions}
     directory: Path = Path(args.directory)
 
     try:

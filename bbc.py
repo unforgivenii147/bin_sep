@@ -23,7 +23,7 @@ def is_setupcfg(fn: Path) -> bool:
 
 if __name__ == "__main__":
     cwd = Path.cwd()
-    for item in cwd.iterdir():
+    for item in cwd.rglob("*"):
         if item.is_dir() and item.name in ("build", "dist", "target"):
             shutil.rmtree(str(item))
             print(f"{item.name} removed.")

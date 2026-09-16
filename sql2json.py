@@ -36,7 +36,6 @@ from multiprocessing import Pool, freeze_support
 from pathlib import Path
 from typing import Any
 
-
 WORKERS = 8
 READ_CHUNK_BYTES = 1024 * 1024  # 1 MiB
 DEFAULT_ENCODING = "utf-8"

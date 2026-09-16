@@ -1,4 +1,5 @@
 #!/data/data/com.termux/files/home/.local/bin/python
+import argparse
 import re
 import sys
 import time
@@ -9,7 +10,14 @@ import pycurl
 from bs4 import BeautifulSoup
 from dh import cprint
 
-MIRROR_URL = "https://mirror-pypi.runflare.com"
+# Mirror configurations
+MIRRORS = {
+    "runflare": "https://mirror-pypi.runflare.com",
+    "pypi": "https://pypi.org/simple",
+    "tsinghua": "https://pypi.tuna.tsinghua.edu.cn/simple",
+}
+DEFAULT_MIRROR = "runflare"
+
 TIMEOUT = 30
 DOWNLOAD_DIR = Path.cwd()
 MAX_RETRIES = 3
@@ -88,7 +96,6 @@ def has_arch_tag(url: str) -> bool:
     lower = url.lower()
     if WHEEL_PLATFORM_RE.search(lower):
         return True
-    # Check other arch indicators
     for tag in [
         "manylinux",
         "musllinux",
@@ -131,9 +138,9 @@ def select_best_url(links: list, pkg_name: str) -> tuple[str, str, str] | None:
       - "skip"     : has arch tag, should be skipped but URL reported
       - "error"    : no suitable file found
     """
-    sdist_candidates = []  # .tar.gz files
-    pure_wheel_candidates = []  # py3-none-any wheels
-    arch_skipped = []  # files with arch tags (to report)
+    sdist_candidates = []
+    pure_wheel_candidates = []
+    arch_skipped = []
 
     for link in links:
         href = link.get("href", "").strip()
@@ -142,11 +149,9 @@ def select_best_url(links: list, pkg_name: str) -> tuple[str, str, str] | None:
         url = href.split("#")[0]
         filename = link.get_text().strip() or url.split("/")[-1]
 
-        # Skip Windows URLs entirely
         if is_windows_url(url):
             continue
 
-        # Check if has arch tag
         if has_arch_tag(url):
             arch_skipped.append((url, filename))
             continue
@@ -156,17 +161,14 @@ def select_best_url(links: list, pkg_name: str) -> tuple[str, str, str] | None:
         elif is_pure_wheel(url):
             pure_wheel_candidates.append((url, filename))
 
-    # Prefer latest .tar.gz (sdist)
     if sdist_candidates:
         url, filename = sdist_candidates[-1]
         return (url, filename, "download")
 
-    # Fallback to pure wheel
     if pure_wheel_candidates:
         url, filename = pure_wheel_candidates[-1]
         return (url, filename, "download")
 
-    # No suitable file - report arch-tagged URLs
     if arch_skipped:
         url, filename = arch_skipped[-1]
         return (url, filename, "skip")
@@ -174,8 +176,36 @@ def select_best_url(links: list, pkg_name: str) -> tuple[str, str, str] | None:
     return None
 
 
-def fetch_package_page(pkg_name: str) -> str:
-    url = f"{MIRROR_URL}/{pkg_name}"
+def find_existing_package(pkg_name: str) -> bool:
+    """Check if any file for this package already exists in the download dir."""
+    normalized = pkg_name.lower().replace("-", "_").replace(".", "_")
+    pattern = re.compile(
+        r"^" + re.escape(normalized) + r"[-_.]v?\d",
+        re.IGNORECASE,
+    )
+
+    for f in DOWNLOAD_DIR.iterdir():
+        if not f.is_file() or f.stat().st_size == 0:
+            continue
+        fname = f.name.lower().replace("-", "_")
+        if pattern.match(fname):
+            return True
+    return False
+
+
+def fetch_package_page(pkg_name: str, mirror_base: str, is_simple_index: bool) -> str:
+    """
+    Fetch the package page from the given mirror.
+
+    - For 'simple index' style mirrors (PyPI, Tsinghua), the URL is
+      {base}/{name}/  and the page contains direct links to files.
+    - For the runflare mirror, the URL is {base}/{name} (no trailing slash).
+    """
+    if is_simple_index:
+        url = f"{mirror_base.rstrip('/')}/{pkg_name}/"
+    else:
+        url = f"{mirror_base.rstrip('/')}/{pkg_name}"
+
     buffer = BytesIO()
     curl = pycurl.Curl()
     curl.setopt(curl.URL, url)
@@ -209,8 +239,8 @@ def fetch_package_page(pkg_name: str) -> str:
             elif response_code == 429:
                 print("  HTTP 429: Too Many Requests - Rate limited")
             return ""
-        return buffer.getvalue().decode("utf-8")
-    except Exception as e:
+        return buffer.getvalue().decode("utf-8", errors="replace")
+    except Exception:
         return ""
     finally:
         curl.close()
@@ -225,7 +255,7 @@ def extract_latest_download_url(
         if not all_links:
             return None
         return select_best_url(all_links, pkg_name)
-    except Exception as e:
+    except Exception:
         return None
 
 
@@ -240,7 +270,7 @@ def download_file_with_retry(
     return False
 
 
-def download_file(url: str, filename: str) -> bool:
+def download_file(url: str, filename: str, referer: str = "") -> bool:
     DOWNLOAD_DIR.mkdir(parents=True, exist_ok=True)
     output_path = DOWNLOAD_DIR / filename
     if output_path.exists() and output_path.stat().st_size > 0:
@@ -257,14 +287,13 @@ def download_file(url: str, filename: str) -> bool:
             "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         )
         curl.setopt(curl.ACCEPT_ENCODING, "gzip, deflate")
-        curl.setopt(
-            curl.HTTPHEADER,
-            [
-                "Accept: */*",
-                "Accept-Language: en-US,en;q=0.5",
-                "Referer: https://mirror-pypi.runflare.com/",
-            ],
-        )
+        headers = [
+            "Accept: */*",
+            "Accept-Language: en-US,en;q=0.5",
+        ]
+        if referer:
+            headers.append(f"Referer: {referer}")
+        curl.setopt(curl.HTTPHEADER, headers)
         curl.setopt(curl.NOPROGRESS, 0)
 
         def progress_callback(download_t, download_d, upload_t, upload_d):
@@ -285,7 +314,6 @@ def download_file(url: str, filename: str) -> bool:
             response_code = curl.getinfo(curl.RESPONSE_CODE)
             if response_code == 200:
                 print()
-                file_size = output_path.stat().st_size
                 return True
             else:
                 if response_code == 402:
@@ -303,19 +331,21 @@ def download_file(url: str, filename: str) -> bool:
                 if output_path.exists():
                     output_path.unlink()
                 return False
-        except Exception as e:
+        except Exception:
             return False
         finally:
             curl.close()
 
 
-def process_package(pkg_name: str) -> tuple[bool, bool]:
+def process_package(
+    pkg_name: str, mirror_base: str, is_simple_index: bool
+) -> tuple[bool, bool]:
     """
     Returns (success, skipped).
     - success: True if downloaded successfully OR skipped (counts as OK)
     - skipped: True if file had arch tag and was not downloaded
     """
-    html = fetch_package_page(pkg_name)
+    html = fetch_package_page(pkg_name, mirror_base, is_simple_index)
     if not html:
         return (False, False)
     download_info = extract_latest_download_url(html, pkg_name)
@@ -328,19 +358,154 @@ def process_package(pkg_name: str) -> tuple[bool, bool]:
         return (True, True)
 
     print(f"Download URL: {url}")
-    ok = download_file_with_retry(url, filename)
+    ok = download_file_with_retry(url, filename, referer=mirror_base + "/")
     return (ok, False)
 
 
+def load_packages_from_file(file_path: str) -> list[str]:
+    """
+    Load package names from a file (one per line).
+    - Ignores empty lines and comments (lines starting with #).
+    - Strips inline comments (everything after #).
+    - Strips version specifiers, keeping only the package name.
+    """
+    path = Path(file_path)
+    if not path.is_file():
+        print(f"Error: file not found: {file_path}", file=sys.stderr)
+        sys.exit(1)
+
+    packages = []
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            for raw_line in f:
+                line = raw_line.split("#", 1)[0].strip()
+                if not line:
+                    continue
+                m = re.match(r"^([A-Za-z0-9_.\-]+)", line)
+                if m:
+                    packages.append(m.group(1))
+    except OSError as e:
+        print(f"Error reading file {file_path}: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    return packages
+
+
 def main():
-    packages = sys.argv[1:]
+    parser = argparse.ArgumentParser(
+        prog="pypi-mirror-dl",
+        description="Download packages from a PyPI mirror (source distributions "
+        "and pure-Python wheels preferred; arch-specific wheels skipped).",
+        epilog="Mirror selection: default is runflare. Use -p for official PyPI, "
+        "-c for Tsinghua (China). -p and -c are mutually exclusive.",
+    )
+    parser.add_argument(
+        "packages",
+        nargs="*",
+        help="Package name(s) to download.",
+    )
+    parser.add_argument(
+        "-f",
+        "--file",
+        dest="file",
+        metavar="FILE",
+        help="Read package names from FILE (one per line; blank lines and "
+        "'#' comments are ignored).",
+    )
+    parser.add_argument(
+        "-d",
+        "--dir",
+        dest="directory",
+        metavar="DIR",
+        help="Download directory (default: current directory).",
+    )
+
+    mirror_group = parser.add_mutually_exclusive_group()
+    mirror_group.add_argument(
+        "-p",
+        "--pypi",
+        action="store_true",
+        help="Download from official PyPI (https://pypi.org/simple).",
+    )
+    mirror_group.add_argument(
+        "-c",
+        "--china",
+        action="store_true",
+        help="Download from Tsinghua PyPI mirror (China).",
+    )
+    mirror_group.add_argument(
+        "-m",
+        "--mirror",
+        choices=list(MIRRORS.keys()),
+        help="Explicitly choose a mirror by name (default: runflare).",
+    )
+
+    args = parser.parse_args()
+
+    # Resolve mirror
+    if args.pypi:
+        mirror_key = "pypi"
+    elif args.china:
+        mirror_key = "tsinghua"
+    elif args.mirror:
+        mirror_key = args.mirror
+    else:
+        mirror_key = DEFAULT_MIRROR
+
+    mirror_base = MIRRORS[mirror_key]
+    # PyPI and Tsinghua serve the PEP 503 "simple index" (with trailing slash)
+    is_simple_index = mirror_key in ("pypi", "tsinghua")
+
+    # Optionally change download dir
+    global DOWNLOAD_DIR
+    if args.directory:
+        DOWNLOAD_DIR = Path(args.directory).expanduser().resolve()
+        if not DOWNLOAD_DIR.is_dir():
+            print(
+                f"Error: download directory does not exist: {DOWNLOAD_DIR}",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+
+    # Collect packages from CLI args and file
+    packages = list(args.packages)
+    if args.file:
+        file_pkgs = load_packages_from_file(args.file)
+        print(f"Loaded {len(file_pkgs)} package(s) from {args.file}")
+        packages.extend(file_pkgs)
+
+    if not packages:
+        parser.print_help()
+        sys.exit(1)
+
+    # Deduplicate while preserving order
+    seen = set()
+    unique_packages = []
+    for p in packages:
+        key = p.lower()
+        if key not in seen:
+            seen.add(key)
+            unique_packages.append(p)
+    packages = unique_packages
+
+    print(f"Mirror: {mirror_key} ({mirror_base})")
+    print(f"Download dir: {DOWNLOAD_DIR}")
+    print(f"Processing {len(packages)} package(s)...\n")
+
     start_time = time.time()
     successful = []
     failed = []
     skipped = []
+    already_exists = []
+
     for pkg_name in packages:
+        print(f"[{pkg_name}]")
         try:
-            ok, was_skipped = process_package(pkg_name)
+            if find_existing_package(pkg_name):
+                print(f"  Already exists, skipping")
+                already_exists.append(pkg_name)
+                continue
+            ok, was_skipped = process_package(pkg_name, mirror_base, is_simple_index)
             if was_skipped:
                 skipped.append(pkg_name)
             elif ok:
@@ -348,11 +513,19 @@ def main():
             else:
                 failed.append(pkg_name)
         except Exception as e:
+            print(f"  Error: {e}")
             failed.append(pkg_name)
+
+    elapsed = time.time() - start_time
+
     if successful:
         print(f"\nSuccessfully downloaded:")
         for pkg in successful:
             print(f"  ✓ {pkg}")
+    if already_exists:
+        print(f"\nAlready present:")
+        for pkg in already_exists:
+            print(f"  • {pkg}")
     if skipped:
         print(f"\nSkipped (arch-specific, no pure source/wheel available):")
         for pkg in skipped:
@@ -361,6 +534,17 @@ def main():
         print(f"\nFailed to download:")
         for pkg in failed:
             print(f"  ✗ {pkg}")
+
+    print(
+        f"\nDone in {elapsed:.1f}s — "
+        f"{len(successful)} downloaded, "
+        f"{len(already_exists)} already present, "
+        f"{len(skipped)} skipped, "
+        f"{len(failed)} failed"
+    )
+
+    if failed:
+        sys.exit(1)
 
 
 if __name__ == "__main__":
