@@ -1,36 +1,38 @@
 # Script index — grouped by functionality
 
-162 folders · 1234 scripts grouped · 4 scripts left at the repo root (unique functionality, no sibling).
+161 folders · 1217 scripts grouped · 5 scripts in the repo root.
 
-Each folder contains scripts that do the same job (often near-duplicates of each other).
-
-## `translate_files_generic/` — 25 scripts
-
-`autotrans.py`, `dt1.py`, `dt2.py`, `dtransline.py`, `gtrans.py`, `gtransline.py`, `ptrans.py`, `ptranslator.py`, `t_orig.py`, `tchn.py`, `tkor.py`, `tofa.py`, `trans_file_linebyline.py`, `trans_ru.py`, `trans_words.py`, `transasis.py`, `transfa.py`, `transfa2.py`, `transfamp.py`, `translate2.py`, `translate_file.py`, `transline.py`, `transline2.py`, `ultratranslator.py`, `vitrans.py`
+Every folder holds scripts that do the same job. Folders are listed biggest-first, so the
+clusters with the most overlap come first. A folder is only created when it has at least
+two members; scripts with a unique job stay in the root.
 
 ## `strip_comments_python/` — 24 scripts
 
 `aremci.py`, `armc.py`, `clean_py.py`, `cleanpy.py`, `cleanpy2.py`, `cormc.py`, `frmc.py`, `gemc.py`, `grmc.py`, `grmc_ts.py`, `grmcst.py`, `jtc.py`, `jtc2.py`, `pyjtc.py`, `rmc.py`, `rmcco.py`, `rmco.py`, `rmmc.py`, `rprompt.py`, `rrmc.py`, `sqizer.py`, `strip_comments.py`, `t5.py`, `tsrmc.py`
 
-## `dedup_python_defs/` — 22 scripts
+## `translate_files_generic/` — 24 scripts
 
-`check_const.py`, `check_dups.py`, `ddup.py`, `dduper.py`, `ddupr.py`, `dduputil.py`, `deduper.py`, `dedupfunc.py`, `deduplicate_python.py`, `diduper.py`, `dufpy.py`, `dup_detector.py`, `dupfuncanalyzer.py`, `find_dup_func_class_const.py`, `line_analyzer.py`, `pysim.py`, `refactor_imports.py`, `refactorer.py`, `remove_duplicate_functions.py`, `tsdeduper.py`, `vddup.py`, `vddup2.py`
+`autotrans.py`, `dt1.py`, `dt2.py`, `dtransline.py`, `gtrans.py`, `ptrans.py`, `ptranslator.py`, `t_orig.py`, `tchn.py`, `tkor.py`, `tofa.py`, `trans_file_linebyline.py`, `trans_ru.py`, `trans_words.py`, `transasis.py`, `transfa.py`, `transfa2.py`, `transfamp.py`, `translate2.py`, `translate_file.py`, `transline.py`, `transline2.py`, `ultratranslator.py`, `vitrans.py`
 
-## `extract_python_entities/` — 22 scripts
+## `dedup_python_defs/` — 21 scripts
 
-`cext.py`, `ex_class.py`, `ex_comments.py`, `ex_const.py`, `ex_ex.py`, `ex_func.py`, `exconst.py`, `excst.py`, `ext.py`, `extcode.py`, `extcst.py`, `extfc.py`, `extt.py`, `gen_s_expr.py`, `getfuncnames.py`, `gexcst.py`, `gext.py`, `gext2.py`, `gextco.py`, `gextco2.py`, `gextdb.py`, `tsext.py`
+`check_const.py`, `check_dups.py`, `ddup.py`, `ddupr.py`, `dduputil.py`, `deduper.py`, `dedupfunc.py`, `deduplicate_python.py`, `diduper.py`, `dufpy.py`, `dup_detector.py`, `dupfuncanalyzer.py`, `find_dup_func_class_const.py`, `line_analyzer.py`, `pysim.py`, `refactor_imports.py`, `refactorer.py`, `remove_duplicate_functions.py`, `tsdeduper.py`, `vddup.py`, `vddup2.py`
 
 ## `pkg_info_report/` — 20 scripts
 
 `check_duplicate_packages.py`, `check_missing_scripts.py`, `check_pkgs_site.py`, `detect_orphan_files.py`, `distinfo.py`, `find_binary_pkgs.py`, `get_small_pkgs.py`, `havebin.py`, `list_nonpure.py`, `list_noscript_pkgs.py`, `list_pkgs_to_zpkg.py`, `list_pkgs_with_script.py`, `no_entry_point.py`, `pkgs_with_entry_points.py`, `purenotpure.py`, `ren_node_pkgs.py`, `saveinstalledpkgs.py`, `savekeys.py`, `savepkgspure_notpure.py`, `xpkgs_git_repo.py`
 
-## `minify_web_assets/` — 18 scripts
+## `extract_python_entities/` — 19 scripts
 
-`bcss.py`, `ccss.py`, `fixsvg.py`, `hmin.py`, `htmin.py`, `html_minify_py.py`, `jb2.py`, `jm2.py`, `jsonvalidator.py`, `mincss.py`, `mini_html.py`, `minjch.py`, `mjb.py`, `pcssmin.py`, `pjsmin.py`, `pysvg.py`, `pysvg2.py`, `ter_ser.py`
+`cext.py`, `ex_const.py`, `ex_nodes.py`, `exconst.py`, `excst.py`, `ext.py`, `extcode.py`, `extcst.py`, `extfc.py`, `extt.py`, `gen_s_expr.py`, `getfuncnames.py`, `gexcst.py`, `gext.py`, `gext2.py`, `gextco.py`, `gextco2.py`, `gextdb.py`, `tsext.py`
 
 ## `rm_lines_from_files/` — 18 scripts
 
 `del10.py`, `del_empty_lines.py`, `delafter.py`, `delbefor.py`, `delemp.py`, `delempco.py`, `delinvis.py`, `delshort.py`, `detect_multiline_text.py`, `dll.py`, `remove_header.py`, `remove_lines_containing_str_from_files.py`, `rm_lines_that_contains.py`, `rm_skipdirs.py`, `rmi.py`, `rminfo.py`, `rmlines_with.py`, `todel.py`
+
+## `minify_web_assets/` — 16 scripts
+
+`ccss.py`, `fixsvg.py`, `hmin.py`, `htmin.py`, `html_minify_py.py`, `jm2.py`, `jsonvalidator.py`, `mincss.py`, `mini_html.py`, `minjch.py`, `mjb.py`, `pcssmin.py`, `pjsmin.py`, `pysvg.py`, `pysvg2.py`, `ter_ser.py`
 
 ## `scrape_site_links/` — 15 scripts
 
@@ -136,10 +138,6 @@ Each folder contains scripts that do the same job (often near-duplicates of each
 
 `fix_ext.py`, `fix_extension_mismatch_Version1.py`, `fix_extension_mismatch_Version2.py`, `fixext.py`, `fixext2.py`, `fixext3.py`, `fixextco.py`, `fixfileext.py`, `fpy.py`, `validate_binary_extensions.py`, `validate_text_extensions.py`
 
-## `font_convert/` — 11 scripts
-
-`fco.py`, `fontconverter.py`, `otf2ttf.py`, `otf2woff2.py`, `otf_to_ttf.py`, `random_font.py`, `tottf.py`, `ttf2woff2.py`, `woff22ttf.py`, `woff22woff.py`, `woff2woff2.py`
-
 ## `json_convert/` — 11 scripts
 
 `custom2json.py`, `freeze2json.py`, `jsonl2dict.py`, `jsonl2json.py`, `lower_keys.py`, `merge_json.py`, `mergejson.py`, `mime2json.py`, `sort_dict.py`, `ss2json.py`, `tojson.py`
@@ -159,10 +157,6 @@ Each folder contains scripts that do the same job (often near-duplicates of each
 ## `subtitle_extract/` — 11 scripts
 
 `ex_srt.py`, `ex_srt2.py`, `exsrt.py`, `exsrt2.py`, `exsrt3.py`, `exsub.py`, `getsrt.py`, `vid2txt.py`, `video2text.py`, `xburned_sub.py`, `xsub.py`
-
-## `to_pdf_convert/` — 11 scripts
-
-`cairosvg2pdf.py`, `chm2pdf.py`, `chm2pdf_reportlab.py`, `compile_precise.py`, `compile_precise2.py`, `dic2pdf.py`, `html2pdf.py`, `md2pdf.py`, `md2pdf2.py`, `md_to_pdf.py`, `md_to_pdf2.py`
 
 ## `translate_dict_json/` — 11 scripts
 
@@ -208,13 +202,13 @@ Each folder contains scripts that do the same job (often near-duplicates of each
 
 `clean_css.py`, `clean_html.py`, `cleancss2.py`, `cleanhtml.py`, `cleanhtmlre.py`, `cleanjs.py`, `cleants.py`, `rmcss.py`, `rmhtml.py`, `rmjsts.py`
 
+## `to_pdf_convert/` — 10 scripts
+
+`cairosvg2pdf.py`, `chm2pdf.py`, `chm2pdf_reportlab.py`, `compile_precise.py`, `dic2pdf.py`, `html2pdf.py`, `md2pdf.py`, `md2pdf2.py`, `md_to_pdf.py`, `md_to_pdf2.py`
+
 ## `translate_persian/` — 10 scripts
 
 `fa_trans.py`, `fasort.py`, `fatrans.py`, `fztrans.py`, `runtcli.py`, `tcli.py`, `tfa.py`, `tper.py`, `trans_fa_mp.py`, `transwords.py`
-
-## `dedup_files_fuzzy/` — 9 scripts
-
-`fsim.py`, `fssim.py`, `ssdim.py`, `ssdip.py`, `ssdiper.py`, `ssim.py`, `ssim2.py`, `ssim3.py`, `ssimove.py`
 
 ## `dedup_images/` — 9 scripts
 
@@ -260,6 +254,10 @@ Each folder contains scripts that do the same job (often near-duplicates of each
 
 `dedupsym.py`, `dupefix.py`, `dupf.py`, `dupfx.py`, `findupy.py`, `fsimz.py`, `symdups.py`, `xordup.py`
 
+## `font_convert/` — 8 scripts
+
+`fco.py`, `font_convert.py`, `fontconverter.py`, `otf2ttf.py`, `otf_to_ttf.py`, `random_font.py`, `tottf.py`, `woff22ttf.py`
+
 ## `format_python_code/` — 8 scripts
 
 `fixcode.py`, `fixindent.py`, `format_py_code.py`, `p45.py`, `rrw.py`, `rufbin.py`, `sort_pyfile.py`, `yap.py`
@@ -291,6 +289,10 @@ Each folder contains scripts that do the same job (often near-duplicates of each
 ## `archive_convert_codec/` — 7 scripts
 
 `archive_convert.py`, `archive_converter.py`, `br2zst.py`, `gz2xz.py`, `txz2whl.py`, `whl2txz.py`, `xz2gz.py`
+
+## `dedup_files_fuzzy/` — 7 scripts
+
+`fsim.py`, `ssdip.py`, `ssdiper.py`, `ssim.py`, `ssim2.py`, `ssim3.py`, `ssimove.py`
 
 ## `dedup_lines/` — 7 scripts
 
@@ -331,10 +333,6 @@ Each folder contains scripts that do the same job (often near-duplicates of each
 ## `log_transcript_clean/` — 7 scripts
 
 `cleaner.py`, `cleanhistory.py`, `cliner.py`, `cliner2.py`, `histdup.py`, `last5minutes.py`, `mchist.py`
-
-## `add_type_annotations/` — 6 scripts
-
-`add_typing.py`, `annotate.py`, `annotate_types.py`, `create_stub.py`, `type_hinter.py`, `unnotate.py`
 
 ## `audio_speech_text/` — 6 scripts
 
@@ -384,13 +382,13 @@ Each folder contains scripts that do the same job (often near-duplicates of each
 
 `html_entity.py`, `html_tag_balancer.py`, `remove_tag.py`, `rename_html_by_title.py`, `rmeta.py`, `strip_tags.py`
 
-## `rm_images_from_docs/` — 6 scripts
-
-`clean_md.py`, `cleanmd.py`, `doclin.py`, `markdown_image_remover.py`, `remove_image_refrences.py`, `rmimg.py`
-
 ## `subtitle_convert_clean/` — 6 scripts
 
 `clean_subs.py`, `folderize_srt.py`, `folderize_srt_files_by_lang.py`, `srt2txt.py`, `transrt.py`, `vtt2srt.py`
+
+## `add_type_annotations/` — 5 scripts
+
+`add_typing.py`, `annotate.py`, `create_stub.py`, `type_hinter.py`, `unnotate.py`
 
 ## `binary_so_tools/` — 5 scripts
 
@@ -443,6 +441,10 @@ Each folder contains scripts that do the same job (often near-duplicates of each
 ## `pypi_download_pkg/` — 5 scripts
 
 `pd.py`, `pdown.py`, `pdown2.py`, `pip_get.py`, `pipget.py`
+
+## `rm_images_from_docs/` — 5 scripts
+
+`clean_md.py`, `doclin.py`, `markdown_image_remover.py`, `remove_image_refrences.py`, `rmimg.py`
 
 ## `shell_script_convert_edit/` — 5 scripts
 
@@ -600,10 +602,6 @@ Each folder contains scripts that do the same job (often near-duplicates of each
 
 `check_exports.py`, `check_funcs.py`
 
-## `cli_wrapper_log/` — 2 scripts
-
-`feloai.py`, `wrapper_gh.py`
-
 ## `comment_out_lines/` — 2 scripts
 
 `comment_out.py`, `commentout.py`
@@ -652,125 +650,82 @@ Each folder contains scripts that do the same job (often near-duplicates of each
 
 `clean_wordlist.py`, `clean_wordlist_fast.py`
 
-## root (singletons — no folder created)
+## root (unique scripts — no folder created)
 
-`fix_html_md_broken_links.py`, `gitignore_updater.py`, `rm_from_archive.py`, `update_summary.py`
+`cli_wrapper.py`, `fix_html_md_broken_links.py`, `gitignore_updater.py`, `rm_from_archive.py`, `update_summary.py`
 
-## Near-duplicate scripts (>= 90% identical, whitespace/shebang-normalised)
+## Duplicate collapse log
 
-No two scripts in the collection are byte-identical, but these pairs are effectively the same
-program. Note that every pair ended up inside the *same* folder, i.e. no cross-folder pair
-scored >= 90% — the grouping follows actual code similarity, not just file names.
+A near-duplicate scan (whitespace/shebang-normalised `difflib` ratio over every pair inside a
+folder) found 21 pairs ≥ 95 % similar. Each was collapsed into one canonical script:
 
-### `add_type_annotations/`
+### Deleted as redundant twins
 
-- **100.0%** `add_typing.py` ↔ `annotate_types.py`
-### `archive_convert_codec/`
+| deleted | kept | why |
+| --- | --- | --- |
+| `add_type_annotations/annotate_types.py` | `add_typing.py` | 100 % identical job; only the `=` separator width differed |
+| `rm_images_from_docs/cleanmd.py` | `markdown_image_remover.py` | same tool; the kept one computes the size-reduction % correctly (`*100`, not `*40`) |
+| `to_pdf_convert/compile_precise2.py` | `compile_precise.py` | identical; only whitespace inside the CSS template |
+| `translate_files_generic/gtransline.py` | `ptrans.py` | `ptrans` translates *any* non-ASCII line (superset); Chinese-only is covered by `translate_chinese/` |
+| `dedup_files_fuzzy/fssim.py`, `ssdim.py` | `ssim2.py` | same ssdeep fuzzy-dup finder; kept the one using `ssdeep` directly (not the local `ppdeep` shim), with the correct `format=` kwarg and `similars.json` output |
+| `dedup_python_defs/dduper.py` | `deduplicate_python.py` | same job; kept the version with optional-import guards and AST validation |
+| `minify_web_assets/bcss.py`, `jb2.py` | `mincss.py`, `jm2.py` | the *beautify* variants of a minify folder — dropped as requested; CSS/JS/JSON pretty-printing still lives in `code_beautify_prettier/` (`prettify.py`, `pret3.py`, `pypret.py`) |
+
+### Merged template families into one parameterised script (originals deleted)
+
+| new script | replaces | how to select the old behaviour |
+| --- | --- | --- |
+| `extract_python_entities/ex_nodes.py` | `ex_class.py`, `ex_func.py`, `ex_ex.py`, `ex_comments.py` — differed only in the tree-sitter node set | `--kind class\|func\|docstrings\|comments\|all` |
+| `font_convert/font_convert.py` | `otf2woff2.py`, `ttf2woff2.py`, `woff2woff2.py`, `woff22woff.py` — differed only in source extension + flavour | `--to woff\|woff2\|ttf`, plus `-r/--rm` to delete the source (3 of the 4 originals did) |
+| `cli_wrapper.py` (root) | `cli_wrapper_log/feloai.py`, `wrapper_gh.py` — same logging shim, different wrapped binary | first arg = binary (`cli_wrapper.py gh repo view`) or `--bin /path/to/bin`; `cli_wrapper_log/` then had a single member, so the script moved to the root |
+
+### Remaining ≥ 90 % pairs: 17
+
+Kept on purpose — each pair is the same *shape* of code doing a different job (opposite
+direction, different library, different target), so collapsing them would lose functionality:
+
+#### `archive_convert_codec/`
 
 - **93.2%** `gz2xz.py` ↔ `xz2gz.py`
-### `archive_extract/`
+#### `archive_extract/`
 
 - **90.1%** `ex_tar.py` ↔ `extar.py`
-### `cli_wrapper_log/`
+#### `extract_python_entities/`
 
-- **96.4%** `feloai.py` ↔ `wrapper_gh.py`
-### `dedup_files_fuzzy/`
-
-- **98.2%** `fssim.py` ↔ `ssim2.py`
-- **97.8%** `ssdim.py` ↔ `ssim2.py`
-- **96.6%** `fssim.py` ↔ `ssdim.py`
-### `dedup_python_defs/`
-
-- **96.4%** `dduper.py` ↔ `deduplicate_python.py`
-### `extract_python_entities/`
-
-- **99.6%** `ex_class.py` ↔ `ex_func.py`
-- **98.8%** `ex_ex.py` ↔ `ex_func.py`
-- **98.6%** `ex_comments.py` ↔ `ex_func.py`
-- **98.5%** `ex_class.py` ↔ `ex_ex.py`
-- **98.5%** `ex_class.py` ↔ `ex_comments.py`
-- **98.4%** `ex_comments.py` ↔ `ex_ex.py`
 - **92.4%** `gext.py` ↔ `gext2.py`
-### `find_files_by_time/`
+#### `find_files_by_time/`
 
 - **93.8%** `newest_files.py` ↔ `oldest_files.py`
-### `font_convert/`
-
-- **98.9%** `otf2woff2.py` ↔ `woff2woff2.py`
-- **98.8%** `woff22woff.py` ↔ `woff2woff2.py`
-- **98.0%** `otf2woff2.py` ↔ `woff22woff.py`
-- **95.3%** `ttf2woff2.py` ↔ `woff22woff.py`
-- **94.9%** `ttf2woff2.py` ↔ `woff2woff2.py`
-- **94.1%** `otf2woff2.py` ↔ `ttf2woff2.py`
-### `gen_requirements_from_imports/`
+#### `gen_requirements_from_imports/`
 
 - **93.6%** `imz.py` ↔ `imz2.py`
-### `html_md_convert/`
+#### `html_md_convert/`
 
 - **90.8%** `html_to_md.py` ↔ `tomd.py`
-### `html_single_file/`
+#### `html_single_file/`
 
 - **93.9%** `inline_assets.py` ↔ `mk_stand.py`
 - **92.1%** `mk_stand.py` ↔ `mkst.py`
 - **91.3%** `inline_assets.py` ↔ `mkst.py`
-### `ls_dir_listing/`
+#### `ls_dir_listing/`
 
 - **92.6%** `l.py` ↔ `lll.py`
-### `minify_web_assets/`
+#### `minify_web_assets/`
 
-- **97.4%** `bcss.py` ↔ `mincss.py`
-- **95.1%** `jb2.py` ↔ `jm2.py`
 - **94.4%** `ccss.py` ↔ `mincss.py`
-- **93.2%** `bcss.py` ↔ `ccss.py`
 - **92.6%** `pcssmin.py` ↔ `pjsmin.py`
-### `remove_unused_code/`
+#### `remove_unused_code/`
 
 - **92.5%** `afk.py` ↔ `afkco.py`
-### `rm_images_from_docs/`
-
-- **99.9%** `cleanmd.py` ↔ `markdown_image_remover.py`
-### `scrape_site_links/`
+#### `scrape_site_links/`
 
 - **92.4%** `findlinks.py` ↔ `findpdflinks.py`
-### `strip_comments_web/`
+#### `strip_comments_web/`
 
 - **91.6%** `clean_css.py` ↔ `cleants.py`
-### `to_pdf_convert/`
-
-- **100.0%** `compile_precise.py` ↔ `compile_precise2.py`
-### `translate_code_comments/`
+#### `translate_code_comments/`
 
 - **90.3%** `pytrans.py` ↔ `pytranslator.py`
-### `translate_dict_json/`
+#### `translate_dict_json/`
 
 - **91.2%** `mendic.py` ↔ `mfadic.py`
-### `translate_files_generic/`
-
-- **98.8%** `gtransline.py` ↔ `ptrans.py`
-
-### Folders with the most internal overlap
-
-| folder | near-dupe pairs | scripts |
-| --- | --- | --- |
-| `extract_python_entities/` | 7 | 22 |
-| `font_convert/` | 6 | 11 |
-| `minify_web_assets/` | 5 | 18 |
-| `dedup_files_fuzzy/` | 3 | 9 |
-| `html_single_file/` | 3 | 12 |
-| `to_pdf_convert/` | 1 | 11 |
-| `add_type_annotations/` | 1 | 6 |
-| `rm_images_from_docs/` | 1 | 6 |
-| `translate_files_generic/` | 1 | 25 |
-| `dedup_python_defs/` | 1 | 22 |
-| `cli_wrapper_log/` | 1 | 2 |
-| `find_files_by_time/` | 1 | 9 |
-| `gen_requirements_from_imports/` | 1 | 13 |
-| `archive_convert_codec/` | 1 | 7 |
-| `ls_dir_listing/` | 1 | 10 |
-| `remove_unused_code/` | 1 | 12 |
-| `scrape_site_links/` | 1 | 15 |
-| `strip_comments_web/` | 1 | 10 |
-| `translate_dict_json/` | 1 | 11 |
-| `html_md_convert/` | 1 | 8 |
-| `translate_code_comments/` | 1 | 5 |
-| `archive_extract/` | 1 | 12 |
